@@ -1,0 +1,15 @@
+web3
+eth-account
+requests
+celery
+redis
+openai
+python-dotenv
+rq
+redis
+alembic
+pytest
+pytest-cov
+ruff
+mypy
+pre-commit

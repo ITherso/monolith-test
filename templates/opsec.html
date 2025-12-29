@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="container mt-5">
+        <h1 class="text-success mb-4">🛡️ OpSec Engine - Infrastructure as Code</h1>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card p-4 border-success">
+                    <h3 class="text-warning">AWS Integration</h3>
+                    <p><strong>Status:</strong>
+                        {% if aws_enabled %}
+                            <span class="text-success">✓ ENABLED</span>
+                        {% else %}
+                            <span class="text-muted">✗ DISABLED</span>
+                        {% endif %}
+                    </p>
+                    <p><small>API Gateway Proxy | Lambda | Auto Cleanup</small></p>
+                    <code style="font-size: 11px;">boto3 installed: {{ has_aws }}</code>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-4 border-info">
+                    <h3 class="text-info">DigitalOcean Integration</h3>
+                    <p><strong>Status:</strong>
+                        {% if do_enabled %}
+                            <span class="text-success">✓ ENABLED</span>
+                        {% else %}
+                            <span class="text-muted">✗ DISABLED</span>
+                        {% endif %}
+                    </p>
+                    <p><small>Droplet Creation | Tinyproxy | Auto Destroy</small></p>
+                    <code style="font-size: 11px;">digitalocean installed: {{ has_digitalocean }}</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 border-warning">
+            <h3 class="text-warning">📋 OpSec Activity Log</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                {% if logs %}
+                    {% for log in logs %}
+                    <div style="background: #1a1a2e; padding: 10px; margin: 5px 0; border-left: 4px solid #ffff00;">
+                        <small>[Scan #{{ log.scan_id }}]</small> {{ log.data[:150] }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #888;">No OpSec activity logged yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card p-4 mt-4 border-light">
+            <h3 class="text-light">⚙️ Quick Actions</h3>
+            <button id="activate-opsec" class="btn btn-outline-light mt-2">
+                <i class="bi bi-rocket"></i> Activate OpSec
+            </button>
+            <div class="text-muted mt-2"><small>Requires admin session and cloud credentials.</small></div>
+        </div>
+
+        <div class="card p-4 mt-4 border-success">
+            <h3 class="text-success">🚀 Features</h3>
+            <ul>
+                <li><strong>IP Rotation:</strong> AWS API Gateway + DigitalOcean Droplets</li>
+                <li><strong>Automatic Cleanup:</strong> Scan sonrasında tüm geçici kaynaklar silinir</li>
+                <li><strong>Cost Optimization:</strong> Minimal resource usage</li>
+                <li><strong>Logging:</strong> Tüm IP rotasyon işlemleri kaydedilir</li>
+                <li><strong>Infrastructure as Code:</strong> Otomatik kaynak yönetimi</li>
+            </ul>
+        </div>
+
+        <div class="card p-4 mt-4 border-info">
+            <h3 class="text-info">📝 Setup Instructions</h3>
+            <p><strong>AWS:</strong></p>
+            <code>
+                export AWS_ACCESS_KEY_ID=your_key<br/>
+                export AWS_SECRET_ACCESS_KEY=your_secret<br/>
+            </code>
+            <p class="mt-3"><strong>DigitalOcean:</strong></p>
+            <code>
+                export DIGITALOCEAN_TOKEN=your_token<br/>
+            </code>
+        </div>
+
+        <a href="/" class="btn btn-outline-light mt-4">Back to Dashboard</a>
+    </div>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('activate-opsec');
+        if (!btn) return;
+        btn.addEventListener('click', async function() {
+            const target = prompt('Optional: target URL to register with the proxy (leave empty for none)');
+            btn.disabled = true;
+            btn.innerText = 'Activating...';
+            try {
+                const res = await fetch('/opsec/activate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target})
+                });
+                const j = await res.json();
+                if (res.ok) {
+                    alert('OpSec activated: ' + JSON.stringify(j.result));
+                } else {
+                    alert('OpSec activation failed: ' + JSON.stringify(j));
+                }
+            } catch (e) {
+                alert('Error: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-rocket"></i> Activate OpSec';
+            }
+        });
+    });
+</script>
+{% endblock %}

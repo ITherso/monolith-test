@@ -1,0 +1,45 @@
+name: Python CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements_extra.txt
+      - name: Cache mypy
+        uses: actions/cache@v4
+        with:
+          path: .mypy_cache
+          key: mypy-${{ runner.os }}-${{ hashFiles('**/*.py', 'mypy.ini') }}
+          restore-keys: |
+            mypy-${{ runner.os }}-
+      - name: Cache ruff
+        uses: actions/cache@v4
+        with:
+          path: .ruff_cache
+          key: ruff-${{ runner.os }}-${{ hashFiles('**/*.py', 'ruff.toml') }}
+          restore-keys: |
+            ruff-${{ runner.os }}-
+      - name: Run unit tests
+        run: |
+          python3 cyber.py --db-upgrade
+          python3 cyber.py --db-current
+          python3 -m alembic history
+          pytest
+      - name: Lint
+        run: ruff check .
+      - name: Format (check)
+        run: ruff format --check .
+      - name: Typecheck
+        run: mypy .

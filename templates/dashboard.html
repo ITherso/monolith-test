@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% block head %}
+    <style>
+        :root {
+            --primary: #00ff00;
+            --secondary: #0f0f23;
+            --accent: #ff00ff;
+            --danger: #ff3333;
+        }
+        body {
+            background: var(--secondary);
+            color: #eee;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 1px solid var(--primary);
+            box-shadow: 0 2px 20px rgba(0, 255, 0, 0.2);
+        }
+        .card {
+            background: rgba(30, 30, 46, 0.9);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
+        }
+        .card-title {
+            color: var(--primary);
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 10px;
+        }
+        .form-control {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.5);
+            color: var(--primary);
+        }
+        .form-control:focus {
+            background: rgba(0, 0, 0, 0.7);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary), #00cc00);
+            border: none;
+            color: black;
+            font-weight: bold;
+        }
+        .btn-danger {
+            background: linear-gradient(90deg, #ff0000, #cc0000);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-warning {
+            background: linear-gradient(90deg, #ffaa00, #ff7700);
+            border: none;
+            color: black;
+            font-weight: bold;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .module-group {
+            border: 1px dashed rgba(0, 255, 0, 0.5);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .module-title {
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .leaderboard-entry {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid var(--primary);
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .leaderboard-position {
+            display: inline-block;
+            width: 30px;
+            text-align: center;
+            background: var(--primary);
+            color: black;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand text-primary fw-bold" href="#">
+                <i class="bi bi-cpu"></i> MONOLITH v68 OMEGA
+            </a>
+            <div class="d-flex align-items-center">
+                <a href="/payloads" class="btn btn-sm btn-outline-warning me-2">
+                    <i class="bi bi-terminal"></i> Payload Gen
+                </a>
+                <a href="/phishing" class="btn btn-sm btn-outline-danger me-2">
+                    <i class="bi bi-envelope"></i> Phishing
+                </a>
+                <a href="/autoexploit" class="btn btn-sm btn-outline-success me-2">
+                    <i class="bi bi-lightning"></i> AutoExploit
+                </a>
+                <a href="/decentralized" class="btn btn-sm btn-outline-info me-2">
+                    <i class="bi bi-link-45deg"></i> DeFi Pentest
+                </a>
+                <span class="navbar-text me-3 text-white">
+                    <i class="bi bi-person"></i> {{ user }}
+                </span>
+                <a href="/logout" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-rocket-takeoff"></i> NEW OMEGA OPERATION
+                        </h4>
+                        <form action="/scan" method="post">
+                            <div class="mb-3">
+                                <label class="form-label text-warning">
+                                    <i class="bi bi-target"></i> TARGET URL / IP
+                                </label>
+                                <input type="text" name="target" class="form-control" 
+                                       placeholder="https://example.com" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted"><small>Active Directory Domain (Optional)</small></label>
+                                <input type="text" name="ad_domain" class="form-control form-control-sm" 
+                                       placeholder="corp.local">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="module-group">
+                                        <div class="module-title">
+                                            <i class="bi bi-ghost"></i> CORE ENGINE
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="python_scan" checked>
+                                            <label class="form-check-label">Full Ghost Analysis (Python)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="nmap" checked>
+                                            <label class="form-check-label">Nmap Port Scan</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="nuclei" checked>
+                                            <label class="form-check-label">Nuclei Vuln Scanner</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="gobuster" checked>
+                                            <label class="form-check-label">Gobuster Directory Brute</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="supply_chain">
+                                            <label class="form-check-label">Supply Chain Audit</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="zeroday">
+                                            <label class="form-check-label">Zero-Day Research</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="module-group">
+                                        <div class="module-title">
+                                            <i class="bi bi-radioactive"></i> OMEGA MODULES
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="ad_enum">
+                                            <label class="form-check-label">Active Directory Enum</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="waf_bypass">
+                                            <label class="form-check-label">WAF Bypass Engine</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="llm_analysis">
+                                            <label class="form-check-label">LLM Vuln Analysis</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="ai_prediction">
+                                            <label class="form-check-label">AI Vulnerability Prediction</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="blockchain">
+                                            <label class="form-check-label">Blockchain Evidence</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="cloud_audit">
+                                            <label class="form-check-label">Cloud Security Audit</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="api_scan">
+                                            <label class="form-check-label">API Security Scan</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="tools" value="gamification" checked>
+                                            <label class="form-check-label">Gamification & XP</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">
+                                    <i class="bi bi-play-fill"></i> INITIATE ATTACK VECTOR
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-clock-history"></i> RECENT OPERATIONS
+                        </h4>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Target</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for scan in scans %}
+                                    <tr data-scan-id="{{ scan[0] }}">
+                                        <td>{{ scan[0] }}</td>
+                                        <td>
+                                            <small>{{ scan[1][:30] }}{% if scan[1]|length > 30 %}...{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
+                                                <span class="badge bg-success">{{ scan[3] }}</span>
+                                            {% elif 'FAILED' in scan[3] or 'HATA' in scan[3] %}
+                                                <span class="badge bg-danger">{{ scan[3] }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{{ scan[3] }}</span>
+                                            {% endif %}
+                                            <div class="progress mt-1" style="height: 6px;">
+                                                <div class="progress-bar bg-info scan-progress" role="progressbar"
+                                                     style="width: {{ scan[5] or 0 }}%;"></div>
+                                            </div>
+                                            <small class="text-muted scan-eta">
+                                                {% if scan[6] is not none %}ETA: {{ scan[6] }}s{% endif %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <a href="/details/{{ scan[0] }}" class="btn btn-sm btn-info">
+                                                <i class="bi bi-file-text"></i> Report
+                                            </a>
+                                            <a href="/delete/{{ scan[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                            {% if 'AÇIK VAR' in scan[3] %}
+                                            <a href="/autoexploit/{{ scan[0] }}" class="btn btn-sm btn-warning">
+                                                <i class="bi bi-lightning"></i> AutoExploit
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                
+                <div class="card bg-dark border-danger">
+                    <div class="card-body text-center">
+                        <h4 class="card-title text-danger">
+                            <i class="bi bi-lightning-charge"></i> POST-EXPLOITATION SUITE
+                        </h4>
+                        <p class="text-muted small">Advanced tools for initial access & persistence</p>
+                        <div class="d-grid gap-2">
+                            <a href="/payloads" class="btn btn-outline-success">
+                                <i class="bi bi-terminal"></i> Reverse Shell Generator
+                            </a>
+                            <a href="/phishing" class="btn btn-outline-warning">
+                                <i class="bi bi-envelope-at"></i> Phishing Campaigns
+                            </a>
+                            <a href="/autoexploit" class="btn btn-outline-danger">
+                                <i class="bi bi-lightning"></i> AutoExploit Framework
+                            </a>
+                            <a href="/opsec" class="btn btn-outline-info">
+                                <i class="bi bi-shield"></i> OpSec Engine
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-trophy"></i> LEADERBOARD
+                        </h4>
+                        {% for entry in leaderboard %}
+                        <div class="leaderboard-entry">
+                            <span class="leaderboard-position">{{ loop.index }}</span>
+                            {{ entry['user'] }} - {{ entry['score'] }} XP
+                        </div>
+                        {% endfor %}
+                        {% if not leaderboard %}
+                        <div class="text-muted">No leaderboard data yet</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-hdd-stack"></i> SYSTEM STATUS
+                        </h4>
+                        <div class="mb-2">
+                            <small>LLM Engine:</small>
+                            <span class="badge bg-{{ 'success' if has_openai else 'warning' }} float-end">
+                                {{ 'ONLINE' if has_openai else 'SIMULATION' }}
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <small>AD Module:</small>
+                            <span class="badge bg-{{ 'success' if has_ldap else 'warning' }} float-end">
+                                {{ 'ACTIVE' if has_ldap else 'LIMITED' }}
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <small>Tool Check:</small>
+                            <span class="badge bg-{{ 'success' if tools_ok else 'danger' }} float-end">
+                                {{ available_tools }}/{{ total_tools }} Ready
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <small>Blockchain:</small>
+                            <span class="badge bg-{{ 'success' if blockchain_ready else 'warning' }} float-end">
+                                {{ 'READY' if blockchain_ready else 'SIM' }}
+                            </span>
+                        </div>
+                        <div class="mt-3">
+                            <a href="/decentralized" class="btn btn-sm btn-outline-info w-100">
+                                <i class="bi bi-link-45deg"></i> Decentralized Pentest Network
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        async function refreshScanProgress() {
+            const rows = document.querySelectorAll('tr[data-scan-id]');
+            for (const row of rows) {
+                const scanId = row.getAttribute('data-scan-id');
+                if (!scanId) continue;
+                try {
+                    const res = await fetch(`/scan_status/${scanId}`);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    const bar = row.querySelector('.scan-progress');
+                    const eta = row.querySelector('.scan-eta');
+                    if (bar) bar.style.width = `${data.progress || 0}%`;
+                    if (eta) eta.textContent = data.eta_seconds ? `ETA: ${data.eta_seconds}s` : '';
+                } catch (e) {}
+            }
+        }
+
+        refreshScanProgress();
+        setInterval(refreshScanProgress, 5000);
+    </script>
+{% endblock %}

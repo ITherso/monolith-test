@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="container mt-4">
+        <div class="card p-4 mb-4">
+            <h1 class="text-success">📊 Tarama Raporu: {{ scan[1] }}</h1>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <p><strong>Durum:</strong> {{ scan[3] }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Tarih:</strong> {{ scan[2] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 mb-4">
+            <h2 class="text-warning">🔴 Bulunan Güvenlik Açıkları ({{ vulns|length }})</h2>
+            {{ vuln_html|safe if vuln_html else '<p style="color: #888;">✓ Güvenlik açığı bulunamadı.</p>'|safe }}
+        </div>
+
+        <div class="card p-4 mb-4">
+            <h2 class="text-info">🔵 Tespit Edilen Teknolojiler ({{ techs|length }})</h2>
+            {{ tech_html|safe if tech_html else '<p style="color: #888;">✓ Teknoloji bulunamadı (statik analiz).</p>'|safe }}
+        </div>
+
+        <div class="card p-4 mb-4">
+            <h2 class="text-muted">📋 Tarama Detayları ve Log'ları</h2>
+            {{ intel_html|safe if intel_html else '<p style="color: #888;">Log kaydı bulunamadı.</p>'|safe }}
+        </div>
+
+        <a href="/" class="btn btn-outline-light">Back to Dashboard</a>
+    </div>
+{% endblock %}

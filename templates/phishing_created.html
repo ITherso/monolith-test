@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="container mt-4">
+        <div class="card p-4 mb-4">
+            <h1 class="text-success">🎣 Phishing Campaign Created!</h1>
+            <div class="mt-3">
+                <p><strong>Campaign ID:</strong> {{ campaign['campaign_id'] }}</p>
+                <p><strong>Fake Domain:</strong> {{ campaign['fake_domain'] }}</p>
+                <p><strong>Template:</strong> Office 365 Login</p>
+                <p><strong>Dashboard:</strong> Credentials will appear in real-time</p>
+            </div>
+        </div>
+        <a href="/" class="btn btn-outline-light">Back to Dashboard</a>
+    </div>
+{% endblock %}

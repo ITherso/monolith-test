@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="container mt-5">
+        <div class="card p-4 mb-4 border-success">
+            <h1 class="text-success mb-2">🎯 Reverse Shell Payload Generator</h1>
+            <p class="text-muted">Generate test payloads for authorized environments.</p>
+        </div>
+        <div class="card p-4 border-success">
+            <form method="POST">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="lhost" class="form-label">LHOST (Attacker IP):</label>
+                        <input type="text" class="form-control" id="lhost" name="lhost" value="127.0.0.1" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="lport" class="form-label">LPORT (Listen Port):</label>
+                        <input type="number" class="form-control" id="lport" name="lport" value="4444" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="payload_type" class="form-label">Payload Type:</label>
+                    <select class="form-select" id="payload_type" name="payload_type">
+                        <option value="bash">Bash</option>
+                        <option value="python">Python</option>
+                        <option value="php">PHP</option>
+                        <option value="nc">Netcat</option>
+                        <option value="perl">Perl</option>
+                        <option value="node">Node.js</option>
+                        <option value="ruby">Ruby</option>
+                        <option value="powershell">PowerShell</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Generate Payload</button>
+            </form>
+            {% if payload_html %}
+            <hr>
+            <h4 class="text-warning mt-4">Generated Payload:</h4>
+            {{ payload_html|safe }}
+            <p class="text-muted mt-2"><small>Dikkat: Bu payload'ı sadece test/authorized amacıyla kullanın!</small></p>
+            {% endif %}
+        </div>
+        <a href="/" class="btn btn-outline-light mt-3">Back to Dashboard</a>
+    </div>
+{% endblock %}

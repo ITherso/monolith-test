@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="container mt-4">
+        <div class="card p-4 mb-4">
+            <h1 class="text-warning">🤖 AI-Powered Social Engineering</h1>
+            <p class="text-muted">Advanced phishing campaign generator with AI personalization</p>
+        </div>
+
+        <div class="card p-4" style="background: rgba(30,30,46,0.9);">
+            <form method="post">
+                <div class="mb-3">
+                    <label>Target Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="John Doe" required>
+                </div>
+                <div class="mb-3">
+                    <label>Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="john@company.com" required>
+                </div>
+                <div class="mb-3">
+                    <label>Company</label>
+                    <input type="text" name="company" class="form-control" placeholder="ACME Corp">
+                </div>
+                <div class="mb-3">
+                    <label>LinkedIn Profile URL (Optional)</label>
+                    <input type="url" name="linkedin" class="form-control" placeholder="https://linkedin.com/in/johndoe">
+                </div>
+                <div class="mb-3">
+                    <label>Position</label>
+                    <input type="text" name="position" class="form-control" placeholder="IT Manager">
+                </div>
+                <div class="mb-3">
+                    <label>Company Domain</label>
+                    <input type="text" name="company_domain" class="form-control" placeholder="acme.com">
+                </div>
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="bi bi-robot"></i> Generate AI Phishing Campaign
+                </button>
+            </form>
+        </div>
+        <br>
+        <a href="/" class="btn btn-outline-light">Back to Dashboard</a>
+    </div>
+{% endblock %}

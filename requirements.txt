@@ -1,0 +1,9 @@
+flask
+fpdf2
+boto3
+python-digitalocean
+openai
+ldap3
+requests
+python-dotenv
+alembic
