@@ -1,6 +1,5 @@
 # Monolith Pentest Framework
 
-![CI](https://github.com/ITherso/Prof.Attack-Tool/actions/workflows/python.yml/badge.svg)
 ![Coverage Target](https://img.shields.io/badge/coverage%20target-50%25-yellow)
 
 Modular Flask-based pentest platform with services, routes, templates, and worker queue support.
