@@ -1,6 +1,7 @@
 import time
 import logging
 import gc
+from urllib.parse import urlparse
 from cyberapp.models.db import db_conn
 from cybermodules.social_engineering import GhostEngine
 from cybermodules.arsenal import SupremeArsenalEngine
@@ -150,12 +151,12 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
             with db_conn() as conn:
                 critical_rows = conn.execute(
                     """
-                    SELECT host, port, type, url, extra_data, info 
-                    FROM vulns 
-                    WHERE scan_id = ? 
+                    SELECT type, url
+                    FROM vulns
+                    WHERE scan_id = ?
                       AND type IN ('SQL_INJECTION', 'RCE', 'GIZLI ANAHTAR', 'CRITICAL', 'HIGH')
                     """,
-                    (scan_id,)
+                    (scan_id,),
                 ).fetchall()
 
             if not critical_rows:
@@ -163,9 +164,18 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
             else:
                 findings = []
                 for row in critical_rows:
-                    host = row[0] or target.replace("http://", "").replace("https://", "").split('/')[0].split(':')[0]
-                    port = row[1] if row[1] else (445 if 'smb' in str(row[2]).lower() else 80)
-                    vuln_type = row[2]
+                    vuln_type = row[0]
+                    vuln_url = row[1] or ""
+                    parsed = urlparse(vuln_url) if vuln_url else None
+                    host = ""
+                    port = None
+                    if parsed and parsed.netloc:
+                        host = parsed.hostname or ""
+                        port = parsed.port
+                    if not host:
+                        host = target.replace("http://", "").replace("https://", "").split('/')[0].split(':')[0]
+                    if not port:
+                        port = 445 if "smb" in str(vuln_type).lower() else 80
 
                     finding = {
                         'ip': host,

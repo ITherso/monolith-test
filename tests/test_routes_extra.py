@@ -86,6 +86,7 @@ class RoutesExtraTest(unittest.TestCase):
         self.assertIn("application/json", res.content_type)
 
     def test_exploit_search_api(self):
+        self._login_admin()
         res = self.client.post("/api/exploit", json={"query": "test"})
         self.assertIn(res.status_code, (200, 503))
 
