@@ -5,6 +5,7 @@ from cyberapp.routes.kerberos import kerberos_bp
 from cyberapp.routes.golden import golden_bp
 from cyberapp.routes.attack_graph import graph_bp
 from cyberapp.routes.c2 import c2_bp
+from cyberapp.routes.ai_payload import ai_payload_bp
 
 from cyberapp.migrations import run_migrations
 from cyberapp.settings import SECRET_KEY
@@ -12,7 +13,6 @@ from cyberapp.routes.monitoring import monitoring_bp
 from cyberapp.routes.auth import auth_bp
 from cyberapp.routes.dashboard import dashboard_bp
 from cyberapp.routes.scans import scans_bp
-from cyberapp.routes.distributed import distributed_bp
 from cyberapp.routes.phishing import phishing_bp
 from cyberapp.routes.infra import infra_bp
 from cyberapp.routes.ops import ops_bp
@@ -30,15 +30,15 @@ def create_app(run_migrations_on_start=True):
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(scans_bp)
-    app.register_blueprint(distributed_bp)
     app.register_blueprint(phishing_bp)
     app.register_blueprint(infra_bp)
-    app.register_blueprint(golden_bp)
-    app.register_blueprint(graph_bp)
-    app.register_blueprint(c2_bp)
     app.register_blueprint(ops_bp)
     app.register_blueprint(exploits_bp)
     app.register_blueprint(kerberos_bp)
+    app.register_blueprint(golden_bp)
+    app.register_blueprint(graph_bp)
+    app.register_blueprint(c2_bp)
+    app.register_blueprint(ai_payload_bp)
 
     register_error_handlers(app)
 

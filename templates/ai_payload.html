@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Payload Generator - MONOLITH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#0a0a12',
+                            primary: '#00ff88',
+                            danger: '#ff4757',
+                            warning: '#ffa502',
+                            purple: '#a855f7'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a12; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass { background: rgba(30, 30, 46, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .neon-border { border: 1px solid rgba(0, 255, 136, 0.3); box-shadow: 0 0 20px rgba(0, 255, 136, 0.1); }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+    {% extends "base.html" %}
+    {% block head %}
+    <style>
+        :root {
+            --primary: #00ff88;
+            --danger: #ff4757;
+            --warning: #ffa502;
+            --purple: #a855f7;
+        }
+        .cyber-card {
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 15px;
+        }
+        .card-header-cyber {
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        .form-control-cyber {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #e0e0e0;
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+        .form-control-cyber:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        .btn-cyber-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%);
+            color: #000;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 12px 25px;
+        }
+        .btn-cyber-primary:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            transform: translateY(-2px);
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .status-success { background: rgba(0, 255, 136, 0.15); color: var(--primary); border: 1px solid rgba(0, 255, 136, 0.3); }
+        .status-warning { background: rgba(255, 170, 0, 0.15); color: var(--warning); border: 1px solid rgba(255, 170, 0, 0.3); }
+        .status-danger { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid rgba(255, 71, 87, 0.3); }
+    </style>
+    {% endblock %}
+    {% block body %}
+    <div class="container-fluid px-4 py-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- AI Payload Generator -->
+                <div class="cyber-card mb-4">
+                    <div class="card-header-cyber p-4">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-robot mr-2"></i>AI-POWERED PAYLOAD GENERATOR
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="payloadForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label class="form-label-cyber d-block mb-2">
+                                        <i class="fas fa-bug mr-2"></i>VULNERABILITY TYPE
+                                    </label>
+                                    <select name="vuln_type" class="form-control-cyber w-100" required>
+                                        <option value="SQL_INJECTION">SQL Injection</option>
+                                        <option value="XSS">XSS (Cross-Site Scripting)</option>
+                                        <option value="RCE">RCE (Remote Code Execution)</option>
+                                        <option value="LFI">LFI (Local File Inclusion)</option>
+                                        <option value="SSRF">SSRF (Server-Side Request Forgery)</option>
+                                        <option value="XXE">XXE (XML External Entity)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <label class="form-label-cyber d-block mb-2">
+                                        <i class="fas fa-shield-alt mr-2"></i>EVASION LEVEL
+                                    </label>
+                                    <select name="evasion_level" class="form-control-cyber w-100" required>
+                                        <option value="low">Low - Basic Obfuscation</option>
+                                        <option value="medium">Medium - Multi-Encoding</option>
+                                        <option value="high" selected>High - Advanced Polymorphism</option>
+                                        <option value="extreme">Extreme - Zero-Day Anomaly</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label-cyber d-block mb-2">
+                                    <i class="fas fa-info-circle mr-2"></i>TARGET CONTEXT (Optional)
+                                </label>
+                                <input type="text" name="context" class="form-control-cyber w-100" 
+                                       placeholder="WAF: Cloudflare, Server: Apache/2.4.41, OS: Ubuntu...">
+                            </div>
+                            
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" name="auto_mutate" id="autoMutate" checked>
+                                <label class="form-check-label text-white" for="autoMutate">
+                                    <i class="fas fa-random mr-2"></i>Auto-Mutate Payload
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" name="blockchain_proof" id="blockchainProof" checked>
+                                <label class="form-check-label text-white" for="blockchainProof">
+                                    <i class="fas fa-link mr-2"></i>Create Blockchain Evidence Proof
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn-cyber btn-cyber-primary w-100 py-3">
+                                <i class="fas fa-magic mr-2"></i>GENERATE AI PAYLOAD
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Generated Payload Display -->
+                <div class="cyber-card mb-4" id="payloadResult" style="display: none;">
+                    <div class="card-header-cyber p-4" style="background: linear-gradient(90deg, rgba(168, 85, 247, 0.15) 0%, transparent 100%);">
+                        <h5 class="card-title-purple mb-0">
+                            <i class="fas fa-code mr-2"></i>GENERATED PAYLOAD
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Blockchain Proof -->
+                        <div class="alert glass border border-purple-500/30 p-3 mb-4 rounded-lg">
+                            <h6 class="text-purple-400 mb-2">
+                                <i class="fas fa-link mr-2"></i>BLOCKCHAIN EVIDENCE
+                            </h6>
+                            <div class="font-mono text-sm text-gray-400">
+                                <div class="mb-2">
+                                    <span class="text-purple-400">Payload ID:</span> <span id="payloadId"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-purple-400">Hash:</span> <span id="payloadHash" class="text-primary"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-purple-400">Block Hash:</span> <span id="blockHash" class="text-warning"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-purple-400">Timestamp:</span> <span id="payloadTimestamp"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Main Payload -->
+                        <div class="mb-4">
+                            <label class="form-label-cyber d-block mb-2">
+                                <i class="fas fa-terminal mr-2"></i>BASE PAYLOAD
+                            </label>
+                            <div class="bg-black/50 p-3 rounded-lg border border-primary/30">
+                                <pre id="basePayload" class="font-mono text-sm text-primary mb-0" style="white-space: pre-wrap; word-break: break-all;"></pre>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="copyToClipboard('basePayload')">
+                                <i class="fas fa-copy mr-1"></i>Copy
+                            </button>
+                        </div>
+                        
+                        <!-- Mutations -->
+                        <div id="mutationsSection" class="mb-4">
+                            <label class="form-label-cyber d-block mb-2">
+                                <i class="fas fa-random mr-2"></i>MUTATIONS (<span id="mutationCount">0</span>)
+                            </label>
+                            <div id="mutationsList" class="accordion"></div>
+                        </div>
+                        
+                        <!-- Test Results -->
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="glass p-3 rounded-lg text-center">
+                                    <div id="evasionScore" class="h3 text-primary mb-0">0.00</div>
+                                    <small class="text-muted">Evasion Score</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="glass p-3 rounded-lg text-center">
+                                    <div id="wafRisk" class="h3 text-warning mb-0">0.00</div>
+                                    <small class="text-muted">WAF Detection Risk</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="glass p-3 rounded-lg text-center">
+                                    <div id="mutationCountDisplay" class="h3 text-purple-400 mb-0">0</div>
+                                    <small class="text-muted">Mutations</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payload History -->
+                <div class="cyber-card">
+                    <div class="card-header-cyber p-4">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-history mr-2"></i>PAYLOAD HISTORY & EVIDENCE CHAIN
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-cyber mb-0">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-fingerprint mr-2"></i>ID</th>
+                                        <th><i class="fas fa-bug mr-2"></i>Type</th>
+                                        <th><i class="fas fa-shield-alt mr-2"></i>Level</th>
+                                        <th><i class="fas fa-link mr-2"></i>Hash</th>
+                                        <th><i class="fas fa-clock mr-2"></i>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payloadHistory">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            <i class="fas fa-robot mb-2 d-block" style="font-size: 2em; opacity: 0.3;"></i>
+                                            No payloads generated yet
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Quick Stats -->
+                <div class="cyber-card mb-4">
+                    <div class="card-header-cyber p-4">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-chart-line mr-2"></i>AI GENERATOR STATS
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center mb-4">
+                            <div class="col-6">
+                                <div id="totalPayloads" class="h3 text-primary mb-0">0</div>
+                                <small class="text-muted">Total Payloads</small>
+                            </div>
+                            <div class="col-6">
+                                <div id="avgEvasionScore" class="h3 text-success mb-0">0%</div>
+                                <small class="text-muted">Avg Evasion</small>
+                            </div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div id="sqlCount" class="h4 text-warning mb-0">0</div>
+                                <small class="text-muted">SQLi</small>
+                            </div>
+                            <div class="col-6">
+                                <div id="xssCount" class="h4 text-danger mb-0">0</div>
+                                <small class="text-muted">XSS</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supported Types -->
+                <div class="cyber-card mb-4">
+                    <div class="card-header-cyber p-4">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-bug mr-2"></i>SUPPORTED TYPES
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span><i class="fas fa-database text-warning mr-2"></i>SQL Injection</span>
+                            <span class="status-badge status-success">ACTIVE</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span><i class="fas fa-code text-danger mr-2"></i>XSS</span>
+                            <span class="status-badge status-success">ACTIVE</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span><i class="fas fa-terminal text-primary mr-2"></i>RCE</span>
+                            <span class="status-badge status-success">ACTIVE</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span><i class="fas fa-folder-open text-purple mr-2"></i>LFI</span>
+                            <span class="status-badge status-success">ACTIVE</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span><i class="fas fa-globe text-info mr-2"></i>SSRF</span>
+                            <span class="status-badge status-warning">BETA</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span><i class="fas fa-code-branch text-secondary mr-2"></i>XXE</span>
+                            <span class="status-badge status-warning">BETA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evasion Techniques -->
+                <div class="cyber-card">
+                    <div class="card-header-cyber p-4">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-magic mr-2"></i>EVASION TECHNIQUES
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Polymorphism</small>
+                                <small class="text-primary">Enabled</small>
+                            </div>
+                            <div class="progress-cyber" style="height: 6px;">
+                                <div class="progress-bar-cyber" style="width: 100%; background: linear-gradient(90deg, #00ff88, #00d4ff);"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>WAF Bypass</small>
+                                <small class="text-primary">Enabled</small>
+                            </div>
+                            <div class="progress-cyber" style="height: 6px;">
+                                <div class="progress-bar-cyber" style="width: 100%; background: linear-gradient(90deg, #a855f7, #ff4757);"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Anti-Sandbox</small>
+                                <small class="text-primary">Enabled</small>
+                            </div>
+                            <div class="progress-cyber" style="height: 6px;">
+                                <div class="progress-bar-cyber" style="width: 100%; background: linear-gradient(90deg, #ffa502, #ff4757);"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Blockchain Proof</small>
+                                <small class="text-primary">Enabled</small>
+                            </div>
+                            <div class="progress-cyber" style="height: 6px;">
+                                <div class="progress-bar-cyber" style="width: 100%; background: linear-gradient(90deg, #00ff88, #a855f7);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let payloadHistory = [];
+        
+        document.getElementById('payloadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                vuln_type: formData.get('vuln_type'),
+                evasion_level: formData.get('evasion_level'),
+                context: formData.get('context') || '',
+                auto_mutate: formData.get('auto_mutate') === 'on',
+                blockchain_proof: formData.get('blockchain_proof') === 'on'
+            };
+            
+            // API call
+            try {
+                const response = await fetch('/api/ai_payload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayPayload(result);
+                    payloadHistory.unshift(result);
+                    updateStats();
+                } else {
+                    alert('Payload generation failed: ' + result.error);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
+        
+        function displayPayload(data) {
+            document.getElementById('payloadResult').style.display = 'block';
+            
+            // Blockchain info
+            document.getElementById('payloadId').textContent = data.id.substring(0, 16) + '...';
+            document.getElementById('payloadHash').textContent = data.hash.substring(0, 32) + '...';
+            document.getElementById('blockHash').textContent = data.blockchain_proof.block_hash.substring(0, 32) + '...';
+            document.getElementById('payloadTimestamp').textContent = new Date(data.timestamp).toLocaleString();
+            
+            // Payload
+            document.getElementById('basePayload').textContent = data.base_payload;
+            
+            // Mutations
+            const mutationsList = document.getElementById('mutationsList');
+            mutationsList.innerHTML = '';
+            document.getElementById('mutationCount').textContent = data.mutations.length;
+            document.getElementById('mutationCountDisplay').textContent = data.mutations.length;
+            
+            data.mutations.forEach((mutation, index) => {
+                const item = document.createElement('div');
+                item.className = 'accordion-item glass mb-2 rounded-lg overflow-hidden';
+                item.innerHTML = `
+                    <div class="accordion-header p-3" style="cursor: pointer; background: rgba(168, 85, 247, 0.1);" 
+                         onclick="toggleMutation(${index})">
+                        <span class="text-purple-400 font-mono">Mutation #${index + 1}</span>
+                        <i class="fas fa-chevron-down float-right"></i>
+                    </div>
+                    <div class="accordion-body p-3" id="mutation-${index}" style="display: none;">
+                        <pre class="font-mono text-sm text-gray-400 mb-0" style="white-space: pre-wrap;">${mutation}</pre>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="copyText('${mutation.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-copy mr-1"></i>Copy
+                        </button>
+                    </div>
+                `;
+                mutationsList.appendChild(item);
+            });
+            
+            // Stats
+            document.getElementById('evasionScore').textContent = (data.evasion_score * 100).toFixed(0) + '%';
+            document.getElementById('wafRisk').textContent = (data.waf_risk * 100).toFixed(0) + '%';
+            
+            // Update history table
+            updateHistoryTable();
+        }
+        
+        function toggleMutation(index) {
+            const body = document.getElementById(`mutation-${index}`);
+            body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function updateStats() {
+            document.getElementById('totalPayloads').textContent = payloadHistory.length;
+            
+            const sqlCount = payloadHistory.filter(p => p.vuln_type === 'SQL_INJECTION').length;
+            const xssCount = payloadHistory.filter(p => p.vuln_type === 'XSS').length;
+            
+            document.getElementById('sqlCount').textContent = sqlCount;
+            document.getElementById('xssCount').textContent = xssCount;
+            
+            if (payloadHistory.length > 0) {
+                const avgScore = payloadHistory.reduce((a, b) => a + b.evasion_score, 0) / payloadHistory.length;
+                document.getElementById('avgEvasionScore').textContent = (avgScore * 100).toFixed(0) + '%';
+            }
+        }
+        
+        function updateHistoryTable() {
+            const tbody = document.getElementById('payloadHistory');
+            if (payloadHistory.length === 0) return;
+            
+            tbody.innerHTML = payloadHistory.map(p => `
+                <tr>
+                    <td><code class="text-primary">${p.id.substring(0, 8)}...</code></td>
+                    <td><span class="status-badge ${p.vuln_type === 'SQL_INJECTION' ? 'status-warning' : 'status-danger'}">${p.vuln_type}</span></td>
+                    <td><span class="status-badge status-success">${p.evasion_level.toUpperCase()}</span></td>
+                    <td><code class="text-gray-500" style="font-size: 0.8em;">${p.hash.substring(0, 16)}...</code></td>
+                    <td><small class="text-muted">${new Date(p.timestamp).toLocaleTimeString()}</small></td>
+                </tr>
+            `).join('');
+        }
+        
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+    </script>
+{% endblock %}
