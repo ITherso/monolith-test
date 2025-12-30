@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from flask import Flask
+from cyberapp.routes.kerberos import kerberos_bp
 
 from cyberapp.migrations import run_migrations
 from cyberapp.settings import SECRET_KEY
@@ -29,6 +30,7 @@ def create_app(run_migrations_on_start=True):
     app.register_blueprint(infra_bp)
     app.register_blueprint(ops_bp)
     app.register_blueprint(exploits_bp)
+    app.register_blueprint(kerberos_bp)
 
     register_error_handlers(app)
 

