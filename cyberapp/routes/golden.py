@@ -1,3 +1,7 @@
+"""
+Golden Ticket Route Module
+Golden Ticket otomasyonu için Flask route'ları.
+"""
 from flask import Blueprint, render_template, request, jsonify, redirect, session
 
 from cybermodules.golden_ticket import GoldenTicketAutomation
@@ -23,7 +27,11 @@ def analyze_hash():
     hash_str = data.get("hash", "")
     
     if not hash_str:
-        return jsonify({"success": False, "message": "Hash gerekli"})
+        return jsonify({
+            "success": False,
+            "message": "Hash gerekli",
+            "is_krbtgt": False
+        })
     
     gta = GoldenTicketAutomation()
     is_krbtgt = gta.is_krbtgt_hash(hash_str)
@@ -38,7 +46,31 @@ def analyze_hash():
 
 @golden_bp.route("/golden/forge", methods=["POST"])
 def forge_ticket():
-    """Golden Ticket oluştur"""
+    """
+    Tam Golden Ticket saldırısı gerçekleştirir.
+    
+    Frontend'den gelen istek:
+    {
+        "hash": "krbtgt_hash",
+        "domain": "corp.local",
+        "dc_ip": "192.168.1.10",
+        "domain_sid": "S-1-5-21-..."
+    }
+    
+    Frontend'e dönen yanıt:
+    {
+        "success": true/false,
+        "logs": [...],
+        "steps": {
+            "is_krbtgt": true/false,
+            "ticket_forged": true/false,
+            "psexec_success": true/false
+        },
+        "ticket_path": "...",
+        "message": "...",
+        "ticket_created": true/false
+    }
+    """
     if not session.get("logged_in"):
         return jsonify({"error": "login_required"}), 401
     
@@ -51,7 +83,13 @@ def forge_ticket():
     if not hash_str or not domain:
         return jsonify({
             "success": False,
-            "message": "Hash ve Domain gerekli"
+            "message": "Hash ve Domain gerekli",
+            "logs": ["[-] Hata: Hash ve Domain parametreleri zorunludur"],
+            "steps": {
+                "is_krbtgt": False,
+                "ticket_forged": False,
+                "psexec_success": False
+            }
         })
     
     gta = GoldenTicketAutomation()
@@ -64,7 +102,21 @@ def forge_ticket():
         domain_sid=domain_sid or None
     )
     
-    return jsonify(result)
+    # Frontend'in beklediği formata dönüştür
+    response = {
+        "success": result.get("success", False),
+        "logs": result.get("logs", []),
+        "steps": result.get("steps", {
+            "is_krbtgt": False,
+            "ticket_forged": False,
+            "psexec_success": False
+        }),
+        "ticket_path": result.get("ticket_path", ""),
+        "ticket_created": result.get("steps", {}).get("ticket_forged", False),
+        "message": result.get("message", "Bilinmeyen hata")
+    }
+    
+    return jsonify(response)
 
 
 @golden_bp.route("/golden/execute", methods=["POST"])
@@ -79,13 +131,44 @@ def execute_with_ticket():
     ticket_path = data.get("ticket_path", "/tmp/krbtgt.ccache")
     
     if not target:
-        return jsonify({"success": False, "message": "Target gerekli"})
+        return jsonify({
+            "success": False,
+            "message": "Target gerekli",
+            "logs": ["[-] Hata: Hedef IP/hostname belirtilmeli"]
+        })
     
     gta = GoldenTicketAutomation()
-    result = gta.execute_with_ticket(target, ticket_path, command)
+    result = gta.execute_psexec(target, ticket_path, command)
     
     return jsonify({
-        "success": result["success"],
+        "success": result.get("success", False),
         "output": result.get("output", ""),
-        "error": result.get("error", "")
+        "error": result.get("error", ""),
+        "logs": result.get("logs", [])
+    })
+
+
+@golden_bp.route("/golden/ticket-info", methods=["GET"])
+def ticket_info():
+    """Oluşturulan ticket hakkında bilgi döndürür"""
+    if not session.get("logged_in"):
+        return jsonify({"error": "login_required"}), 401
+    
+    import os
+    import glob
+    
+    temp_dir = "/tmp/monolith_golden"
+    tickets = []
+    
+    if os.path.exists(temp_dir):
+        for f in glob.glob(os.path.join(temp_dir, "*.ccache")):
+            tickets.append({
+                "path": f,
+                "size": os.path.getsize(f),
+                "modified": os.path.getmtime(f)
+            })
+    
+    return jsonify({
+        "success": True,
+        "tickets": tickets
     })

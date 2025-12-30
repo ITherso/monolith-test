@@ -2,6 +2,7 @@
 AI Attack Path Graph Module
 LLM kullanarak ağ haritası ve saldırı yolu önerileri üretir.
 Frontend'de görselleştirme için graph data çıktısı verir.
+AI-powered kritik path analizi yapar.
 """
 import json
 from dataclasses import dataclass, field, asdict
@@ -270,6 +271,128 @@ class AttackPathGraph:
         
         # Path'leri score'a göre sırala
         self.attack_paths.sort(key=lambda x: x.total_score, reverse=True)
+    
+    def get_ai_analysis(
+        self,
+        nodes: List[Dict],
+        edges: List[Dict],
+        include_scans: bool = True,
+        include_sessions: bool = True,
+        include_loot: bool = True
+    ) -> Dict:
+        """
+        LLM kullanarak kapsamlı AI analizi yapar.
+        
+        Args:
+            nodes: Graph node listesi
+            edges: Graph edge listesi
+            include_scans: Scan verilerini dahil et
+            include_sessions: Session verilerini dahil et
+            include_loot: Loot verilerini dahil et
+        
+        Returns:
+            Dict: AI analiz sonuçları
+        """
+        # Graph özeti oluştur
+        node_types = {}
+        critical_count = 0
+        
+        for node in nodes:
+            node_type = node.get('type', 'unknown')
+            node_types[node_type] = node_types.get(node_type, 0) + 1
+            if node.get('severity') == 'critical':
+                critical_count += 1
+        
+        # LLM için prompt oluştur
+        prompt = f"""
+Sen bir siber güvenlik uzmanı ve red team operatörüsün. Aşağıdaki ağ ortamının 
+saldırı haritasını analiz et ve en kritik saldırı yolunu belirle.
+
+=== AĞ VERİLERİ ===
+Toplam Düğüm: {len(nodes)}
+Toplam Bağlantı: {len(edges)}
+Kritik Düğümler: {critical_count}
+
+Düğüm Tipleri:
+"""
+        
+        for ntype, count in node_types.items():
+            prompt += f"- {ntype}: {count}\n"
+        
+        prompt += "\nDüğüm Detayları:\n"
+        for i, node in enumerate(nodes[:10], 1):  # İlk 10 düğüm
+            prompt += f"{i}. {node.get('label', 'Unknown')} ({node.get('type', 'unknown')}) - {node.get('severity', 'unknown')} severity\n"
+        
+        prompt += "\nBağlantılar:\n"
+        for i, edge in enumerate(edges[:10], 1):
+            prompt += f"{i}. {edge.get('from', '?')} → {edge.get('to', '?')} ({edge.get('relation', 'unknown')})\n"
+        
+        prompt += f"""
+=== SORU ===
+Bu ağda en kritik saldırı yolu nedir? 
+"Bu ağda en kritik path: [düğüm1] → [düğüm2] → ... → [düğümN]" formatında yanıt ver.
+
+Ayrıca şunları belirt:
+1. Risk Seviyesi (Low/Medium/High/Critical)
+2. Önerilen Aksiyon (Pratik bir adversarial action)
+3. Kullanılacak MITRE ATT&CK teknikleri
+
+Türkçe yanıt ver, net ve adversarial odaklı ol.
+"""
+        
+        try:
+            # LLM analizini al
+            llm_response = analyze_with_llm(prompt)
+            
+            # Yanıttan kritik yolu çıkars
+            critical_path = "Web Server → Database → DC"
+            path_nodes = ["web01", "db01", "dc01"]
+            risk_level = "Critical"
+            recommended_action = "Web sunucusundaki RCE vulnerability'sini exploit et, lateral movement ile database'e geç, DCSync ile tüm hashleri çek"
+            
+            # LLM yanıtından bilgi çıkarma (basit parsing)
+            lines = llm_response.split('\n')
+            for line in lines:
+                line_lower = line.lower()
+                if 'path' in line_lower and '→' in line:
+                    critical_path = line.strip()
+                    # Düğümleri çıkars
+                    path_nodes = []
+                    for part in line.split('→'):
+                        part = part.strip()
+                        if part and part not in ['Bu ağda en kritik path:', 'path:']:
+                            path_nodes.append(part)
+                elif 'risk' in line_lower or 'seviye' in line_lower:
+                    if 'critical' in line_lower:
+                        risk_level = "Critical"
+                    elif 'high' in line_lower or 'yüksek' in line_lower:
+                        risk_level = "High"
+                    elif 'medium' in line_lower or 'orta' in line_lower:
+                        risk_level = "Medium"
+                    elif 'low' in line_lower or 'düşük' in line_lower:
+                        risk_level = "Low"
+                elif 'aksiyon' in line_lower or 'öneri' in line_lower or 'adım' in line_lower:
+                    recommended_action = line.strip()
+            
+            return {
+                "success": True,
+                "analysis": llm_response,
+                "critical_path": critical_path,
+                "path_nodes": path_nodes,
+                "risk_level": risk_level,
+                "recommended_action": recommended_action
+            }
+            
+        except Exception as e:
+            # Fallback yanıt
+            return {
+                "success": False,
+                "analysis": f"AI analizi sırasında hata oluştu: {str(e)}. Manuel inceleme önerilir.",
+                "critical_path": "Web Server → Database → DC",
+                "path_nodes": ["web01", "db01", "dc01"],
+                "risk_level": "High",
+                "recommended_action": "Web sunucusundaki SQL Injection'ı exploit et, database'e bağlan, domain admin hash'lerini çek"
+            }
     
     def get_llm_analysis(self) -> str:
         """
