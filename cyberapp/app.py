@@ -34,9 +34,11 @@ def create_app(run_migrations_on_start=True):
 
     register_error_handlers(app)
 
-    if socketio:
+    # SocketIO başlatma (None kontrolü ile)
+    if socketio is not None:
         socketio.init_app(app)
 
+    # Migration çalıştırma
     if run_migrations_on_start:
         run_migrations()
 

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block head %}
+    <style>
+        :root { --primary: #00ff00; }
+        body { background: #0f0f23; color: #eee; }
+        .card { background: rgba(30, 30, 46, 0.95); border: 1px solid rgba(0, 255, 0, 0.3); border-radius: 10px; margin-bottom: 20px; }
+        .card-title { color: var(--primary); border-bottom: 1px solid rgba(0, 255, 0, 0.3); padding-bottom: 10px; }
+        .table-dark { background: rgba(0, 0, 0, 0.3); }
+        .table-dark th { border-color: rgba(0, 255, 0, 0.3); color: var(--primary); }
+        .badge { font-weight: 500; }
+    </style>
+{% endblock %}
+{% block body %}
+    <nav class="navbar navbar-expand-lg sticky-top" style="background: rgba(0, 0, 0, 0.9); border-bottom: 1px solid var(--primary);">
+        <div class="container-fluid">
+            <a class="navbar-brand text-primary fw-bold" href="/"><i class="bi bi-radar"></i> MONOLITH v68 OMEGA</a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-house"></i> Dashboard</a>
+                <span class="navbar-text text-white me-3"><i class="bi bi-person-circle"></i> {{ session.get('user') }}</span>
+            </div>
+        </div>
+    </nav>
+    <div class="container-fluid mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title"><i class="bi bi-list"></i> ALL SCANS</h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead><tr><th>ID</th><th>Target</th><th>Date</th><th>Status</th><th>User</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            {% for scan in scans %}
+                            <tr>
+                                <td>{{ scan[0] }}</td>
+                                <td><code>{{ scan[1][:50] }}{% if scan[1]|length > 50 %}...{% endif %}</code></td>
+                                <td><small>{{ scan[2][:19] }}</small></td>
+                                <td>{% if 'COMPLETED' in scan[3] %}<span class="badge bg-success">{{ scan[3] }}</span>{% elif 'FAILED' in scan[3] %}<span class="badge bg-danger">{{ scan[3] }}</span>{% else %}<span class="badge bg-info">{{ scan[3] }}</span>{% endif %}</td>
+                                <td>{{ scan[4] }}</td>
+                                <td>
+                                    <a href="/details/{{ scan[0] }}" class="btn btn-sm btn-info"><i class="bi bi-file-text"></i></a>
+                                    <a href="/delete/{{ scan[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center py-4"><i class="bi bi-inbox"></i> No scans found</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

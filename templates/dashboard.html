@@ -13,21 +13,36 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .navbar {
-            background: rgba(0, 0, 0, 0.9);
-            border-bottom: 1px solid var(--primary);
-            box-shadow: 0 2px 20px rgba(0, 255, 0, 0.2);
+            background: rgba(0, 0, 0, 0.95);
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 2px 20px rgba(0, 255, 0, 0.3);
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 500;
+            padding: 8px 12px !important;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .nav-link:hover {
+            color: var(--primary) !important;
+            background: rgba(0, 255, 0, 0.1);
+        }
+        .nav-link.active {
+            color: var(--primary) !important;
+            background: rgba(0, 255, 0, 0.2);
         }
         .card {
-            background: rgba(30, 30, 46, 0.9);
+            background: rgba(30, 30, 46, 0.95);
             border: 1px solid rgba(0, 255, 0, 0.3);
             border-radius: 10px;
             margin-bottom: 20px;
             transition: transform 0.3s;
         }
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             border-color: var(--primary);
-            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
+            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.2);
         }
         .card-title {
             color: var(--primary);
@@ -35,15 +50,18 @@
             padding-bottom: 10px;
         }
         .form-control {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(0, 255, 0, 0.5);
-            color: var(--primary);
+            color: #fff;
         }
         .form-control:focus {
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             border-color: var(--primary);
             color: var(--primary);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
         }
         .btn-primary {
             background: linear-gradient(90deg, var(--primary), #00cc00);
@@ -51,8 +69,12 @@
             color: black;
             font-weight: bold;
         }
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #00ff00, #00ee00);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
         .btn-danger {
-            background: linear-gradient(90deg, #ff0000, #cc0000);
+            background: linear-gradient(90deg, #ff3333, #cc0000);
             border: none;
             color: white;
             font-weight: bold;
@@ -63,6 +85,44 @@
             color: black;
             font-weight: bold;
         }
+        .btn-info {
+            background: linear-gradient(90deg, #00aaff, #0077cc);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-outline-success {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline-success:hover {
+            background: var(--primary);
+            color: black;
+        }
+        .btn-outline-warning {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+        .btn-outline-warning:hover {
+            background: #ffaa00;
+            color: black;
+        }
+        .btn-outline-danger {
+            border-color: #ff3333;
+            color: #ff3333;
+        }
+        .btn-outline-danger:hover {
+            background: #ff3333;
+            color: white;
+        }
+        .btn-outline-info {
+            border-color: #00aaff;
+            color: #00aaff;
+        }
+        .btn-outline-info:hover {
+            background: #00aaff;
+            color: white;
+        }
         .status-badge {
             padding: 5px 10px;
             border-radius: 20px;
@@ -70,15 +130,18 @@
             font-weight: bold;
         }
         .module-group {
-            border: 1px dashed rgba(0, 255, 0, 0.5);
-            border-radius: 5px;
+            border: 1px dashed rgba(0, 255, 0, 0.4);
+            border-radius: 8px;
             padding: 15px;
             margin: 10px 0;
+            background: rgba(0, 0, 0, 0.3);
         }
         .module-title {
             color: var(--accent);
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
         }
         .leaderboard-entry {
             background: rgba(255, 255, 255, 0.05);
@@ -89,46 +152,188 @@
         }
         .leaderboard-position {
             display: inline-block;
-            width: 30px;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
             text-align: center;
             background: var(--primary);
             color: black;
             border-radius: 50%;
             font-weight: bold;
             margin-right: 10px;
+            font-size: 0.8em;
+        }
+        .feature-icon {
+            font-size: 1.5em;
+            margin-right: 8px;
+        }
+        .quick-access-btn {
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+        }
+        .quick-access-btn i {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+        .table-dark {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .table-dark th {
+            border-color: rgba(0, 255, 0, 0.3);
+            color: var(--primary);
+        }
+        .table-dark td {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .badge {
+            font-weight: 500;
+        }
+        .bg-success-custom {
+            background: var(--primary);
+            color: black;
+        }
+        .dropdown-menu {
+            background: rgba(20, 20, 35, 0.98);
+            border: 1px solid var(--primary);
+            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
+        }
+        .dropdown-item {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .dropdown-item:hover {
+            background: rgba(0, 255, 0, 0.2);
+            color: var(--primary);
+        }
+        .divider {
+            border-color: rgba(0, 255, 0, 0.3);
         }
     </style>
 {% endblock %}
 {% block body %}
     <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand text-primary fw-bold" href="#">
-                <i class="bi bi-cpu"></i> MONOLITH v68 OMEGA
+            <a class="navbar-brand text-primary fw-bold" href="/">
+                <i class="bi bi-cpu"></i> MONOLITH <span class="text-white">v68</span> OMEGA
             </a>
-            <div class="d-flex align-items-center">
-                <a href="/payloads" class="btn btn-sm btn-outline-warning me-2">
-                    <i class="bi bi-terminal"></i> Payload Gen
-                </a>
-                <a href="/phishing" class="btn btn-sm btn-outline-danger me-2">
-                    <i class="bi bi-envelope"></i> Phishing
-                </a>
-                <a href="/autoexploit" class="btn btn-sm btn-outline-success me-2">
-                    <i class="bi bi-lightning"></i> AutoExploit
-                </a>
-                <a href="/decentralized" class="btn btn-sm btn-outline-info me-2">
-                    <i class="bi bi-link-45deg"></i> DeFi Pentest
-                </a>
-                <span class="navbar-text me-3 text-white">
-                    <i class="bi bi-person"></i> {{ user }}
-                </span>
-                <a href="/logout" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
+            
+            <button class="navbar-toggler bg-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="bi bi-house"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scans">
+                            <i class="bi bi-radar"></i> Scans
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kerberos">
+                            <i class="bi bi-key"></i> Kerberos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/infra">
+                            <i class="bi bi-hdd-network"></i> Infrastructure
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/exploits">
+                            <i class="bi bi-bug"></i> Exploits
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/phishing">
+                            <i class="bi bi-envelope"></i> Phishing
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-tools"></i> Tools
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/payloads"><i class="bi bi-terminal me-2"></i>Payload Generator</a></li>
+                            <li><a class="dropdown-item" href="/autoexploit"><i class="bi bi-lightning me-2"></i>Auto Exploit</a></li>
+                            <li><a class="dropdown-item" href="/opsec"><i class="bi bi-shield me-2"></i>OpSec Engine</a></li>
+                            <li><a class="dropdown-item" href="/decentralized"><i class="bi bi-link-45deg me-2"></i>DeFi Pentest</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/auto_update"><i class="bi bi-arrow-repeat me-2"></i>Auto Update</a></li>
+                            <li><a class="dropdown-item" href="/llm_engine"><i class="bi bi-cpu me-2"></i>LLM Engine</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center">
+                    <span class="navbar-text me-3 text-white">
+                        <i class="bi bi-person-circle"></i> {{ user }}
+                    </span>
+                    <a href="/logout" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
 
     <div class="container-fluid mt-4">
+        <!-- Quick Access Bar -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body py-2">
+                        <h6 class="text-muted mb-3"><i class="bi bi-lightning"></i> QUICK ACCESS</h6>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-2">
+                                <a href="/kerberos" class="btn btn-outline-warning w-100 quick-access-btn">
+                                    <i class="bi bi-key feature-icon"></i>
+                                    Kerberos
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <a href="/infra" class="btn btn-outline-info w-100 quick-access-btn">
+                                    <i class="bi bi-hdd-network feature-icon"></i>
+                                    Infrastructure
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <a href="/exploits" class="btn btn-outline-danger w-100 quick-access-btn">
+                                    <i class="bi bi-bug feature-icon"></i>
+                                    Exploits
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <a href="/phishing" class="btn btn-outline-success w-100 quick-access-btn">
+                                    <i class="bi bi-envelope feature-icon"></i>
+                                    Phishing
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <a href="/payloads" class="btn btn-outline-primary w-100 quick-access-btn" style="border-color: #00aaff; color: #00aaff;">
+                                    <i class="bi bi-terminal feature-icon" style="color: #00aaff;"></i>
+                                    Payloads
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <a href="/scans" class="btn btn-outline-secondary w-100 quick-access-btn">
+                                    <i class="bi bi-radar feature-icon"></i>
+                                    Scans
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-lg-8">
                 <div class="card">
@@ -142,7 +347,7 @@
                                     <i class="bi bi-target"></i> TARGET URL / IP
                                 </label>
                                 <input type="text" name="target" class="form-control" 
-                                       placeholder="https://example.com" required>
+                                       placeholder="https://example.com veya 192.168.1.1" required>
                             </div>
                             
                             <div class="mb-3">

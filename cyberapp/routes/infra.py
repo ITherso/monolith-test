@@ -7,6 +7,33 @@ from cybermodules.opsec import OpSecEngine, has_aws, has_digitalocean
 
 infra_bp = Blueprint("infra", __name__)
 
+@infra_bp.route("/infra")
+def infra_dashboard():
+    """Infrastructure dashboard"""
+    if not session.get("logged_in"):
+        return redirect("/login")
+    
+    with db_conn() as conn:
+        opsec_logs = conn.execute(
+            "SELECT scan_id, type, data FROM intel WHERE type LIKE 'OPSEC%' ORDER BY rowid DESC LIMIT 50"
+        ).fetchall()
+    
+    log_rows = []
+    for scan_id, log_type, data in opsec_logs:
+        log_rows.append({
+            "scan_id": scan_id,
+            "type": log_type,
+            "data": data or "",
+        })
+    
+    return render_template(
+        "infra.html",
+        logs=log_rows,
+        aws_enabled=bool(os.getenv("AWS_ACCESS_KEY_ID")),
+        do_enabled=bool(os.getenv("DIGITALOCEAN_TOKEN")),
+        has_aws=has_aws,
+        has_digitalocean=has_digitalocean,
+    )
 
 @infra_bp.route("/decentralized")
 def decentralized_dashboard():

@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify
 from cybermodules.kerberos_tickets import KerberosTicketEngine, GoldenTicketForger, SilverTicketForger
-from cyberapp.services.db import get_db_connection
 
 # Blueprint oluştur
 kerberos_bp = Blueprint('kerberos', __name__, url_prefix='/kerberos')

