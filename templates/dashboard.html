@@ -51,6 +51,13 @@
                     <span class="text-gray-300 font-medium text-sm">Kerberos</span>
                 </a>
                 
+                <a href="/distributed/0" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
+                        <i class="fas fa-sitemap text-cyber-secondary text-xl"></i>
+                    </div>
+                    <span class="text-gray-300 font-medium text-sm">Distributed Agents</span>
+                </a>
+                
                 <a href="/infra" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
                     <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
                         <i class="fas fa-network-wired text-cyber-secondary text-xl"></i>
@@ -102,7 +109,7 @@
                 
                 <a href="/scans" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
                     <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
-                        <i class="fas fa-radar text-cyber-secondary text-xl"></i>
+                        <i class="fas fa-list-check text-cyber-secondary text-xl"></i>
                     </div>
                     <span class="text-gray-300 font-medium text-sm">Scans</span>
                 </a>
@@ -493,7 +500,7 @@
             } catch (e) {}
         }
     }
-
+<a href="/distributed/{{ scan_id }}" target="_blank">🌐 Distributed Agents Console</a>
     refreshScanProgress();
     setInterval(refreshScanProgress, 5000);
 </script>

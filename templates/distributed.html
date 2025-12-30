@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌐 Distributed Agents Console - Prof.Attack-Tool</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .status {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .log-box {
+            background-color: #111;
+            border: 2px solid #0f0;
+            border-radius: 10px;
+            padding: 20px;
+            height: 600px;
+            overflow-y: auto;
+            box-shadow: 0 0 15px #0f0;
+        }
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px dashed #333;
+            word-wrap: break-word;
+        }
+        .success { color: #00ff00; }
+        .warning { color: #ffff00; }
+        .error { color: #ff0000; }
+        .info { color: #00ffff; }
+        .refresh-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background: #0f0;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            box-shadow: 0 0 10px #0f0;
+        }
+        .refresh-btn:hover {
+            background: #00ff00;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 DISTRIBUTED AGENT NETWORK CONSOLE</h1>
+        <div class="status">Scan ID: <strong>{{ scan_id }}</strong> | Status: <span id="status">Canlı Güncelleme Aktif</span></div>
+        
+        <button class="refresh-btn" onclick="location.reload()">🔄 Manuel Yenile</button>
+        
+        <div class="log-box" id="logs">
+            {% if logs %}
+                {% for log in logs %}
+                    <div class="log-entry">
+                        {% if 'SUCCESS' in log or 'deployed' in log.lower() or 'session' in log.lower() %}
+                            <span class="success">[+] {{ log }}</span>
+                        {% elif 'ERROR' in log or 'failed' in log.lower() %}
+                            <span class="error">[!] {{ log }}</span>
+                        {% elif 'WARNING' in log %}
+                            <span class="warning">[~] {{ log }}</span>
+                        {% else %}
+                            <span class="info">[i] {{ log }}</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="log-entry info">
+                    [i] Henüz agent deploy edilmedi. Session açılınca otomatik başlayacak...<br>
+                    [i] Bekleniyor: [DISTRIBUTED] Agent deployed, [PIVOT] Attempted...
+                </div>
+            {% endif %}
+        </div>
+        
+        <footer>
+            Prof.Attack-Tool v68 Ultimate | Distributed Agent Network Module
+        </footer>
+    </div>
+
+    <script>
+        // Otomatik yenileme (10 saniyede bir)
+        setInterval(() => {
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newLogs = doc.querySelector('#logs').innerHTML;
+                    document.querySelector('#logs').innerHTML = newLogs;
+                })
+                .catch(err => console.error('Yenileme hatası:', err));
+        }, 10000);
+    </script>
+</body>
+</html>
