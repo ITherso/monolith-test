@@ -1,44 +1,1559 @@
 {% extends "base.html" %}
 {% block body %}
-    <div class="container mt-5">
-        <div class="card p-4 mb-4 border-success">
-            <h1 class="text-success mb-2">🎯 Reverse Shell Payload Generator</h1>
-            <p class="text-muted">Generate test payloads for authorized environments.</p>
+<div class="main-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="logo-text">SHADOW<span class="accent">ARSENAL</span></span>
+            </div>
         </div>
-        <div class="card p-4 border-success">
-            <form method="POST">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="lhost" class="form-label">LHOST (Attacker IP):</label>
-                        <input type="text" class="form-control" id="lhost" name="lhost" value="127.0.0.1" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="lport" class="form-label">LPORT (Listen Port):</label>
-                        <input type="number" class="form-control" id="lport" name="lport" value="4444" required>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>DASHBOARD</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/scans" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span>SCANS</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/kerberos" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0110 0v4"/>
+                    </svg>
+                    <span>KERBEROS</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/decentralized" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <circle cx="12" cy="4" r="2"/>
+                        <circle cx="20" cy="12" r="2"/>
+                        <circle cx="12" cy="20" r="2"/>
+                        <circle cx="4" cy="12" r="2"/>
+                        <line x1="12" y1="6" x2="12" y2="10"/>
+                        <line x1="12" y1="14" x2="12" y2="18"/>
+                        <line x1="18" y1="12" x2="22" y2="12"/>
+                        <line x1="6" y1="12" x2="2" y2="12"/>
+                    </svg>
+                    <span>DECENTRALIZED</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/c2" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3H6a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3V6a3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3h12a3 3 0 003-3 3 3 0 00-3-3z"/>
+                    </svg>
+                    <span>C2 IMPLANT</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/infra" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                    <span>INFRASTRUCTURE</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/exploit" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    <span>EXPLOIT</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/phishing" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    <span>PHISHING</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/opsec" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <span>OPSEC</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/payloads" class="nav-link active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                    <span>PAYLOADS</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/autoexploit" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"/>
+                        <polyline points="8 6 2 12 8 18"/>
+                    </svg>
+                    <span>AUTOEXPLOIT</span>
+                </a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="status-indicator online">
+                <span class="status-dot"></span>
+                <span>SYSTEM ONLINE</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-area">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                        </svg>
+                        <span>PAYLOAD GENERATOR</span>
+                    </h1>
+                    <p class="page-subtitle">Generate reverse shell payloads for authorized testing environments</p>
+                </div>
+                <div class="header-right">
+                    <div class="quick-stats">
+                        <div class="quick-stat">
+                            <span class="stat-value" id="payloadsGenerated">0</span>
+                            <span class="stat-label">Payloads Generated</span>
+                        </div>
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label for="payload_type" class="form-label">Payload Type:</label>
-                    <select class="form-select" id="payload_type" name="payload_type">
-                        <option value="bash">Bash</option>
-                        <option value="python">Python</option>
-                        <option value="php">PHP</option>
-                        <option value="nc">Netcat</option>
-                        <option value="perl">Perl</option>
-                        <option value="node">Node.js</option>
-                        <option value="ruby">Ruby</option>
-                        <option value="powershell">PowerShell</option>
-                    </select>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <section class="stats-grid">
+            <div class="stat-card bash">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
                 </div>
-                <button type="submit" class="btn btn-success w-100">Generate Payload</button>
-            </form>
-            {% if payload_html %}
-            <hr>
-            <h4 class="text-warning mt-4">Generated Payload:</h4>
-            {{ payload_html|safe }}
-            <p class="text-muted mt-2"><small>Dikkat: Bu payload'ı sadece test/authorized amacıyla kullanın!</small></p>
-            {% endif %}
+                <div class="stat-info">
+                    <span class="stat-value">8</span>
+                    <span class="stat-label">Payload Types</span>
+                </div>
+            </div>
+            <div class="stat-card python">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">100%</span>
+                    <span class="stat-label">Encoding Support</span>
+                </div>
+            </div>
+            <div class="stat-card php">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">24/7</span>
+                    <span class="stat-label">Active Sessions</span>
+                </div>
+            </div>
+            <div class="stat-card netcat">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">Live</span>
+                    <span class="stat-label">Listener Status</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Payload Configuration Panel -->
+            <section class="config-panel">
+                <div class="panel-header">
+                    <div class="panel-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                        </svg>
+                    </div>
+                    <div class="panel-title">
+                        <h2>Payload Configuration</h2>
+                        <p>Configure your reverse shell parameters</p>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <form method="POST" id="payloadForm">
+                        <div class="form-section">
+                            <h3 class="section-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="2" y1="12" x2="22" y2="12"/>
+                                    <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                                </svg>
+                                Connection Settings
+                            </h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                        </svg>
+                                        LHOST (Attacker IP)
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <input type="text" class="form-input" id="lhost" name="lhost" value="127.0.0.1" placeholder="192.168.1.100" required>
+                                        <button type="button" class="btn-detect" id="detectIp" title="Detect Local IP">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <line x1="2" y1="12" x2="22" y2="12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <line x1="23" y1="11" x2="17" y2="11"/>
+                                        </svg>
+                                        LPORT (Listen Port)
+                                    </label>
+                                    <input type="number" class="form-input" id="lport" name="lport" value="4444" placeholder="4444" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                Payload Type
+                            </h3>
+                            <div class="payload-types">
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="bash" checked>
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                            <polyline points="22,6 12,13 2,6"/>
+                                        </svg>
+                                        <span class="payload-name">Bash</span>
+                                        <span class="payload-desc">Unix/Linux Shell</span>
+                                    </span>
+                                </label>
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="python">
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                            <path d="M2 17l10 5 10-5"/>
+                                            <path d="M2 12l10 5 10-5"/>
+                                        </svg>
+                                        <span class="payload-name">Python</span>
+                                        <span class="payload-desc">Multi-platform</span>
+                                    </span>
+                                </label>
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="php">
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="2" y="2" width="20" height="8" rx="2"/>
+                                            <rect x="2" y="14" width="20" height="8" rx="2"/>
+                                        </svg>
+                                        <span class="payload-name">PHP</span>
+                                        <span class="payload-desc">Web Shell</span>
+                                    </span>
+                                </label>
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="nc">
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                        </svg>
+                                        <span class="payload-name">Netcat</span>
+                                        <span class="payload-desc">Classic Shell</span>
+                                    </span>
+                                </label>
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="perl">
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                        </svg>
+                                        <span class="payload-name">Perl</span>
+                                        <span class="payload-desc">Script Shell</span>
+                                    </span>
+                                </label>
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="node">
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="3"/>
+                                            <circle cx="12" cy="4" r="2"/>
+                                            <circle cx="20" cy="12" r="2"/>
+                                            <circle cx="12" cy="20" r="2"/>
+                                            <circle cx="4" cy="12" r="2"/>
+                                        </svg>
+                                        <span class="payload-name">Node.js</span>
+                                        <span class="payload-desc">JavaScript</span>
+                                    </span>
+                                </label>
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="ruby">
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                        </svg>
+                                        <span class="payload-name">Ruby</span>
+                                        <span class="payload-desc">Ruby Shell</span>
+                                    </span>
+                                </label>
+                                <label class="payload-option">
+                                    <input type="radio" name="payload_type" value="powershell">
+                                    <span class="payload-card">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                            <path d="M8 10h8M8 14h4"/>
+                                        </svg>
+                                        <span class="payload-name">PowerShell</span>
+                                        <span class="payload-desc">Windows Shell</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-generate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                            </svg>
+                            Generate Payload
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Output Panel -->
+            <section class="output-panel">
+                <div class="panel-header">
+                    <div class="panel-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4 17 10 11 4 5"/>
+                            <line x1="12" y1="19" x2="20" y2="19"/>
+                        </svg>
+                    </div>
+                    <div class="panel-title">
+                        <h2>Generated Payload</h2>
+                        <p>Copy and use your payload</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn-action" id="copyPayload" title="Copy to Clipboard">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                            </svg>
+                        </button>
+                        <button class="btn-action" id="downloadPayload" title="Download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {% if payload_html %}
+                    <div class="payload-output">
+                        <div class="output-header">
+                            <span class="output-title">reverse_shell.{{ payload_type }}</span>
+                            <span class="output-size">{{ payload_html|length }} bytes</span>
+                        </div>
+                        <div class="output-code">
+                            <pre id="payloadCode">{{ payload_html|safe }}</pre>
+                        </div>
+                    </div>
+                    <div class="warning-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <span>Warning: Use this payload only in authorized testing environments!</span>
+                    </div>
+                    {% else %}
+                    <div class="empty-output">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                        </svg>
+                        <h3>No Payload Generated</h3>
+                        <p>Configure your settings and click "Generate Payload" to create a reverse shell</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
         </div>
-        <a href="/" class="btn btn-outline-light mt-3">Back to Dashboard</a>
-    </div>
+
+        <!-- Info Section -->
+        <section class="info-section">
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="card-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        <h3>Usage Instructions</h3>
+                    </div>
+                    <div class="card-content">
+                        <ol class="instruction-list">
+                            <li>Set LHOST to your attacker machine IP</li>
+                            <li>Set LPORT to your listening port</li>
+                            <li>Select appropriate payload type for target</li>
+                            <li>Generate the payload</li>
+                            <li>Start a listener (e.g., nc -lvnp 4444)</li>
+                            <li>Execute payload on target machine</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <div class="card-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <h3>Security Notice</h3>
+                    </div>
+                    <div class="card-content">
+                        <ul class="notice-list">
+                            <li>Only use in authorized penetration tests</li>
+                            <li>Obtain proper written consent</li>
+                            <li>Respect scope and rules of engagement</li>
+                            <li>Document all activities</li>
+                            <li>Clean up after testing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    let payloadsGenerated = 0;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize payload counter
+        initCounter();
+        
+        // Initialize copy functionality
+        initCopy();
+        
+        // Initialize download
+        initDownload();
+        
+        // Initialize IP detection
+        initIpDetection();
+        
+        // Initialize form submission
+        initFormSubmit();
+    });
+
+    function initCounter() {
+        // Animate counter on load
+        const counter = document.getElementById('payloadsGenerated');
+        if (counter) {
+            animateValue(counter, 0, 0, 500);
+        }
+    }
+
+    function animateValue(element, start, end, duration) {
+        const range = end - start;
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            const current = start + (range * easeProgress);
+            
+            element.textContent = Math.floor(current);
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+        
+        requestAnimationFrame(update);
+    }
+
+    function initCopy() {
+        const copyBtn = document.getElementById('copyPayload');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                const codeElement = document.getElementById('payloadCode');
+                if (codeElement) {
+                    const code = codeElement.textContent;
+                    navigator.clipboard.writeText(code).then(() => {
+                        showNotification('Payload copied to clipboard!', 'success');
+                    }).catch(() => {
+                        showNotification('Failed to copy', 'error');
+                    });
+                }
+            });
+        }
+    }
+
+    function initDownload() {
+        const downloadBtn = document.getElementById('downloadPayload');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+                const codeElement = document.getElementById('payloadCode');
+                const payloadType = document.querySelector('input[name="payload_type"]:checked').value;
+                
+                if (codeElement) {
+                    const code = codeElement.textContent;
+                    const blob = new Blob([code], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `reverse_shell.${payloadType}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showNotification('Payload downloaded!', 'success');
+                }
+            });
+        }
+    }
+
+    function initIpDetection() {
+        const detectBtn = document.getElementById('detectIp');
+        if (detectBtn) {
+            detectBtn.addEventListener('click', async function() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    document.getElementById('lhost').value = data.ip;
+                    showNotification('IP address detected!', 'success');
+                } catch (e) {
+                    // Fallback: show local IP suggestion
+                    document.getElementById('lhost').value = '10.0.0.1';
+                    showNotification('Could not detect public IP. Using local IP.', 'info');
+                }
+            });
+        }
+    }
+
+    function initFormSubmit() {
+        const form = document.getElementById('payloadForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Show loading state
+                const submitBtn = form.querySelector('.btn-generate');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `
+                        <svg class="spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                        </svg>
+                        Generating...
+                    `;
+                }
+                
+                // Increment counter after successful generation
+                setTimeout(() => {
+                    payloadsGenerated++;
+                    const counter = document.getElementById('payloadsGenerated');
+                    if (counter) {
+                        animateValue(counter, parseInt(counter.textContent), payloadsGenerated, 500);
+                    }
+                }, 500);
+            });
+        }
+    }
+
+    function showNotification(message, type) {
+        const container = document.querySelector('.notification-container') || createNotificationContainer();
+        
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                ${type === 'success' ? '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : ''}
+                ${type === 'error' ? '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>' : ''}
+                ${type === 'info' ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>' : ''}
+            </svg>
+            <span>${message}</span>
+        `;
+        
+        container.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    function createNotificationContainer() {
+        const container = document.createElement('div');
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+        return container;
+    }
+</script>
+
+<style>
+    /* Notification Container */
+    .notification-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .notification {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        background: rgba(10, 10, 18, 0.95);
+        border: 1px solid;
+        border-radius: 8px;
+        color: #e0e0e0;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+    }
+
+    .notification.fade-out {
+        animation: slideOut 0.3s ease forwards;
+    }
+
+    .notification.success {
+        border-color: #00ff88;
+        background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(10, 10, 18, 0.95));
+    }
+
+    .notification.success svg {
+        color: #00ff88;
+    }
+
+    .notification.error {
+        border-color: #ff4757;
+        background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(10, 10, 18, 0.95));
+    }
+
+    .notification.error svg {
+        color: #ff4757;
+    }
+
+    .notification.info {
+        border-color: #00d4ff;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(10, 10, 18, 0.95));
+    }
+
+    .notification.info svg {
+        color: #00d4ff;
+    }
+
+    .notification svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    /* Main container */
+    .main-container {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        background: rgba(15, 15, 25, 0.95);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        height: 100vh;
+        z-index: 100;
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+    }
+
+    .logo svg {
+        width: 32px;
+        height: 32px;
+        color: #00ff88;
+    }
+
+    .logo-text {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 2px;
+    }
+
+    .logo-text .accent {
+        color: #00ff88;
+    }
+
+    .nav-menu {
+        list-style: none;
+        padding: 15px 10px;
+        margin: 0;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .nav-item {
+        margin-bottom: 5px;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .nav-link.active {
+        background: rgba(0, 255, 136, 0.1);
+        color: #00ff88;
+    }
+
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #666;
+    }
+
+    .status-indicator.online .status-dot {
+        background: #00ff88;
+        box-shadow: 0 0 10px #00ff88;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Content Area */
+    .content-area {
+        flex: 1;
+        margin-left: 260px;
+        padding: 30px;
+        background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%);
+        min-height: 100vh;
+    }
+
+    /* Page Header */
+    .page-header {
+        margin-bottom: 25px;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .page-title {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 8px 0;
+        letter-spacing: 1px;
+    }
+
+    .page-title svg {
+        width: 28px;
+        height: 28px;
+        color: #00ff88;
+    }
+
+    .page-subtitle {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 13px;
+        margin: 0 0 0 43px;
+        letter-spacing: 0.5px;
+    }
+
+    .quick-stats {
+        display: flex;
+        gap: 20px;
+    }
+
+    .quick-stat {
+        text-align: center;
+        padding: 15px 25px;
+        background: rgba(0, 255, 136, 0.05);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+        border-radius: 10px;
+    }
+
+    .quick-stat .stat-value {
+        display: block;
+        font-size: 28px;
+        font-weight: 700;
+        color: #00ff88;
+    }
+
+    .quick-stat .stat-label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--card-accent, #00ff88);
+        opacity: 0.8;
+    }
+
+    .stat-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        transform: translateY(-2px);
+    }
+
+    .stat-card.bash { --card-accent: #00ff88; }
+    .stat-card.python { --card-accent: #00d4ff; }
+    .stat-card.php { --card-accent: #8a2be2; }
+    .stat-card.netcat { --card-accent: #ffa502; }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+    }
+
+    .stat-icon svg {
+        width: 24px;
+        height: 24px;
+        color: var(--card-accent, #00ff88);
+    }
+
+    .stat-info {
+        flex: 1;
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 1px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Content Grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    /* Panels */
+    .config-panel,
+    .output-panel {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .panel-icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 255, 136, 0.1);
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    .panel-icon svg {
+        width: 24px;
+        height: 24px;
+        color: #00ff88;
+    }
+
+    .panel-title {
+        flex: 1;
+    }
+
+    .panel-title h2 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        margin: 0 0 4px 0;
+    }
+
+    .panel-title p {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        margin: 0;
+    }
+
+    .panel-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-action:hover {
+        background: rgba(0, 255, 136, 0.1);
+        border-color: rgba(0, 255, 136, 0.3);
+        color: #00ff88;
+    }
+
+    .btn-action svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .panel-body {
+        padding: 20px;
+    }
+
+    /* Form Styles */
+    .form-section {
+        margin-bottom: 25px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0 0 15px 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .section-title svg {
+        width: 16px;
+        height: 16px;
+        color: #00ff88;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 8px;
+    }
+
+    .form-label svg {
+        width: 14px;
+        height: 14px;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .input-wrapper {
+        display: flex;
+        gap: 8px;
+    }
+
+    .form-input {
+        flex: 1;
+        padding: 12px 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 13px;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: rgba(0, 255, 136, 0.5);
+        background: rgba(0, 0, 0, 0.4);
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+    }
+
+    .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-detect {
+        width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 255, 136, 0.1);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 8px;
+        color: #00ff88;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-detect:hover {
+        background: rgba(0, 255, 136, 0.2);
+    }
+
+    .btn-detect svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Payload Types Grid */
+    .payload-types {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+
+    .payload-option {
+        cursor: pointer;
+    }
+
+    .payload-option input {
+        display: none;
+    }
+
+    .payload-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .payload-card svg {
+        width: 28px;
+        height: 28px;
+        color: rgba(255, 255, 255, 0.4);
+        transition: all 0.3s ease;
+    }
+
+    .payload-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
+        transition: all 0.3s ease;
+    }
+
+    .payload-desc {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .payload-option input:checked + .payload-card {
+        background: rgba(0, 255, 136, 0.1);
+        border-color: rgba(0, 255, 136, 0.4);
+    }
+
+    .payload-option input:checked + .payload-card svg {
+        color: #00ff88;
+    }
+
+    .payload-option input:checked + .payload-card .payload-name {
+        color: #00ff88;
+    }
+
+    .payload-option:hover .payload-card {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Generate Button */
+    .btn-generate {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+        border: none;
+        border-radius: 10px;
+        color: #000;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+    }
+
+    .btn-generate:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-generate svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .spinning {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Output Panel */
+    .payload-output {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .output-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .output-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #00ff88;
+        font-family: monospace;
+    }
+
+    .output-size {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .output-code {
+        max-height: 300px;
+        overflow: auto;
+    }
+
+    .output-code pre {
+        margin: 0;
+        padding: 15px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .warning-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px;
+        background: rgba(255, 165, 2, 0.1);
+        border: 1px solid rgba(255, 165, 2, 0.3);
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+
+    .warning-box svg {
+        width: 20px;
+        height: 20px;
+        color: #ffa502;
+        flex-shrink: 0;
+    }
+
+    .warning-box span {
+        font-size: 12px;
+        color: #ffa502;
+        font-weight: 500;
+    }
+
+    /* Empty State */
+    .empty-output {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+    }
+
+    .empty-output svg {
+        width: 48px;
+        height: 48px;
+        color: rgba(255, 255, 255, 0.2);
+        margin-bottom: 20px;
+    }
+
+    .empty-output h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.6);
+        margin: 0 0 10px 0;
+    }
+
+    .empty-output p {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.4);
+        margin: 0;
+        max-width: 300px;
+    }
+
+    /* Info Section */
+    .info-section {
+        margin-bottom: 25px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .info-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .info-card .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+        padding: 0;
+        background: transparent;
+        border: none;
+    }
+
+    .info-card .card-header svg {
+        width: 20px;
+        height: 20px;
+        color: #00ff88;
+    }
+
+    .info-card .card-header h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        margin: 0;
+    }
+
+    .card-content {
+        padding-left: 32px;
+    }
+
+    .instruction-list {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .instruction-list li {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+
+    .notice-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .notice-list li {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 8px;
+        padding-left: 20px;
+        position: relative;
+    }
+
+    .notice-list li::before {
+        content: '!';
+        position: absolute;
+        left: 0;
+        color: #ff4757;
+        font-weight: 700;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .payload-types {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    @media (max-width: 992px) {
+        .sidebar {
+            width: 70px;
+        }
+        
+        .sidebar-header {
+            padding: 15px;
+        }
+        
+        .logo-text,
+        .nav-link span,
+        .status-indicator span:not(.status-dot) {
+            display: none;
+        }
+        
+        .nav-link {
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        .content-area {
+            margin-left: 70px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .header-content {
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .quick-stats {
+            width: 100%;
+        }
+        
+        .quick-stat {
+            flex: 1;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .payload-types {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
 {% endblock %}

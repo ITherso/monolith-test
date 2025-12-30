@@ -1,384 +1,1553 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kerberos Ticket Attack - Golden/Silver Ticket</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #e4e4e4;
-        }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header {
-            background: linear-gradient(90deg, #e94560, #0f3460);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
-        }
-        .header h1 { font-size: 28px; margin-bottom: 5px; }
-        .header p { opacity: 0.8; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-        }
-        .card h2 {
-            color: #e94560;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(233,69,96,0.3);
-        }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid #333;
-            border-radius: 5px;
-            color: #fff;
-            font-size: 14px;
-        }
-        .form-group input:focus { outline: none; border-color: #e94560; }
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        .btn-golden { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; }
-        .btn-silver { background: linear-gradient(135deg, #c0c0c0, #808080); color: #000; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .output {
-            background: #0d0d0d;
-            border: 1px solid #333;
-            border-radius: 5px;
-            padding: 15px;
-            min-height: 300px;
-            max-height: 500px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-        }
-        .output-line { margin: 3px 0; }
-        .output-success { color: #00ff00; }
-        .output-error { color: #ff4444; }
-        .output-info { color: #00aaff; }
-        .output-warning { color: #ffaa00; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab {
-            padding: 10px 20px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            border-radius: 5px;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .tab.active { background: #e94560; }
-        .tab:hover { background: rgba(233,69,96,0.5); }
-        .hidden { display: none; }
-        .hash-input {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        .info-box {
-            background: rgba(233, 69, 96, 0.1);
-            border: 1px solid #e94560;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .info-box h3 { color: #e94560; margin-bottom: 10px; }
-        .info-box ul { margin-left: 20px; }
-        .info-box li { margin: 5px 0; color: #aaa; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎫 Kerberos Ticket Attack Module</h1>
-            <p>Golden Ticket & Silver Ticket Automation with LLM-Powered Hash Detection</p>
+{% extends "base.html" %}
+{% block body %}
+<div class="main-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="logo-text">SHADOW<span class="accent">ARSENAL</span></span>
+            </div>
         </div>
-
-        <div class="info-box">
-            <h3>📋 How to Use</h3>
-            <ul>
-                <li><strong>Golden Ticket:</strong> Requires KRBTGT hash to forge TGT for Domain Admin access</li>
-                <li><strong>Silver Ticket:</strong> Requires service account hash for specific service access</li>
-                <li><strong>LLM Detection:</strong> Automatically analyzes if hash is KRBTGT</li>
-                <li><strong>Target:</strong> Use forged ticket with PsExec/WmiExec for lateral movement</li>
-            </ul>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>DASHBOARD</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/scans" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span>SCANS</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/kerberos" class="nav-link active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0110 0v4"/>
+                    </svg>
+                    <span>KERBEROS</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/decentralized" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <circle cx="12" cy="4" r="2"/>
+                        <circle cx="20" cy="12" r="2"/>
+                        <circle cx="12" cy="20" r="2"/>
+                        <circle cx="4" cy="12" r="2"/>
+                        <line x1="12" y1="6" x2="12" y2="10"/>
+                        <line x1="12" y1="14" x2="12" y2="18"/>
+                        <line x1="18" y1="12" x2="22" y2="12"/>
+                        <line x1="6" y1="12" x2="2" y2="12"/>
+                    </svg>
+                    <span>DECENTRALIZED</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/c2" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3H6a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3V6a3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3h12a3 3 0 003-3 3 3 0 00-3-3z"/>
+                    </svg>
+                    <span>C2 IMPLANT</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/infra" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                    <span>INFRASTRUCTURE</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/exploit" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    <span>EXPLOIT</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/phishing" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    <span>PHISHING</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/opsec" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <span>OPSEC</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/payloads" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                    <span>PAYLOADS</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/autoexploit" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"/>
+                        <polyline points="8 6 2 12 8 18"/>
+                    </svg>
+                    <span>AUTOEXPLOIT</span>
+                </a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="status-indicator online">
+                <span class="status-dot"></span>
+                <span>SYSTEM ONLINE</span>
+            </div>
         </div>
+    </nav>
 
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('golden')">🥇 Golden Ticket</button>
-            <button class="tab" onclick="showTab('silver')">🥈 Silver Ticket</button>
-            <button class="tab" onclick="showTab('analyze')">🔍 Hash Analyzer</button>
-        </div>
+    <!-- Main Content -->
+    <main class="content-area">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span>KERBEROS TICKET ATTACK</span>
+                    </h1>
+                    <p class="page-subtitle">Golden Ticket & Silver Ticket Automation with LLM-Powered Hash Detection</p>
+                </div>
+                <div class="header-right">
+                    <div class="quick-stats">
+                        <div class="quick-stat">
+                            <span class="stat-value" id="ticketsCreated">0</span>
+                            <span class="stat-label">Tickets Created</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-        <div class="grid">
-            <div class="card">
+        <!-- Info Banner -->
+        <section class="info-banner">
+            <div class="info-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+            </div>
+            <div class="info-content">
+                <h3>How to Use</h3>
+                <div class="info-items">
+                    <div class="info-item">
+                        <span class="badge gold">Golden Ticket</span>
+                        <span>Requires KRBTGT hash to forge TGT for Domain Admin access</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="badge silver">Silver Ticket</span>
+                        <span>Requires service account hash for specific service access</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="badge blue">LLM Detection</span>
+                        <span>Automatically analyzes if hash is KRBTGT or service account</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <section class="tabs-section">
+            <div class="tabs-nav">
+                <button class="tab-btn active" data-tab="golden">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span>Golden Ticket</span>
+                </button>
+                <button class="tab-btn silver" data-tab="silver">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span>Silver Ticket</span>
+                </button>
+                <button class="tab-btn blue" data-tab="analyze">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span>Hash Analyzer</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Forms Column -->
+            <div class="forms-column">
                 <!-- Golden Ticket Form -->
-                <div id="golden-form">
-                    <h2>🥇 Forge Golden Ticket</h2>
-                    <div class="form-group">
-                        <label>KRBTGT Hash (user:id:lm:nt format)</label>
-                        <input type="text" id="golden-hash" class="hash-input" 
-                               placeholder="krbtgt:502:aad3b435b51404ee:8846f7ea...">
+                <div class="form-panel" id="golden-panel">
+                    <div class="panel-header gold">
+                        <div class="panel-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        <div class="panel-title">
+                            <h2>Forge Golden Ticket</h2>
+                            <p>Create forged Ticket Granting Ticket using KRBTGT hash</p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Domain</label>
-                        <input type="text" id="golden-domain" placeholder="CORP.LOCAL">
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                                </svg>
+                                KRBTGT Hash (user:id:lm:nt format)
+                            </label>
+                            <input type="text" id="golden-hash" class="form-input hash-input" 
+                                   placeholder="krbtgt:502:aad3b435b51404ee:8846f7ea...">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="2" y1="12" x2="22" y2="12"/>
+                                        <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                                    </svg>
+                                    Domain
+                                </label>
+                                <input type="text" id="golden-domain" class="form-input" placeholder="CORP.LOCAL">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                    </svg>
+                                    Domain SID (Optional)
+                                </label>
+                                <input type="text" id="golden-sid" class="form-input" placeholder="S-1-5-21-xxx-xxx-xxx">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                Target User
+                            </label>
+                            <input type="text" id="golden-user" class="form-input" value="Administrator" placeholder="Administrator">
+                        </div>
+                        
+                        <button class="btn-submit gold" onclick="forgeGoldenTicket()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Forge Golden Ticket
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Domain SID</label>
-                        <input type="text" id="golden-sid" placeholder="S-1-5-21-xxx-xxx-xxx">
-                    </div>
-                    <div class="form-group">
-                        <label>Target User</label>
-                        <input type="text" id="golden-user" value="Administrator">
-                    </div>
-                    <button class="btn btn-golden" onclick="forgeGoldenTicket()">
-                        🎫 Forge Golden Ticket
-                    </button>
                 </div>
 
                 <!-- Silver Ticket Form -->
-                <div id="silver-form" class="hidden">
-                    <h2>🥈 Forge Silver Ticket</h2>
-                    <div class="form-group">
-                        <label>Service Hash (user:id:lm:nt format)</label>
-                        <input type="text" id="silver-hash" class="hash-input" 
-                               placeholder="service:1001:aad3b435b51404ee:nt_hash...">
+                <div class="form-panel hidden" id="silver-panel">
+                    <div class="panel-header silver">
+                        <div class="panel-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        <div class="panel-title">
+                            <h2>Forge Silver Ticket</h2>
+                            <p>Create forged service ticket using service account hash</p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Domain</label>
-                        <input type="text" id="silver-domain" placeholder="CORP.LOCAL">
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                                </svg>
+                                Service Hash (user:id:lm:nt format)
+                            </label>
+                            <input type="text" id="silver-hash" class="form-input silver hash-input" 
+                                   placeholder="service:1001:aad3b435b51404ee:nt_hash...">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="2" y1="12" x2="22" y2="12"/>
+                                        <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                                    </svg>
+                                    Domain
+                                </label>
+                                <input type="text" id="silver-domain" class="form-input silver" placeholder="CORP.LOCAL">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="8" rx="2"/>
+                                        <rect x="2" y="14" width="20" height="8" rx="2"/>
+                                    </svg>
+                                    Service Type
+                                </label>
+                                <select id="silver-service" class="form-input silver">
+                                    <option value="cifs">CIFS (SMB/File Share)</option>
+                                    <option value="ldap">LDAP (Directory)</option>
+                                    <option value="host">HOST (Host Access)</option>
+                                    <option value="http">HTTP (Web)</option>
+                                    <option value="mssql">MSSQL (SQL Server)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="2" width="20" height="8" rx="2"/>
+                                    <rect x="2" y="14" width="20" height="8" rx="2"/>
+                                    <line x1="6" y1="6" x2="6.01" y2="6"/>
+                                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                                </svg>
+                                Target Host
+                            </label>
+                            <input type="text" id="silver-host" class="form-input silver" placeholder="DC1.corp.local">
+                        </div>
+                        
+                        <button class="btn-submit silver" onclick="forgeSilverTicket()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Forge Silver Ticket
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Service Type</label>
-                        <select id="silver-service">
-                            <option value="cifs">CIFS (SMB/File Share)</option>
-                            <option value="ldap">LDAP (Directory)</option>
-                            <option value="host">HOST (Host Access)</option>
-                            <option value="http">HTTP (Web)</option>
-                            <option value="mssql">MSSQL (SQL Server)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Target Host</label>
-                        <input type="text" id="silver-host" placeholder="DC1">
-                    </div>
-                    <button class="btn btn-silver" onclick="forgeSilverTicket()">
-                        🎫 Forge Silver Ticket
-                    </button>
                 </div>
 
                 <!-- Hash Analyzer Form -->
-                <div id="analyze-form" class="hidden">
-                    <h2>🔍 LLM-Powered Hash Analyzer</h2>
-                    <div class="form-group">
-                        <label>Hash to Analyze</label>
-                        <input type="text" id="analyze-hash" class="hash-input" 
-                               placeholder="Paste any hash here...">
+                <div class="form-panel hidden" id="analyze-panel">
+                    <div class="panel-header blue">
+                        <div class="panel-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                        </div>
+                        <div class="panel-title">
+                            <h2>LLM-Powered Hash Analyzer</h2>
+                            <p>Automatically detect hash type using AI analysis</p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Additional Context (optional)</label>
-                        <input type="text" id="analyze-context" 
-                               placeholder="e.g., Domain: CORP.LOCAL">
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                                Hash to Analyze
+                            </label>
+                            <input type="text" id="analyze-hash" class="form-input blue hash-input" 
+                                   placeholder="Paste any hash here...">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                </svg>
+                                Additional Context (optional)
+                            </label>
+                            <input type="text" id="analyze-context" class="form-input blue" 
+                                   placeholder="e.g., Domain: CORP.LOCAL">
+                        </div>
+                        
+                        <button class="btn-submit blue" onclick="analyzeHash()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            Analyze Hash
+                        </button>
                     </div>
-                    <button class="btn" style="background: linear-gradient(135deg, #00aaff, #0066ff);" 
-                            onclick="analyzeHash()">
-                        🔍 Analyze Hash
-                    </button>
                 </div>
             </div>
 
-            <div class="card">
-                <h2>📊 Output & Results</h2>
-                <div class="output" id="output">
-                    <div class="output-line output-info">[*] Kerberos Ticket Module Ready</div>
-                    <div class="output-line output-info">[*] Select a ticket type to begin</div>
-                    <div class="output-line output-info">[*] Requires Impacket ticketer.py</div>
+            <!-- Terminal Column -->
+            <div class="terminal-column">
+                <div class="terminal-panel">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="terminal-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="4 17 10 11 4 5"/>
+                                <line x1="12" y1="19" x2="20" y2="19"/>
+                            </svg>
+                            <span>Output & Results</span>
+                        </div>
+                        <button class="btn-clear" id="clearTerminal" title="Clear Terminal">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18"/>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="terminal-body" id="terminal">
+                        <div class="terminal-content" id="terminal-content">
+                            <div class="terminal-line info">
+                                <span class="prompt">[*]</span>
+                                <span>Kerberos Ticket Module Ready</span>
+                            </div>
+                            <div class="terminal-line info">
+                                <span class="prompt">[*]</span>
+                                <span>Select a ticket type to begin</span>
+                            </div>
+                            <div class="terminal-line info">
+                                <span class="prompt">[*]</span>
+                                <span>Requires Impacket ticketer.py</span>
+                            </div>
+                            <div class="terminal-divider"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
+</div>
 
-    <script>
-        let currentTab = 'golden';
+<script>
+    let currentTab = 'golden';
+    let ticketsCreated = 0;
 
-        function showTab(tab) {
-            currentTab = tab;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tab switching
+        initTabs();
+        
+        // Initialize terminal clear
+        document.getElementById('clearTerminal').addEventListener('click', clearTerminal);
+    });
+
+    function initTabs() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tab = this.dataset.tab;
+                
+                // Update tab buttons
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show/hide panels
+                document.querySelectorAll('.form-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                
+                const panel = document.getElementById(tab + '-panel');
+                panel.classList.remove('hidden');
+                
+                // Trigger animation
+                panel.style.animation = 'none';
+                panel.offsetHeight;
+                panel.style.animation = 'fadeIn 0.5s ease forwards';
+                
+                // Log tab switch
+                log('─'.repeat(50), 'dim');
+                log(`[*] Switched to ${tab.toUpperCase()} Ticket mode`, 'info');
+            });
+        });
+    }
+
+    function log(message, type = 'info') {
+        const terminal = document.getElementById('terminal-content');
+        const div = document.createElement('div');
+        div.className = `terminal-line ${type}`;
+        
+        if (type === 'dim') {
+            div.innerHTML = `<span class="divider">${message}</span>`;
+        } else {
+            const prefix = getPrefix(type);
+            div.innerHTML = `<span class="prompt">${prefix}</span><span>${message}</span>`;
+        }
+        
+        terminal.appendChild(div);
+        
+        const terminalEl = document.getElementById('terminal');
+        terminalEl.scrollTop = terminalEl.scrollHeight;
+    }
+
+    function getPrefix(type) {
+        const prefixes = {
+            success: '[+]',
+            error: '[!]',
+            warning: '[*]',
+            info: '[*]',
+            gold: '[#]',
+            silver: '[$]'
+        };
+        return prefixes[type] || '[*]';
+    }
+
+    function logJSON(data, prefix = '[*]') {
+        const terminal = document.getElementById('terminal-content');
+        const pre = document.createElement('pre');
+        pre.className = 'json-output';
+        pre.textContent = prefix + ' ' + JSON.stringify(data, null, 2);
+        terminal.appendChild(pre);
+        
+        const terminalEl = document.getElementById('terminal');
+        terminalEl.scrollTop = terminalEl.scrollHeight;
+    }
+
+    function clearTerminal() {
+        const content = document.getElementById('terminal-content');
+        content.innerHTML = `
+            <div class="terminal-line info">
+                <span class="prompt">[*]</span>
+                <span>Terminal cleared</span>
+            </div>
+            <div class="terminal-line info">
+                <span class="prompt">[*]</span>
+                <span>Ready for new commands</span>
+            </div>
+            <div class="terminal-divider"></div>
+        `;
+    }
+
+    function setLoading(button, loading) {
+        if (loading) {
+            button.disabled = true;
+            button.dataset.originalText = button.innerHTML;
+            button.innerHTML = `
+                <svg class="spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+                Processing...
+            `;
+        } else {
+            button.disabled = false;
+            button.innerHTML = button.dataset.originalText;
+        }
+    }
+
+    async function forgeGoldenTicket() {
+        const hash = document.getElementById('golden-hash').value.trim();
+        const domain = document.getElementById('golden-domain').value.trim();
+        const sid = document.getElementById('golden-sid').value.trim();
+        const user = document.getElementById('golden-user').value.trim() || 'Administrator';
+        const btn = document.querySelector('#golden-panel .btn-submit');
+
+        if (!hash || !domain) {
+            log('[!] ERROR: Please fill in hash and domain', 'error');
+            return;
+        }
+
+        log('═'.repeat(50), 'gold');
+        log('[*] Initiating Golden Ticket attack...', 'info');
+        log(`[*] Domain: ${domain}`, 'info');
+        log(`[*] User: ${user}`, 'info');
+        log(`[*] Hash: ${hash.substring(0, 40)}...`, 'info');
+        log('─'.repeat(50), 'dim');
+
+        setLoading(btn, true);
+
+        try {
+            const response = await fetch('/api/kerberos/golden', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    hash: hash,
+                    domain: domain,
+                    domain_sid: sid,
+                    target_user: user
+                })
+            });
+
+            const data = await response.json();
             
-            document.getElementById('golden-form').classList.add('hidden');
-            document.getElementById('silver-form').classList.add('hidden');
-            document.getElementById('analyze-form').classList.add('hidden');
+            setLoading(btn, false);
+
+            if (data.status === 'success') {
+                log('[+] SUCCESS: Golden Ticket Forged!', 'success');
+                log(`[*] Ticket File: ${data.ticket_file}`, 'info');
+                log(`[*] Valid Until: ${data.valid_until}`, 'info');
+                log(`[*] Lifetime: ${data.lifetime}`, 'info');
+                log('─'.repeat(50), 'dim');
+                log('[*] Usage commands:', 'info');
+                data.commands.forEach(cmd => {
+                    log(`  $ ${cmd}`, 'gold');
+                });
+                
+                // Increment counter
+                ticketsCreated++;
+                document.getElementById('ticketsCreated').textContent = ticketsCreated;
+            } else {
+                log(`[!] FAILED: ${data.error}`, 'error');
+            }
+        } catch (e) {
+            setLoading(btn, false);
+            log(`[!] ERROR: ${e.message}`, 'error');
+        }
+    }
+
+    async function forgeSilverTicket() {
+        const hash = document.getElementById('silver-hash').value.trim();
+        const domain = document.getElementById('silver-domain').value.trim();
+        const service = document.getElementById('silver-service').value;
+        const host = document.getElementById('silver-host').value.trim();
+        const btn = document.querySelector('#silver-panel .btn-submit');
+
+        if (!hash || !domain || !host) {
+            log('[!] ERROR: Please fill in all fields', 'error');
+            return;
+        }
+
+        log('═'.repeat(50), 'silver');
+        log('[*] Initiating Silver Ticket attack...', 'info');
+        log(`[*] Domain: ${domain}`, 'info');
+        log(`[*] Service: ${service}/${host}`, 'info');
+        log(`[*] Hash: ${hash.substring(0, 40)}...`, 'info');
+        log('─'.repeat(50), 'dim');
+
+        setLoading(btn, true);
+
+        try {
+            const response = await fetch('/api/kerberos/silver', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    hash: hash,
+                    domain: domain,
+                    service: service,
+                    target_host: host
+                })
+            });
+
+            const data = await response.json();
             
-            document.getElementById(tab + '-form').classList.remove('hidden');
-        }
+            setLoading(btn, false);
 
-        function log(message, type = 'info') {
-            const output = document.getElementById('output');
-            const div = document.createElement('div');
-            div.className = `output-line output-${type}`;
-            div.textContent = message;
-            output.appendChild(div);
-            output.scrollTop = output.scrollHeight;
-        }
-
-        function logJSON(data, prefix = '') {
-            const output = document.getElementById('output');
-            const pre = document.createElement('pre');
-            pre.style.cssText = 'color: #888; margin: 5px 0; font-size: 11px;';
-            pre.textContent = prefix + JSON.stringify(data, null, 2);
-            output.appendChild(pre);
-            output.scrollTop = output.scrollHeight;
-        }
-
-        async function forgeGoldenTicket() {
-            const hash = document.getElementById('golden-hash').value.trim();
-            const domain = document.getElementById('golden-domain').value.trim();
-            const sid = document.getElementById('golden-sid').value.trim();
-            const user = document.getElementById('golden-user').value.trim() || 'Administrator';
-
-            if (!hash || !domain) {
-                log('[!] Please fill in hash and domain', 'error');
-                return;
-            }
-
-            log('='.repeat(50));
-            log('[*] Forging Golden Ticket...', 'info');
-            log(`[*] Domain: ${domain}`);
-            log(`[*] User: ${user}`);
-            log(`[*] Hash: ${hash.substring(0, 40)}...`);
-
-            try {
-                const response = await fetch('/api/kerberos/golden', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        hash: hash,
-                        domain: domain,
-                        domain_sid: sid,
-                        target_user: user
-                    })
+            if (data.status === 'success') {
+                log('[+] SUCCESS: Silver Ticket Forged!', 'success');
+                log(`[*] SPN: ${data.spn}`, 'info');
+                log(`[*] Ticket File: ${data.ticket_file}`, 'info');
+                log(`[*] Valid Until: ${data.valid_until}`, 'info');
+                log('─'.repeat(50), 'dim');
+                log('[*] Usage:', 'info');
+                data.commands.forEach(cmd => {
+                    log(`  $ ${cmd}`, 'silver');
                 });
-
-                const data = await response.json();
                 
-                if (data.status === 'success') {
-                    log('[+] Golden Ticket Forged Successfully!', 'success');
-                    log(`[*] Ticket File: ${data.ticket_file}`, 'info');
-                    log(`[*] Valid Until: ${data.valid_until}`, 'info');
-                    log(`[*] Commands: ${data.commands.join(' && ')}`, 'info');
-                    
-                    if (data.auto_psexec) {
-                        log('[*] Executing with PsExec...', 'info');
-                        // Additional call to execute
-                    }
-                } else {
-                    log(`[!] Failed: ${data.error}`, 'error');
-                }
-            } catch (e) {
-                log(`[!] Error: ${e.message}`, 'error');
+                // Increment counter
+                ticketsCreated++;
+                document.getElementById('ticketsCreated').textContent = ticketsCreated;
+            } else {
+                log(`[!] FAILED: ${data.error}`, 'error');
             }
+        } catch (e) {
+            setLoading(btn, false);
+            log(`[!] ERROR: ${e.message}`, 'error');
+        }
+    }
+
+    async function analyzeHash() {
+        const hash = document.getElementById('analyze-hash').value.trim();
+        const context = document.getElementById('analyze-context').value.trim();
+        const btn = document.querySelector('#analyze-panel .btn-submit');
+
+        if (!hash) {
+            log('[!] ERROR: Please enter a hash to analyze', 'error');
+            return;
         }
 
-        async function forgeSilverTicket() {
-            const hash = document.getElementById('silver-hash').value.trim();
-            const domain = document.getElementById('silver-domain').value.trim();
-            const service = document.getElementById('silver-service').value;
-            const host = document.getElementById('silver-host').value.trim();
+        log('═'.repeat(50), 'info');
+        log('[*] Analyzing hash with LLM...', 'info');
+        log(`[*] Hash: ${hash.substring(0, 40)}...`, 'info');
+        log('─'.repeat(50), 'dim');
 
-            if (!hash || !domain || !host) {
-                log('[!] Please fill in all fields', 'error');
-                return;
+        setLoading(btn, true);
+
+        try {
+            const response = await fetch('/api/kerberos/analyze', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    hash: hash,
+                    context: context
+                })
+            });
+
+            const data = await response.json();
+            
+            setLoading(btn, false);
+
+            log('[+] Analysis Complete', 'success');
+            logJSON(data, '[*]');
+            log('─'.repeat(50), 'dim');
+
+            if (data.is_krbtgt) {
+                log('KRBTGT HASH DETECTED!', 'warning');
+                log('[*] Recommended: Use Golden Ticket attack', 'info');
+                log('[*] Target user will have Domain Admin rights', 'info');
+            } else if (data.is_service) {
+                log('SERVICE ACCOUNT HASH DETECTED!', 'warning');
+                log('[*] Recommended: Use Silver Ticket attack', 'info');
+                log(`[*] Service: ${data.service_type}`, 'info');
+            } else {
+                log('[?] Unknown hash type', 'warning');
+                log('[*] Please verify hash format manually', 'info');
             }
-
-            log('='.repeat(50));
-            log('[*] Forging Silver Ticket...', 'info');
-            log(`[*] Domain: ${domain}`);
-            log(`[*] Service: ${service}/${host}`);
-            log(`[*] Hash: ${hash.substring(0, 40)}...`);
-
-            try {
-                const response = await fetch('/api/kerberos/silver', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        hash: hash,
-                        domain: domain,
-                        service: service,
-                        target_host: host
-                    })
-                });
-
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    log('[+] Silver Ticket Forged Successfully!', 'success');
-                    log(`[*] SPN: ${data.spn}`, 'info');
-                    log(`[*] Ticket File: ${data.ticket_file}`, 'info');
-                } else {
-                    log(`[!] Failed: ${data.error}`, 'error');
-                }
-            } catch (e) {
-                log(`[!] Error: ${e.message}`, 'error');
-            }
+        } catch (e) {
+            setLoading(btn, false);
+            log(`[!] ERROR: ${e.message}`, 'error');
         }
+    }
+</script>
 
-        async function analyzeHash() {
-            const hash = document.getElementById('analyze-hash').value.trim();
-            const context = document.getElementById('analyze-context').value.trim();
+<style>
+    /* Main container */
+    .main-container {
+        display: flex;
+        min-height: 100vh;
+    }
 
-            if (!hash) {
-                log('[!] Please enter a hash to analyze', 'error');
-                return;
-            }
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        background: rgba(15, 15, 25, 0.95);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        height: 100vh;
+        z-index: 100;
+    }
 
-            log('='.repeat(50));
-            log('[*] Analyzing hash with LLM...', 'info');
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
 
-            try {
-                const response = await fetch('/api/kerberos/analyze', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        hash: hash,
-                        context: context
-                    })
-                });
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+    }
 
-                const data = await response.json();
-                
-                log('[+] Analysis Complete:', 'success');
-                logJSON(data, '[*] ');
-                
-                if (data.is_krbtgt) {
-                    log('🎯 KRBTGT hash detected! Use Golden Ticket attack.', 'warning');
-                } else if (data.is_service) {
-                    log('🎯 Service account hash detected! Use Silver Ticket attack.', 'warning');
-                }
-            } catch (e) {
-                log(`[!] Error: ${e.message}`, 'error');
-            }
+    .logo svg {
+        width: 32px;
+        height: 32px;
+        color: #00ff88;
+    }
+
+    .logo-text {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 2px;
+    }
+
+    .logo-text .accent {
+        color: #00ff88;
+    }
+
+    .nav-menu {
+        list-style: none;
+        padding: 15px 10px;
+        margin: 0;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .nav-item {
+        margin-bottom: 5px;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .nav-link.active {
+        background: rgba(255, 215, 0, 0.1);
+        color: #ffd700;
+    }
+
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #666;
+    }
+
+    .status-indicator.online .status-dot {
+        background: #00ff88;
+        box-shadow: 0 0 10px #00ff88;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Content Area */
+    .content-area {
+        flex: 1;
+        margin-left: 260px;
+        padding: 30px;
+        background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%);
+        min-height: 100vh;
+    }
+
+    /* Page Header */
+    .page-header {
+        margin-bottom: 25px;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .page-title {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 8px 0;
+        letter-spacing: 1px;
+    }
+
+    .page-title svg {
+        width: 28px;
+        height: 28px;
+        color: #ffd700;
+    }
+
+    .page-subtitle {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 13px;
+        margin: 0 0 0 43px;
+        letter-spacing: 0.5px;
+    }
+
+    .quick-stats {
+        display: flex;
+        gap: 20px;
+    }
+
+    .quick-stat {
+        text-align: center;
+        padding: 15px 25px;
+        background: rgba(255, 215, 0, 0.05);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 10px;
+    }
+
+    .quick-stat .stat-value {
+        display: block;
+        font-size: 28px;
+        font-weight: 700;
+        color: #ffd700;
+    }
+
+    .quick-stat .stat-label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Info Banner */
+    .info-banner {
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+        background: rgba(255, 215, 0, 0.05);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 12px;
+        margin-bottom: 25px;
+    }
+
+    .info-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 215, 0, 0.1);
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    .info-icon svg {
+        width: 24px;
+        height: 24px;
+        color: #ffd700;
+    }
+
+    .info-content {
+        flex: 1;
+    }
+
+    .info-content h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #ffd700;
+        margin: 0 0 12px 0;
+    }
+
+    .info-items {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .info-item .badge {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+
+    .info-item .badge.gold {
+        background: rgba(255, 215, 0, 0.2);
+        color: #ffd700;
+        border: 1px solid rgba(255, 215, 0, 0.4);
+    }
+
+    .info-item .badge.silver {
+        background: rgba(192, 192, 192, 0.2);
+        color: #c0c0c0;
+        border: 1px solid rgba(192, 192, 192, 0.4);
+    }
+
+    .info-item .badge.blue {
+        background: rgba(0, 212, 255, 0.2);
+        color: #00d4ff;
+        border: 1px solid rgba(0, 212, 255, 0.4);
+    }
+
+    /* Tabs */
+    .tabs-section {
+        margin-bottom: 25px;
+    }
+
+    .tabs-nav {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .tab-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .tab-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .tab-btn.active {
+        background: rgba(255, 215, 0, 0.1);
+        border-color: rgba(255, 215, 0, 0.4);
+        color: #ffd700;
+    }
+
+    .tab-btn.active.gold {
+        background: rgba(255, 215, 0, 0.1);
+        border-color: rgba(255, 215, 0, 0.4);
+        color: #ffd700;
+    }
+
+    .tab-btn.active.silver {
+        background: rgba(192, 192, 192, 0.1);
+        border-color: rgba(192, 192, 192, 0.4);
+        color: #c0c0c0;
+    }
+
+    .tab-btn.active.blue {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.4);
+        color: #00d4ff;
+    }
+
+    /* Content Grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+
+    /* Form Panel */
+    .form-panel {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .form-panel:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .panel-header.gold {
+        background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
+        border-bottom-color: rgba(255, 215, 0, 0.2);
+    }
+
+    .panel-header.silver {
+        background: linear-gradient(90deg, rgba(192, 192, 192, 0.1) 0%, transparent 100%);
+        border-bottom-color: rgba(192, 192, 192, 0.2);
+    }
+
+    .panel-header.blue {
+        background: linear-gradient(90deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%);
+        border-bottom-color: rgba(0, 212, 255, 0.2);
+    }
+
+    .panel-icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    .panel-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .panel-header.gold .panel-icon {
+        background: rgba(255, 215, 0, 0.1);
+        color: #ffd700;
+    }
+
+    .panel-header.silver .panel-icon {
+        background: rgba(192, 192, 192, 0.1);
+        color: #c0c0c0;
+    }
+
+    .panel-header.blue .panel-icon {
+        background: rgba(0, 212, 255, 0.1);
+        color: #00d4ff;
+    }
+
+    .panel-title h2 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        margin: 0 0 4px 0;
+    }
+
+    .panel-header.gold .panel-title h2 {
+        color: #ffd700;
+    }
+
+    .panel-header.silver .panel-title h2 {
+        color: #c0c0c0;
+    }
+
+    .panel-header.blue .panel-title h2 {
+        color: #00d4ff;
+    }
+
+    .panel-title p {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        margin: 0;
+    }
+
+    .panel-body {
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 8px;
+    }
+
+    .form-label svg {
+        width: 14px;
+        height: 14px;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 13px;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: rgba(255, 215, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    }
+
+    .form-input.silver {
+        border-color: rgba(192, 192, 192, 0.3);
+    }
+
+    .form-input.silver:focus {
+        border-color: rgba(192, 192, 192, 0.5);
+        box-shadow: 0 0 15px rgba(192, 192, 192, 0.1);
+    }
+
+    .form-input.blue {
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .form-input.blue:focus {
+        border-color: rgba(0, 212, 255, 0.5);
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+    }
+
+    .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    .form-input.hash-input {
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .btn-submit {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-submit svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .btn-submit.gold {
+        background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+        color: #000;
+    }
+
+    .btn-submit.gold:hover {
+        box-shadow: 0 5px 25px rgba(255, 215, 0, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-submit.silver {
+        background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+        color: #000;
+    }
+
+    .btn-submit.silver:hover {
+        box-shadow: 0 5px 25px rgba(192, 192, 192, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-submit.blue {
+        background: linear-gradient(135deg, #00d4ff 0%, #0066ff 100%);
+        color: #fff;
+    }
+
+    .btn-submit.blue:hover {
+        box-shadow: 0 5px 25px rgba(0, 212, 255, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    /* Terminal */
+    .terminal-panel {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        overflow: hidden;
+        position: sticky;
+        top: 30px;
+    }
+
+    .terminal-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .terminal-dots {
+        display: flex;
+        gap: 6px;
+    }
+
+    .terminal-dots .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .terminal-dots .dot.red {
+        background: #ff5f56;
+    }
+
+    .terminal-dots .dot.yellow {
+        background: #ffbd2e;
+    }
+
+    .terminal-dots .dot.green {
+        background: #27ca40;
+    }
+
+    .terminal-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .terminal-title svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .btn-clear {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-clear:hover {
+        background: rgba(255, 71, 87, 0.2);
+        border-color: rgba(255, 71, 87, 0.3);
+        color: #ff4757;
+    }
+
+    .btn-clear svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .terminal-body {
+        background: rgba(0, 0, 0, 0.5);
+        min-height: 400px;
+        max-height: 600px;
+        overflow-y: auto;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 12px;
+    }
+
+    .terminal-content {
+        padding: 15px;
+    }
+
+    .terminal-line {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 4px;
+        line-height: 1.5;
+    }
+
+    .terminal-line.info .prompt {
+        color: #00d4ff;
+    }
+
+    .terminal-line.success .prompt {
+        color: #00ff88;
+    }
+
+    .terminal-line.error .prompt {
+        color: #ff4757;
+    }
+
+    .terminal-line.warning .prompt {
+        color: #ffa502;
+    }
+
+    .terminal-line.gold .prompt {
+        color: #ffd700;
+    }
+
+    .terminal-line.silver .prompt {
+        color: #c0c0c0;
+    }
+
+    .terminal-line .divider {
+        color: rgba(255, 255, 255, 0.2);
+        letter-spacing: 2px;
+    }
+
+    .terminal-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 10px 0;
+    }
+
+    .json-output {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 10px;
+        border-radius: 5px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 11px;
+        overflow-x: auto;
+        margin: 10px 0;
+    }
+
+    .spinning {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease forwards;
+        opacity: 0;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
         }
-    </script>
-</body>
-</html>
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .terminal-panel {
+            position: static;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .sidebar {
+            width: 70px;
+        }
+        
+        .sidebar-header {
+            padding: 15px;
+        }
+        
+        .logo-text,
+        .nav-link span,
+        .status-indicator span:not(.status-dot) {
+            display: none;
+        }
+        
+        .nav-link {
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        .content-area {
+            margin-left: 70px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .header-content {
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .quick-stats {
+            width: 100%;
+        }
+        
+        .quick-stat {
+            flex: 1;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .info-banner {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .info-items {
+            text-align: left;
+        }
+    }
+</style>
+{% endblock %}

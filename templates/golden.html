@@ -1,71 +1,1467 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Auto Exploit Console</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body style="background:#111; color:#0f0; font-family:monospace;">
-    <h1>🚀 Prof.Attack-Tool - Exploit Chaining Console</h1>
-    {% if not engine_available %}
-    <div style="border:1px solid #f00; color:#f00; padding:10px; margin-bottom:10px;">
-        Auto-exploit engine unavailable. Check Metasploit RPC/pymetasploit3 setup.
-    </div>
-    {% endif %}
-    <input type="text" id="lhost" placeholder="LHOST (tun0 IP)" value="10.10.10.10">
-    <button onclick="refreshSessions()">Refresh Sessions</button>
-    <hr>
-    <div id="sessions"></div>
+{% extends "base.html" %}
+{% block head %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --primary-dim: #00ff8840;
+            --danger: #ff3366;
+            --danger-dim: #ff336640;
+            --warning: #ffaa00;
+            --warning-dim: #ffaa0040;
+            --info: #00aaff;
+            --info-dim: #00aaff40;
+            --gold: #ffd700;
+            --gold-dim: #ffd70040;
+            --bg-dark: #0a0a12;
+            --bg-card: rgba(15, 15, 25, 0.95);
+            --bg-card-hover: rgba(25, 25, 40, 0.98);
+            --border-glow: rgba(0, 255, 136, 0.3);
+            --text-primary: #e0e0e0;
+            --text-muted: #888;
+        }
+        
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        *::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #0d0d1a 50%, #1a1a2e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 51, 102, 0.02) 0%, transparent 50%);
+            animation: bgPulse 15s ease-in-out infinite;
+        }
+        
+        @keyframes bgPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+        }
+        
+        /* Navbar */
+        .cyber-navbar {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 10, 20, 0.95) 50%, rgba(0, 0, 0, 0.9) 100%);
+            border-bottom: 2px solid var(--gold);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .navbar-brand {
+            background: linear-gradient(90deg, var(--gold), #ffed4a, var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+        
+        /* Cards */
+        .cyber-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 15px;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        
+        .cyber-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(255, 215, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .card-header-custom {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            padding: 15px 20px;
+        }
+        
+        .card-title-gold {
+            color: var(--gold);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title-gold i {
+            font-size: 1.3em;
+        }
+        
+        /* Form Elements */
+        .form-control-cyber {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control-cyber:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        .form-control-cyber::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .form-label-cyber {
+            color: var(--gold);
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-label-cyber::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--gold);
+            border-radius: 2px;
+        }
+        
+        /* Buttons */
+        .btn-cyber-gold {
+            background: linear-gradient(135deg, var(--gold) 0%, #ff9500 100%);
+            border: none;
+            color: #000;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            padding: 15px 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        .btn-cyber-gold::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-cyber-gold:hover::before {
+            left: 100%;
+        }
+        
+        .btn-cyber-gold:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.6);
+        }
+        
+        .btn-cyber-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #cc0033 100%);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 10px;
+            padding: 15px 30px;
+            box-shadow: 0 5px 20px rgba(255, 51, 102, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-cyber-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.6);
+        }
+        
+        .btn-cyber-success {
+            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%);
+            border: none;
+            color: #000;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            padding: 18px 35px;
+            font-size: 1.1em;
+            box-shadow: 0 5px 25px rgba(0, 255, 136, 0.4);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-cyber-success::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn-cyber-success:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-cyber-success:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 50px rgba(0, 255, 136, 0.6);
+        }
+        
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 30px 0;
+        }
+        
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 25px;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 0;
+        }
+        
+        .progress-line {
+            position: absolute;
+            top: 25px;
+            left: 10%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--primary));
+            z-index: 1;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--primary);
+        }
+        
+        .step-item {
+            text-align: center;
+            flex: 1;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .step-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 1.3em;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        
+        .step-item.active .step-icon {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.1);
+            animation: pulseStep 2s infinite;
+        }
+        
+        .step-item.success .step-icon {
+            border-color: var(--primary);
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        
+        .step-item.error .step-icon {
+            border-color: var(--danger);
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--danger);
+        }
+        
+        @keyframes pulseStep {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .step-label {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .step-item.active .step-label,
+        .step-item.success .step-label {
+            color: var(--text-primary);
+        }
+        
+        /* Status Badge */
+        .status-badge-cyber {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .status-badge-cyber::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 10s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .status-pending {
+            background: rgba(255, 170, 0, 0.15);
+            border: 2px solid var(--warning);
+            color: var(--warning);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+        }
+        
+        .status-processing {
+            background: rgba(0, 170, 255, 0.15);
+            border: 2px solid var(--info);
+            color: var(--info);
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.3);
+            animation: statusPulse 1.5s infinite;
+        }
+        
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 170, 255, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 170, 255, 0.5); }
+        }
+        
+        .status-success {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 200, 100, 0.2) 100%);
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5), inset 0 0 30px rgba(0, 255, 136, 0.1);
+            animation: successGlow 2s infinite;
+        }
+        
+        @keyframes successGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.5); }
+            50% { box-shadow: 0 0 60px rgba(0, 255, 136, 0.8), 0 0 100px rgba(0, 255, 136, 0.4); }
+        }
+        
+        .status-failed {
+            background: rgba(255, 51, 102, 0.15);
+            border: 2px solid var(--danger);
+            color: var(--danger);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.3);
+        }
+        
+        /* Terminal */
+        .terminal-cyber {
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(10, 10, 15, 0.98) 100%);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            font-family: 'Courier New', 'Fira Code', monospace;
+        }
+        
+        .terminal-header {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(0, 0, 0, 0.5) 100%);
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .terminal-dot.red { background: #ff5f56; box-shadow: 0 0 10px #ff5f56; }
+        .terminal-dot.yellow { background: #ffbd2e; box-shadow: 0 0 10px #ffbd2e; }
+        .terminal-dot.green { background: #27ca40; box-shadow: 0 0 10px #27ca40; }
+        
+        .terminal-title {
+            flex: 1;
+            text-align: center;
+            color: var(--gold);
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .terminal-body {
+            padding: 15px;
+            height: 350px;
+            overflow-y: auto;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+        }
+        
+        .terminal-line {
+            margin: 4px 0;
+            padding: 3px 0;
+            font-size: 0.85em;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+        
+        .terminal-line.success { color: var(--primary); text-shadow: 0 0 5px rgba(0, 255, 136, 0.5); }
+        .terminal-line.error { color: var(--danger); text-shadow: 0 0 5px rgba(255, 51, 102, 0.5); }
+        .terminal-line.info { color: var(--info); }
+        .terminal-line.warning { color: var(--warning); }
+        .terminal-line.gold { color: var(--gold); font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .terminal-line.system { color: #888; font-style: italic; }
+        .terminal-line.cmd { color: #aaa; font-family: 'Courier New', monospace; }
+        .terminal-line.highlight { 
+            color: var(--gold); 
+            font-weight: bold;
+            font-size: 1.1em;
+            animation: textFlicker 0.1s infinite;
+        }
+        
+        @keyframes textFlicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        /* Domain Admin Badge */
+        .domain-admin-badge {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%);
+            border: 3px solid var(--primary);
+            border-radius: 20px;
+            padding: 40px 60px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 
+                0 0 100px rgba(0, 255, 136, 0.5),
+                0 0 200px rgba(0, 255, 136, 0.3),
+                inset 0 0 50px rgba(0, 255, 136, 0.1);
+            animation: badgeAppear 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+        
+        @keyframes badgeAppear {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        }
+        
+        .domain-admin-badge.show {
+            display: block;
+        }
+        
+        .badge-icon {
+            font-size: 5em;
+            color: var(--primary);
+            text-shadow: 0 0 30px var(--primary), 0 0 60px var(--primary);
+            animation: iconPulse 1s infinite;
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .badge-title {
+            font-size: 2em;
+            color: var(--primary);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin: 20px 0 10px;
+            text-shadow: 0 0 20px var(--primary);
+        }
+        
+        .badge-subtitle {
+            color: var(--gold);
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        
+        .badge-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .badge-close:hover {
+            color: var(--danger);
+        }
+        
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            backdrop-filter: blur(5px);
+        }
+        
+        .overlay.show {
+            display: block;
+        }
+        
+        /* Info Panel */
+        .info-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .info-value {
+            color: var(--gold);
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Ticket Preview */
+        .ticket-preview {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(0, 0, 0, 0.5) 100%);
+            border: 1px dashed rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            color: var(--gold);
+            max-height: 120px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .ticket-preview::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+        }
+        
+        /* Step Details */
+        .step-detail {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0 8px 8px 0;
+            padding: 12px 15px;
+            margin: 8px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .step-detail.active {
+            border-left-color: var(--gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .step-detail.success {
+            border-left-color: var(--primary);
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .step-detail.error {
+            border-left-color: var(--danger);
+            background: rgba(255, 51, 102, 0.1);
+        }
+        
+        .step-detail-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .step-detail-desc {
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        
+        /* Spinner */
+        .spinner-cyber {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 215, 0, 0.2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Command Input */
+        .command-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .command-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .command-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .progress-steps {
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+            
+            .progress-line {
+                display: none;
+            }
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <!-- Background Animation -->
+    <div class="bg-animation"></div>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top cyber-navbar py-3">
+        <div class="container-fluid">
+            <a class="navbar-brand fs-4" href="/">
+                <i class="fas fa-skull-crossbones me-2" style="color: #ffd700;"></i><span style="background: linear-gradient(90deg, #ffd700, #ffaa00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900;">SHADOW ARSENAL</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-home me-2"></i>Dashboard
+                </a>
+                <span class="navbar-text text-white">
+                    <i class="fas fa-user-shield me-2" style="color: var(--gold);"></i>
+                    {{ session.get('user') }}
+                </span>
+            </div>
+        </div>
+    </nav>
 
-    <script>
-        const socket = io();
-        let currentSession = null;
-
-        function refreshSessions() {
-            $.get('/api/sessions', function(data) {
-                $('#sessions').empty();
-                if (data.error) {
-                    $('#sessions').append(`<div style="color:#f00;">${data.error}</div>`);
-                    return;
-                }
-                for (let [id, info] of Object.entries(data)) {
-                    $('#sessions').append(`
-                        <div style="border:1px solid #0f0; padding:10px; margin:10px;">
-                            <b>Session ${id}</b> - ${info.tunnel_peer}<br>
-                            <button onclick="openShell(${id})">Open Shell</button>
+    <div class="container-fluid py-4 px-4">
+        <!-- Status Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="cyber-card p-4">
+                    <div class="text-center mb-4">
+                        <div id="domainStatus" class="status-badge-cyber status-pending">
+                            <i class="fas fa-clock"></i>
+                            <span id="statusText">HAZIR - SALDIRI BEKLİYOR</span>
                         </div>
-                    `);
-                }
-            });
-        }
-
-        function openShell(sid) {
-            currentSession = sid;
-            $('#shell').remove();
-            $('body').append(`
-                <div id="shell" style="margin-top:20px;">
-                    <h3>Shell ${sid}</h3>
-                    <pre id="output" style="background:#000; height:400px; overflow:y; padding:10px;"></pre>
-                    <input id="cmd" placeholder="Komut gir..." style="width:80%" onkeypress="if(event.key==='Enter') sendCmd()">
-                    <button onclick="sendCmd()">Gönder</button>
+                    </div>
+                    
+                    <!-- Progress Steps -->
+                    <div class="progress-steps">
+                        <div class="progress-line" id="progressLine" style="width: 0%;"></div>
+                        
+                        <div class="step-item" id="step1">
+                            <div class="step-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="step-label">Hash Analizi</div>
+                        </div>
+                        
+                        <div class="step-item" id="step2">
+                            <div class="step-icon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div class="step-label">Ticket Forge</div>
+                        </div>
+                        
+                        <div class="step-item" id="step3">
+                            <div class="step-icon">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="step-label">DC Bağlantı</div>
+                        </div>
+                        
+                        <div class="step-item" id="step4">
+                            <div class="step-icon">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div class="step-label">Domain Admin</div>
+                        </div>
+                    </div>
                 </div>
-            `);
-        }
+            </div>
+        </div>
 
-        function sendCmd() {
-            let cmd = $('#cmd').val();
-            $('#output').append(`> ${cmd}\n`);
-            socket.emit('shell_command', {session_id: currentSession, command: cmd});
-            $('#cmd').val('');
+        <div class="row">
+            <!-- Configuration Panel -->
+            <div class="col-lg-5">
+                <div class="cyber-card mb-4">
+                    <div class="card-header-custom">
+                        <h5 class="card-title-gold mb-0">
+                            <i class="fas fa-sliders-h"></i> SALDIRI KONFİGÜRASYONU
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label-cyber">Domain Adı</label>
+                                <input type="text" id="domainInput" class="form-control-cyber" placeholder="CORP.LOCAL" value="corp.local">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label-cyber">DC IP Adresi</label>
+                                <input type="text" id="dcIpInput" class="form-control-cyber" placeholder="192.168.1.10">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label-cyber">Domain SID</label>
+                            <input type="text" id="sidInput" class="form-control-cyber" placeholder="S-1-5-21-xxxxxxxxx-xxxxxxxxx-xxxxxxxxx">
+                            <small class="text-muted">Boş bırakılırsa otomatik tespit edilir</small>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label-cyber">KRBTGT NTLM Hash</label>
+                            <textarea id="ticketHashInput" class="form-control-cyber" rows="3" placeholder="502:aad3b435b51404eeaad3b435b51404ee:ntlm_hash_here..."></textarea>
+                        </div>
+                        
+                        <!-- Full Auto Attack Button -->
+                        <button class="btn-cyber-success w-100 mb-3" onclick="runFullAttack()" id="fullAttackBtn">
+                            <i class="fas fa-bolt me-2"></i>🚀 TAM OTOMATİK SALDIRI BAŞLAT
+                        </button>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <button class="btn-cyber-gold w-100" onclick="forgeGoldenTicket()">
+                                    <i class="fas fa-gem me-2"></i>Ticket Forge
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn-cyber-danger w-100" onclick="psexecToDc()">
+                                    <i class="fas fa-plug me-2"></i>PsExec
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hash Analysis -->
+                <div class="cyber-card">
+                    <div class="card-header-custom">
+                        <h5 class="card-title-gold mb-0">
+                            <i class="fas fa-microscope"></i> HASH ANALİZİ
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <textarea id="hashInput" class="form-control-cyber" rows="2" placeholder="Hash'i buraya yapıştırın..."></textarea>
+                        </div>
+                        <button class="btn btn-outline-warning w-100" onclick="analyzeHash()">
+                            <i class="fas fa-search me-2"></i>ANALİZ ET
+                        </button>
+                        
+                        <div id="hashResult" class="mt-3" style="display: none;">
+                            <div class="alert p-3" id="hashAlert">
+                                <div id="hashResultText"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Terminal & Results -->
+            <div class="col-lg-7">
+                <!-- Terminal -->
+                <div class="cyber-card mb-4">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <h5 class="card-title-gold mb-0">
+                            <i class="fas fa-terminal"></i> OPERATIONAL TERMINAL
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="clearTerminal()">
+                            <i class="fas fa-trash-alt me-1"></i>Temizle
+                        </button>
+                    </div>
+                    <div class="terminal-cyber m-3">
+                        <div class="terminal-header">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                            <span class="terminal-title">root@monolith:~/.golden-ticket</span>
+                        </div>
+                        <div class="terminal-body" id="terminalLog">
+                            <div class="terminal-line system">[*] Golden Ticket Operator v2.0 başlatıldı...</div>
+                            <div class="terminal-line system">[*] KRBTGT hash girerek veya otomatik saldırı ile başlayın</div>
+                            <div class="terminal-line system">[*] Hedef: Domain Admin yetkisi elde etmek</div>
+                            <div class="terminal-line gold">╔══════════════════════════════════════════════════════════╗</div>
+                            <div class="terminal-line gold">║         GOLDEN TICKET AUTOMATION SYSTEM v2.0            ║</div>
+                            <div class="terminal-line gold">╚══════════════════════════════════════════════════════════╝</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results Panel -->
+                <div class="cyber-card">
+                    <div class="card-header-custom">
+                        <h5 class="card-title-gold mb-0">
+                            <i class="fas fa-chart-line"></i> OPERASYON SONUCU
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Step Details -->
+                        <div id="stepDetails">
+                            <div class="step-detail" id="stepDetail1">
+                                <div class="step-detail-title"><i class="fas fa-search me-2"></i>ADIM 1: KRBTGT Hash Analizi</div>
+                                <div class="step-detail-desc">Hash'in geçerliliği ve KRBTGT olduğu doğrulanıyor...</div>
+                            </div>
+                            <div class="step-detail" id="stepDetail2">
+                                <div class="step-detail-title"><i class="fas fa-key me-2"></i>ADIM 2: Golden Ticket Oluşturma</div>
+                                <div class="step-detail-desc">Impacket ticketer ile ticket forga ediliyor...</div>
+                            </div>
+                            <div class="step-detail" id="stepDetail3">
+                                <div class="step-detail-title"><i class="fas fa-server me-2"></i>ADIM 3: DC'ye Erişim</div>
+                                <div class="step-detail-desc">PsExec ile Domain Controller'a bağlanılıyor...</div>
+                            </div>
+                            <div class="step-detail" id="stepDetail4">
+                                <div class="step-detail-title"><i class="fas fa-crown me-2"></i>ADIM 4: Domain Admin Yetkisi</div>
+                                <div class="step-detail-desc">NT AUTHORITY\SYSTEM yetkisi elde ediliyor...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Results -->
+                        <div id="attackResults" class="mt-4">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-gem mb-3" style="font-size: 3em; opacity: 0.3;"></i>
+                                <p class="mb-0">Saldırı başlatmak için konfigürasyonu doldurun</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Command Panel -->
+                        <div class="info-panel mt-4" id="commandPanel" style="display: none;">
+                            <h6 class="text-gold mb-3"><i class="fas fa-terminal me-2"></i>Komut Çalıştır</h6>
+                            <div class="command-input-group">
+                                <input type="text" class="command-input" id="commandInput" placeholder="Komut girin (whoami, hostname, ipconfig...)">
+                                <button class="btn btn-outline-success" onclick="runCommand()">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Ticket Info -->
+                        <div class="info-panel mt-4" id="ticketInfo" style="display: none;">
+                            <h6 class="text-gold mb-3"><i class="fas fa-file-contract me-2"></i>Ticket Bilgileri</h6>
+                            <div class="info-item">
+                                <span class="info-label">Dosya Yolu:</span>
+                                <span class="info-value" id="ticketPathInfo">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Domain:</span>
+                                <span class="info-value" id="ticketDomainInfo">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Kullanıcı:</span>
+                                <span class="info-value" id="ticketUserInfo">administrator</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Durum:</span>
+                                <span class="info-value" id="ticketStatusInfo" style="color: var(--primary);">AKTİF</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Domain Admin Badge Overlay -->
+    <div class="overlay" id="overlay"></div>
+    <div class="domain-admin-badge" id="domainAdminBadge">
+        <button class="badge-close" onclick="closeBadge()"><i class="fas fa-times"></i></button>
+        <div class="badge-icon">
+            <i class="fas fa-crown"></i>
+        </div>
+        <div class="badge-title">Domain Admin</div>
+        <div class="badge-subtitle">OPERASYON BAŞARILI</div>
+        <div style="color: var(--text-muted); font-size: 0.9em;">
+            <i class="fas fa-check-circle me-2" style="color: var(--primary);"></i>
+            Golden Ticket forged, DC owned!
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        // Terminal Functions
+        function addToTerminal(message, type = 'info') {
+            const terminal = document.getElementById('terminalLog');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            
+            const time = new Date().toLocaleTimeString('tr-TR', { hour12: false });
+            line.innerHTML = `[${time}] ${message}`;
+            
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
         }
-
-        socket.on('shell_output', function(data) {
-            $('#output').append(data.output + '\n');
-            $('#output').scrollTop($('#output')[0].scrollHeight);
+        
+        function clearTerminal() {
+            const terminal = document.getElementById('terminalLog');
+            terminal.innerHTML = `
+                <div class="terminal-line system">[*] Terminal temizlendi...</div>
+                <div class="terminal-line system">[*] Yeni operasyon için hazır</div>
+            `;
+        }
+        
+        // Step Indicator Functions
+        function updateStep(step, status) {
+            const stepEl = document.getElementById(`step${step}`);
+            const stepDetail = document.getElementById(`stepDetail${step}`);
+            
+            if (stepEl) {
+                stepEl.className = `step-item ${status}`;
+            }
+            
+            if (stepDetail) {
+                stepDetail.className = `step-detail ${status}`;
+            }
+        }
+        
+        function updateProgress(percent) {
+            document.getElementById('progressLine').style.width = percent + '%';
+        }
+        
+        // Status Functions
+        function updateStatus(status, message) {
+            const badge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+            const iconMap = {
+                'pending': 'clock',
+                'processing': 'cog fa-spin',
+                'success': 'check-circle',
+                'failed': 'times-circle'
+            };
+            
+            badge.className = `status-badge-cyber status-${status}`;
+            badge.innerHTML = `<i class="fas fa-${iconMap[status]}"></i><span>${message}</span>`;
+        }
+        
+        // Hash Analysis
+        async function analyzeHash() {
+            const hash = document.getElementById('hashInput').value.trim();
+            if (!hash) {
+                addToTerminal('[-] Hata: Hash gerekli!', 'error');
+                alert('Hash gerekli!');
+                return;
+            }
+            
+            updateStatus('processing', 'HASH ANALİZ EDİLİYOR...');
+            updateStep(1, 'active');
+            addToTerminal(`[*] Hash analizi başlıyor: ${hash.substring(0, 30)}...`, 'info');
+            
+            try {
+                const res = await fetch('/golden/analyze-hash', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({hash: hash})
+                });
+                const data = await res.json();
+                
+                const resultDiv = document.getElementById('hashResult');
+                const resultText = document.getElementById('hashResultText');
+                resultDiv.style.display = 'block';
+                
+                if (data.is_krbtgt) {
+                    resultDiv.querySelector('#hashAlert').className = 'alert alert-success';
+                    resultText.innerHTML = `<strong><i class="fas fa-check-circle me-2"></i>KRBTGT HASH TESPİT EDİLDİ!</strong><br>${data.message}`;
+                    addToTerminal('[+] KRBTGT hash doğrulandı! Golden Ticket oluşturulabilir.', 'success');
+                    updateStep(1, 'success');
+                    updateStatus('processing', 'KRBTGT TESPİT EDİLDİ');
+                } else {
+                    resultDiv.querySelector('#hashAlert').className = 'alert alert-warning';
+                    resultText.innerHTML = `<strong><i class="fas fa-exclamation-triangle me-2"></i>KRBTGT DEĞİL</strong><br>${data.message}`;
+                    addToTerminal('[-] Bu hash KRBTGT değil!', 'warning');
+                    updateStep(1, 'error');
+                    updateStatus('pending', 'HAZIR');
+                }
+            } catch (e) {
+                addToTerminal(`[-] Hata: ${e}`, 'error');
+                updateStep(1, 'error');
+                updateStatus('failed', 'HATA');
+            }
+        }
+        
+        // Full Auto Attack
+        async function runFullAttack() {
+            const hash = document.getElementById('ticketHashInput').value.trim();
+            const domain = document.getElementById('domainInput').value.trim();
+            const dcIp = document.getElementById('dcIpInput').value.trim();
+            const sid = document.getElementById('sidInput').value.trim();
+            
+            if (!hash || !domain) {
+                addToTerminal('[-] Hata: Hash ve Domain gerekli!', 'error');
+                alert('Hash ve Domain gerekli!');
+                return;
+            }
+            
+            // Reset UI
+            clearTerminal();
+            [1, 2, 3, 4].forEach(i => updateStep(i, ''));
+            updateProgress(0);
+            
+            const btn = document.getElementById('fullAttackBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner-cyber me-2" style="width: 20px; height: 20px; border-width: 2px;"></div>İŞLENİYOR...';
+            
+            // Show loading
+            updateStatus('processing', 'SALDIRI YÜRÜTÜLÜYOR');
+            
+            addToTerminal('═'.repeat(60), 'gold');
+            addToTerminal('║  GOLDEN TICKET AUTOMATION - TAM OTOMATİK SALDIRI  ║', 'gold');
+            addToTerminal('═'.repeat(60), 'gold');
+            addToTerminal('', 'info');
+            addToTerminal(`[*] Domain: ${domain}`, 'info');
+            addToTerminal(`[*] DC IP: ${dcIp || domain}`, 'info');
+            addToTerminal(`[*] SID: ${sid || 'Otomatik alınacak'}`, 'info');
+            addToTerminal(`[*] Hash: ${hash.substring(0, 25)}...`, 'info');
+            addToTerminal('', 'info');
+            
+            try {
+                const res = await fetch('/golden/forge', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        hash: hash,
+                        domain: domain,
+                        dc_ip: dcIp || domain,
+                        domain_sid: sid || null
+                    })
+                });
+                const data = await res.json();
+                
+                // Process logs
+                if (data.logs && Array.isArray(data.logs)) {
+                    data.logs.forEach(log => {
+                        if (log.includes('[+]')) addToTerminal(log, 'success');
+                        else if (log.includes('[-]')) addToTerminal(log, 'error');
+                        else if (log.includes('[*]')) addToTerminal(log, 'info');
+                        else if (log.includes('[ADIM]') || log.includes('═══') || log.includes('║') || log.includes('╔')) addToTerminal(log, 'gold');
+                        else if (log.startsWith('$')) addToTerminal(log, 'cmd');
+                        else if (log.toLowerCase().includes('hata') || log.toLowerCase().includes('error')) addToTerminal(log, 'error');
+                        else addToTerminal(log, 'info');
+                    });
+                }
+                
+                if (data.success) {
+                    // Update steps
+                    if (data.steps) {
+                        if (data.steps.is_krbtgt) updateStep(1, 'success');
+                        else updateStep(1, 'error');
+                        
+                        if (data.steps.ticket_forged) {
+                            updateStep(2, 'success');
+                            updateProgress(50);
+                        } else updateStep(2, 'error');
+                        
+                        if (data.steps.psexec_success) {
+                            updateStep(3, 'success');
+                            updateProgress(75);
+                        } else updateStep(3, 'error');
+                        
+                        if (data.steps.domain_admin) {
+                            updateStep(4, 'success');
+                            updateProgress(100);
+                        }
+                    }
+                    
+                    // Show ticket info
+                    if (data.ticket_path) {
+                        document.getElementById('ticketPathInfo').textContent = data.ticket_path;
+                        document.getElementById('ticketDomainInfo').textContent = domain;
+                        document.getElementById('ticketInfo').style.display = 'block';
+                        document.getElementById('commandPanel').style.display = 'block';
+                    }
+                    
+                    addToTerminal('', 'info');
+                    addToTerminal('═'.repeat(60), 'highlight');
+                    addToTerminal('🎉 OPERASYON BAŞARILI! 🎉', 'highlight');
+                    addToTerminal('Golden Ticket forged, DC owned!', 'highlight');
+                    addToTerminal('═'.repeat(60), 'highlight');
+                    
+                    updateStatus('success', '🎉 DOMAIN ADMIN!');
+                    
+                    // Show badge
+                    setTimeout(() => {
+                        document.getElementById('overlay').classList.add('show');
+                        document.getElementById('domainAdminBadge').classList.add('show');
+                    }, 500);
+                    
+                } else {
+                    // Show failed step
+                    if (data.steps) {
+                        if (!data.steps.is_krbtgt) updateStep(1, 'error');
+                        else if (!data.steps.ticket_forged) updateStep(2, 'error');
+                        else if (!data.steps.psexec_success) updateStep(3, 'error');
+                    }
+                    updateProgress(100);
+                    updateStatus('failed', 'SALDIRI BAŞARISIZ');
+                }
+                
+                updateResults(data);
+                
+            } catch (e) {
+                addToTerminal(`[-] Hata: ${e}`, 'error');
+                updateStatus('failed', 'HATA');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bolt me-2"></i>🚀 TAM OTOMATİK SALDIRI BAŞLAT';
+            }
+        }
+        
+        // Forge Ticket Only
+        async function forgeGoldenTicket() {
+            const hash = document.getElementById('ticketHashInput').value.trim();
+            const domain = document.getElementById('domainInput').value.trim();
+            const dcIp = document.getElementById('dcIpInput').value.trim();
+            const sid = document.getElementById('sidInput').value.trim();
+            
+            if (!hash || !domain) {
+                addToTerminal('[-] Hata: Hash ve Domain gerekli!', 'error');
+                alert('Hash ve Domain gerekli!');
+                return;
+            }
+            
+            updateStatus('processing', 'TİCKET OLUŞTURULUYOR');
+            updateStep(2, 'active');
+            updateProgress(33);
+            addToTerminal('[*] Golden Ticket oluşturuluyor...', 'info');
+            
+            try {
+                const res = await fetch('/golden/forge', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        hash: hash,
+                        domain: domain,
+                        dc_ip: dcIp || domain,
+                        domain_sid: sid || null
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.logs && Array.isArray(data.logs)) {
+                    data.logs.forEach(log => {
+                        if (log.includes('[+]')) addToTerminal(log, 'success');
+                        else if (log.includes('[-]')) addToTerminal(log, 'error');
+                        else if (log.includes('[*]')) addToTerminal(log, 'info');
+                        else addToTerminal(log, 'info');
+                    });
+                }
+                
+                if (data.success) {
+                    updateStep(2, 'success');
+                    updateProgress(50);
+                    addToTerminal('[+] Golden Ticket başarıyla oluşturuldu!', 'success');
+                    
+                    if (data.ticket_path) {
+                        document.getElementById('ticketPathInfo').textContent = data.ticket_path;
+                        document.getElementById('ticketDomainInfo').textContent = domain;
+                        document.getElementById('ticketInfo').style.display = 'block';
+                    }
+                    
+                    updateStatus('processing', 'TİCKET HAZIR');
+                    
+                    setTimeout(() => {
+                        addToTerminal('[*] Şimdi PsExec ile DC\'ye girebilirsiniz!', 'warning');
+                    }, 1000);
+                    
+                } else {
+                    updateStep(2, 'error');
+                    updateStatus('failed', 'HATA');
+                }
+                
+            } catch (e) {
+                addToTerminal(`[-] Hata: ${e}`, 'error');
+                updateStep(2, 'error');
+                updateStatus('failed', 'HATA');
+            }
+        }
+        
+        // PsExec Only
+        async function psexecToDc() {
+            const ticketPath = document.getElementById('ticketPathInput')?.value?.trim() || '';
+            const targetDc = document.getElementById('dcIpInput').value.trim();
+            const domain = document.getElementById('domainInput').value.trim();
+            
+            if (!ticketPath) {
+                addToTerminal('[-] Hata: Önce Golden Ticket oluşturun!', 'error');
+                alert('Önce Golden Ticket oluşturun!');
+                return;
+            }
+            
+            updateStatus('processing', 'PSEXEC İLE GİRİLİYOR');
+            updateStep(3, 'active');
+            updateProgress(66);
+            addToTerminal('[*] PsExec başlatılıyor...', 'info');
+            addToTerminal(`[*] Hedef: ${targetDc || domain}`, 'info');
+            
+            try {
+                const res = await fetch('/golden/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        target: targetDc || domain,
+                        command: 'whoami && hostname',
+                        ticket_path: ticketPath
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    updateStep(3, 'success');
+                    updateStep(4, 'success');
+                    updateProgress(100);
+                    addToTerminal('[+] DC\'ye giriş başarılı!', 'success');
+                    addToTerminal('Golden Ticket forged, DC owned!', 'highlight');
+                    
+                    updateStatus('success', '🎉 DOMAIN ADMIN!');
+                    
+                    setTimeout(() => {
+                        document.getElementById('overlay').classList.add('show');
+                        document.getElementById('domainAdminBadge').classList.add('show');
+                    }, 500);
+                    
+                } else {
+                    updateStep(3, 'error');
+                    updateStatus('failed', 'GİRİŞ BAŞARISIZ');
+                }
+                
+            } catch (e) {
+                addToTerminal(`[-] Hata: ${e}`, 'error');
+                updateStep(3, 'error');
+                updateStatus('failed', 'HATA');
+            }
+        }
+        
+        // Update Results Panel
+        function updateResults(data) {
+            const resultsDiv = document.getElementById('attackResults');
+            
+            if (data.success) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-success p-4 text-center fade-in">
+                        <i class="fas fa-trophy mb-3" style="font-size: 3em; color: var(--gold);"></i>
+                        <h4 class="text-success mb-3">OPERASYON TAMAMLANDI</h4>
+                        <p class="mb-2">${data.message}</p>
+                        <hr>
+                        <div class="row text-start">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <span class="info-label">Ticket Dosyası:</span>
+                                    <span class="info-value">${data.ticket_path || 'Oluşturuldu'}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <span class="info-label">Durum:</span>
+                                    <span class="info-value" style="color: var(--primary);">BAŞARILI</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger p-4 text-center fade-in">
+                        <i class="fas fa-skull mb-3" style="font-size: 3em;"></i>
+                        <h4 class="text-danger mb-3">OPERASYON BAŞARISIZ</h4>
+                        <p class="mb-0">${data.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Close Badge
+        function closeBadge() {
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('domainAdminBadge').classList.remove('show');
+        }
+        
+        // Close overlay on click
+        document.getElementById('overlay').addEventListener('click', closeBadge);
+        
+        // Command Runner
+        async function runCommand() {
+            const command = document.getElementById('commandInput').value.trim();
+            const ticketPath = document.getElementById('ticketPathInfo').textContent;
+            const targetDc = document.getElementById('dcIpInput').value.trim() || document.getElementById('domainInput').value.trim();
+            
+            if (!command) return;
+            
+            if (!ticketPath || ticketPath === '-') {
+                addToTerminal('[-] Önce Golden Ticket oluşturun!', 'error');
+                return;
+            }
+            
+            addToTerminal(`$ ${command}`, 'cmd');
+            
+            try {
+                const res = await fetch('/golden/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        target: targetDc,
+                        command: command,
+                        ticket_path: ticketPath
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    addToTerminal(data.output, 'success');
+                } else {
+                    addToTerminal(data.error || 'Komut çalıştırılamadı', 'error');
+                }
+                
+            } catch (e) {
+                addToTerminal(`Hata: ${e}`, 'error');
+            }
+            
+            document.getElementById('commandInput').value = '';
+        }
+        
+        // Enter key for command input
+        document.getElementById('commandInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') runCommand();
         });
-
-        setInterval(refreshSessions, 5000);
-        refreshSessions();
     </script>
-</body>
-</html>
+{% endblock %}

@@ -1,223 +1,704 @@
 {% extends "base.html" %}
 {% block head %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <style>
         :root {
-            --primary: #00ff00;
-            --secondary: #0f0f23;
-            --accent: #ff00ff;
-            --danger: #ff3333;
+            --primary: #00ff88;
+            --primary-dim: #00ff8840;
+            --danger: #ff3366;
+            --danger-dim: #ff336640;
+            --warning: #ffaa00;
+            --warning-dim: #ffaa0040;
+            --info: #00aaff;
+            --info-dim: #00aaff40;
+            --gold: #ffd700;
+            --gold-dim: #ffd70040;
+            --purple: #9933ff;
+            --purple-dim: #9933ff40;
+            --bg-dark: #0a0a12;
+            --bg-card: rgba(15, 15, 25, 0.95);
+            --text-primary: #e0e0e0;
+            --text-muted: #888;
         }
+        
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        *::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        
         body {
-            background: var(--secondary);
-            color: #eee;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #0d0d1a 50%, #1a1a2e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
         }
-        .navbar {
-            background: rgba(0, 0, 0, 0.95);
+        
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(153, 51, 255, 0.02) 0%, transparent 50%);
+            animation: bgPulse 15s ease-in-out infinite;
+        }
+        
+        @keyframes bgPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+        }
+        
+        .cyber-navbar {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 10, 20, 0.95) 50%, rgba(0, 0, 0, 0.9) 100%);
             border-bottom: 2px solid var(--primary);
-            box-shadow: 0 2px 20px rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
         }
+        
+        .navbar-brand {
+            background: linear-gradient(90deg, var(--primary), #00ffcc, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+        
         .nav-link {
-            color: rgba(255, 255, 255, 0.8) !important;
+            color: var(--text-primary) !important;
             font-weight: 500;
             padding: 8px 12px !important;
-            border-radius: 5px;
-            transition: all 0.3s;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .nav-link:hover::before {
+            left: 100%;
+        }
+        
         .nav-link:hover {
             color: var(--primary) !important;
-            background: rgba(0, 255, 0, 0.1);
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
         }
+        
         .nav-link.active {
             color: var(--primary) !important;
-            background: rgba(0, 255, 0, 0.2);
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(0, 255, 136, 0.3);
         }
-        .card {
-            background: rgba(30, 30, 46, 0.95);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 10px;
-            margin-bottom: 20px;
-            transition: transform 0.3s;
+        
+        .nav-link.golden-link {
+            color: var(--gold) !important;
         }
-        .card:hover {
-            transform: translateY(-3px);
-            border-color: var(--primary);
-            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.2);
+        
+        .nav-link.golden-link:hover, .nav-link.golden-link.active {
+            color: var(--gold) !important;
+            background: rgba(255, 215, 0, 0.15);
+            border-color: rgba(255, 215, 0, 0.3);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
-        .card-title {
+        
+        .nav-link.attack-link {
+            color: var(--info) !important;
+        }
+        
+        .nav-link.attack-link:hover, .nav-link.attack-link.active {
+            color: var(--info) !important;
+            background: rgba(0, 170, 255, 0.15);
+            border-color: rgba(0, 170, 255, 0.3);
+        }
+        
+        .nav-link.c2-link {
+            color: var(--purple) !important;
+        }
+        
+        .nav-link.c2-link:hover, .nav-link.c2-link.active {
+            color: var(--purple) !important;
+            background: rgba(153, 51, 255, 0.15);
+            border-color: rgba(153, 51, 255, 0.3);
+        }
+        
+        .cyber-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        
+        .cyber-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 255, 136, 0.1);
+        }
+        
+        .card-header-cyber {
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+            padding: 15px 20px;
+        }
+        
+        .card-title-cyber {
             color: var(--primary);
-            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
-            padding-bottom: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .form-control {
+        
+        .card-title-gold {
+            color: var(--gold);
+        }
+        
+        .card-title-danger {
+            color: var(--danger);
+        }
+        
+        .card-title-info {
+            color: var(--info);
+        }
+        
+        .card-title-purple {
+            color: var(--purple);
+        }
+        
+        .form-control-cyber {
             background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(0, 255, 0, 0.5);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control-cyber:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        .form-control-cyber::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-cyber {
+            border: none;
+            color: #000;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 10px;
+            padding: 12px 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-cyber-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+        }
+        
+        .btn-cyber-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.6);
+        }
+        
+        .btn-cyber-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #cc0033 100%);
+            box-shadow: 0 5px 20px rgba(255, 51, 102, 0.4);
+        }
+        
+        .btn-cyber-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.6);
+        }
+        
+        .btn-cyber-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #ff7700 100%);
+            box-shadow: 0 5px 20px rgba(255, 170, 0, 0.4);
+        }
+        
+        .btn-cyber-warning:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 170, 0, 0.6);
+        }
+        
+        .btn-cyber-info {
+            background: linear-gradient(135deg, var(--info) 0%, #0077cc 100%);
+            box-shadow: 0 5px 20px rgba(0, 170, 255, 0.4);
+        }
+        
+        .btn-cyber-info:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(0, 170, 255, 0.6);
+        }
+        
+        .btn-cyber-gold {
+            background: linear-gradient(135deg, var(--gold) 0%, #ff9500 100%);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        .btn-cyber-gold:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.6);
+        }
+        
+        .btn-cyber-purple {
+            background: linear-gradient(135deg, var(--purple) 0%, #7a00cc 100%);
+            box-shadow: 0 5px 20px rgba(153, 51, 255, 0.4);
+        }
+        
+        .btn-cyber-purple:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(153, 51, 255, 0.6);
+        }
+        
+        .btn-outline-cyber {
+            background: transparent;
+            border: 2px solid;
+            font-weight: 700;
+        }
+        
+        .btn-outline-cyber:hover {
+            transform: translateY(-3px);
+        }
+        
+        .btn-outline-gold {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        
+        .btn-outline-gold:hover {
+            background: var(--gold);
+            color: #000;
+        }
+        
+        .btn-outline-info {
+            border-color: var(--info);
+            color: var(--info);
+        }
+        
+        .btn-outline-info:hover {
+            background: var(--info);
             color: #fff;
         }
-        .form-control:focus {
-            background: rgba(0, 0, 0, 0.8);
-            border-color: var(--primary);
-            color: var(--primary);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-        }
-        .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .btn-primary {
-            background: linear-gradient(90deg, var(--primary), #00cc00);
-            border: none;
-            color: black;
-            font-weight: bold;
-        }
-        .btn-primary:hover {
-            background: linear-gradient(90deg, #00ff00, #00ee00);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-        }
-        .btn-danger {
-            background: linear-gradient(90deg, #ff3333, #cc0000);
-            border: none;
-            color: white;
-            font-weight: bold;
-        }
-        .btn-warning {
-            background: linear-gradient(90deg, #ffaa00, #ff7700);
-            border: none;
-            color: black;
-            font-weight: bold;
-        }
-        .btn-info {
-            background: linear-gradient(90deg, #00aaff, #0077cc);
-            border: none;
-            color: white;
-            font-weight: bold;
-        }
-        .btn-outline-success {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .btn-outline-success:hover {
-            background: var(--primary);
-            color: black;
-        }
-        .btn-outline-warning {
-            border-color: #ffaa00;
-            color: #ffaa00;
-        }
-        .btn-outline-warning:hover {
-            background: #ffaa00;
-            color: black;
-        }
+        
         .btn-outline-danger {
-            border-color: #ff3333;
-            color: #ff3333;
+            border-color: var(--danger);
+            color: var(--danger);
         }
+        
         .btn-outline-danger:hover {
-            background: #ff3333;
-            color: white;
+            background: var(--danger);
+            color: #fff;
         }
-        .btn-outline-info {
-            border-color: #00aaff;
-            color: #00aaff;
+        
+        .btn-outline-primary {
+            border-color: var(--primary);
+            color: var(--primary);
         }
-        .btn-outline-info:hover {
-            background: #00aaff;
-            color: white;
-        }
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        .module-group {
-            border: 1px dashed rgba(0, 255, 0, 0.4);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            background: rgba(0, 0, 0, 0.3);
-        }
-        .module-title {
-            color: var(--accent);
-            font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 0.9em;
-            text-transform: uppercase;
-        }
-        .leaderboard-entry {
-            background: rgba(255, 255, 255, 0.05);
-            border-left: 3px solid var(--primary);
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 0 5px 5px 0;
-        }
-        .leaderboard-position {
-            display: inline-block;
-            width: 28px;
-            height: 28px;
-            line-height: 28px;
-            text-align: center;
+        
+        .btn-outline-primary:hover {
             background: var(--primary);
-            color: black;
-            border-radius: 50%;
-            font-weight: bold;
-            margin-right: 10px;
-            font-size: 0.8em;
+            color: #000;
         }
-        .feature-icon {
-            font-size: 1.5em;
-            margin-right: 8px;
+        
+        .btn-outline-purple {
+            border-color: var(--purple);
+            color: var(--purple);
         }
-        .quick-access-btn {
-            height: 80px;
+        
+        .btn-outline-purple:hover {
+            background: var(--purple);
+            color: #fff;
+        }
+        
+        .quick-btn {
+            height: 90px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 0.85em;
+            font-size: 0.8em;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .quick-access-btn i {
+        
+        .quick-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: scale(0);
+            transition: transform 0.5s ease;
+        }
+        
+        .quick-btn:hover::before {
+            transform: scale(1);
+        }
+        
+        .quick-btn:hover {
+            transform: translateY(-5px) scale(1.02);
+        }
+        
+        .quick-btn i {
             font-size: 1.8em;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
-        .table-dark {
-            background: rgba(0, 0, 0, 0.3);
+        
+        .quick-btn-gold {
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            background: rgba(255, 215, 0, 0.1);
         }
-        .table-dark th {
-            border-color: rgba(0, 255, 0, 0.3);
+        
+        .quick-btn-gold:hover {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
+        }
+        
+        .quick-btn-info {
+            border: 2px solid var(--info);
+            color: var(--info);
+            background: rgba(0, 170, 255, 0.1);
+        }
+        
+        .quick-btn-info:hover {
+            background: var(--info);
+            color: #fff;
+            box-shadow: 0 10px 40px rgba(0, 170, 255, 0.4);
+        }
+        
+        .quick-btn-danger {
+            border: 2px solid var(--danger);
+            color: var(--danger);
+            background: rgba(255, 51, 102, 0.1);
+        }
+        
+        .quick-btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.4);
+        }
+        
+        .quick-btn-primary {
+            border: 2px solid var(--primary);
             color: var(--primary);
+            background: rgba(0, 255, 136, 0.1);
         }
-        .table-dark td {
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-        .badge {
-            font-weight: 500;
-        }
-        .bg-success-custom {
+        
+        .quick-btn-primary:hover {
             background: var(--primary);
-            color: black;
+            color: #000;
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.4);
         }
-        .dropdown-menu {
-            background: rgba(20, 20, 35, 0.98);
+        
+        .quick-btn-purple {
+            border: 2px solid var(--purple);
+            color: var(--purple);
+            background: rgba(153, 51, 255, 0.1);
+        }
+        
+        .quick-btn-purple:hover {
+            background: var(--purple);
+            color: #fff;
+            box-shadow: 0 10px 40px rgba(153, 51, 255, 0.4);
+        }
+        
+        .module-group {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .module-title {
+            color: var(--gold);
+            font-weight: 700;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(0, 255, 136, 0.25);
+        }
+        
+        .form-check-label {
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: rgba(0, 255, 136, 0.2);
             border: 1px solid var(--primary);
-            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
-        }
-        .dropdown-item {
-            color: rgba(255, 255, 255, 0.9);
-        }
-        .dropdown-item:hover {
-            background: rgba(0, 255, 0, 0.2);
             color: var(--primary);
         }
-        .divider {
-            border-color: rgba(0, 255, 0, 0.3);
+        
+        .status-warning {
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+        
+        .status-danger {
+            background: rgba(255, 51, 102, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+        
+        .status-info {
+            background: rgba(0, 170, 255, 0.2);
+            border: 1px solid var(--info);
+            color: var(--info);
+        }
+        
+        .table-cyber {
+            background: transparent;
+            color: var(--text-primary);
+        }
+        
+        .table-cyber thead {
+            border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .table-cyber th {
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            padding: 12px 15px;
+            background: rgba(0, 255, 136, 0.05);
+        }
+        
+        .table-cyber td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+        
+        .table-cyber tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        .table-cyber tbody tr:hover {
+            background: rgba(0, 255, 136, 0.05);
+        }
+        
+        .progress-cyber {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-cyber {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #00ffcc);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--primary);
+        }
+        
+        .leaderboard-entry {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--gold);
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 0 10px 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .leaderboard-entry:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .leaderboard-position {
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--gold), #ff9500);
+            color: #000;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+        
+        .leaderboard-position.gold {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        
+        .leaderboard-position.silver {
+            background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+        }
+        
+        .leaderboard-position.bronze {
+            background: linear-gradient(135deg, #cd7f32, #a05a00);
+            box-shadow: 0 0 15px rgba(205, 127, 50, 0.5);
+        }
+        
+        .system-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .system-stat:last-child {
+            border-bottom: none;
+        }
+        
+        .system-stat-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .system-stat-value {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .dropdown-menu-cyber {
+            background: rgba(15, 15, 25, 0.98);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .dropdown-item-cyber {
+            color: var(--text-primary);
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dropdown-item-cyber:hover {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--primary);
+        }
+        
+        .dropdown-divider-cyber {
+            border-color: rgba(0, 255, 136, 0.2);
+            margin: 5px 0;
+        }
+        
+        .scan-progress {
+            transition: all 0.3s ease;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 992px) {
+            .cyber-card {
+                margin-bottom: 20px;
+            }
         }
     </style>
 {% endblock %}
 {% block body %}
-    <nav class="navbar navbar-expand-lg sticky-top">
+    <!-- Background Animation -->
+    <div class="bg-animation"></div>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top cyber-navbar py-3">
         <div class="container-fluid">
-            <a class="navbar-brand text-primary fw-bold" href="/">
-                <i class="bi bi-cpu"></i> MONOLITH <span class="text-white">v68</span> OMEGA
+            <a class="navbar-brand fs-4" href="/">
+                <i class="fas fa-skull-crossbones me-2" style="color: #ff3366;"></i><span style="background: linear-gradient(90deg, #ff3366, #9933ff, #00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SHADOW ARSENAL</span>
             </a>
             
             <button class="navbar-toggler bg-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -228,139 +709,159 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="/">
-                            <i class="bi bi-house"></i> Dashboard
+                            <i class="fas fa-home me-2"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/scans">
-                            <i class="bi bi-radar"></i> Scans
+                            <i class="fas fa-radar me-2"></i>Scans
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/kerberos">
-                            <i class="bi bi-key"></i> Kerberos
+                            <i class="fas fa-key me-2"></i>Kerberos
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/infra">
-                            <i class="bi bi-hdd-network"></i> Infrastructure
+                            <i class="fas fa-server me-2"></i>Infrastructure
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/exploits">
-                            <i class="bi bi-bug"></i> Exploits
+                            <i class="fas fa-bug me-2"></i>Exploits
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/phishing">
-                            <i class="bi bi-envelope"></i> Phishing
+                            <i class="fas fa-envelope me-2"></i>Phishing
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/golden" style="color: #ffaa00;">
-                            <i class="bi bi-gem"></i> Golden Ticket
+                        <a class="nav-link golden-link" href="/golden">
+                            <i class="fas fa-gem me-2"></i>Golden Ticket
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/attack-graph" style="color: #00aaff;">
-                            <i class="bi bi-diagram-3"></i> Attack Graph
+                        <a class="nav-link attack-link" href="/attack-graph">
+                            <i class="fas fa-project-diagram me-2"></i>Attack Graph
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/c2" style="color: #9933ff;">
-                            <i class="bi bi-cpu-fill"></i> C2 Implant
+                        <a class="nav-link c2-link" href="/c2">
+                            <i class="fas fa-microchip me-2"></i>C2 Implant
                         </a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-tools"></i> Tools
+                            <i class="fas fa-tools me-2"></i>Tools
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/payloads"><i class="bi bi-terminal me-2"></i>Payload Generator</a></li>
-                            <li><a class="dropdown-item" href="/autoexploit"><i class="bi bi-lightning me-2"></i>Auto Exploit</a></li>
-                            <li><a class="dropdown-item" href="/opsec"><i class="bi bi-shield me-2"></i>OpSec Engine</a></li>
-                            <li><a class="dropdown-item" href="/decentralized"><i class="bi bi-link-45deg me-2"></i>DeFi Pentest</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/auto_update"><i class="bi bi-arrow-repeat me-2"></i>Auto Update</a></li>
-                            <li><a class="dropdown-item" href="/llm_engine"><i class="bi bi-cpu me-2"></i>LLM Engine</a></li>
+                        <ul class="dropdown-menu dropdown-menu-cyber">
+                            <li><a class="dropdown-item dropdown-item-cyber" href="/payloads"><i class="fas fa-terminal me-2"></i>Payload Generator</a></li>
+                            <li><a class="dropdown-item dropdown-item-cyber" href="/autoexploit"><i class="fas fa-bolt me-2"></i>Auto Exploit</a></li>
+                            <li><a class="dropdown-item dropdown-item-cyber" href="/opsec"><i class="fas fa-shield-alt me-2"></i>OpSec Engine</a></li>
+                            <li><a class="dropdown-item dropdown-item-cyber" href="/decentralized"><i class="fas fa-link me-2"></i>DeFi Pentest</a></li>
+                            <li><hr class="dropdown-divider dropdown-divider-cyber"></li>
+                            <li><a class="dropdown-item dropdown-item-cyber" href="/auto_update"><i class="fas fa-sync me-2"></i>Auto Update</a></li>
+                            <li><a class="dropdown-item dropdown-item-cyber" href="/llm_engine"><i class="fas fa-brain me-2"></i>LLM Engine</a></li>
                         </ul>
                     </li>
                 </ul>
                 
-                <div class="d-flex align-items-center">
-                    <span class="navbar-text me-3 text-white">
-                        <i class="bi bi-person-circle"></i> {{ user }}
+                <div class="d-flex align-items-center gap-3">
+                    <span class="navbar-text text-white">
+                        <i class="fas fa-user-shield me-2" style="color: var(--primary);"></i>
+                        {{ user }}
                     </span>
                     <a href="/logout" class="btn btn-outline-light btn-sm">
-                        <i class="bi bi-box-arrow-right"></i> Logout
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
                     </a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="container-fluid mt-4">
+    <div class="container-fluid py-4 px-4">
         <!-- Quick Access Bar -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-body py-2">
-                        <h6 class="text-muted mb-3"><i class="bi bi-lightning"></i> QUICK ACCESS</h6>
-                        <div class="row g-2">
-                            <div class="col-6 col-md-2">
-                                <a href="/kerberos" class="btn btn-outline-warning w-100 quick-access-btn">
-                                    <i class="bi bi-key feature-icon"></i>
-                                    Kerberos
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/infra" class="btn btn-outline-info w-100 quick-access-btn">
-                                    <i class="bi bi-hdd-network feature-icon"></i>
-                                    Infrastructure
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/exploits" class="btn btn-outline-danger w-100 quick-access-btn">
-                                    <i class="bi bi-bug feature-icon"></i>
-                                    Exploits
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/phishing" class="btn btn-outline-success w-100 quick-access-btn">
-                                    <i class="bi bi-envelope feature-icon"></i>
-                                    Phishing
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/payloads" class="btn btn-outline-primary w-100 quick-access-btn" style="border-color: #00aaff; color: #00aaff;">
-                                    <i class="bi bi-terminal feature-icon" style="color: #00aaff;"></i>
-                                    Payloads
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/golden" class="btn btn-outline-warning w-100 quick-access-btn" style="border-color: #ffaa00; color: #ffaa00;">
-                                    <i class="bi bi-gem feature-icon" style="color: #ffaa00;"></i>
-                                    Golden Ticket
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/attack-graph" class="btn btn-outline-info w-100 quick-access-btn" style="border-color: #00aaff; color: #00aaff;">
-                                    <i class="bi bi-diagram-3 feature-icon" style="color: #00aaff;"></i>
-                                    Attack Graph
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/c2" class="btn w-100 quick-access-btn" style="border-color: #9933ff; color: #9933ff; background: rgba(153, 51, 255, 0.1);">
-                                    <i class="bi bi-cpu-fill feature-icon" style="color: #9933ff;"></i>
-                                    C2 Implant
-                                </a>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <a href="/scans" class="btn btn-outline-secondary w-100 quick-access-btn">
-                                    <i class="bi bi-radar feature-icon"></i>
-                                    Scans
-                                </a>
-                            </div>
+                <div class="cyber-card p-4">
+                    <h6 class="text-muted mb-3" style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-bolt" style="color: var(--warning);"></i>
+                        QUICK ACCESS
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-6 col-md-2">
+                            <a href="/kerberos" class="btn quick-btn quick-btn-gold">
+                                <i class="fas fa-key"></i>
+                                Kerberos
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/infra" class="btn quick-btn quick-btn-info">
+                                <i class="fas fa-server"></i>
+                                Infrastructure
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/exploits" class="btn quick-btn quick-btn-danger">
+                                <i class="fas fa-bug"></i>
+                                Exploits
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/phishing" class="btn quick-btn quick-btn-primary">
+                                <i class="fas fa-envelope"></i>
+                                Phishing
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/golden" class="btn quick-btn quick-btn-gold">
+                                <i class="fas fa-gem"></i>
+                                Golden Ticket
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/attack-graph" class="btn quick-btn quick-btn-info">
+                                <i class="fas fa-project-diagram"></i>
+                                Attack Graph
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/c2" class="btn quick-btn quick-btn-purple">
+                                <i class="fas fa-microchip"></i>
+                                C2 Implant
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/payloads" class="btn quick-btn quick-btn-primary">
+                                <i class="fas fa-terminal"></i>
+                                Payloads
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/scans" class="btn quick-btn quick-btn-info">
+                                <i class="fas fa-radar"></i>
+                                Scans
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/autoexploit" class="btn quick-btn quick-btn-danger">
+                                <i class="fas fa-bolt"></i>
+                                AutoExploit
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/opsec" class="btn quick-btn quick-btn-purple">
+                                <i class="fas fa-shield-alt"></i>
+                                OpSec
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <a href="/decentralized" class="btn quick-btn quick-btn-primary">
+                                <i class="fas fa-link"></i>
+                                DeFi
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -368,24 +869,28 @@
         </div>
 
         <div class="row">
+            <!-- Main Content -->
             <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">
-                            <i class="bi bi-rocket-takeoff"></i> NEW OMEGA OPERATION
-                        </h4>
+                <!-- New Operation -->
+                <div class="cyber-card mb-4 fade-in">
+                    <div class="card-header-cyber">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-rocket"></i> NEW OMEGA OPERATION
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
                         <form action="/scan" method="post">
-                            <div class="mb-3">
-                                <label class="form-label text-warning">
-                                    <i class="bi bi-target"></i> TARGET URL / IP
-                                </label>
-                                <input type="text" name="target" class="form-control" 
+                            <div class="mb-4">
+                                <label class="form-label-cyber">TARGET URL / IP</label>
+                                <input type="text" name="target" class="form-control-cyber" 
                                        placeholder="https://example.com veya 192.168.1.1" required>
                             </div>
                             
-                            <div class="mb-3">
-                                <label class="form-label text-muted"><small>Active Directory Domain (Optional)</small></label>
-                                <input type="text" name="ad_domain" class="form-control form-control-sm" 
+                            <div class="mb-4">
+                                <label class="form-label-cyber" style="color: var(--text-muted); font-weight: 400;">
+                                    <small>Active Directory Domain (Optional)</small>
+                                </label>
+                                <input type="text" name="ad_domain" class="form-control-cyber" 
                                        placeholder="corp.local">
                             </div>
 
@@ -393,25 +898,25 @@
                                 <div class="col-md-6">
                                     <div class="module-group">
                                         <div class="module-title">
-                                            <i class="bi bi-ghost"></i> CORE ENGINE
+                                            <i class="fas fa-ghost"></i> CORE ENGINE
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="python_scan" checked>
                                             <label class="form-check-label">Full Ghost Analysis (Python)</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="nmap" checked>
                                             <label class="form-check-label">Nmap Port Scan</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="nuclei" checked>
                                             <label class="form-check-label">Nuclei Vuln Scanner</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="gobuster" checked>
                                             <label class="form-check-label">Gobuster Directory Brute</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="supply_chain">
                                             <label class="form-check-label">Supply Chain Audit</label>
                                         </div>
@@ -425,33 +930,33 @@
                                 <div class="col-md-6">
                                     <div class="module-group">
                                         <div class="module-title">
-                                            <i class="bi bi-radioactive"></i> OMEGA MODULES
+                                            <i class="fas fa-radiation"></i> OMEGA MODULES
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="ad_enum">
                                             <label class="form-check-label">Active Directory Enum</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="waf_bypass">
                                             <label class="form-check-label">WAF Bypass Engine</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="llm_analysis">
                                             <label class="form-check-label">LLM Vuln Analysis</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="ai_prediction">
                                             <label class="form-check-label">AI Vulnerability Prediction</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="blockchain">
                                             <label class="form-check-label">Blockchain Evidence</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="cloud_audit">
                                             <label class="form-check-label">Cloud Security Audit</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" name="tools" value="api_scan">
                                             <label class="form-check-label">API Security Scan</label>
                                         </div>
@@ -464,62 +969,67 @@
                             </div>
 
                             <div class="mt-4">
-                                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">
-                                    <i class="bi bi-play-fill"></i> INITIATE ATTACK VECTOR
+                                <button type="submit" class="btn-cyber btn-cyber-primary w-100 py-3">
+                                    <i class="fas fa-play me-2"></i>INITIATE ATTACK VECTOR
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">
-                            <i class="bi bi-clock-history"></i> RECENT OPERATIONS
-                        </h4>
+                <!-- Recent Operations -->
+                <div class="cyber-card fade-in">
+                    <div class="card-header-cyber">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-history"></i> RECENT OPERATIONS
+                        </h5>
+                    </div>
+                    <div class="card-body p-0" style="background: rgba(0, 0, 0, 0.3);">
                         <div class="table-responsive">
-                            <table class="table table-dark table-hover">
+                            <table class="table table-cyber mb-0">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Target</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
+                                        <th><i class="fas fa-hashtag me-2"></i>ID</th>
+                                        <th><i class="fas fa-bullseye me-2"></i>Target</th>
+                                        <th><i class="fas fa-info-circle me-2"></i>Status</th>
+                                        <th><i class="fas fa-cogs me-2"></i>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for scan in scans %}
-                                    <tr data-scan-id="{{ scan[0] }}">
-                                        <td>{{ scan[0] }}</td>
+                                    <tr data-scan-id="{{ scan[0] }}" style="background: rgba(0, 255, 136, 0.03); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                        <td><strong style="color: var(--gold); font-size: 1.1em;">{{ scan[0] }}</strong></td>
                                         <td>
-                                            <small>{{ scan[1][:30] }}{% if scan[1]|length > 30 %}...{% endif %}</small>
+                                            <code style="color: var(--primary); font-size: 0.95em; background: rgba(0, 255, 136, 0.1); padding: 4px 8px; border-radius: 4px;">{{ scan[1][:35] }}{% if scan[1]|length > 35 %}...{% endif %}</code>
                                         </td>
                                         <td>
-                                            {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
-                                                <span class="badge bg-success">{{ scan[3] }}</span>
-                                            {% elif 'FAILED' in scan[3] or 'HATA' in scan[3] %}
-                                                <span class="badge bg-danger">{{ scan[3] }}</span>
-                                            {% else %}
-                                                <span class="badge bg-warning text-dark">{{ scan[3] }}</span>
-                                            {% endif %}
-                                            <div class="progress mt-1" style="height: 6px;">
-                                                <div class="progress-bar bg-info scan-progress" role="progressbar"
-                                                     style="width: {{ scan[5] or 0 }}%;"></div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
+                                                    <span class="status-badge status-success" style="min-width: 80px;">✓ COMPLETED</span>
+                                                {% elif 'FAILED' in scan[3] or 'HATA' in scan[3] %}
+                                                    <span class="status-badge status-danger" style="min-width: 80px;">✗ FAILED</span>
+                                                {% else %}
+                                                    <span class="status-badge status-warning" style="min-width: 80px;">⏳ {{ scan[3] }}</span>
+                                                {% endif %}
+                                                <div class="progress-cyber" style="width: 80px; background: rgba(255,255,255,0.1);">
+                                                    <div class="progress-bar-cyber scan-progress" role="progressbar"
+                                                         style="width: {{ scan[5] or 0 }}%; background: linear-gradient(90deg, var(--warning), var(--primary));"></div>
+                                                </div>
                                             </div>
-                                            <small class="text-muted scan-eta">
+                                            <small class="text-white scan-eta d-block mt-1" style="text-shadow: 0 0 5px rgba(0,0,0,0.8);">
                                                 {% if scan[6] is not none %}ETA: {{ scan[6] }}s{% endif %}
                                             </small>
                                         </td>
                                         <td>
-                                            <a href="/details/{{ scan[0] }}" class="btn btn-sm btn-info">
-                                                <i class="bi bi-file-text"></i> Report
+                                            <a href="/details/{{ scan[0] }}" class="btn btn-sm btn-outline-info me-1">
+                                                <i class="fas fa-file-alt"></i>
                                             </a>
-                                            <a href="/delete/{{ scan[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">
-                                                <i class="bi bi-trash"></i>
+                                            <a href="/delete/{{ scan[0] }}" class="btn btn-sm btn-outline-danger me-1" onclick="return confirm('Delete?')">
+                                                <i class="fas fa-trash"></i>
                                             </a>
                                             {% if 'AÇIK VAR' in scan[3] %}
-                                            <a href="/autoexploit/{{ scan[0] }}" class="btn btn-sm btn-warning">
-                                                <i class="bi bi-lightning"></i> AutoExploit
+                                            <a href="/autoexploit/{{ scan[0] }}" class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-bolt"></i>
                                             </a>
                                             {% endif %}
                                         </td>
@@ -532,80 +1042,104 @@
                 </div>
             </div>
 
+            <!-- Sidebar -->
             <div class="col-lg-4">
                 
-                <div class="card bg-dark border-danger">
-                    <div class="card-body text-center">
-                        <h4 class="card-title text-danger">
-                            <i class="bi bi-lightning-charge"></i> POST-EXPLOITATION SUITE
-                        </h4>
-                        <p class="text-muted small">Advanced tools for initial access & persistence</p>
+                <!-- Post-Exploitation Suite -->
+                <div class="cyber-card mb-4 fade-in">
+                    <div class="card-header-cyber" style="background: linear-gradient(90deg, rgba(255, 51, 102, 0.1) 0%, transparent 100%);">
+                        <h5 class="card-title-danger mb-0">
+                            <i class="fas fa-bolt"></i> POST-EXPLOITATION SUITE
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">Advanced tools for initial access & persistence</p>
                         <div class="d-grid gap-2">
-                            <a href="/payloads" class="btn btn-outline-success">
-                                <i class="bi bi-terminal"></i> Reverse Shell Generator
+                            <a href="/payloads" class="btn btn-outline-primary">
+                                <i class="fas fa-terminal me-2"></i>Reverse Shell Generator
                             </a>
-                            <a href="/phishing" class="btn btn-outline-warning">
-                                <i class="bi bi-envelope-at"></i> Phishing Campaigns
+                            <a href="/phishing" class="btn btn-outline-gold">
+                                <i class="fas fa-envelope-at me-2"></i>Phishing Campaigns
                             </a>
                             <a href="/autoexploit" class="btn btn-outline-danger">
-                                <i class="bi bi-lightning"></i> AutoExploit Framework
+                                <i class="fas fa-bolt me-2"></i>AutoExploit Framework
                             </a>
-                            <a href="/opsec" class="btn btn-outline-info">
-                                <i class="bi bi-shield"></i> OpSec Engine
+                            <a href="/opsec" class="btn btn-outline-purple">
+                                <i class="fas fa-shield-alt me-2"></i>OpSec Engine
                             </a>
                         </div>
                     </div>
                 </div>
 
-                <div class="card">
+                <!-- Leaderboard -->
+                <div class="cyber-card mb-4 fade-in">
+                    <div class="card-header-cyber" style="background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);">
+                        <h5 class="card-title-gold mb-0">
+                            <i class="fas fa-trophy"></i> LEADERBOARD
+                        </h5>
+                    </div>
                     <div class="card-body">
-                        <h4 class="card-title">
-                            <i class="bi bi-trophy"></i> LEADERBOARD
-                        </h4>
                         {% for entry in leaderboard %}
                         <div class="leaderboard-entry">
+                            {% if loop.index == 1 %}
+                            <span class="leaderboard-position gold">{{ loop.index }}</span>
+                            {% elif loop.index == 2 %}
+                            <span class="leaderboard-position silver">{{ loop.index }}</span>
+                            {% elif loop.index == 3 %}
+                            <span class="leaderboard-position bronze">{{ loop.index }}</span>
+                            {% else %}
                             <span class="leaderboard-position">{{ loop.index }}</span>
-                            {{ entry['user'] }} - {{ entry['score'] }} XP
+                            {% endif %}
+                            <div>
+                                <div style="font-weight: 600;">{{ entry['user'] }}</div>
+                                <small style="color: var(--gold);">{{ entry['score'] }} XP</small>
+                            </div>
                         </div>
                         {% endfor %}
                         {% if not leaderboard %}
-                        <div class="text-muted">No leaderboard data yet</div>
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-trophy mb-2" style="font-size: 2em; opacity: 0.3;"></i>
+                            <p class="mb-0">No leaderboard data yet</p>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
 
-                <div class="card">
+                <!-- System Status -->
+                <div class="cyber-card fade-in">
+                    <div class="card-header-cyber">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-server"></i> SYSTEM STATUS
+                        </h5>
+                    </div>
                     <div class="card-body">
-                        <h4 class="card-title">
-                            <i class="bi bi-hdd-stack"></i> SYSTEM STATUS
-                        </h4>
-                        <div class="mb-2">
-                            <small>LLM Engine:</small>
-                            <span class="badge bg-{{ 'success' if has_openai else 'warning' }} float-end">
+                        <div class="system-stat">
+                            <span class="system-stat-label">LLM Engine</span>
+                            <span class="status-badge {{ 'status-success' if has_openai else 'status-warning' }}">
                                 {{ 'ONLINE' if has_openai else 'SIMULATION' }}
                             </span>
                         </div>
-                        <div class="mb-2">
-                            <small>AD Module:</small>
-                            <span class="badge bg-{{ 'success' if has_ldap else 'warning' }} float-end">
+                        <div class="system-stat">
+                            <span class="system-stat-label">AD Module</span>
+                            <span class="status-badge {{ 'status-success' if has_ldap else 'status-warning' }}">
                                 {{ 'ACTIVE' if has_ldap else 'LIMITED' }}
                             </span>
                         </div>
-                        <div class="mb-2">
-                            <small>Tool Check:</small>
-                            <span class="badge bg-{{ 'success' if tools_ok else 'danger' }} float-end">
+                        <div class="system-stat">
+                            <span class="system-stat-label">Tool Check</span>
+                            <span class="status-badge {{ 'status-success' if tools_ok else 'status-danger' }}">
                                 {{ available_tools }}/{{ total_tools }} Ready
                             </span>
                         </div>
-                        <div class="mb-2">
-                            <small>Blockchain:</small>
-                            <span class="badge bg-{{ 'success' if blockchain_ready else 'warning' }} float-end">
+                        <div class="system-stat">
+                            <span class="system-stat-label">Blockchain</span>
+                            <span class="status-badge {{ 'status-success' if blockchain_ready else 'status-warning' }}">
                                 {{ 'READY' if blockchain_ready else 'SIM' }}
                             </span>
                         </div>
                         <div class="mt-3">
-                            <a href="/decentralized" class="btn btn-sm btn-outline-info w-100">
-                                <i class="bi bi-link-45deg"></i> Decentralized Pentest Network
+                            <a href="/decentralized" class="btn btn-outline-info w-100">
+                                <i class="fas fa-link me-2"></i>Decentralized Pentest Network
                             </a>
                         </div>
                     </div>

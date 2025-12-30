@@ -1,49 +1,999 @@
 {% extends "base.html" %}
 {% block head %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #00ff00; --info: #00aaff; }
-        body { background: #0f0f23; color: #eee; }
-        .card { background: rgba(30, 30, 46, 0.95); border: 1px solid rgba(0, 255, 0, 0.3); border-radius: 10px; margin-bottom: 20px; }
-        .card-title { color: var(--primary); border-bottom: 1px solid rgba(0, 255, 0, 0.3); padding-bottom: 10px; }
-        .log-entry { background: rgba(0, 0, 0, 0.4); border-left: 3px solid var(--info); padding: 10px; margin: 5px 0; border-radius: 0 5px 5px 0; font-family: monospace; }
+        :root {
+            --primary: #00ff88;
+            --primary-dim: #00ff8840;
+            --danger: #ff3366;
+            --danger-dim: #ff336640;
+            --warning: #ffaa00;
+            --warning-dim: #ffaa0040;
+            --info: #00aaff;
+            --info-dim: #00aaff40;
+            --gold: #ffd700;
+            --gold-dim: #ffd70040;
+            --cyan: #00ffff;
+            --cyan-dim: #00ffff40;
+            --bg-dark: #0a0a12;
+            --bg-card: rgba(15, 15, 25, 0.95);
+            --text-primary: #e0e0e0;
+            --text-muted: #888;
+        }
+        
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--info) var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        *::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar-thumb {
+            background: var(--info);
+            border-radius: 4px;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #0d0d1a 50%, #1a1a2e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 170, 255, 0.02) 0%, transparent 50%);
+            animation: bgPulse 15s ease-in-out infinite;
+        }
+        
+        @keyframes bgPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+        }
+        
+        .cyber-navbar {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 10, 20, 0.95) 50%, rgba(0, 0, 0, 0.9) 100%);
+            border-bottom: 2px solid var(--info);
+            box-shadow: 0 0 30px rgba(0, 170, 255, 0.2);
+        }
+        
+        .navbar-brand {
+            font-weight: 900;
+            letter-spacing: 2px;
+            font-size: 1.3em;
+        }
+        
+        .nav-link {
+            color: var(--text-primary) !important;
+            font-weight: 500;
+            padding: 8px 12px !important;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 170, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .nav-link:hover::before {
+            left: 100%;
+        }
+        
+        .nav-link:hover {
+            color: var(--info) !important;
+            text-shadow: 0 0 10px rgba(0, 170, 255, 0.5);
+        }
+        
+        .nav-link.active {
+            color: var(--info) !important;
+            background: rgba(0, 170, 255, 0.15);
+            border: 1px solid rgba(0, 170, 255, 0.3);
+        }
+        
+        .cyber-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 170, 255, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--info), transparent);
+        }
+        
+        .cyber-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 170, 255, 0.1);
+        }
+        
+        .card-header-cyber {
+            background: linear-gradient(90deg, rgba(0, 170, 255, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 170, 255, 0.2);
+            padding: 15px 20px;
+        }
+        
+        .card-title-cyber {
+            color: var(--info);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title-gold {
+            color: var(--gold);
+        }
+        
+        .card-title-primary {
+            color: var(--primary);
+        }
+        
+        .card-title-danger {
+            color: var(--danger);
+        }
+        
+        .card-title-cyan {
+            color: var(--cyan);
+        }
+        
+        .stat-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 170, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            background: rgba(0, 170, 255, 0.1);
+            transform: translateY(-5px);
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--info), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .server-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 170, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .server-card:hover {
+            background: rgba(0, 170, 255, 0.05);
+            border-color: var(--info);
+        }
+        
+        .server-card.online {
+            border-left: 4px solid var(--primary);
+        }
+        
+        .server-card.offline {
+            border-left: 4px solid var(--danger);
+            opacity: 0.6;
+        }
+        
+        .server-card.maintenance {
+            border-left: 4px solid var(--warning);
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .server-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .server-name i {
+            color: var(--info);
+        }
+        
+        .server-ip {
+            font-family: monospace;
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        
+        .server-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-online {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .status-offline {
+            background: rgba(255, 51, 102, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+        
+        .status-maintenance {
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+        
+        .server-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .metric {
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--info);
+        }
+        
+        .metric-label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .progress-cyber {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-cyber {
+            height: 100%;
+            background: linear-gradient(90deg, var(--info), var(--cyan));
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-bar-success {
+            background: linear-gradient(90deg, var(--primary), #00ffcc);
+        }
+        
+        .progress-bar-warning {
+            background: linear-gradient(90deg, var(--warning), #ffaa00);
+        }
+        
+        .progress-bar-danger {
+            background: linear-gradient(90deg, var(--danger), #ff3366);
+        }
+        
+        .log-entry {
+            background: rgba(0, 0, 0, 0.4);
+            border-left: 4px solid var(--info);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 10px 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .log-entry:hover {
+            background: rgba(0, 170, 255, 0.05);
+        }
+        
+        .log-entry.success {
+            border-left-color: var(--primary);
+        }
+        
+        .log-entry.error {
+            border-left-color: var(--danger);
+        }
+        
+        .log-entry.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .log-timestamp {
+            color: var(--text-muted);
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+        
+        .log-content {
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        
+        .log-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .type-opssec {
+            background: rgba(0, 170, 255, 0.2);
+            color: var(--info);
+        }
+        
+        .type-attack {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--danger);
+        }
+        
+        .type-defense {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--primary);
+        }
+        
+        .type-system {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .btn-cyber {
+            border: none;
+            color: #000;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 10px;
+            padding: 12px 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-cyber-info {
+            background: linear-gradient(135deg, var(--info) 0%, #0077cc 100%);
+            box-shadow: 0 5px 20px rgba(0, 170, 255, 0.4);
+        }
+        
+        .btn-cyber-info:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(0, 170, 255, 0.6);
+        }
+        
+        .btn-cyber-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+        }
+        
+        .btn-cyber-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.6);
+        }
+        
+        .btn-cyber-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #cc0033 100%);
+            box-shadow: 0 5px 20px rgba(255, 51, 102, 0.4);
+        }
+        
+        .btn-cyber-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.6);
+        }
+        
+        .btn-cyber-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #ff7700 100%);
+            box-shadow: 0 5px 20px rgba(255, 170, 0, 0.4);
+        }
+        
+        .btn-cyber-warning:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 170, 0, 0.6);
+        }
+        
+        .btn-outline-info {
+            background: transparent;
+            border: 2px solid var(--info);
+            color: var(--info);
+        }
+        
+        .btn-outline-info:hover {
+            background: var(--info);
+            color: #000;
+        }
+        
+        .form-control-cyber {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 170, 255, 0.3);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control-cyber:focus {
+            border-color: var(--info);
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.3), inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        .form-control-cyber::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .network-graph {
+            height: 200px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .resource-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+        
+        .resource-label {
+            width: 60px;
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        
+        .resource-progress {
+            flex: 1;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .resource-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .resource-value {
+            width: 50px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-state i {
+            font-size: 3em;
+            color: rgba(0, 170, 255, 0.3);
+            margin-bottom: 15px;
+        }
+        
+        .empty-state p {
+            color: var(--text-muted);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 992px) {
+            .cyber-card {
+                margin-bottom: 20px;
+            }
+            
+            .server-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 {% endblock %}
 {% block body %}
-    <nav class="navbar navbar-expand-lg sticky-top" style="background: rgba(0, 0, 0, 0.9); border-bottom: 1px solid var(--primary);">
+    <!-- Background Animation -->
+    <div class="bg-animation"></div>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top cyber-navbar py-3">
         <div class="container-fluid">
-            <a class="navbar-brand text-primary fw-bold" href="/"><i class="bi bi-hdd-network"></i> MONOLITH v68 OMEGA</a>
-            <div class="d-flex">
-                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-house"></i> Dashboard</a>
-                <span class="navbar-text text-white"><i class="bi bi-person-circle"></i> {{ session.get('user') }}</span>
+            <a class="navbar-brand fs-4" href="/">
+                <i class="fas fa-skull-crossbones me-2" style="color: #ff3366;"></i><span style="background: linear-gradient(90deg, #ff3366, #9933ff, #00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SHADOW ARSENAL</span>
+            </a>
+            
+            <button class="navbar-toggler bg-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scans">
+                            <i class="fas fa-radar me-2"></i>Scans
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kerberos">
+                            <i class="fas fa-key me-2"></i>Kerberos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/infra">
+                            <i class="fas fa-server me-2"></i>Infrastructure
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/exploits">
+                            <i class="fas fa-bug me-2"></i>Exploits
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/phishing">
+                            <i class="fas fa-envelope me-2"></i>Phishing
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link golden-link" href="/golden">
+                            <i class="fas fa-gem me-2"></i>Golden Ticket
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link attack-link" href="/attack-graph">
+                            <i class="fas fa-project-diagram me-2"></i>Attack Graph
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/c2">
+                            <i class="fas fa-microchip me-2"></i>C2 Implant
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/decentralized">
+                            <i class="fas fa-project-diagram me-2"></i>DeFi Pentest
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <span class="navbar-text text-white">
+                        <i class="fas fa-user-shield me-2" style="color: var(--primary);"></i>
+                        {{ user }}
+                    </span>
+                    <a href="/logout" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
-    <div class="container-fluid mt-4">
-        <div class="row">
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h4 class="card-title text-primary"><i class="bi bi-shield-check"></i> OPSEC ENGINE</h4>
-                        <p class="text-muted">Operational Security Management</p>
-                        <button class="btn btn-success w-100" onclick="alert('Activate from dashboard')"><i class="bi bi-lightning"></i> ACTIVATE OPSEC</button>
+
+    <div class="container-fluid py-4 px-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="cyber-card p-4 fade-in">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <div>
+                            <h2 class="mb-2" style="display: flex; align-items: center; gap: 15px;">
+                                <i class="fas fa-server" style="color: var(--info); font-size: 1.5em;"></i>
+                                <span style="background: linear-gradient(90deg, var(--info), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">INFRASTRUCTURE MANAGEMENT</span>
+                            </h2>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-shield-alt me-2"></i>Monitor and manage your attack infrastructure
+                            </p>
+                        </div>
+                        <div class="d-flex gap-3 mt-3 mt-md-0">
+                            <button class="btn btn-outline-info" onclick="refreshInfrastructure()">
+                                <i class="fas fa-sync me-2"></i>Refresh
+                            </button>
+                            <button class="btn-cyber btn-cyber-info">
+                                <i class="fas fa-plus me-2"></i>Add Server
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card fade-in">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Total Servers</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card fade-in">
+                    <div class="stat-value" style="background: linear-gradient(135deg, var(--primary), #00cc6a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">4</div>
+                    <div class="stat-label">Online</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card fade-in">
+                    <div class="stat-value" style="background: linear-gradient(135deg, var(--warning), #ff7700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">1</div>
+                    <div class="stat-label">Maintenance</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card fade-in">
+                    <div class="stat-value" style="background: linear-gradient(135deg, var(--cyan), #00aaaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">78%</div>
+                    <div class="stat-label">Avg Load</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Server List -->
             <div class="col-lg-8">
-                <div class="card">
+                <div class="cyber-card fade-in">
+                    <div class="card-header-cyber">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-server"></i> SERVER STATUS
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                        <!-- Server 1 -->
+                        <div class="server-card online">
+                            <div class="server-header">
+                                <div class="server-name">
+                                    <i class="fas fa-server"></i> SHADOW-DC-01
+                                    <span class="server-ip">192.168.1.10</span>
+                                </div>
+                                <span class="server-status status-online">
+                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ONLINE
+                                </span>
+                            </div>
+                            <div class="server-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">12%</div>
+                                    <div class="metric-label">CPU</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">45%</div>
+                                    <div class="metric-label">RAM</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">23%</div>
+                                    <div class="metric-label">DISK</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">1ms</div>
+                                    <div class="metric-label">PING</div>
+                                </div>
+                            </div>
+                            <div class="progress-cyber mt-2">
+                                <div class="progress-bar-cyber progress-bar-success" style="width: 45%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Server 2 -->
+                        <div class="server-card online">
+                            <div class="server-header">
+                                <div class="server-name">
+                                    <i class="fas fa-database"></i> SHADOW-DB-01
+                                    <span class="server-ip">192.168.1.20</span>
+                                </div>
+                                <span class="server-status status-online">
+                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ONLINE
+                                </span>
+                            </div>
+                            <div class="server-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">34%</div>
+                                    <div class="metric-label">CPU</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">62%</div>
+                                    <div class="metric-label">RAM</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">58%</div>
+                                    <div class="metric-label">DISK</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">2ms</div>
+                                    <div class="metric-label">PING</div>
+                                </div>
+                            </div>
+                            <div class="progress-cyber mt-2">
+                                <div class="progress-bar-cyber" style="width: 62%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Server 3 -->
+                        <div class="server-card online">
+                            <div class="server-header">
+                                <div class="server-name">
+                                    <i class="fas fa-shield-alt"></i> SHADOW-FW-01
+                                    <span class="server-ip">192.168.1.1</span>
+                                </div>
+                                <span class="server-status status-online">
+                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ONLINE
+                                </span>
+                            </div>
+                            <div class="server-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">8%</div>
+                                    <div class="metric-label">CPU</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">22%</div>
+                                    <div class="metric-label">RAM</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">15%</div>
+                                    <div class="metric-label">DISK</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">&lt;1ms</div>
+                                    <div class="metric-label">PING</div>
+                                </div>
+                            </div>
+                            <div class="progress-cyber mt-2">
+                                <div class="progress-bar-cyber progress-bar-success" style="width: 22%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Server 4 -->
+                        <div class="server-card online">
+                            <div class="server-header">
+                                <div class="server-name">
+                                    <i class="fas fa-cloud"></i> SHADOW-CLOUD-01
+                                    <span class="server-ip">10.0.0.50</span>
+                                </div>
+                                <span class="server-status status-online">
+                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ONLINE
+                                </span>
+                            </div>
+                            <div class="server-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">67%</div>
+                                    <div class="metric-label">CPU</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">81%</div>
+                                    <div class="metric-label">RAM</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">42%</div>
+                                    <div class="metric-label">DISK</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">5ms</div>
+                                    <div class="metric-label">PING</div>
+                                </div>
+                            </div>
+                            <div class="progress-cyber mt-2">
+                                <div class="progress-bar-cyber progress-bar-warning" style="width: 81%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Server 5 -->
+                        <div class="server-card maintenance">
+                            <div class="server-header">
+                                <div class="server-name">
+                                    <i class="fas fa-code"></i> SHADOW-CI-01
+                                    <span class="server-ip">192.168.1.100</span>
+                                </div>
+                                <span class="server-status status-maintenance">
+                                    <i class="fas fa-tools me-1"></i> MAINTENANCE
+                                </span>
+                            </div>
+                            <div class="server-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">--</div>
+                                    <div class="metric-label">CPU</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">--</div>
+                                    <div class="metric-label">RAM</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">--</div>
+                                    <div class="metric-label">DISK</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">--</div>
+                                    <div class="metric-label">PING</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- System Resources -->
+                <div class="cyber-card mb-4 fade-in">
+                    <div class="card-header-cyber">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-chart-pie"></i> RESOURCES
+                        </h5>
+                    </div>
                     <div class="card-body">
-                        <h4 class="card-title"><i class="bi bi-list-check"></i> OPSEC LOGS</h4>
+                        <div class="resource-bar">
+                            <span class="resource-label">CPU</span>
+                            <div class="resource-progress">
+                                <div class="resource-fill" style="width: 45%; background: linear-gradient(90deg, var(--info), var(--cyan));"></div>
+                            </div>
+                            <span class="resource-value" style="color: var(--info);">45%</span>
+                        </div>
+                        <div class="resource-bar">
+                            <span class="resource-label">RAM</span>
+                            <div class="resource-progress">
+                                <div class="resource-fill" style="width: 62%; background: linear-gradient(90deg, var(--primary), #00ffcc);"></div>
+                            </div>
+                            <span class="resource-value" style="color: var(--primary);">62%</span>
+                        </div>
+                        <div class="resource-bar">
+                            <span class="resource-label">DISK</span>
+                            <div class="resource-progress">
+                                <div class="resource-fill" style="width: 38%; background: linear-gradient(90deg, var(--warning), #ffaa00);"></div>
+                            </div>
+                            <span class="resource-value" style="color: var(--warning);">38%</span>
+                        </div>
+                        <div class="resource-bar">
+                            <span class="resource-label">NET</span>
+                            <div class="resource-progress">
+                                <div class="resource-fill" style="width: 25%; background: linear-gradient(90deg, var(--gold), #ffaa00);"></div>
+                            </div>
+                            <span class="resource-value" style="color: var(--gold);">25%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OPSEC Logs -->
+                <div class="cyber-card fade-in">
+                    <div class="card-header-cyber">
+                        <h5 class="card-title-cyber mb-0">
+                            <i class="fas fa-shield-alt"></i> OPSEC LOGS
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 350px; overflow-y: auto;">
                         {% for log in logs %}
-                        <div class="log-entry">
-                            <small class="text-muted">{{ log.scan_id }} - {{ log.type }}</small>
-                            <pre class="mt-2 mb-0" style="color: var(--primary);">{{ log.data }}</pre>
+                        <div class="log-entry {% if 'success' in log.data|lower or 'tamam' in log.data|lower %}success{% elif 'error' in log.data|lower or 'hata' in log.data|lower %}error{% elif 'warn' in log.data|lower %}warning{% endif %}">
+                            <div class="log-timestamp">
+                                <span class="log-type type-{{ log.type }}">{{ log.type }}</span>
+                                {{ log.scan_id }} - {{ log.timestamp }}
+                            </div>
+                            <div class="log-content">{{ log.data }}</div>
                         </div>
                         {% else %}
-                        <div class="text-muted text-center py-4"><i class="bi bi-inbox"></i> No OPSEC logs yet</div>
+                        <div class="empty-state">
+                            <i class="fas fa-shield-alt"></i>
+                            <p>No OPSEC logs yet</p>
+                        </div>
                         {% endfor %}
+                        
+                        {% if logs %}
+                        <div class="log-entry">
+                            <div class="log-timestamp">
+                                <span class="log-type type-opssec">OPSEC</span>
+                                #LOG001 - 2024-01-15 10:23:45
+                            </div>
+                            <div class="log-content">Connection encrypted with AES-256-CBC</div>
+                        </div>
+                        <div class="log-entry success">
+                            <div class="log-timestamp">
+                                <span class="log-type type-defense">DEFENSE</span>
+                                #LOG002 - 2024-01-15 10:22:30
+                            </div>
+                            <div class="log-content">Firewall rules updated successfully</div>
+                        </div>
+                        <div class="log-entry warning">
+                            <div class="log-timestamp">
+                                <span class="log-type type-system">SYSTEM</span>
+                                #LOG003 - 2024-01-15 10:21:15
+                            </div>
+                            <div class="log-content">High memory usage detected on SHADOW-DB-01</div>
+                        </div>
+                        <div class="log-entry success">
+                            <div class="log-timestamp">
+                                <span class="log-type type-attack">ATTACK</span>
+                                #LOG004 - 2024-01-15 10:20:00
+                            </div>
+                            <div class="log-content">Lateral movement successful: 192.168.1.20</div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        function refreshInfrastructure() {
+            // Refresh animation
+            const btn = document.querySelector('button[onclick="refreshInfrastructure()"]');
+            const icon = btn.querySelector('i');
+            icon.classList.add('fa-spin');
+            
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+            }, 2000);
+        }
+    </script>
 {% endblock %}

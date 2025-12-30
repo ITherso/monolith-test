@@ -21,12 +21,25 @@ def scans_list():
     if not session.get("logged_in"):
         return redirect("/login")
     
-    with db_conn() as conn:
-        scans = conn.execute(
-            "SELECT * FROM scans ORDER BY id DESC LIMIT 50"
-        ).fetchall()
-    
-    return render_template("scans.html", scans=scans)
+    try:
+        with db_conn() as conn:
+            scans = conn.execute(
+                "SELECT id, target, date, status, user_id FROM scans ORDER BY id DESC LIMIT 50"
+            ).fetchall()
+            print(f"DEBUG: Found {len(scans)} scans")
+            
+            # Calculate statistics
+            completed_count = sum(1 for s in scans if 'COMPLETED' in s[3] or 'TAMAMLANDI' in s[3])
+            running_count = sum(1 for s in scans if 'RUNNING' in s[3] or 'DEVAM' in s[3])
+            failed_count = sum(1 for s in scans if 'FAILED' in s[3] or 'HATA' in s[3])
+            
+            print(f"DEBUG: completed={completed_count}, running={running_count}, failed={failed_count}")
+        
+        return render_template("scans.html", scans=scans, completed_count=completed_count, running_count=running_count, failed_count=failed_count)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Error: {str(e)}", 500
 
 
 @scans_bp.route("/scan", methods=["POST"])
