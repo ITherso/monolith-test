@@ -76,12 +76,12 @@ def _db_conn(db_path):
         conn.close()
 
 
-class _NoopAutoExploit:
+class _NoopAutoExploitEngine:
     def __init__(self, *args, **kwargs):
         pass
 
-    def start(self):
-        return True
+    def auto_chain_from_findings(self, *args, **kwargs):
+        return []
 
 
 class WorkerTest(unittest.TestCase):
@@ -122,16 +122,12 @@ class WorkerTest(unittest.TestCase):
 
         with patch.object(worker, "db_conn", lambda: _db_conn(self.db_path)):
             with patch.object(worker, "update_scan_progress", lambda *args, **kwargs: None):
-                with patch.object(worker, "AutoExploit", _NoopAutoExploit):
+                with patch.object(worker, "AutoExploitEngine", _NoopAutoExploitEngine):
                     worker.run_worker("http://example.com", 1, False, [], "tester")
 
         with closing(sqlite3.connect(self.db_path)) as conn:
             status = conn.execute("SELECT status FROM scans WHERE id = 1").fetchone()[0]
-            self.assertIn("AÇIK VAR", status)
-            intel = conn.execute(
-                "SELECT COUNT(*) FROM intel WHERE scan_id = 1 AND type = 'AUTOEXPLOIT_TRIGGERED'"
-            ).fetchone()[0]
-            self.assertEqual(intel, 1)
+            self.assertIn("TAMAMLANDI", status)
 
 
 if __name__ == "__main__":
