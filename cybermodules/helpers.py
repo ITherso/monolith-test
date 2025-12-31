@@ -310,3 +310,48 @@ def query_ai_for_insights(scan_id: int, custom_prompt: str) -> str:
         engine.analyze_sensitive_files()
     
     return engine.query_llm_for_insights(custom_prompt)
+
+
+# AUTO-REPORT GENERATION HELPERS
+
+def generate_security_report(scan_id: int, output_dir: str = "/tmp") -> Dict:
+    """
+    Generate comprehensive security assessment report
+    
+    Returns:
+        Dict with report paths and statistics
+    """
+    from cybermodules.report_generator import SecurityReportGenerator
+    
+    # Get target
+    target = "Unknown"
+    try:
+        from cyberapp.models.db import db_conn
+        with db_conn() as conn:
+            scan = conn.execute("SELECT target FROM scans WHERE id = ?", (scan_id,)).fetchone()
+            target = scan[0] if scan else "Unknown"
+    except Exception:
+        pass
+    
+    generator = SecurityReportGenerator(scan_id, target)
+    return generator.save_report(output_dir)
+
+
+def get_executive_summary(scan_id: int) -> Dict:
+    """
+    Get executive summary for a scan
+    """
+    from cybermodules.report_generator import SecurityReportGenerator
+    
+    target = "Unknown"
+    try:
+        from cyberapp.models.db import db_conn
+        with db_conn() as conn:
+            scan = conn.execute("SELECT target FROM scans WHERE id = ?", (scan_id,)).fetchone()
+            target = scan[0] if scan else "Unknown"
+    except Exception:
+        pass
+    
+    generator = SecurityReportGenerator(scan_id, target)
+    generator.gather_scan_data()
+    return generator.generate_executive_summary()

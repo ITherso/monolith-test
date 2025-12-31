@@ -273,3 +273,107 @@ def start_autoexploit(scan_id):
         )
 
     return jsonify({"error": "Scan not found"})
+
+
+@scans_bp.route("/report/<int:scan_id>")
+def generate_report(scan_id):
+    """Generate comprehensive security report"""
+    if not session.get("logged_in"):
+        return redirect("/login")
+    
+    try:
+        from cybermodules.report_generator import generate_scan_report
+        
+        result = generate_scan_report(scan_id)
+        
+        # Log the report generation
+        try:
+            with db_conn() as conn:
+                conn.execute(
+                    "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
+                    (scan_id, "REPORT_GENERATED", f"HTML: {result['html_path']}, Risk: {result['risk_score']}")
+                )
+                conn.commit()
+        except Exception:
+            pass
+        
+        # Return download links
+        return render_template(
+            "report_template.html",
+            scan_id=scan_id,
+            report=result,
+            target=result.get('target', 'Unknown')
+        )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Report generation error: {str(e)}", 500
+
+
+@scans_bp.route("/api/report/<int:scan_id>")
+def api_generate_report(scan_id):
+    """API endpoint for report generation"""
+    if not session.get("logged_in"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    try:
+        from cybermodules.report_generator import generate_scan_report
+        result = generate_scan_report(scan_id)
+        
+        return jsonify({
+            "success": True,
+            "report": result
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@scans_bp.route("/download/report/<int:scan_id>")
+def download_report(scan_id):
+    """Download report file"""
+    if not session.get("logged_in"):
+        return redirect("/login")
+    
+    import os
+    from flask import send_file
+    
+    format_type = request.args.get("format", "html")
+    
+    try:
+        with db_conn() as conn:
+            scan = conn.execute("SELECT target FROM scans WHERE id = ?", (scan_id,)).fetchone()
+            target = scan[0] if scan else "Unknown"
+    
+        target_clean = target.replace('.', '_').replace(':', '_').replace('/', '_')
+        
+        if format_type == "pdf":
+            filename = f"/tmp/report_{scan_id}.pdf"
+            if os.path.exists(filename):
+                return send_file(
+                    filename,
+                    as_attachment=True,
+                    download_name=f"security_report_{target_clean}_{scan_id}.pdf"
+                )
+        elif format_type == "json":
+            filename = f"/tmp/report_{scan_id}_summary.json"
+            if os.path.exists(filename):
+                return send_file(
+                    filename,
+                    as_attachment=True,
+                    download_name=f"security_report_{target_clean}_{scan_id}.json"
+                )
+        else:
+            filename = f"/tmp/report_{scan_id}_{target_clean}.html"
+            if os.path.exists(filename):
+                return send_file(
+                    filename,
+                    as_attachment=True,
+                    download_name=f"security_report_{target_clean}_{scan_id}.html",
+                    mimetype='text/html'
+                )
+                
+        return "Report file not found", 404
+        
+    except Exception as e:
+        return f"Download error: {str(e)}", 500

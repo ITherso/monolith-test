@@ -84,6 +84,12 @@
                                     <i class="fas fa-file-alt text-xs"></i>
                                     <span class="text-xs">Details</span>
                                 </a>
+                                {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
+                                <a href="/report/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-primary/20 text-cyber-primary hover:bg-cyber-primary/30 transition">
+                                    <i class="fas fa-file-shield text-xs"></i>
+                                    <span class="text-xs">Report</span>
+                                </a>
+                                {% endif %}
                                 <a href="/delete/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-danger/20 text-cyber-danger hover:bg-cyber-danger/30 transition" onclick="return confirm('Delete this scan?')">
                                     <i class="fas fa-trash text-xs"></i>
                                     <span class="text-xs">Delete</span>

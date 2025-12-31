@@ -6,6 +6,7 @@ from cyberapp.routes.golden import golden_bp
 from cyberapp.routes.attack_graph import graph_bp
 from cyberapp.routes.c2 import c2_bp
 from cyberapp.routes.ai_payload import ai_payload_bp
+from cyberapp.routes.distributed import distributed_bp
 
 from cyberapp.migrations import run_migrations
 from cyberapp.settings import SECRET_KEY
@@ -39,6 +40,7 @@ def create_app(run_migrations_on_start=True):
     app.register_blueprint(graph_bp)
     app.register_blueprint(c2_bp)
     app.register_blueprint(ai_payload_bp)
+    app.register_blueprint(distributed_bp)
 
     register_error_handlers(app)
 
