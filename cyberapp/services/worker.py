@@ -1,6 +1,9 @@
 import time
 import logging
 import gc
+import subprocess
+import os
+import tempfile
 from urllib.parse import urlparse
 from cyberapp.models.db import db_conn
 from cybermodules.social_engineering import GhostEngine
@@ -9,8 +12,131 @@ from cybermodules.ad_enum import ActiveDirectoryEnum
 from cybermodules.waf_bypass import WAFBypassEngine
 from cybermodules.llm_engine import LLMEngine
 from cybermodules.gamification import GamificationEngine
-from cybermodules.autoexploit import AutoExploitEngine  # Yeni engine'ımız
+from cybermodules.autoexploit import AutoExploitEngine
 from cyberapp.services.progress import update_scan_progress
+
+
+def _run_tool_direct(tool_name, cmd, timeout=600):
+    """Run a tool directly and return output"""
+    try:
+        fd, out = tempfile.mkstemp(prefix=f'{tool_name}_', suffix='.txt')
+        os.close(fd)
+        
+        result = subprocess.run(
+            cmd,
+            stdout=open(out, 'w'),
+            stderr=subprocess.STDOUT,
+            timeout=timeout
+        )
+        
+        with open(out, 'r') as f:
+            return out, f.read()
+    except subprocess.TimeoutExpired:
+        with open(out, 'a') as f:
+            f.write('\n[ERROR] Timeout')
+        return out, ""
+    except Exception as e:
+        return None, str(e)
+
+
+def _log_tool_output(scan_id, tool_name, output):
+    """Log tool output to database"""
+    try:
+        with db_conn() as conn:
+            conn.execute(
+                "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
+                (scan_id, tool_name, output[:5000] if output else "No output"),
+            )
+            conn.commit()
+    except Exception:
+        pass
+
+
+def _parse_nmap_output(output):
+    """Parse Nmap output for open ports and services"""
+    findings = []
+    if not output:
+        return findings
+    
+    for line in output.split('\n'):
+        if 'open' in line and 'tcp' in line:
+            findings.append(line.strip())
+            
+            # Try to extract port number
+            import re
+            port_match = re.search(r'(\d+)/tcp', line)
+            if port_match:
+                port = port_match.group(1)
+                # Log as intel
+                try:
+                    with db_conn() as conn:
+                        conn.execute(
+                            "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
+                            (None, "NMAP_PORT", f"Open port: {line.strip()}"),
+                        )
+                        conn.commit()
+                except Exception:
+                    pass
+    return findings
+
+
+def _parse_nuclei_output(output, scan_id):
+    """Parse Nuclei output for vulnerabilities"""
+    if not output:
+        return
+    
+    critical_count = output.count('[critical]')
+    high_count = output.count('[high]')
+    medium_count = output.count('[medium]')
+    
+    if critical_count > 0 or high_count > 0 or medium_count > 0:
+        try:
+            with db_conn() as conn:
+                conn.execute(
+                    "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
+                    (scan_id, "NUCLEI_FINDINGS", f"Critical: {critical_count}, High: {high_count}, Medium: {medium_count}"),
+                )
+                conn.commit()
+        except Exception:
+            pass
+    
+    # Parse individual findings
+    import re
+    for match in re.finditer(r'\[([^\]]+)\]\s+(https?://[^\s]+)', output):
+        severity, url = match.groups()
+        severity = severity.upper()
+        
+        # Map nuclei severity to our severity
+        if severity in ['CRITICAL']:
+            our_severity = 'CRITICAL'
+        elif severity in ['HIGH']:
+            our_severity = 'HIGH'
+        elif severity in ['MEDIUM']:
+            our_severity = 'MEDIUM'
+        else:
+            our_severity = 'MEDIUM'
+        
+        try:
+            with db_conn() as conn:
+                conn.execute(
+                    "INSERT INTO vulns (scan_id, type, url, fix, severity) VALUES (?, ?, ?, ?, ?)",
+                    (scan_id, f"NUCLEI_{severity}", url, "", our_severity),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+
+def _parse_gobuster_output(output):
+    """Parse Gobuster output for found directories"""
+    findings = []
+    if not output:
+        return findings
+    
+    for line in output.split('\n'):
+        if ('Status:' in line) and ('200' in line or '301' in line or '302' in line):
+            findings.append(line.strip())
+    return findings
 
 
 def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous"):
@@ -25,59 +151,109 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
             )
             conn.commit()
 
+        # === GHOST ENGINE (Python-based scanner) ===
         if run_python:
             try:
                 ghost = GhostEngine(target, scan_id)
                 ghost.start()
                 update_scan_progress(scan_id, 25, _eta(start_time, 25))
             except Exception as e:
-                with db_conn() as conn:
-                    conn.execute(
-                        "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                        (scan_id, "GHOST_ENGINE", f"Error: {str(e)[:100]}"),
-                    )
-                    conn.commit()
+                _log_tool_output(scan_id, "GHOST_ENGINE", f"Error: {str(e)[:200]}")
 
+        # === DIRECT TOOL EXECUTION (without Celery) ===
         if selected_tools:
-            try:
-                with db_conn() as conn:
-                    conn.execute("UPDATE scans SET status = 'ARSENAL ⚔️' WHERE id = ?", (scan_id,))
-                    conn.commit()
+            with db_conn() as conn:
+                conn.execute("UPDATE scans SET status = 'ARSENAL ⚔️' WHERE id = ?", (scan_id,))
+                conn.commit()
 
+            # Nmap
+            if "nmap" in selected_tools:
+                try:
+                    nmap_path = os.getenv('NMAP_BIN', 'nmap')
+                    if os.path.exists(nmap_path.split()[0] if ' ' in nmap_path else nmap_path):
+                        out_file, output = _run_tool_direct(
+                            "nmap",
+                            [nmap_path, "-sV", "-sC", "-O", "-T4", target],
+                            timeout=300
+                        )
+                        _log_tool_output(scan_id, "NMAP", output)
+                        
+                        # Parse and log findings
+                        ports = _parse_nmap_output(output)
+                        if ports:
+                            _log_tool_output(scan_id, "NMAP_PORTS", f"Found {len(ports)} open ports")
+                    else:
+                        _log_tool_output(scan_id, "NMAP", "Nmap not found in system")
+                except Exception as e:
+                    _log_tool_output(scan_id, "NMAP_ERROR", str(e)[:200])
+
+            # Nuclei
+            if "nuclei" in selected_tools:
+                try:
+                    nuclei_path = os.getenv('NUCLEI_BIN', 'nuclei')
+                    if os.path.exists(nuclei_path.split()[0] if ' ' in nuclei_path else nuclei_path):
+                        out_file, output = _run_tool_direct(
+                            "nuclei",
+                            [nuclei_path, "-u", target, "-severity", "critical,high,medium"],
+                            timeout=600
+                        )
+                        _log_tool_output(scan_id, "NUCLEI", output)
+                        
+                        # Parse and log vulnerabilities
+                        _parse_nuclei_output(output, scan_id)
+                    else:
+                        _log_tool_output(scan_id, "NUCLEI", "Nuclei not found in system")
+                except Exception as e:
+                    _log_tool_output(scan_id, "NUCLEI_ERROR", str(e)[:200])
+
+            # Gobuster
+            if "gobuster" in selected_tools:
+                try:
+                    gobuster_path = os.getenv('GOBUSTER_BIN', 'gobuster')
+                    wordlist = "/usr/share/wordlists/dirb/common.txt"
+                    if os.path.exists("/usr/share/wordlists/SecLists/Discovery/Web-Content/raft-large-directories.txt"):
+                        wordlist = "/usr/share/wordlists/SecLists/Discovery/Web-Content/raft-large-directories.txt"
+                    
+                    if os.path.exists(gobuster_path.split()[0] if ' ' in gobuster_path else gobuster_path):
+                        out_file, output = _run_tool_direct(
+                            "gobuster",
+                            [gobuster_path, "dir", "-u", target, "-w", wordlist, "-x", "php,html,aspx,jsp"],
+                            timeout=600
+                        )
+                        _log_tool_output(scan_id, "GOBUSTER", output)
+                        
+                        # Parse directories
+                        dirs = _parse_gobuster_output(output)
+                        if dirs:
+                            _log_tool_output(scan_id, "GOBUSTER_DIRS", f"Found {len(dirs)} accessible paths")
+                    else:
+                        _log_tool_output(scan_id, "GOBUSTER", "Gobuster not found in system")
+                except Exception as e:
+                    _log_tool_output(scan_id, "GOBUSTER_ERROR", str(e)[:200])
+
+            # Run SupremeArsenalEngine for other tools
+            try:
                 arsenal = SupremeArsenalEngine(target, scan_id, selected_tools)
                 arsenal.start()
-                update_scan_progress(scan_id, 60, _eta(start_time, 60))
             except Exception as e:
-                with db_conn() as conn:
-                    conn.execute(
-                        "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                        (scan_id, "ARSENAL", f"Error: {str(e)[:100]}"),
-                    )
-                    conn.commit()
+                _log_tool_output(scan_id, "ARSENAL", f"Error: {str(e)[:200]}")
 
+            update_scan_progress(scan_id, 60, _eta(start_time, 60))
+
+            # Additional tools
             if "ad_enum" in selected_tools:
                 try:
                     ad = ActiveDirectoryEnum(target.replace("http://", "").replace("https://", ""), scan_id)
                     ad.start()
                 except Exception as e:
-                    with db_conn() as conn:
-                        conn.execute(
-                            "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                            (scan_id, "AD_ENUM", f"Error: {str(e)[:100]}"),
-                        )
-                        conn.commit()
+                    _log_tool_output(scan_id, "AD_ENUM", f"Error: {str(e)[:200]}")
 
             if "waf_bypass" in selected_tools:
                 try:
                     waf = WAFBypassEngine(target, scan_id)
                     waf.start()
                 except Exception as e:
-                    with db_conn() as conn:
-                        conn.execute(
-                            "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                            (scan_id, "WAF_BYPASS", f"Error: {str(e)[:100]}"),
-                        )
-                        conn.commit()
+                    _log_tool_output(scan_id, "WAF_BYPASS", f"Error: {str(e)[:200]}")
 
             if "llm_analysis" in selected_tools:
                 try:
@@ -97,12 +273,7 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
                                 pass
                         conn.commit()
                 except Exception as e:
-                    with db_conn() as conn:
-                        conn.execute(
-                            "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                            (scan_id, "LLM_ANALYSIS", f"Error: {str(e)[:100]}"),
-                        )
-                        conn.commit()
+                    _log_tool_output(scan_id, "LLM_ANALYSIS", f"Error: {str(e)[:100]}")
 
         update_scan_progress(scan_id, 80, _eta(start_time, 80))
 
@@ -132,12 +303,7 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
                 game = GamificationEngine(scan_id, user_id)
                 game.calculate_score()
             except Exception as e:
-                with db_conn() as conn:
-                    conn.execute(
-                        "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                        (scan_id, "GAMIFICATION", f"Error: {str(e)[:100]}"),
-                    )
-                    conn.commit()
+                _log_tool_output(scan_id, "GAMIFICATION", f"Error: {str(e)[:100]}")
 
         # === OTOMATİK METASPLOIT EXPLOIT CHAINING ===
         try:
@@ -214,12 +380,7 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
 
         except Exception as auto_e:
             logging.error(f"[AUTO EXPLOIT HATA] {str(auto_e)}", exc_info=True)
-            with db_conn() as conn:
-                conn.execute(
-                    "INSERT INTO tool_logs (scan_id, tool_name, output) VALUES (?, ?, ?)",
-                    (scan_id, "AUTOEXPLOIT_AUTO", f"Error: {str(auto_e)[:150]}"),
-                )
-                conn.commit()
+            _log_tool_output(scan_id, "AUTOEXPLOIT_AUTO", f"Error: {str(auto_e)[:150]}")
 
     except Exception as e:
         with db_conn() as conn:
