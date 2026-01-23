@@ -467,6 +467,226 @@ class AILateralGuide:
             'reason': 'Standart hedef: stealth profil dengeli seçim'
         })
 
+    # ============================================================
+    # SLEEP ANOMALY DETECTION & AI GUIDANCE
+    # ============================================================
+    
+    def analyze_sleep_anomaly(self, sleep_result: Dict, current_target: str = None) -> Dict[str, Any]:
+        """
+        Sleep skip anomaly tespit edildiğinde AI guidance
+        Alternatif injection/evasion tekniği öner
+        
+        Args:
+            sleep_result: SleepmaskEngine.masked_sleep() sonucu
+            current_target: Mevcut hedef hostname
+        
+        Returns:
+            Dict: AI önerileri
+        """
+        analysis = {
+            "anomaly_type": "sleep_skip",
+            "severity": "medium",
+            "recommended_actions": [],
+            "alternative_techniques": [],
+            "evasion_adjustments": [],
+            "ai_assessment": "",
+        }
+        
+        if not sleep_result.get("skip_detected"):
+            analysis["anomaly_type"] = "none"
+            analysis["severity"] = "low"
+            analysis["ai_assessment"] = "No anomaly detected - continue normal operation"
+            return analysis
+        
+        skip_reason = sleep_result.get("skip_reason", "Unknown")
+        technique_used = sleep_result.get("technique_used", "unknown")
+        
+        # Severity assessment
+        if "shortened" in skip_reason.lower():
+            # Sleep was shortened - likely sandbox/EDR acceleration
+            analysis["severity"] = "high"
+            analysis["anomaly_type"] = "sleep_acceleration"
+            analysis["recommended_actions"] = [
+                "Switch to alternative sleep technique",
+                "Increase jitter percent",
+                "Consider process migration",
+                "Implement fake sleep decoy",
+            ]
+            analysis["alternative_techniques"] = [
+                {"technique": "death_sleep", "reason": "Thread suspension harder to skip"},
+                {"technique": "zilean", "reason": "Timer-based with masking"},
+                {"technique": "foliage", "reason": "APC-based approach"},
+            ]
+            
+        elif "extended" in skip_reason.lower():
+            # Sleep was extended - likely debugger pause
+            analysis["severity"] = "critical"
+            analysis["anomaly_type"] = "debugger_pause"
+            analysis["recommended_actions"] = [
+                "Immediate process migration",
+                "Consider termination and re-injection",
+                "Enable anti-debug countermeasures",
+                "Reduce beacon activity",
+            ]
+            analysis["alternative_techniques"] = [
+                {"technique": "process_hollowing", "reason": "New process, fresh state"},
+                {"technique": "thread_hijacking", "reason": "Different execution context"},
+            ]
+            
+        elif "discrepancy" in skip_reason.lower():
+            # Timer discrepancy - sophisticated sandbox
+            analysis["severity"] = "high"
+            analysis["anomaly_type"] = "timer_manipulation"
+            analysis["recommended_actions"] = [
+                "Multi-timer validation",
+                "RDTSC-based timing checks",
+                "Consider environment exit",
+            ]
+        
+        # Evasion profile adjustments
+        if analysis["severity"] in ["high", "critical"]:
+            analysis["evasion_adjustments"] = [
+                {"setting": "profile", "from": "any", "to": "paranoid", "reason": "Maximum evasion needed"},
+                {"setting": "sleepmask_check_sleep_skip", "value": True, "reason": "Continue monitoring"},
+                {"setting": "detect_debugger", "value": True, "reason": "Enable debugger detection"},
+                {"setting": "use_drip_loader", "value": True, "reason": "Slow memory loading"},
+            ]
+        
+        # LLM-based assessment if available
+        if self.llm_engine:
+            try:
+                prompt = f"""
+Sleep anomaly detected during lateral movement:
+- Technique used: {technique_used}
+- Skip reason: {skip_reason}
+- Current target: {current_target or 'Unknown'}
+
+Assess the situation and provide:
+1. Likely cause (sandbox, EDR, debugger)
+2. Immediate recommended action
+3. Long-term evasion adjustment
+
+Be concise and tactical.
+"""
+                ai_response = self._query_llm(prompt)
+                analysis["ai_assessment"] = ai_response
+            except Exception as e:
+                analysis["ai_assessment"] = f"AI assessment unavailable: {e}"
+        else:
+            # Rule-based assessment
+            assessments = {
+                "sleep_acceleration": "EDR/Sandbox detected - likely accelerating sleeps to speed analysis. Recommend switching to death_sleep technique and implementing timing validation.",
+                "debugger_pause": "CRITICAL: Debugger detected - analyst may be examining beacon. Immediate process migration recommended.",
+                "timer_manipulation": "Sophisticated sandbox with timer manipulation detected. Consider environment validation before continuing.",
+            }
+            analysis["ai_assessment"] = assessments.get(
+                analysis["anomaly_type"],
+                "Unknown anomaly - recommend increasing evasion profile"
+            )
+        
+        return analysis
+    
+    def recommend_injection_after_sleep_skip(self, current_technique: str) -> Dict[str, Any]:
+        """
+        Sleep skip sonrası alternatif injection tekniği öner
+        
+        Args:
+            current_technique: Mevcut injection tekniği
+        
+        Returns:
+            Dict: Önerilen alternatif teknik
+        """
+        alternatives = {
+            "thread_hijacking": {
+                "alternative": "early_bird",
+                "reason": "Inject before main thread executes",
+                "risk": "medium",
+            },
+            "early_bird": {
+                "alternative": "process_hollowing",
+                "reason": "Replace process image entirely",
+                "risk": "low",
+            },
+            "process_hollowing": {
+                "alternative": "doppelganging",
+                "reason": "NTFS transaction based - harder to detect",
+                "risk": "low",
+            },
+            "doppelganging": {
+                "alternative": "ghosting",
+                "reason": "Delete-pending file technique",
+                "risk": "low",
+            },
+            "apc_injection": {
+                "alternative": "thread_hijacking",
+                "reason": "Hijack existing thread context",
+                "risk": "medium",
+            },
+        }
+        
+        default = {
+            "alternative": "process_hollowing",
+            "reason": "Fallback to reliable technique",
+            "risk": "low",
+        }
+        
+        recommendation = alternatives.get(current_technique, default)
+        
+        # Add timing advice
+        recommendation["timing_advice"] = [
+            "Wait for random interval (30-120s) before re-injection",
+            "Validate environment before proceeding",
+            "Use drip-loader for slow memory allocation",
+        ]
+        
+        return recommendation
+    
+    def get_sleep_evasion_profile(self, anomaly_history: List[Dict]) -> Dict[str, Any]:
+        """
+        Anomaly geçmişine göre optimal sleep profili öner
+        
+        Args:
+            anomaly_history: Önceki anomaly kayıtları
+        
+        Returns:
+            Dict: Önerilen sleep konfigürasyonu
+        """
+        skip_count = sum(1 for a in anomaly_history if a.get("skip_detected"))
+        total = len(anomaly_history)
+        skip_ratio = skip_count / max(1, total)
+        
+        profile = {
+            "technique": "ekko",
+            "masking_mode": "xor",
+            "jitter_percent": 0.3,
+            "min_sleep_ms": 5000,
+            "max_sleep_ms": 30000,
+            "check_sleep_skip": True,
+            "use_drip_loader": False,
+            "notes": [],
+        }
+        
+        if skip_ratio >= 0.5:
+            # High anomaly rate - aggressive evasion
+            profile["technique"] = "death_sleep"
+            profile["masking_mode"] = "rc4"
+            profile["jitter_percent"] = 0.5
+            profile["min_sleep_ms"] = 10000
+            profile["use_drip_loader"] = True
+            profile["notes"].append("High anomaly rate detected - maximum evasion enabled")
+            
+        elif skip_ratio >= 0.2:
+            # Moderate anomaly rate
+            profile["technique"] = "foliage"
+            profile["jitter_percent"] = 0.4
+            profile["notes"].append("Moderate anomaly rate - increased jitter")
+            
+        else:
+            # Low anomaly rate
+            profile["notes"].append("Low anomaly rate - standard profile")
+        
+        return profile
+
     def suggest_attack_path(self, start: str, goal: str) -> List[Dict]:
         """
         Suggest optimal attack path from start to goal

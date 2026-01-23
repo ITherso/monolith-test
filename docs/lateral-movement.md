@@ -289,6 +289,184 @@ flowchart TB
 
 ---
 
+## Sleepmask & Runtime Masking Flow (Cobalt Strike Beacon Style)
+
+Bu diagram beacon sleep masking akışını gösterir: decrypt → execute → re-mask cycle.
+
+```mermaid
+sequenceDiagram
+    participant Beacon
+    participant SleepmaskEngine
+    participant MaskingCrypto
+    participant Memory
+    participant Kernel
+    participant SleepSkipDetector
+    
+    Note over Beacon,SleepSkipDetector: Runtime Masking Cycle
+    
+    rect rgb(50, 50, 100)
+        Note right of Beacon: 1. Pre-Sleep: Mask Memory
+        Beacon->>SleepmaskEngine: masked_sleep(5000ms, regions)
+        
+        loop For each code/heap region
+            SleepmaskEngine->>Memory: Read region data
+            SleepmaskEngine->>MaskingCrypto: encrypt(data, key, RC4)
+            MaskingCrypto-->>SleepmaskEngine: encrypted_data
+            SleepmaskEngine->>Memory: Write encrypted_data
+            SleepmaskEngine->>Kernel: VirtualProtect(PAGE_NOACCESS)
+        end
+        
+        Note right of SleepmaskEngine: Memory now encrypted & inaccessible
+    end
+    
+    rect rgb(100, 50, 50)
+        Note right of Beacon: 2. Sleep (Ekko/Foliage/DeathSleep)
+        
+        alt Ekko Sleep (ROP-based)
+            SleepmaskEngine->>Kernel: CreateWaitableTimerEx()
+            SleepmaskEngine->>Kernel: SetWaitableTimer(-5000 * 10000)
+            SleepmaskEngine->>Kernel: WaitForSingleObject(INFINITE)
+            Note right of Kernel: Thread blocked in kernel<br/>Memory encrypted
+        else Foliage Sleep (APC-based)
+            SleepmaskEngine->>Kernel: SleepEx(5000, TRUE)
+            Note right of Kernel: Alertable sleep
+        else Death Sleep (Suspension)
+            SleepmaskEngine->>Kernel: Create helper thread
+            SleepmaskEngine->>Kernel: SuspendThread(current)
+            Note right of Kernel: Main thread suspended
+        end
+    end
+    
+    rect rgb(50, 100, 50)
+        Note right of Beacon: 3. Wake: Sleep Skip Detection
+        SleepmaskEngine->>SleepSkipDetector: check_sleep_skip(5000, actual_ms)
+        
+        alt Sleep Shortened (EDR/Sandbox)
+            SleepSkipDetector-->>SleepmaskEngine: (skip=true, "Sleep shortened")
+            SleepmaskEngine->>Beacon: Anomaly detected!
+            Note right of Beacon: Switch technique or migrate
+        else Sleep Extended (Debugger)
+            SleepSkipDetector-->>SleepmaskEngine: (skip=true, "Debugger pause")
+            SleepmaskEngine->>Beacon: CRITICAL: Debugger detected
+        else Normal
+            SleepSkipDetector-->>SleepmaskEngine: (skip=false, "Normal")
+        end
+    end
+    
+    rect rgb(50, 50, 100)
+        Note right of Beacon: 4. Post-Sleep: Unmask Memory
+        
+        loop For each masked region
+            SleepmaskEngine->>Kernel: VirtualProtect(PAGE_READWRITE)
+            SleepmaskEngine->>MaskingCrypto: decrypt(data, key, RC4)
+            MaskingCrypto-->>SleepmaskEngine: original_data
+            SleepmaskEngine->>Memory: Write original_data
+            SleepmaskEngine->>Kernel: VirtualProtect(original_protection)
+        end
+        
+        Note right of SleepmaskEngine: Memory restored & executable
+    end
+    
+    SleepmaskEngine-->>Beacon: {success: true, actual_ms: 5023}
+    
+    Note over Beacon,SleepSkipDetector: 5. Execute → Repeat Cycle
+```
+
+---
+
+## Drip-Loader Flow (Slow Memory Loading)
+
+```mermaid
+sequenceDiagram
+    participant Operator
+    participant DripLoader
+    participant Memory
+    participant EDRHook
+    
+    Note over Operator,EDRHook: Bypass memory allocation detection
+    
+    Operator->>DripLoader: drip_write(payload, 1MB)
+    
+    rect rgb(70, 70, 50)
+        loop Chunk 1..256 (4KB each)
+            DripLoader->>Memory: VirtualAlloc(4KB)
+            Note right of DripLoader: Small allocation<br/>Below EDR threshold
+            
+            DripLoader->>Memory: WriteProcessMemory(chunk)
+            
+            DripLoader->>DripLoader: sleep(100ms + jitter)
+            Note right of DripLoader: Timing spread<br/>Avoid behavioral detection
+            
+            opt Progress Callback
+                DripLoader-->>Operator: progress(25%, chunks=64)
+            end
+        end
+    end
+    
+    Note over DripLoader,Memory: Total: 1MB loaded in 256 chunks<br/>Over ~30 seconds
+    
+    DripLoader-->>Operator: (success=true, addr=0x7FF...)
+    
+    Note over Operator,EDRHook: EDR sees many small allocations<br/>Not one suspicious 1MB allocation
+```
+
+---
+
+## AI Sleep Anomaly Response
+
+```mermaid
+flowchart TB
+    subgraph Detection["Sleep Anomaly Detection"]
+        SLEEP_RESULT[Sleep Result]
+        SKIP_CHECK{Skip Detected?}
+    end
+    
+    subgraph Analysis["AI Analysis"]
+        SHORT{Shortened?}
+        LONG{Extended?}
+        DISC{Timer Discrepancy?}
+    end
+    
+    subgraph Response["AI Response"]
+        SANDBOX[Sandbox/EDR Detected]
+        DEBUGGER[Debugger Detected]
+        ADVANCED[Advanced Sandbox]
+    end
+    
+    subgraph Actions["Recommended Actions"]
+        A1[Switch to death_sleep]
+        A2[Increase jitter 50%]
+        A3[Process migration]
+        A4[Enable anti-debug]
+        A5[Use drip-loader]
+        A6[Exit environment]
+    end
+    
+    SLEEP_RESULT --> SKIP_CHECK
+    
+    SKIP_CHECK -->|No| CONTINUE[Continue Normal]
+    SKIP_CHECK -->|Yes| SHORT
+    
+    SHORT -->|Yes| SANDBOX
+    SHORT -->|No| LONG
+    
+    LONG -->|Yes| DEBUGGER
+    LONG -->|No| DISC
+    
+    DISC -->|Yes| ADVANCED
+    
+    SANDBOX --> A1
+    SANDBOX --> A2
+    SANDBOX --> A5
+    
+    DEBUGGER --> A3
+    DEBUGGER --> A4
+    
+    ADVANCED --> A6
+```
+
+---
+
 ## Evasion Profiles
 
 ```mermaid

