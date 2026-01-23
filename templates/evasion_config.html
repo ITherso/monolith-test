@@ -1,0 +1,590 @@
+{% extends "base.html" %}
+
+{% block title %}Evasion Configuration{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-shield-alt text-primary"></i> Evasion & Anti-Analysis Configuration</h2>
+            <p class="text-muted">Configure EDR/AV bypass techniques for beacon operations</p>
+        </div>
+    </div>
+
+    <!-- Active Beacons with Evasion Level -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-broadcast-tower"></i> Active Beacons
+                    <span class="badge bg-success float-end">{{ beacons|length if beacons else 0 }} Active</span>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Beacon ID</th>
+                                <th>Hostname</th>
+                                <th>OS</th>
+                                <th>Last Seen</th>
+                                <th>Evasion Level</th>
+                                <th>Profile</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for beacon in beacons %}
+                            <tr>
+                                <td><code>{{ beacon.id[:12] }}...</code></td>
+                                <td>{{ beacon.hostname }}</td>
+                                <td>
+                                    {% if 'windows' in beacon.os|lower %}
+                                    <i class="fab fa-windows text-info"></i>
+                                    {% elif 'linux' in beacon.os|lower %}
+                                    <i class="fab fa-linux text-warning"></i>
+                                    {% elif 'darwin' in beacon.os|lower or 'macos' in beacon.os|lower %}
+                                    <i class="fab fa-apple text-secondary"></i>
+                                    {% endif %}
+                                    {{ beacon.os }}
+                                </td>
+                                <td>{{ beacon.last_seen }}</td>
+                                <td>
+                                    {% if beacon.evasion_level == 'high' or beacon.evasion_level == 3 %}
+                                    <span class="badge bg-success"><i class="fas fa-shield-alt"></i> High</span>
+                                    {% elif beacon.evasion_level == 'medium' or beacon.evasion_level == 2 %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-shield-alt"></i> Medium</span>
+                                    {% else %}
+                                    <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Low</span>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-secondary">{{ beacon.profile or 'default' }}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="configureBeacon('{{ beacon.id }}')">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewDetails('{{ beacon.id }}')">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No active beacons</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evasion Configuration Panel -->
+    <div class="row">
+        <!-- Profile Selection -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-user-secret"></i> C2 Profiles (Malleable)
+                </div>
+                <div class="card-body">
+                    <form id="profileForm">
+                        <div class="mb-3">
+                            <label class="form-label">Select Profile</label>
+                            <select class="form-select" id="profileSelect" onchange="loadProfile()">
+                                <option value="default">Default</option>
+                                <option value="amazon">Amazon (E-commerce)</option>
+                                <option value="microsoft">Microsoft 365</option>
+                                <option value="google">Google Services</option>
+                                <option value="slack">Slack API</option>
+                                <option value="cloudflare">Cloudflare CDN</option>
+                                <option value="custom">Custom Profile...</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">User-Agent</label>
+                            <input type="text" class="form-control" id="userAgent" 
+                                   value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">GET URIs</label>
+                                <textarea class="form-control" id="getUris" rows="3">/api/status
+/health
+/ping</textarea>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">POST URIs</label>
+                                <textarea class="form-control" id="postUris" rows="3">/api/submit
+/api/data
+/upload</textarea>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Metadata Transform</label>
+                            <select class="form-select" id="metadataTransform">
+                                <option value="base64url">Base64 URL-safe</option>
+                                <option value="base64">Base64</option>
+                                <option value="netbios">NetBIOS</option>
+                                <option value="mask">XOR Mask</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="applyProfile()">
+                            <i class="fas fa-check"></i> Apply Profile
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="exportProfile()">
+                            <i class="fas fa-download"></i> Export YAML
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evasion Settings -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-eye-slash"></i> Evasion Settings
+                </div>
+                <div class="card-body">
+                    <form id="evasionForm">
+                        <div class="mb-3">
+                            <label class="form-label">Evasion Level</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="evasionLevel" id="levelLow" value="1">
+                                <label class="btn btn-outline-danger" for="levelLow">Low</label>
+
+                                <input type="radio" class="btn-check" name="evasionLevel" id="levelMedium" value="2">
+                                <label class="btn btn-outline-warning" for="levelMedium">Medium</label>
+
+                                <input type="radio" class="btn-check" name="evasionLevel" id="levelHigh" value="3" checked>
+                                <label class="btn btn-outline-success" for="levelHigh">High</label>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Sleep Time (sec)</label>
+                                <input type="number" class="form-control" id="sleepTime" value="60" min="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Jitter (%)</label>
+                                <input type="number" class="form-control" id="jitterPercent" value="30" min="0" max="100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Sleep Jitter Algorithm</label>
+                            <select class="form-select" id="jitterAlgo">
+                                <option value="random">Random</option>
+                                <option value="gaussian" selected>Gaussian (Natural)</option>
+                                <option value="fibonacci">Fibonacci (Unpredictable)</option>
+                                <option value="fixed">Fixed (No Jitter)</option>
+                            </select>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Working Hours</label>
+                                <input type="text" class="form-control" id="workingHours" 
+                                       placeholder="09:00-17:00">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Kill Date</label>
+                                <input type="date" class="form-control" id="killDate">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Proxy Chain</label>
+                            <input type="text" class="form-control" id="proxyChain" 
+                                   placeholder="http://redirector:8080">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Bypass Options</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="amsiBypass" checked>
+                                <label class="form-check-label" for="amsiBypass">AMSI Bypass</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="etwBypass" checked>
+                                <label class="form-check-label" for="etwBypass">ETW Bypass</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sandboxCheck" checked>
+                                <label class="form-check-label" for="sandboxCheck">Sandbox Detection</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fallback Channels -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-random"></i> Fallback Channels
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="wsChannel" checked>
+                        <label class="form-check-label" for="wsChannel">
+                            <i class="fas fa-plug text-info"></i> WebSocket
+                            <small class="text-muted">(Priority 1)</small>
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="dnsChannel" checked>
+                        <label class="form-check-label" for="dnsChannel">
+                            <i class="fas fa-globe text-success"></i> DNS Tunnel
+                            <small class="text-muted">(Priority 2)</small>
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="dohChannel">
+                        <label class="form-check-label" for="dohChannel">
+                            <i class="fas fa-lock text-primary"></i> DNS over HTTPS
+                            <small class="text-muted">(Priority 3)</small>
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="icmpChannel">
+                        <label class="form-check-label" for="icmpChannel">
+                            <i class="fas fa-network-wired text-danger"></i> ICMP Tunnel
+                            <small class="text-muted">(Priority 4, requires root)</small>
+                        </label>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label">DNS Beacon Domain</label>
+                        <input type="text" class="form-control" id="dnsDomain" placeholder="beacon.example.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">DoH Provider</label>
+                        <select class="form-select" id="dohProvider">
+                            <option value="cloudflare">Cloudflare</option>
+                            <option value="google">Google</option>
+                            <option value="quad9">Quad9</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Generation -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-cube"></i> Agent Generation
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Agent Type</label>
+                        <select class="form-select" id="agentType">
+                            <option value="python">Python (Cross-platform)</option>
+                            <option value="go">Go (Native binary)</option>
+                            <option value="rust">Rust (Memory-safe)</option>
+                            <option value="powershell">PowerShell (Windows)</option>
+                            <option value="csharp">C# (Windows/.NET)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Target Architecture</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="arch" id="archX64" value="x64" checked>
+                            <label class="btn btn-outline-primary" for="archX64">x64</label>
+
+                            <input type="radio" class="btn-check" name="arch" id="archX86" value="x86">
+                            <label class="btn btn-outline-primary" for="archX86">x86</label>
+
+                            <input type="radio" class="btn-check" name="arch" id="archAny" value="any">
+                            <label class="btn btn-outline-primary" for="archAny">Any</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">C2 Server</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="c2Host" placeholder="192.168.1.100">
+                            <span class="input-group-text">:</span>
+                            <input type="number" class="form-control" id="c2Port" value="443" style="max-width: 100px;">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-info" onclick="generateAgent()">
+                            <i class="fas fa-cogs"></i> Generate Agent
+                        </button>
+                        <button class="btn btn-outline-info" onclick="generateStageless()">
+                            <i class="fas fa-memory"></i> Generate Stageless Payload
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YAML Config Preview -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-file-code"></i> Configuration Preview (YAML)
+                    <button class="btn btn-sm btn-outline-light float-end" onclick="copyConfig()">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                <div class="card-body">
+                    <pre id="yamlPreview" class="bg-dark text-success p-3 rounded"><code># Evasion Configuration
+name: custom_profile
+description: Custom C2 profile
+
+evasion:
+  level: high
+  sleep_jitter: gaussian
+  sleep_time: 60
+  jitter_percent: 30
+  proxy_chain: null
+  working_hours: "09:00-17:00"
+  kill_date: "2026-02-01"
+  sandbox_checks: true
+  amsi_bypass: true
+  etw_bypass: true
+
+http_get:
+  uri:
+    - /api/status
+    - /health
+  metadata_transform: base64url
+  metadata_header: Cookie
+
+http_post:
+  uri:
+    - /api/submit
+  content_type: application/json
+
+fallback_channels:
+  websocket: true
+  dns: true
+  doh: false
+  icmp: false</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agent Generated Modal -->
+<div class="modal fade" id="agentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle"></i> Agent Generated</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="agentOutput"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadAgent()">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Profile data
+const profiles = {
+    'default': {
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        getUris: '/api/status\n/health\n/ping',
+        postUris: '/api/submit\n/api/data',
+        transform: 'base64url'
+    },
+    'amazon': {
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0',
+        getUris: '/s/ref=nb_sb_noss\n/gp/product/\n/dp/B0',
+        postUris: '/gp/api/updateCart\n/gp/item-dispatch/',
+        transform: 'base64url'
+    },
+    'microsoft': {
+        userAgent: 'Microsoft Office/16.0 (Windows NT 10.0; Microsoft Outlook 16.0)',
+        getUris: '/owa/service.svc\n/EWS/Exchange.asmx\n/api/v2.0/me/messages',
+        postUris: '/owa/service.svc?action=GetItem\n/api/v2.0/me/sendmail',
+        transform: 'base64'
+    },
+    'google': {
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0',
+        getUris: '/search\n/complete/search\n/async/newtab',
+        postUris: '/gen_204\n/async/newtab',
+        transform: 'base64url'
+    },
+    'slack': {
+        userAgent: 'Slackbot 1.0 (+https://api.slack.com/robots)',
+        getUris: '/api/conversations.list\n/api/users.list',
+        postUris: '/api/chat.postMessage\n/api/files.upload',
+        transform: 'base64url'
+    }
+};
+
+function loadProfile() {
+    const profile = document.getElementById('profileSelect').value;
+    if (profiles[profile]) {
+        document.getElementById('userAgent').value = profiles[profile].userAgent;
+        document.getElementById('getUris').value = profiles[profile].getUris;
+        document.getElementById('postUris').value = profiles[profile].postUris;
+        document.getElementById('metadataTransform').value = profiles[profile].transform;
+    }
+    updateYamlPreview();
+}
+
+function updateYamlPreview() {
+    const config = {
+        name: document.getElementById('profileSelect').value,
+        evasion: {
+            level: document.querySelector('input[name="evasionLevel"]:checked')?.value || '3',
+            sleep_jitter: document.getElementById('jitterAlgo').value,
+            sleep_time: parseInt(document.getElementById('sleepTime').value),
+            jitter_percent: parseInt(document.getElementById('jitterPercent').value),
+            working_hours: document.getElementById('workingHours').value || null,
+            kill_date: document.getElementById('killDate').value || null,
+            sandbox_checks: document.getElementById('sandboxCheck').checked,
+            amsi_bypass: document.getElementById('amsiBypass').checked,
+            etw_bypass: document.getElementById('etwBypass').checked
+        },
+        http_get: {
+            uri: document.getElementById('getUris').value.split('\n').filter(u => u.trim()),
+            metadata_transform: document.getElementById('metadataTransform').value
+        },
+        http_post: {
+            uri: document.getElementById('postUris').value.split('\n').filter(u => u.trim())
+        },
+        fallback_channels: {
+            websocket: document.getElementById('wsChannel').checked,
+            dns: document.getElementById('dnsChannel').checked,
+            doh: document.getElementById('dohChannel').checked,
+            icmp: document.getElementById('icmpChannel').checked
+        }
+    };
+    
+    // Simple YAML generation
+    let yaml = `# Evasion Configuration\nname: ${config.name}\n\nevasion:\n`;
+    yaml += `  level: ${['low', 'medium', 'high'][config.evasion.level - 1] || 'high'}\n`;
+    yaml += `  sleep_jitter: ${config.evasion.sleep_jitter}\n`;
+    yaml += `  sleep_time: ${config.evasion.sleep_time}\n`;
+    yaml += `  jitter_percent: ${config.evasion.jitter_percent}\n`;
+    yaml += `  working_hours: ${config.evasion.working_hours ? '"' + config.evasion.working_hours + '"' : 'null'}\n`;
+    yaml += `  kill_date: ${config.evasion.kill_date ? '"' + config.evasion.kill_date + '"' : 'null'}\n`;
+    yaml += `  sandbox_checks: ${config.evasion.sandbox_checks}\n`;
+    yaml += `  amsi_bypass: ${config.evasion.amsi_bypass}\n`;
+    yaml += `  etw_bypass: ${config.evasion.etw_bypass}\n\n`;
+    
+    yaml += `http_get:\n  uri:\n`;
+    config.http_get.uri.forEach(u => yaml += `    - ${u}\n`);
+    yaml += `  metadata_transform: ${config.http_get.metadata_transform}\n\n`;
+    
+    yaml += `http_post:\n  uri:\n`;
+    config.http_post.uri.forEach(u => yaml += `    - ${u}\n`);
+    
+    yaml += `\nfallback_channels:\n`;
+    yaml += `  websocket: ${config.fallback_channels.websocket}\n`;
+    yaml += `  dns: ${config.fallback_channels.dns}\n`;
+    yaml += `  doh: ${config.fallback_channels.doh}\n`;
+    yaml += `  icmp: ${config.fallback_channels.icmp}\n`;
+    
+    document.getElementById('yamlPreview').querySelector('code').textContent = yaml;
+}
+
+function copyConfig() {
+    const yaml = document.getElementById('yamlPreview').querySelector('code').textContent;
+    navigator.clipboard.writeText(yaml).then(() => {
+        alert('Configuration copied to clipboard!');
+    });
+}
+
+function applyProfile() {
+    updateYamlPreview();
+    alert('Profile applied! Generate agent to use this configuration.');
+}
+
+function exportProfile() {
+    const yaml = document.getElementById('yamlPreview').querySelector('code').textContent;
+    const blob = new Blob([yaml], {type: 'text/yaml'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'evasion_profile.yaml';
+    a.click();
+}
+
+function generateAgent() {
+    const agentType = document.getElementById('agentType').value;
+    const c2Host = document.getElementById('c2Host').value || '127.0.0.1';
+    const c2Port = document.getElementById('c2Port').value || '443';
+    
+    // Show modal with generation status
+    const modal = new bootstrap.Modal(document.getElementById('agentModal'));
+    document.getElementById('agentOutput').innerHTML = `
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i> Generating ${agentType.toUpperCase()} agent...
+        </div>
+        <p>C2: ${c2Host}:${c2Port}</p>
+        <p>Evasion: High</p>
+    `;
+    modal.show();
+    
+    // Simulate generation
+    setTimeout(() => {
+        document.getElementById('agentOutput').innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check"></i> Agent generated successfully!
+            </div>
+            <h6>Build Commands:</h6>
+            <pre class="bg-dark text-white p-2">
+# For ${agentType.toUpperCase()} Agent
+${agentType === 'go' ? 'GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o agent.exe' :
+  agentType === 'rust' ? 'cargo build --release --target x86_64-pc-windows-gnu' :
+  agentType === 'python' ? 'pyinstaller --onefile --noconsole agent.py' :
+  'csc /target:winexe agent.cs'}
+            </pre>
+        `;
+    }, 1500);
+}
+
+function generateStageless() {
+    alert('Generating stageless payload with Donut/sRDI...');
+}
+
+function configureBeacon(id) {
+    alert('Configure beacon: ' + id);
+}
+
+function viewDetails(id) {
+    alert('View details: ' + id);
+}
+
+// Auto-update preview on change
+document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('change', updateYamlPreview);
+    el.addEventListener('input', updateYamlPreview);
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadProfile();
+});
+</script>
+{% endblock %}
