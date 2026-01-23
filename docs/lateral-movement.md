@@ -124,6 +124,171 @@ sequenceDiagram
 
 ---
 
+## AMSI & ETW Bypass Flow (2025-2026)
+
+Bu diagram AMSI patch, ETW disable ve injection akışını gösterir.
+
+```mermaid
+sequenceDiagram
+    participant Operator
+    participant BypassManager
+    participant DefenseAnalyzer
+    participant AMSIBypass
+    participant ETWBypass
+    participant IndirectSyscall
+    participant APIUnhooker
+    participant TargetProcess
+    
+    Note over Operator,TargetProcess: Pre-Lateral Movement Bypass Sequence
+    
+    Operator->>BypassManager: prepare_for_lateral(target_info)
+    BypassManager->>DefenseAnalyzer: analyze_defenses()
+    
+    par Defense Detection
+        DefenseAnalyzer->>AMSIBypass: detect_amsi()
+        AMSIBypass-->>DefenseAnalyzer: (present=true, version="10.0.22621")
+    and
+        DefenseAnalyzer->>ETWBypass: detect_etw()
+        ETWBypass-->>DefenseAnalyzer: (enabled=true, providers=[...])
+    and
+        DefenseAnalyzer->>DefenseAnalyzer: _detect_edr_processes()
+        Note right of DefenseAnalyzer: Check for CrowdStrike,<br/>SentinelOne, Defender
+    end
+    
+    DefenseAnalyzer-->>BypassManager: DefenseAnalysis(risk_score=75, recommended=BOTH)
+    
+    Note over BypassManager,TargetProcess: Execute Bypass Layer
+    
+    alt bypass_layer == "both" or "amsi"
+        BypassManager->>AMSIBypass: check_amsi_hooks()
+        AMSIBypass-->>BypassManager: hooked=true (EDR present)
+        
+        Note over BypassManager: EDR hook detected - unhook first
+        BypassManager->>APIUnhooker: unhook_specific("NtProtectVirtualMemory")
+        APIUnhooker->>APIUnhooker: Read clean ntdll from disk
+        APIUnhooker->>TargetProcess: Restore syscall stub
+        APIUnhooker-->>BypassManager: BypassResult(success=true)
+        
+        BypassManager->>AMSIBypass: patch_amsi_scan_buffer()
+        AMSIBypass->>AMSIBypass: VirtualProtect(amsi.dll, RWX)
+        AMSIBypass->>TargetProcess: Write patch bytes: B8 57 00 07 80 C3
+        Note right of TargetProcess: mov eax, E_INVALIDARG; ret
+        AMSIBypass->>AMSIBypass: VirtualProtect(amsi.dll, RX)
+        AMSIBypass-->>BypassManager: BypassResult(success=true, risk=40%)
+    end
+    
+    alt bypass_layer == "both" or "etw"
+        BypassManager->>ETWBypass: patch_etw_event_write()
+        ETWBypass->>ETWBypass: GetProcAddress(ntdll, "EtwEventWrite")
+        ETWBypass->>TargetProcess: Write patch: C3 (ret)
+        ETWBypass-->>BypassManager: BypassResult(success=true, risk=45%)
+        
+        opt Disable Critical Providers
+            BypassManager->>ETWBypass: disable_critical_providers()
+            ETWBypass->>TargetProcess: logman stop "Microsoft-Windows-Threat-Intelligence"
+        end
+    end
+    
+    BypassManager-->>Operator: {ready: true, bypass_results: [...]}
+    
+    Note over Operator,TargetProcess: Now safe to execute lateral movement
+```
+
+---
+
+## Indirect Syscall Flow (SysWhispers3 Style)
+
+```mermaid
+sequenceDiagram
+    participant Code
+    participant IndirectSyscall
+    participant DiskNtdll
+    participant MemoryStub
+    participant Kernel
+    
+    Note over Code,Kernel: Bypass EDR hooks via indirect syscalls
+    
+    Code->>IndirectSyscall: indirect_call("NtAllocateVirtualMemory", args)
+    
+    IndirectSyscall->>IndirectSyscall: Check if hooked in memory
+    
+    alt Function is hooked
+        IndirectSyscall->>DiskNtdll: Read C:\Windows\System32\ntdll.dll
+        DiskNtdll-->>IndirectSyscall: Clean syscall bytes
+        Note right of IndirectSyscall: SSN from SYSCALL_TABLE_WIN11
+    else Function is clean
+        IndirectSyscall->>IndirectSyscall: Read syscall stub from memory
+    end
+    
+    IndirectSyscall->>MemoryStub: VirtualAlloc(RWX)
+    IndirectSyscall->>MemoryStub: Write clean syscall stub
+    Note right of MemoryStub: 4C 8B D1 (mov r10, rcx)<br/>B8 18 00 00 00 (mov eax, 0x18)<br/>0F 05 (syscall)<br/>C3 (ret)
+    
+    IndirectSyscall->>MemoryStub: Call stub
+    MemoryStub->>Kernel: syscall (direct to kernel)
+    Kernel-->>MemoryStub: NTSTATUS
+    
+    MemoryStub-->>IndirectSyscall: Result
+    IndirectSyscall->>MemoryStub: VirtualFree()
+    IndirectSyscall-->>Code: Success/Error
+```
+
+---
+
+## AI Defense Analysis Flow
+
+```mermaid
+flowchart TB
+    subgraph Input
+        TARGET[Target Host Intel]
+        LIVESCAN[Live System Scan]
+    end
+    
+    subgraph Analysis["AI Defense Analyzer"]
+        AMSI_CHECK{AMSI Present?}
+        ETW_CHECK{ETW Enabled?}
+        EDR_CHECK{EDR Detected?}
+        RISK_CALC[Calculate Risk Score]
+    end
+    
+    subgraph Recommendation
+        NONE[bypass_layer: none]
+        AMSI_ONLY[bypass_layer: amsi]
+        ETW_ONLY[bypass_layer: etw]
+        BOTH[bypass_layer: both]
+    end
+    
+    subgraph Profile["Recommended Profile"]
+        P_NONE[Profile: none<br/>Risk: 95%]
+        P_DEFAULT[Profile: default<br/>Risk: 70%]
+        P_STEALTH[Profile: stealth<br/>Risk: 40%]
+        P_PARANOID[Profile: paranoid<br/>Risk: 20%]
+    end
+    
+    TARGET --> AMSI_CHECK
+    LIVESCAN --> AMSI_CHECK
+    
+    AMSI_CHECK -->|No| ETW_CHECK
+    AMSI_CHECK -->|Yes| ETW_CHECK
+    
+    ETW_CHECK -->|No| EDR_CHECK
+    ETW_CHECK -->|Yes| EDR_CHECK
+    
+    EDR_CHECK --> RISK_CALC
+    
+    RISK_CALC -->|risk < 30| NONE
+    RISK_CALC -->|30 <= risk < 50| AMSI_ONLY
+    RISK_CALC -->|50 <= risk < 70| ETW_ONLY
+    RISK_CALC -->|risk >= 70| BOTH
+    
+    NONE --> P_NONE
+    AMSI_ONLY --> P_DEFAULT
+    ETW_ONLY --> P_STEALTH
+    BOTH --> P_PARANOID
+```
+
+---
+
 ## Evasion Profiles
 
 ```mermaid

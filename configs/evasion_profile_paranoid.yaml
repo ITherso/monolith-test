@@ -27,6 +27,32 @@ ai_scoring:
     - "Time-critical operations"
     - "Large-scale lateral movement"
 
+# AMSI & ETW Bypass Layer (2025-2026 trend)
+bypass_layer: "both"           # none, amsi, etw, both
+bypass_config:
+  amsi:
+    enabled: true
+    technique: "patch_amsi_scan_buffer"
+    backup_technique: "hardware_breakpoint"
+    patch_amsi_open_session: true
+  etw:
+    enabled: true
+    patch_nt_trace_event: true
+    patch_etw_event_write: true
+    disable_providers:
+      - "Microsoft-Windows-PowerShell"
+      - "Microsoft-Antimalware-Scan-Interface"
+      - "Microsoft-Windows-Threat-Intelligence"
+  indirect_syscalls:
+    enabled: true
+    technique: "syswhispers3"   # Indirect syscalls via clean ntdll
+    resolve_ssn_dynamically: true
+  api_unhooking:
+    enabled: true
+    technique: "map_fresh_ntdll" # Map clean ntdll from disk
+    restore_text_section: true
+  auto_detect_defenses: true
+
 # Reflective Loading - ADVANCED
 reflective_loader:
   enabled: true

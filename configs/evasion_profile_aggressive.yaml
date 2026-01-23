@@ -15,6 +15,20 @@ metrics:
   stealth_score: 0.45           # Moderate stealth
   reliability: 0.90             # High reliability
 
+# AMSI & ETW Bypass Layer
+bypass_layer: "amsi"            # none, amsi, etw, both
+bypass_config:
+  amsi:
+    enabled: true
+    technique: "patch_amsi_scan_buffer"
+  etw:
+    enabled: false              # Skip ETW for speed
+  indirect_syscalls:
+    enabled: false              # Use direct API calls for speed
+  api_unhooking:
+    enabled: false
+  auto_detect_defenses: false   # Skip detection for speed
+
 # AI Guidance Note  
 ai_scoring:
   detection_reduction: "40%"

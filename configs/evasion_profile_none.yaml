@@ -15,6 +15,19 @@ metrics:
   stealth_score: 0.05           # Very low stealth
   reliability: 0.99             # Highest reliability (no evasion failures)
 
+# AMSI & ETW Bypass Layer - DISABLED
+bypass_layer: "none"            # none, amsi, etw, both
+bypass_config:
+  amsi:
+    enabled: false
+  etw:
+    enabled: false
+  indirect_syscalls:
+    enabled: false
+  api_unhooking:
+    enabled: false
+  auto_detect_defenses: false
+
 # Reflective Loading - DISABLED
 reflective_loader:
   enabled: false
@@ -23,7 +36,7 @@ reflective_loader:
 process_injection:
   enabled: false
 
-# AMSI/ETW Bypass - DISABLED
+# AMSI/ETW Bypass - DISABLED (legacy)
 security_bypass:
   amsi_bypass: false
   etw_bypass: false
