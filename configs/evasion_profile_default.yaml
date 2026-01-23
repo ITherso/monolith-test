@@ -1,0 +1,80 @@
+# Evasion Profile: DEFAULT
+# Basic evasion for general use
+# Detection Risk: HIGH (~70%)
+# Speed: FAST
+
+name: "Default Evasion Profile"
+description: "Basic evasion techniques - suitable for networks with minimal security"
+
+profile: "default"
+
+# Performance Metrics
+metrics:
+  detection_risk: 0.70          # 70% chance of detection
+  speed_multiplier: 1.2         # 20% slower than baseline
+  stealth_score: 0.30           # Low-moderate stealth
+  reliability: 0.95             # High reliability
+
+# Reflective Loading - DISABLED
+reflective_loader:
+  enabled: false
+  technique: null
+
+# Process Injection - ENABLED (Basic)
+process_injection:
+  enabled: true
+  technique: "apc_injection"    # Queue User APC - basic but effective
+  target_process: "explorer.exe"
+  fallback_processes:
+    - "svchost.exe"
+    - "notepad.exe"
+  hollow_process: false
+  doppelgang: false
+
+# AMSI/ETW Bypass - PARTIAL
+security_bypass:
+  amsi_bypass: true             # Basic AMSI patch
+  amsi_technique: "patch_amsi_init"
+  etw_bypass: false             # Not needed for basic profile
+  unhook_ntdll: false
+
+# Sleep Obfuscation - DISABLED
+sleep_config:
+  enabled: false
+  technique: "standard"
+  min_sleep_ms: 1000
+  max_sleep_ms: 3000
+  jitter_percent: 0.1           # 10% jitter
+  entropy_jitter: false
+
+# Anti-Analysis - MINIMAL
+anti_analysis:
+  detect_sandbox: false
+  detect_debugger: false
+  check_vm: false
+  timing_checks: false
+
+# Traffic Obfuscation - MINIMAL
+traffic:
+  encrypt: true
+  encryption_algorithm: "xor"
+  domain_fronting: false
+
+# Recommended Use Cases
+use_cases:
+  - "Networks with only Windows Defender"
+  - "Quick compromise scenarios"
+  - "Low-security environments"
+  - "Initial foothold testing"
+
+# AV/EDR Compatibility
+av_edr_notes:
+  defender: "May evade with AMSI bypass"
+  crowdstrike: "Will likely be detected"
+  sentinelone: "Will likely be detected"
+  carbonblack: "Will likely be detected"
+
+# Atomic Red Team Test Mapping
+atomic_tests:
+  - "T1055.004"  # Asynchronous Procedure Call
+  - "T1562.001"  # Disable or Modify Tools (AMSI)

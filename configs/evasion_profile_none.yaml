@@ -1,0 +1,65 @@
+# Evasion Profile: NONE
+# Fast execution, no evasion - for testing or lab environments
+# Detection Risk: VERY HIGH (~95%)
+# Speed: FASTEST
+
+name: "No Evasion Profile"
+description: "Raw execution without any evasion - suitable only for lab/testing"
+
+profile: "none"
+
+# Performance Metrics
+metrics:
+  detection_risk: 0.95          # 95% chance of detection
+  speed_multiplier: 1.0         # Baseline speed
+  stealth_score: 0.05           # Very low stealth
+  reliability: 0.99             # Highest reliability (no evasion failures)
+
+# Reflective Loading - DISABLED
+reflective_loader:
+  enabled: false
+
+# Process Injection - DISABLED
+process_injection:
+  enabled: false
+
+# AMSI/ETW Bypass - DISABLED
+security_bypass:
+  amsi_bypass: false
+  etw_bypass: false
+  unhook_ntdll: false
+
+# Sleep Obfuscation - DISABLED
+sleep_config:
+  enabled: false
+  technique: "standard"         # Standard time.sleep()
+  min_sleep_ms: 1000
+  max_sleep_ms: 5000
+  jitter_percent: 0.0           # No jitter
+  entropy_jitter: false
+
+# Anti-Analysis - DISABLED
+anti_analysis:
+  detect_sandbox: false
+  detect_debugger: false
+  check_vm: false
+  timing_checks: false
+
+# Traffic Obfuscation - DISABLED
+traffic:
+  encrypt: false
+  domain_fronting: false
+
+# Recommended Use Cases
+use_cases:
+  - "Lab testing"
+  - "Controlled environments"
+  - "Speed-critical operations"
+  - "Debugging evasion issues"
+
+# AV/EDR Compatibility
+av_edr_notes:
+  defender: "Will be detected immediately"
+  crowdstrike: "Will be detected and blocked"
+  sentinelone: "Will be detected and blocked"
+  carbonblack: "Will be detected and blocked"

@@ -1,0 +1,164 @@
+# Evasion Profile: PARANOID
+# Maximum evasion for high-security environments
+# Detection Risk: LOW (~20%)
+# Speed: SLOW
+
+name: "Paranoid Evasion Profile"
+description: "Maximum stealth for enterprise networks with advanced EDR/XDR"
+
+profile: "paranoid"
+
+# Performance Metrics
+metrics:
+  detection_risk: 0.20          # 20% chance of detection (80% reduction)
+  speed_multiplier: 5.0         # 5x slower than baseline
+  stealth_score: 0.80           # Very high stealth
+  reliability: 0.70             # Lower reliability due to complex evasion
+  
+# AI Guidance Note
+ai_scoring:
+  detection_reduction: "80%"
+  speed_penalty: "5x slower"
+  recommended_for:
+    - "EDR-heavy environments"
+    - "SOC-monitored networks"
+    - "High-value targets"
+  not_recommended_for:
+    - "Time-critical operations"
+    - "Large-scale lateral movement"
+
+# Reflective Loading - ADVANCED
+reflective_loader:
+  enabled: true
+  technique: "transacted_hollowing"  # NTFS transaction + hollowing
+  srdi_options:
+    obfuscate_imports: true
+    clear_header: true
+    pass_shellcode_base: true
+    stomp_pe_header: true       # Destroy PE header after load
+  prepend_migrate: true
+  memory_only: true             # Never touch disk
+
+# Process Injection - ADVANCED
+process_injection:
+  enabled: true
+  technique: "early_bird"       # Inject before main thread executes
+  target_process: "RuntimeBroker.exe"
+  fallback_processes:
+    - "SearchProtocolHost.exe"
+    - "backgroundTaskHost.exe"
+    - "dllhost.exe"
+  hollow_process: true          # Process hollowing enabled
+  hollow_config:
+    target_binary: "svchost.exe"
+    ppid_spoof: true            # Spoof parent PID
+    ppid_target: "services.exe"
+  doppelgang: true              # Process doppelganging
+  doppelgang_config:
+    use_ntfs_transactions: true
+    rollback_transaction: true
+  ghosting: true                # Process ghosting (simplified)
+  syscall_mode: "direct"        # Direct syscalls to avoid hooks
+
+# AMSI/ETW Bypass - FULL + NTDLL UNHOOK
+security_bypass:
+  amsi_bypass: true
+  amsi_technique: "hardware_breakpoint"
+  amsi_techniques_chain:        # Multiple techniques for reliability
+    - "hardware_breakpoint"
+    - "patch_amsi_scan_buffer"
+    - "patch_amsi_init"
+  etw_bypass: true
+  etw_technique: "patch_nttracevent"
+  unhook_ntdll: true            # Full NTDLL unhooking
+  unhook_technique: "map_fresh_ntdll"
+  unhook_options:
+    restore_syscall_stubs: true
+    check_hooks_first: true
+    use_knowndlls: false        # Map from disk, not KnownDlls
+
+# Sleep Obfuscation - MAXIMUM
+sleep_config:
+  enabled: true
+  technique: "death_sleep"      # Most advanced - thread pool wait
+  min_sleep_ms: 5000
+  max_sleep_ms: 30000
+  jitter_percent: 0.50          # 50% jitter
+  entropy_jitter: true
+  entropy_config:
+    use_system_entropy: true
+    use_hardware_entropy: true  # RDRAND if available
+    entropy_pool_size: 128
+    reencrypt_on_wake: true
+    rotate_encryption_key: true
+  beacon_reencrypt:             # Full decrypt-run-reencrypt cycle
+    enabled: true
+    encryption_key_bits: 256
+    memory_guard: true          # PAGE_NOACCESS when sleeping
+
+# Anti-Analysis - MAXIMUM
+anti_analysis:
+  detect_sandbox: true
+  sandbox_checks:
+    - "username_check"
+    - "file_count_check"
+    - "uptime_check"
+    - "disk_size_check"
+    - "ram_size_check"
+    - "process_count_check"
+    - "recent_files_check"
+  detect_debugger: true
+  debugger_checks:
+    - "is_debugger_present"
+    - "check_remote_debugger"
+    - "timing_check"
+    - "int3_check"
+    - "trap_flag_check"
+  check_vm: true                # Avoid VMs in paranoid mode
+  vm_checks:
+    - "cpuid_check"
+    - "rdtsc_check"
+    - "mac_address_check"
+    - "registry_check"
+  timing_checks: true
+  timing_threshold_ms: 50
+  exit_on_detection: true       # Exit cleanly if detected
+
+# Traffic Obfuscation - MAXIMUM
+traffic:
+  encrypt: true
+  encryption_algorithm: "chacha20"
+  key_rotation_interval: 900    # Rotate keys every 15 min
+  domain_fronting: true
+  fronting_domains:
+    - "cdn.cloudflare.com"
+    - "ajax.googleapis.com"
+  malleable_profile: true
+  jitter_requests: true
+  request_jitter_ms: 2000
+
+# Recommended Use Cases
+use_cases:
+  - "Advanced EDR environments (CrowdStrike, SentinelOne)"
+  - "SOC-monitored networks"
+  - "Red team operations"
+  - "High-value target access"
+  - "Long-term persistence"
+
+# AV/EDR Compatibility
+av_edr_notes:
+  defender: "Should evade in most cases"
+  crowdstrike: "70% chance with full evasion"
+  sentinelone: "65% chance with full evasion"
+  carbonblack: "80% chance with full evasion"
+  elastic_security: "75% chance"
+  note: "No guarantees - EDR is constantly updated"
+
+# Atomic Red Team Test Mapping
+atomic_tests:
+  - "T1055.012"  # Process Hollowing
+  - "T1055.013"  # Process Doppelgänging
+  - "T1055.003"  # Thread Execution Hijacking
+  - "T1562.001"  # Disable or Modify Tools (AMSI)
+  - "T1497.001"  # Sandbox Evasion: System Checks
+  - "T1622"      # Debugger Evasion

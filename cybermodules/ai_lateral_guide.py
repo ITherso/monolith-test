@@ -2,15 +2,26 @@
 AI-Guided Lateral Movement
 Integrates LLM for intelligent "next best jump" suggestions during lateral movement
 Analyzes network topology, credentials, and defenses to optimize attack paths
+Includes evasion profile scoring for detection risk assessment
 """
 
 import json
 import os
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass
+from typing import List, Dict, Optional, Any, Tuple
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from cybermodules.helpers import log_to_intel
+
+# Import evasion profile metrics
+try:
+    from cybermodules.lateral_evasion import (
+        EvasionProfile, ProfileMetrics, PROFILE_METRICS, get_profile_metrics
+    )
+    HAS_EVASION_METRICS = True
+except ImportError:
+    HAS_EVASION_METRICS = False
+    EvasionProfile = None
 
 # Try to import LLM engine
 try:
@@ -75,7 +86,7 @@ class CredentialIntel:
 
 @dataclass
 class JumpSuggestion:
-    """AI-generated jump suggestion"""
+    """AI-generated jump suggestion with evasion scoring"""
     target: str
     method: str
     credentials: str
@@ -84,10 +95,17 @@ class JumpSuggestion:
     risk_level: str  # low, medium, high
     expected_value: str  # low, medium, high, critical
     prerequisites: List[str] = None
+    # Evasion profile scoring
+    recommended_profile: str = "stealth"  # none, default, stealth, paranoid, aggressive
+    detection_risk: float = 0.5  # 0.0 - 1.0
+    speed_impact: str = "moderate"  # fast, moderate, slow, very_slow
+    evasion_notes: List[str] = None
     
     def __post_init__(self):
         if self.prerequisites is None:
             self.prerequisites = []
+        if self.evasion_notes is None:
+            self.evasion_notes = []
 
 
 class AILateralGuide:
@@ -165,7 +183,7 @@ class AILateralGuide:
             return self._rule_based_suggestions(current_host)
     
     def analyze_defenses(self, target: str) -> Dict[str, Any]:
-        """Analyze defenses on a target host"""
+        """Analyze defenses on a target host and recommend evasion profile"""
         if target not in self.hosts:
             return {'error': 'Host not in intel database'}
         
@@ -177,34 +195,191 @@ class AILateralGuide:
             'av_product': host.av_product,
             'recommended_evasion': [],
             'risk_factors': [],
-            'suggested_approach': ''
+            'suggested_approach': '',
+            # Evasion profile scoring
+            'recommended_profile': 'stealth',
+            'profile_metrics': None,
+            'detection_risk_by_profile': {}
         }
         
-        # AV-specific recommendations
+        # AV-specific recommendations and profile scoring
         av_evasion_map = {
-            'defender': ['amsi_bypass', 'etw_patching', 'unhook_ntdll'],
-            'crowdstrike': ['direct_syscalls', 'sleep_obfuscation', 'process_hollowing'],
-            'sentinelone': ['sleep_obfuscation', 'thread_execution_hijacking'],
-            'carbonblack': ['process_hollowing', 'dll_unhooking']
+            'defender': {
+                'techniques': ['amsi_bypass', 'etw_patching', 'unhook_ntdll'],
+                'min_profile': 'default',
+                'recommended_profile': 'stealth'
+            },
+            'crowdstrike': {
+                'techniques': ['direct_syscalls', 'sleep_obfuscation', 'process_hollowing', 'srdi'],
+                'min_profile': 'stealth',
+                'recommended_profile': 'paranoid'
+            },
+            'sentinelone': {
+                'techniques': ['sleep_obfuscation', 'thread_execution_hijacking', 'entropy_jitter'],
+                'min_profile': 'stealth',
+                'recommended_profile': 'paranoid'
+            },
+            'carbonblack': {
+                'techniques': ['process_hollowing', 'dll_unhooking', 'doppelganging'],
+                'min_profile': 'stealth',
+                'recommended_profile': 'stealth'
+            },
+            'elastic': {
+                'techniques': ['sleep_obfuscation', 'process_hollowing'],
+                'min_profile': 'stealth',
+                'recommended_profile': 'paranoid'
+            }
         }
         
         if host.av_product:
             av_lower = host.av_product.lower()
-            for av_name, techniques in av_evasion_map.items():
+            for av_name, av_config in av_evasion_map.items():
                 if av_name in av_lower:
-                    analysis['recommended_evasion'].extend(techniques)
+                    analysis['recommended_evasion'].extend(av_config['techniques'])
+                    analysis['recommended_profile'] = av_config['recommended_profile']
                     break
         
-        # Risk factors
+        # Risk factors affect profile recommendation
+        risk_score = 0
         if host.is_dc:
             analysis['risk_factors'].append('Domain Controller - high monitoring')
+            risk_score += 2
         if 'admin' in target.lower():
             analysis['risk_factors'].append('Admin workstation - likely monitored')
+            risk_score += 1
         if host.av_product:
             analysis['risk_factors'].append(f'AV present: {host.av_product}')
+            risk_score += 1
+        
+        # Adjust profile based on risk score
+        if risk_score >= 3:
+            analysis['recommended_profile'] = 'paranoid'
+        elif risk_score >= 2:
+            analysis['recommended_profile'] = 'stealth'
+        
+        # Get detection risk for each profile
+        analysis['detection_risk_by_profile'] = self.get_evasion_profile_scoring(target)
+        
+        # Add profile metrics if available
+        if HAS_EVASION_METRICS:
+            try:
+                profile_enum = EvasionProfile(analysis['recommended_profile'])
+                metrics = get_profile_metrics(profile_enum)
+                analysis['profile_metrics'] = {
+                    'detection_risk': metrics.detection_risk,
+                    'speed_multiplier': metrics.speed_multiplier,
+                    'stealth_score': metrics.stealth_score,
+                    'summary': metrics.get_summary()
+                }
+            except Exception:
+                pass
         
         return analysis
     
+    def get_evasion_profile_scoring(self, target: str) -> Dict[str, Dict]:
+        """
+        Get detection risk scoring for all evasion profiles against a target
+        Returns metrics like 'Paranoid modda detection riski %80 azalır ama 5x yavaşlar'
+        """
+        if target not in self.hosts:
+            return {}
+        
+        host = self.hosts[target]
+        scoring = {}
+        
+        # Base detection risk based on AV/EDR
+        base_risk = 0.5  # 50% baseline
+        
+        if host.av_product:
+            av_lower = host.av_product.lower()
+            if 'crowdstrike' in av_lower or 'sentinelone' in av_lower:
+                base_risk = 0.85  # Advanced EDR = high baseline risk
+            elif 'defender' in av_lower:
+                base_risk = 0.60  # Defender = moderate risk
+            elif 'carbonblack' in av_lower:
+                base_risk = 0.75  # CB = moderately high
+        
+        if host.is_dc:
+            base_risk = min(base_risk + 0.15, 0.95)  # DCs have higher monitoring
+        
+        # Profile-specific scoring
+        profiles = [
+            ('none', 1.0, 1.0, "Evasion yok - anında tespit"),
+            ('default', 0.7, 1.2, "Temel AMSI bypass - hızlı ama riskli"),
+            ('stealth', 0.4, 2.0, "Orta düzey gizlilik - dengeli"),
+            ('paranoid', 0.2, 5.0, "Maksimum gizlilik - çok yavaş"),
+            ('aggressive', 0.55, 1.5, "Hızlı saldırı - orta risk"),
+        ]
+        
+        for profile_name, risk_modifier, speed_mult, description in profiles:
+            actual_risk = base_risk * risk_modifier
+            detection_reduction = int((1 - risk_modifier) * 100)
+            
+            scoring[profile_name] = {
+                'detection_risk': round(actual_risk, 2),
+                'detection_risk_percent': f"{int(actual_risk * 100)}%",
+                'detection_reduction': f"{detection_reduction}% azalma",
+                'speed_multiplier': speed_mult,
+                'speed_impact': f"{speed_mult}x yavaş" if speed_mult > 1 else "baseline",
+                'description': description,
+                'summary': f"{profile_name.upper()}: {detection_reduction}% risk azalması, {speed_mult}x yavaşlama"
+            }
+        
+        return scoring
+    
+    def recommend_evasion_for_jump(self, target: str, time_critical: bool = False) -> Tuple[str, Dict]:
+        """
+        Recommend optimal evasion profile for a specific jump
+        
+        Args:
+            target: Target hostname
+            time_critical: If True, prefer faster profiles
+        
+        Returns:
+            Tuple of (profile_name, profile_details)
+        """
+        scoring = self.get_evasion_profile_scoring(target)
+        
+        if not scoring:
+            return ('stealth', {'reason': 'Default recommendation - no intel'})
+        
+        if time_critical:
+            # Prefer aggressive or default for speed
+            if scoring.get('aggressive', {}).get('detection_risk', 1.0) < 0.7:
+                return ('aggressive', {
+                    **scoring['aggressive'],
+                    'reason': 'Time-critical: aggressive profile seçildi, kabul edilebilir risk'
+                })
+            return ('default', {
+                **scoring.get('default', {}),
+                'reason': 'Time-critical: default profile, hız öncelikli'
+            })
+        
+        # Normal operation: balance risk and speed
+        host = self.hosts.get(target)
+        
+        # High-value targets get paranoid
+        if host and (host.is_dc or host.is_admin_workstation):
+            return ('paranoid', {
+                **scoring.get('paranoid', {}),
+                'reason': f'Yüksek değerli hedef ({target}): paranoid profil önerilir'
+            })
+        
+        # EDR environments get paranoid
+        if host and host.av_product:
+            av_lower = host.av_product.lower()
+            if 'crowdstrike' in av_lower or 'sentinelone' in av_lower:
+                return ('paranoid', {
+                    **scoring.get('paranoid', {}),
+                    'reason': f'Gelişmiş EDR tespit edildi ({host.av_product}): paranoid profil şart'
+                })
+        
+        # Default: stealth
+        return ('stealth', {
+            **scoring.get('stealth', {}),
+            'reason': 'Standart hedef: stealth profil dengeli seçim'
+        })
+
     def suggest_attack_path(self, start: str, goal: str) -> List[Dict]:
         """
         Suggest optimal attack path from start to goal
@@ -365,7 +540,7 @@ Return as JSON array.
         return suggestions
     
     def _rule_based_suggestions(self, current_host: str = None) -> List[JumpSuggestion]:
-        """Generate suggestions using rule-based logic (no AI)"""
+        """Generate suggestions using rule-based logic with evasion scoring"""
         suggestions = []
         
         # Priority 1: Domain Controllers (if we have domain admin creds)
@@ -374,6 +549,9 @@ Return as JSON array.
         
         if domain_admin_creds and dcs:
             for dc in dcs[:2]:
+                # Get evasion recommendation for DC
+                profile, profile_info = self.recommend_evasion_for_jump(dc)
+                
                 suggestions.append(JumpSuggestion(
                     target=dc,
                     method='wmiexec',
@@ -381,7 +559,17 @@ Return as JSON array.
                     confidence=0.85,
                     reasoning='Domain Controller with domain admin credentials',
                     risk_level='high',
-                    expected_value='critical'
+                    expected_value='critical',
+                    # Evasion scoring
+                    recommended_profile=profile,
+                    detection_risk=profile_info.get('detection_risk', 0.3),
+                    speed_impact='very_slow' if profile == 'paranoid' else 'slow',
+                    evasion_notes=[
+                        f"Önerilen profil: {profile.upper()}",
+                        profile_info.get('reason', ''),
+                        f"Tespit riski: {profile_info.get('detection_risk_percent', '30%')}",
+                        "DC için maksimum gizlilik önerilir"
+                    ]
                 ))
         
         # Priority 2: Admin workstations (for credential harvesting)
@@ -391,6 +579,8 @@ Return as JSON array.
         for ws in admin_ws[:2]:
             best_cred = self._find_best_credential_for_host(ws)
             if best_cred:
+                profile, profile_info = self.recommend_evasion_for_jump(ws)
+                
                 suggestions.append(JumpSuggestion(
                     target=ws,
                     method='wmiexec',
@@ -398,7 +588,14 @@ Return as JSON array.
                     confidence=0.7,
                     reasoning='Admin workstation - likely has cached credentials',
                     risk_level='medium',
-                    expected_value='high'
+                    expected_value='high',
+                    recommended_profile=profile,
+                    detection_risk=profile_info.get('detection_risk', 0.4),
+                    speed_impact='slow' if profile in ['paranoid', 'stealth'] else 'moderate',
+                    evasion_notes=[
+                        f"Önerilen profil: {profile.upper()}",
+                        "Admin WS - credential harvesting potansiyeli yüksek"
+                    ]
                 ))
         
         # Priority 3: Any uncompromised host with untested credentials
@@ -408,6 +605,8 @@ Return as JSON array.
             
             for cred_name, cred in self.credentials.items():
                 if hostname not in cred.tested_hosts:
+                    profile, profile_info = self.recommend_evasion_for_jump(hostname)
+                    
                     suggestions.append(JumpSuggestion(
                         target=hostname,
                         method='wmiexec',
@@ -415,7 +614,11 @@ Return as JSON array.
                         confidence=0.5,
                         reasoning='Untested credential/host combination',
                         risk_level='low',
-                        expected_value='medium'
+                        expected_value='medium',
+                        recommended_profile=profile,
+                        detection_risk=profile_info.get('detection_risk', 0.5),
+                        speed_impact='moderate',
+                        evasion_notes=[f"Önerilen profil: {profile.upper()}"]
                     ))
                     break
             

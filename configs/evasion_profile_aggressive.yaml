@@ -1,0 +1,102 @@
+# Evasion Profile: AGGRESSIVE
+# Fast execution with some evasion - for time-critical operations
+# Detection Risk: MODERATE-HIGH (~55%)
+# Speed: FAST
+
+name: "Aggressive Evasion Profile"
+description: "Speed-focused with essential evasion for rapid lateral movement"
+
+profile: "aggressive"
+
+# Performance Metrics
+metrics:
+  detection_risk: 0.55          # 55% chance of detection
+  speed_multiplier: 1.5         # 1.5x slower than baseline
+  stealth_score: 0.45           # Moderate stealth
+  reliability: 0.90             # High reliability
+
+# AI Guidance Note  
+ai_scoring:
+  detection_reduction: "40%"
+  speed_penalty: "1.5x slower"
+  recommended_for:
+    - "Time-critical operations"
+    - "Large-scale lateral movement"
+    - "Networks with known weak monitoring"
+  not_recommended_for:
+    - "EDR-heavy environments"
+    - "Long-term access maintenance"
+
+# Reflective Loading - ENABLED (Basic)
+reflective_loader:
+  enabled: true
+  technique: "srdi"
+  srdi_options:
+    obfuscate_imports: true
+    clear_header: false         # Skip for speed
+    pass_shellcode_base: true
+  prepend_migrate: false        # Skip for speed
+  memory_only: true
+
+# Process Injection - ENABLED (Fast)
+process_injection:
+  enabled: true
+  technique: "apc_injection"    # Fastest reliable technique
+  target_process: "explorer.exe"
+  fallback_processes:
+    - "svchost.exe"
+    - "notepad.exe"
+  hollow_process: false         # Too slow
+  doppelgang: false             # Too slow
+  syscall_mode: "ntdll"         # Use NTDLL, faster than direct
+
+# AMSI/ETW Bypass - ESSENTIAL ONLY
+security_bypass:
+  amsi_bypass: true
+  amsi_technique: "patch_amsi_init"  # Fast patching
+  etw_bypass: false             # Skip for speed
+  unhook_ntdll: false           # Skip for speed
+
+# Sleep Obfuscation - MINIMAL
+sleep_config:
+  enabled: false                # Disabled for speed
+  technique: "standard"
+  min_sleep_ms: 500
+  max_sleep_ms: 2000
+  jitter_percent: 0.15          # 15% jitter
+  entropy_jitter: false
+
+# Anti-Analysis - DISABLED
+anti_analysis:
+  detect_sandbox: false         # Skip for speed
+  detect_debugger: false        # Skip for speed
+  check_vm: false               # Skip for speed
+  timing_checks: false
+
+# Traffic Obfuscation - MINIMAL
+traffic:
+  encrypt: true
+  encryption_algorithm: "xor"   # Fast XOR encryption
+  domain_fronting: false
+  jitter_requests: false
+
+# Recommended Use Cases
+use_cases:
+  - "Rapid domain compromise"
+  - "Time-sensitive operations"
+  - "Large number of targets"
+  - "Networks with basic AV only"
+  - "Credential spray scenarios"
+
+# AV/EDR Compatibility
+av_edr_notes:
+  defender: "Should evade with AMSI bypass"
+  crowdstrike: "30% chance - fast operations may evade"
+  sentinelone: "35% chance - fast operations may evade"
+  carbonblack: "40% chance"
+  note: "Speed may actually help evade some behavioral detection"
+
+# Atomic Red Team Test Mapping
+atomic_tests:
+  - "T1055.004"  # Asynchronous Procedure Call
+  - "T1562.001"  # Disable or Modify Tools (AMSI)

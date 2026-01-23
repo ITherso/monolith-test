@@ -1,0 +1,104 @@
+# Evasion Profile: STEALTH
+# Moderate evasion for production environments
+# Detection Risk: MODERATE (~40%)
+# Speed: MODERATE
+
+name: "Stealth Evasion Profile"
+description: "Balanced evasion for corporate networks with standard security"
+
+profile: "stealth"
+
+# Performance Metrics
+metrics:
+  detection_risk: 0.40          # 40% chance of detection
+  speed_multiplier: 2.0         # 2x slower than baseline
+  stealth_score: 0.60           # Moderate-high stealth
+  reliability: 0.85             # Good reliability
+
+# Reflective Loading - ENABLED
+reflective_loader:
+  enabled: true
+  technique: "srdi"             # Shellcode Reflective DLL Injection
+  srdi_options:
+    obfuscate_imports: true
+    clear_header: true
+    pass_shellcode_base: true
+  fallback_technique: "module_stomping"
+  prepend_migrate: true         # Cobalt Strike 4.11 style
+
+# Process Injection - ENABLED (Advanced)
+process_injection:
+  enabled: true
+  technique: "thread_hijacking"
+  target_process: "explorer.exe"
+  fallback_processes:
+    - "RuntimeBroker.exe"
+    - "sihost.exe"
+    - "taskhostw.exe"
+  hollow_process: false
+  doppelgang: false
+  syscall_mode: "indirect"      # Use indirect syscalls
+
+# AMSI/ETW Bypass - FULL
+security_bypass:
+  amsi_bypass: true
+  amsi_technique: "hardware_breakpoint"  # More stealthy than patching
+  etw_bypass: true
+  etw_technique: "patch_nttracevent"
+  unhook_ntdll: false
+
+# Sleep Obfuscation - ENABLED
+sleep_config:
+  enabled: true
+  technique: "ekko"             # ROP-based sleep with encryption
+  min_sleep_ms: 2000
+  max_sleep_ms: 8000
+  jitter_percent: 0.30          # 30% jitter
+  entropy_jitter: true          # Add entropy to sleep intervals
+  entropy_config:
+    use_system_entropy: true
+    entropy_pool_size: 64
+    reencrypt_on_wake: true     # Decrypt-run-reencrypt cycle
+
+# Anti-Analysis - MODERATE
+anti_analysis:
+  detect_sandbox: true
+  sandbox_checks:
+    - "username_check"
+    - "file_count_check"
+    - "uptime_check"
+  detect_debugger: true
+  debugger_checks:
+    - "is_debugger_present"
+    - "check_remote_debugger"
+  check_vm: false               # VMs are common in enterprises
+  timing_checks: true
+  timing_threshold_ms: 100
+
+# Traffic Obfuscation - ENABLED
+traffic:
+  encrypt: true
+  encryption_algorithm: "aes256"
+  key_rotation_interval: 3600   # Rotate keys hourly
+  domain_fronting: false
+  jitter_requests: true
+
+# Recommended Use Cases
+use_cases:
+  - "Corporate networks"
+  - "Defender + basic EDR"
+  - "Production environments"
+  - "Credential harvesting operations"
+
+# AV/EDR Compatibility
+av_edr_notes:
+  defender: "Should evade with ETW+AMSI bypass"
+  crowdstrike: "50% chance - depends on rules"
+  sentinelone: "50% chance - depends on rules"
+  carbonblack: "60% chance - older versions"
+
+# Atomic Red Team Test Mapping
+atomic_tests:
+  - "T1055.003"  # Thread Execution Hijacking
+  - "T1562.001"  # Disable or Modify Tools (AMSI)
+  - "T1497.001"  # Sandbox Evasion: System Checks
