@@ -598,3 +598,295 @@ def api_execute_chain():
     # Reuse the chain logic
     request._cached_json = (chain_config, chain_config)
     return start_chain()
+
+
+# ==================== EVASION PROFILE MANAGEMENT ====================
+
+@lateral_bp.route("/lateral/evasion")
+def evasion_profiles_dashboard():
+    """Evasion profile management dashboard"""
+    if not session.get("logged_in"):
+        return redirect("/login")
+    
+    import os
+    import yaml
+    
+    # Load profile configs from YAML files
+    profiles = []
+    config_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'configs')
+    
+    profile_files = [
+        'evasion_profile_none.yaml',
+        'evasion_profile_default.yaml',
+        'evasion_profile_stealth.yaml',
+        'evasion_profile_paranoid.yaml',
+        'evasion_profile_aggressive.yaml'
+    ]
+    
+    for filename in profile_files:
+        filepath = os.path.join(config_dir, filename)
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, 'r') as f:
+                    profile_data = yaml.safe_load(f)
+                    profiles.append(profile_data)
+            except Exception as e:
+                print(f"[!] Error loading {filename}: {e}")
+    
+    # Get profile metrics from Python module
+    try:
+        from cybermodules.lateral_evasion import PROFILE_METRICS, EvasionProfile
+        metrics = {
+            p.value: {
+                'detection_risk': m.detection_risk,
+                'speed_multiplier': m.speed_multiplier,
+                'stealth_score': m.stealth_score,
+                'reliability': m.reliability,
+                'summary': m.get_summary()
+            }
+            for p, m in PROFILE_METRICS.items()
+        }
+    except Exception:
+        metrics = {}
+    
+    return render_template(
+        "evasion_profiles.html",
+        profiles=profiles,
+        metrics=metrics
+    )
+
+
+@lateral_bp.route("/api/lateral/evasion/profiles", methods=["GET"])
+def get_evasion_profiles():
+    """API: Get all evasion profiles"""
+    import os
+    import yaml
+    
+    profiles = []
+    config_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'configs')
+    
+    for filename in os.listdir(config_dir):
+        if filename.startswith('evasion_profile_') and filename.endswith('.yaml'):
+            filepath = os.path.join(config_dir, filename)
+            try:
+                with open(filepath, 'r') as f:
+                    profile_data = yaml.safe_load(f)
+                    profiles.append(profile_data)
+            except Exception as e:
+                print(f"[!] Error loading {filename}: {e}")
+    
+    return jsonify({
+        "success": True,
+        "profiles": profiles
+    })
+
+
+@lateral_bp.route("/api/lateral/evasion/scoring", methods=["POST"])
+def get_evasion_scoring():
+    """
+    API: Get evasion scoring for a target
+    
+    Request JSON:
+    {
+        "target": "DC01.corp.local",
+        "av_product": "CrowdStrike",
+        "is_dc": true
+    }
+    """
+    data = request.get_json()
+    target = data.get("target", "unknown")
+    av_product = data.get("av_product", "")
+    is_dc = data.get("is_dc", False)
+    
+    try:
+        from cybermodules.ai_lateral_guide import AILateralGuide, HostIntel
+        
+        guide = AILateralGuide()
+        
+        # Add host intel
+        guide.add_host_intel(HostIntel(
+            hostname=target,
+            ip=data.get("ip", "0.0.0.0"),
+            av_product=av_product,
+            is_dc=is_dc,
+            is_admin_workstation=data.get("is_admin_workstation", False)
+        ))
+        
+        # Get scoring
+        scoring = guide.get_evasion_profile_scoring(target)
+        
+        # Get recommendation
+        profile, details = guide.recommend_evasion_for_jump(
+            target, 
+            time_critical=data.get("time_critical", False)
+        )
+        
+        return jsonify({
+            "success": True,
+            "target": target,
+            "scoring": scoring,
+            "recommended_profile": profile,
+            "recommendation_details": details
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@lateral_bp.route("/api/lateral/evasion/apply", methods=["POST"])
+def apply_evasion_profile():
+    """
+    API: Apply evasion profile to lateral movement
+    
+    Request JSON:
+    {
+        "profile": "paranoid",
+        "target": "192.168.1.10",
+        "beacon_config": {
+            "c2_url": "https://c2.example.com",
+            "callback_interval": 300
+        }
+    }
+    """
+    data = request.get_json()
+    profile_name = data.get("profile", "stealth")
+    target = data.get("target")
+    beacon_config = data.get("beacon_config", {})
+    
+    try:
+        from cybermodules.lateral_evasion import (
+            LateralEvasionLayer, 
+            get_evasion_config_for_profile,
+            get_profile_metrics,
+            EvasionProfile
+        )
+        
+        # Get config for profile
+        config = get_evasion_config_for_profile(profile_name)
+        
+        # Get metrics
+        metrics = get_profile_metrics(EvasionProfile(profile_name))
+        
+        # Initialize evasion layer
+        evasion_layer = LateralEvasionLayer(scan_id=0, config=config)
+        
+        # Check environment
+        env_check = evasion_layer.check_environment()
+        
+        return jsonify({
+            "success": True,
+            "profile_applied": profile_name,
+            "config": {
+                "reflective_loader": config.use_reflective_loader,
+                "reflective_technique": config.reflective_technique,
+                "injection_technique": config.injection_technique,
+                "target_process": config.target_process,
+                "bypass_amsi": config.bypass_amsi,
+                "bypass_etw": config.bypass_etw,
+                "sleep_obfuscation": config.use_sleep_obfuscation,
+                "sleep_technique": config.sleep_technique,
+                "jitter_percent": config.jitter_percent,
+                "entropy_jitter": config.entropy_jitter
+            },
+            "metrics": {
+                "detection_risk": metrics.detection_risk,
+                "speed_multiplier": metrics.speed_multiplier,
+                "stealth_score": metrics.stealth_score,
+                "reliability": metrics.reliability,
+                "summary": metrics.get_summary()
+            },
+            "environment_check": env_check
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@lateral_bp.route("/api/lateral/evasion/test", methods=["POST"])
+def test_evasion_techniques():
+    """
+    API: Test evasion techniques against a target
+    
+    Request JSON:
+    {
+        "profile": "stealth",
+        "tests": ["amsi_bypass", "process_injection", "sleep_obfuscation"]
+    }
+    """
+    data = request.get_json()
+    profile_name = data.get("profile", "stealth")
+    tests = data.get("tests", ["amsi_bypass"])
+    
+    results = {
+        "profile": profile_name,
+        "tests": {}
+    }
+    
+    try:
+        from cybermodules.lateral_evasion import (
+            LateralEvasionLayer, 
+            get_evasion_config_for_profile
+        )
+        
+        config = get_evasion_config_for_profile(profile_name)
+        evasion = LateralEvasionLayer(scan_id=0, config=config)
+        
+        # Run tests
+        if "amsi_bypass" in tests:
+            results["tests"]["amsi_bypass"] = {
+                "enabled": config.bypass_amsi,
+                "technique": config.amsi_technique,
+                "status": "ready" if config.bypass_amsi else "disabled"
+            }
+        
+        if "process_injection" in tests:
+            results["tests"]["process_injection"] = {
+                "enabled": config.use_process_injection,
+                "technique": config.injection_technique,
+                "target_process": config.target_process,
+                "status": "ready" if config.use_process_injection else "disabled"
+            }
+        
+        if "sleep_obfuscation" in tests:
+            results["tests"]["sleep_obfuscation"] = {
+                "enabled": config.use_sleep_obfuscation,
+                "technique": config.sleep_technique,
+                "jitter": f"{config.jitter_percent*100}%",
+                "entropy_jitter": config.entropy_jitter,
+                "status": "ready" if config.use_sleep_obfuscation else "disabled"
+            }
+        
+        if "reflective_loader" in tests:
+            results["tests"]["reflective_loader"] = {
+                "enabled": config.use_reflective_loader,
+                "technique": config.reflective_technique,
+                "srdi_options": {
+                    "obfuscate_imports": config.srdi_obfuscate_imports,
+                    "clear_header": config.srdi_clear_header,
+                    "stomp_pe": config.srdi_stomp_pe
+                },
+                "status": "ready" if config.use_reflective_loader else "disabled"
+            }
+        
+        if "anti_analysis" in tests:
+            env_check = evasion.check_environment()
+            results["tests"]["anti_analysis"] = {
+                "sandbox_detection": config.detect_sandbox,
+                "debugger_detection": config.detect_debugger,
+                "vm_detection": config.check_vm,
+                "environment_check": env_check
+            }
+        
+        results["success"] = True
+        return jsonify(results)
+        
+    except Exception as e:
+        results["success"] = False
+        results["error"] = str(e)
+        return jsonify(results), 500

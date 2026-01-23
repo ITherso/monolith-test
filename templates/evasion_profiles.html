@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+
+{% block title %}Evasion Profiles - Lateral Movement{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-user-ninja text-danger"></i> Evasion Profile Manager</h2>
+            <p class="text-muted">Configure and test EDR/AV bypass techniques for lateral movement operations</p>
+        </div>
+    </div>
+
+    <!-- Profile Cards -->
+    <div class="row mb-4">
+        {% for profile in profiles %}
+        <div class="col-md-4 col-lg mb-3">
+            <div class="card h-100 profile-card {% if profile.profile == 'paranoid' %}border-success{% elif profile.profile == 'stealth' %}border-primary{% elif profile.profile == 'aggressive' %}border-warning{% elif profile.profile == 'none' %}border-danger{% else %}border-secondary{% endif %}" 
+                 data-profile="{{ profile.profile }}"
+                 onclick="selectProfile('{{ profile.profile }}')">
+                <div class="card-header {% if profile.profile == 'paranoid' %}bg-success{% elif profile.profile == 'stealth' %}bg-primary{% elif profile.profile == 'aggressive' %}bg-warning text-dark{% elif profile.profile == 'none' %}bg-danger{% else %}bg-secondary{% endif %} text-white">
+                    <h5 class="mb-0">
+                        {% if profile.profile == 'paranoid' %}
+                        <i class="fas fa-shield-alt"></i>
+                        {% elif profile.profile == 'stealth' %}
+                        <i class="fas fa-ghost"></i>
+                        {% elif profile.profile == 'aggressive' %}
+                        <i class="fas fa-bolt"></i>
+                        {% elif profile.profile == 'none' %}
+                        <i class="fas fa-ban"></i>
+                        {% else %}
+                        <i class="fas fa-cog"></i>
+                        {% endif %}
+                        {{ profile.profile|upper }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text small">{{ profile.description }}</p>
+                    
+                    <!-- Metrics -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Detection Risk</small>
+                            <small class="{% if profile.metrics.detection_risk < 0.3 %}text-success{% elif profile.metrics.detection_risk < 0.6 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ (profile.metrics.detection_risk * 100)|int }}%
+                            </small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {% if profile.metrics.detection_risk < 0.3 %}bg-success{% elif profile.metrics.detection_risk < 0.6 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                 style="width: {{ (profile.metrics.detection_risk * 100)|int }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Stealth Score</small>
+                            <small class="text-info">{{ (profile.metrics.stealth_score * 100)|int }}%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" style="width: {{ (profile.metrics.stealth_score * 100)|int }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Speed</small>
+                            <small class="text-secondary">{{ profile.metrics.speed_multiplier }}x</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-secondary" style="width: {{ (100 / profile.metrics.speed_multiplier)|int }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Info -->
+                    <div class="small">
+                        <span class="badge {% if profile.reflective_loader.enabled %}bg-success{% else %}bg-secondary{% endif %} me-1">
+                            <i class="fas fa-{% if profile.reflective_loader.enabled %}check{% else %}times{% endif %}"></i> sRDI
+                        </span>
+                        <span class="badge {% if profile.security_bypass.amsi_bypass %}bg-success{% else %}bg-secondary{% endif %} me-1">
+                            <i class="fas fa-{% if profile.security_bypass.amsi_bypass %}check{% else %}times{% endif %}"></i> AMSI
+                        </span>
+                        <span class="badge {% if profile.sleep_config.enabled %}bg-success{% else %}bg-secondary{% endif %} me-1">
+                            <i class="fas fa-{% if profile.sleep_config.enabled %}check{% else %}times{% endif %}"></i> Sleep
+                        </span>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <button class="btn btn-sm btn-outline-primary w-100" onclick="showProfileDetails('{{ profile.profile }}'); event.stopPropagation();">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Selected Profile Details & Configuration -->
+    <div class="row">
+        <!-- Profile Details -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-sliders-h"></i> Profile Configuration
+                    <span class="badge bg-primary float-end" id="selectedProfileBadge">STEALTH</span>
+                </div>
+                <div class="card-body" id="profileDetailsPanel">
+                    <div class="alert alert-info">
+                        <i class="fas fa-mouse-pointer"></i> Select a profile above to see details
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Target Scoring -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-bullseye"></i> Target Evasion Scoring
+                </div>
+                <div class="card-body">
+                    <form id="scoringForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Target Hostname/IP</label>
+                                <input type="text" class="form-control" id="targetHost" placeholder="DC01.corp.local">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">AV/EDR Product</label>
+                                <select class="form-select" id="avProduct">
+                                    <option value="">Unknown</option>
+                                    <option value="Windows Defender">Windows Defender</option>
+                                    <option value="CrowdStrike Falcon">CrowdStrike Falcon</option>
+                                    <option value="SentinelOne">SentinelOne</option>
+                                    <option value="Carbon Black">Carbon Black</option>
+                                    <option value="Elastic Security">Elastic Security</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isDC">
+                                    <label class="form-check-label" for="isDC">Domain Controller</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isAdminWS">
+                                    <label class="form-check-label" for="isAdminWS">Admin Workstation</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="timeCritical">
+                                    <label class="form-check-label" for="timeCritical">Time Critical (Prefer Speed)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary w-100" onclick="calculateScoring()">
+                            <i class="fas fa-calculator"></i> Calculate Evasion Scoring
+                        </button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div id="scoringResults" style="display: none;">
+                        <h6><i class="fas fa-chart-bar"></i> Scoring Results</h6>
+                        <div id="scoringContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technique Testing Panel -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-flask"></i> Technique Testing (Atomic Red Team)
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="testAMSI" checked>
+                                <label class="form-check-label" for="testAMSI">
+                                    <i class="fas fa-shield-virus"></i> AMSI Bypass (T1562.001)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="testInjection" checked>
+                                <label class="form-check-label" for="testInjection">
+                                    <i class="fas fa-syringe"></i> Process Injection (T1055)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="testSleep" checked>
+                                <label class="form-check-label" for="testSleep">
+                                    <i class="fas fa-clock"></i> Sleep Obfuscation
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="testLoader" checked>
+                                <label class="form-check-label" for="testLoader">
+                                    <i class="fas fa-file-code"></i> Reflective Loader (sRDI)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <select class="form-select" id="testProfileSelect">
+                                <option value="none">None</option>
+                                <option value="default">Default</option>
+                                <option value="stealth" selected>Stealth</option>
+                                <option value="paranoid">Paranoid</option>
+                                <option value="aggressive">Aggressive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-warning w-100" onclick="runTechniqueTests()">
+                                <i class="fas fa-play"></i> Run Tests
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="testResults" class="mt-3" style="display: none;">
+                        <h6>Test Results:</h6>
+                        <div id="testResultsContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply to Lateral Movement -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-rocket"></i> Apply Evasion to Lateral Movement
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Evasion Profile</label>
+                            <select class="form-select" id="applyProfile">
+                                <option value="none">None (Fast, Detectable)</option>
+                                <option value="default">Default (Basic Bypass)</option>
+                                <option value="stealth" selected>Stealth (Balanced)</option>
+                                <option value="paranoid">Paranoid (Maximum Stealth)</option>
+                                <option value="aggressive">Aggressive (Fast + Some Evasion)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Target IP/Host</label>
+                            <input type="text" class="form-control" id="applyTarget" placeholder="192.168.1.10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">C2 URL (for Beacon)</label>
+                            <input type="text" class="form-control" id="applyC2" placeholder="https://c2.example.com:8443">
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button class="btn btn-success btn-lg w-100" onclick="applyEvasionProfile()">
+                                <i class="fas fa-check-circle"></i> Apply Profile & Initialize Evasion Layer
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="applyResults" class="mt-3" style="display: none;">
+                        <div class="alert alert-success" id="applyResultsContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Details Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title" id="profileModalTitle">Profile Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="profileModalBody">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="applyModalProfile()">Apply This Profile</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-card {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.profile-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.profile-card.selected {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 20px rgba(0,123,255,0.5);
+}
+</style>
+
+<script>
+let currentProfile = 'stealth';
+let profileData = {{ profiles|tojson|safe }};
+
+function selectProfile(profile) {
+    currentProfile = profile;
+    document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector(`[data-profile="${profile}"]`).classList.add('selected');
+    document.getElementById('selectedProfileBadge').textContent = profile.toUpperCase();
+    
+    // Update details panel
+    loadProfileDetails(profile);
+}
+
+function loadProfileDetails(profile) {
+    const data = profileData.find(p => p.profile === profile);
+    if (!data) return;
+    
+    let html = `
+        <h6 class="text-primary">${data.name}</h6>
+        <p class="small text-muted">${data.description}</p>
+        
+        <table class="table table-sm table-dark">
+            <tr><th colspan="2" class="bg-secondary">Reflective Loader</th></tr>
+            <tr>
+                <td>Enabled</td>
+                <td><span class="badge ${data.reflective_loader.enabled ? 'bg-success' : 'bg-danger'}">${data.reflective_loader.enabled}</span></td>
+            </tr>
+            <tr>
+                <td>Technique</td>
+                <td><code>${data.reflective_loader.technique || 'N/A'}</code></td>
+            </tr>
+            
+            <tr><th colspan="2" class="bg-secondary">Process Injection</th></tr>
+            <tr>
+                <td>Enabled</td>
+                <td><span class="badge ${data.process_injection.enabled ? 'bg-success' : 'bg-danger'}">${data.process_injection.enabled}</span></td>
+            </tr>
+            <tr>
+                <td>Technique</td>
+                <td><code>${data.process_injection.technique || 'N/A'}</code></td>
+            </tr>
+            <tr>
+                <td>Target Process</td>
+                <td><code>${data.process_injection.target_process || 'N/A'}</code></td>
+            </tr>
+            
+            <tr><th colspan="2" class="bg-secondary">Security Bypass</th></tr>
+            <tr>
+                <td>AMSI Bypass</td>
+                <td><span class="badge ${data.security_bypass.amsi_bypass ? 'bg-success' : 'bg-danger'}">${data.security_bypass.amsi_bypass}</span></td>
+            </tr>
+            <tr>
+                <td>ETW Bypass</td>
+                <td><span class="badge ${data.security_bypass.etw_bypass ? 'bg-success' : 'bg-danger'}">${data.security_bypass.etw_bypass}</span></td>
+            </tr>
+            
+            <tr><th colspan="2" class="bg-secondary">Sleep Obfuscation</th></tr>
+            <tr>
+                <td>Enabled</td>
+                <td><span class="badge ${data.sleep_config.enabled ? 'bg-success' : 'bg-danger'}">${data.sleep_config.enabled}</span></td>
+            </tr>
+            <tr>
+                <td>Technique</td>
+                <td><code>${data.sleep_config.technique}</code></td>
+            </tr>
+            <tr>
+                <td>Jitter</td>
+                <td>${(data.sleep_config.jitter_percent * 100)}%</td>
+            </tr>
+        </table>
+        
+        <h6 class="mt-3">Atomic Tests</h6>
+        <div>
+            ${(data.atomic_tests || []).map(t => `<span class="badge bg-info me-1">${t}</span>`).join('')}
+        </div>
+    `;
+    
+    document.getElementById('profileDetailsPanel').innerHTML = html;
+}
+
+function showProfileDetails(profile) {
+    const data = profileData.find(p => p.profile === profile);
+    if (!data) return;
+    
+    document.getElementById('profileModalTitle').textContent = data.name;
+    document.getElementById('profileModalBody').innerHTML = `
+        <pre class="bg-black p-3 text-success" style="max-height: 400px; overflow: auto;">
+${JSON.stringify(data, null, 2)}
+        </pre>
+    `;
+    
+    currentProfile = profile;
+    new bootstrap.Modal(document.getElementById('profileModal')).show();
+}
+
+function applyModalProfile() {
+    document.getElementById('applyProfile').value = currentProfile;
+    bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+    applyEvasionProfile();
+}
+
+function calculateScoring() {
+    const target = document.getElementById('targetHost').value;
+    const avProduct = document.getElementById('avProduct').value;
+    const isDC = document.getElementById('isDC').checked;
+    const isAdminWS = document.getElementById('isAdminWS').checked;
+    const timeCritical = document.getElementById('timeCritical').checked;
+    
+    fetch('/api/lateral/evasion/scoring', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target: target || 'unknown',
+            av_product: avProduct,
+            is_dc: isDC,
+            is_admin_workstation: isAdminWS,
+            time_critical: timeCritical
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            let html = `
+                <div class="alert alert-primary">
+                    <strong>Recommended Profile:</strong> 
+                    <span class="badge bg-success">${data.recommended_profile.toUpperCase()}</span>
+                    <br><small>${data.recommendation_details.reason || ''}</small>
+                </div>
+                <table class="table table-sm table-dark">
+                    <thead><tr><th>Profile</th><th>Risk</th><th>Speed</th><th>Summary</th></tr></thead>
+                    <tbody>
+            `;
+            
+            for (const [name, info] of Object.entries(data.scoring)) {
+                html += `
+                    <tr class="${name === data.recommended_profile ? 'table-success' : ''}">
+                        <td><strong>${name.toUpperCase()}</strong></td>
+                        <td><span class="badge ${info.detection_risk < 0.3 ? 'bg-success' : info.detection_risk < 0.6 ? 'bg-warning' : 'bg-danger'}">${info.detection_risk_percent}</span></td>
+                        <td>${info.speed_impact}</td>
+                        <td class="small">${info.description}</td>
+                    </tr>
+                `;
+            }
+            html += '</tbody></table>';
+            
+            document.getElementById('scoringContent').innerHTML = html;
+            document.getElementById('scoringResults').style.display = 'block';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function runTechniqueTests() {
+    const tests = [];
+    if (document.getElementById('testAMSI').checked) tests.push('amsi_bypass');
+    if (document.getElementById('testInjection').checked) tests.push('process_injection');
+    if (document.getElementById('testSleep').checked) tests.push('sleep_obfuscation');
+    if (document.getElementById('testLoader').checked) tests.push('reflective_loader');
+    
+    const profile = document.getElementById('testProfileSelect').value;
+    
+    fetch('/api/lateral/evasion/test', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({profile, tests})
+    })
+    .then(r => r.json())
+    .then(data => {
+        let html = `<div class="alert ${data.success ? 'alert-success' : 'alert-danger'}">
+            <strong>Profile:</strong> ${data.profile.toUpperCase()}
+        </div>`;
+        
+        html += '<table class="table table-sm table-dark"><thead><tr><th>Test</th><th>Status</th><th>Details</th></tr></thead><tbody>';
+        
+        for (const [name, result] of Object.entries(data.tests || {})) {
+            html += `
+                <tr>
+                    <td>${name}</td>
+                    <td><span class="badge ${result.status === 'ready' ? 'bg-success' : 'bg-secondary'}">${result.status}</span></td>
+                    <td class="small">${result.technique || ''} ${result.enabled ? '' : '(disabled)'}</td>
+                </tr>
+            `;
+        }
+        html += '</tbody></table>';
+        
+        document.getElementById('testResultsContent').innerHTML = html;
+        document.getElementById('testResults').style.display = 'block';
+    });
+}
+
+function applyEvasionProfile() {
+    const profile = document.getElementById('applyProfile').value;
+    const target = document.getElementById('applyTarget').value;
+    const c2 = document.getElementById('applyC2').value;
+    
+    fetch('/api/lateral/evasion/apply', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            profile,
+            target,
+            beacon_config: {c2_url: c2, callback_interval: 300}
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            let html = `
+                <h6><i class="fas fa-check-circle text-success"></i> Profile Applied: ${data.profile_applied.toUpperCase()}</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Configuration:</strong>
+                        <ul class="small">
+                            <li>Reflective Loader: ${data.config.reflective_loader ? '✅ ' + data.config.reflective_technique : '❌'}</li>
+                            <li>Injection: ${data.config.injection_technique} → ${data.config.target_process}</li>
+                            <li>AMSI Bypass: ${data.config.bypass_amsi ? '✅' : '❌'}</li>
+                            <li>ETW Bypass: ${data.config.bypass_etw ? '✅' : '❌'}</li>
+                            <li>Sleep: ${data.config.sleep_obfuscation ? data.config.sleep_technique + ' (jitter ' + (data.config.jitter_percent*100) + '%)' : '❌'}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Metrics:</strong>
+                        <ul class="small">
+                            <li>Detection Risk: <span class="badge bg-${data.metrics.detection_risk < 0.3 ? 'success' : data.metrics.detection_risk < 0.6 ? 'warning' : 'danger'}">${(data.metrics.detection_risk*100).toFixed(0)}%</span></li>
+                            <li>Speed: ${data.metrics.speed_multiplier}x</li>
+                            <li>Reliability: ${(data.metrics.reliability*100).toFixed(0)}%</li>
+                        </ul>
+                        <small class="text-muted">${data.metrics.summary}</small>
+                    </div>
+                </div>
+            `;
+            document.getElementById('applyResultsContent').innerHTML = html;
+            document.getElementById('applyResults').style.display = 'block';
+        } else {
+            document.getElementById('applyResultsContent').innerHTML = `<span class="text-danger">Error: ${data.error}</span>`;
+            document.getElementById('applyResults').style.display = 'block';
+        }
+    });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    selectProfile('stealth');
+});
+</script>
+{% endblock %}
