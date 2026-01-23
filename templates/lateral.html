@@ -1,0 +1,609 @@
+{% extends "base.html" %}
+
+{% block title %}Lateral Movement Chain{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-project-diagram"></i> Lateral Movement Chain</h2>
+            <p class="text-muted">Impacket-based lateral movement with credential harvesting and pivot chain execution</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Successful Pivots</h5>
+                    <h2 id="stat-success">{{ recent_movements|selectattr('status', 'eq', 'success')|list|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Failed Attempts</h5>
+                    <h2 id="stat-failed">{{ recent_movements|selectattr('status', 'eq', 'failed')|list|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Active Chains</h5>
+                    <h2 id="stat-chains">{{ chains|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Available Creds</h5>
+                    <h2 id="stat-creds">-</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Panel: Chain Configuration -->
+        <div class="col-md-6">
+            <!-- Quick Jump -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-bolt"></i> Quick Jump
+                    <small class="float-end">Single target lateral movement</small>
+                </div>
+                <div class="card-body">
+                    <form id="quick-jump-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Target</label>
+                                    <input type="text" class="form-control" id="qj-target" placeholder="192.168.1.50" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Method</label>
+                                    <select class="form-select" id="qj-method">
+                                        <option value="wmiexec" selected>WMIExec</option>
+                                        <option value="psexec">PsExec</option>
+                                        <option value="smbexec">SMBExec</option>
+                                        <option value="dcomexec">DCOMExec</option>
+                                        <option value="atexec">AtExec</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Domain</label>
+                                    <input type="text" class="form-control" id="qj-domain" placeholder="CORP">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="qj-username" placeholder="admin" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="qj-password" placeholder="P@ssw0rd">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">NT Hash (optional)</label>
+                            <input type="text" class="form-control font-monospace" id="qj-nthash" placeholder="aad3b435b51404eeaad3b435b51404ee:...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Command (optional)</label>
+                            <input type="text" class="form-control font-monospace" id="qj-command" placeholder="whoami /all">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="qj-opsec">
+                                <label class="form-check-label"><i class="fas fa-shield-alt text-success"></i> OPSEC Mode (IP Rotation via AWS/DO Proxy)</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-play"></i> Execute Jump
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Chain Configuration -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-link"></i> Chain Attack
+                    <small class="float-end">Multi-hop lateral movement</small>
+                </div>
+                <div class="card-body">
+                    <form id="chain-form">
+                        <div class="mb-3">
+                            <label class="form-label">Initial Target (Foothold)</label>
+                            <input type="text" class="form-control" id="chain-initial" placeholder="192.168.1.10" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Target Hosts (one per line)</label>
+                            <textarea class="form-control font-monospace" id="chain-targets" rows="4" placeholder="192.168.1.20&#10;192.168.1.30&#10;dc01.corp.local"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Domain</label>
+                                    <input type="text" class="form-control" id="chain-domain" placeholder="CORP">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="chain-username" placeholder="admin">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="chain-password">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Methods to Try</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="method-wmiexec" value="wmiexec" checked>
+                                <label class="form-check-label">WMIExec</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="method-psexec" value="psexec" checked>
+                                <label class="form-check-label">PsExec</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="method-smbexec" value="smbexec" checked>
+                                <label class="form-check-label">SMBExec</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="method-dcomexec" value="dcomexec">
+                                <label class="form-check-label">DCOMExec</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="chain-dump-creds" checked>
+                                <label class="form-check-label">Dump credentials on each hop (Hash Thief mode)</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="chain-opsec">
+                                <label class="form-check-label"><i class="fas fa-shield-alt text-success"></i> OPSEC Mode (IP Rotation via AWS/DO Proxy)</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-project-diagram"></i> Execute Chain Attack
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Network Discovery -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-search"></i> Network Discovery
+                </div>
+                <div class="card-body">
+                    <form id="discover-form">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label class="form-label">Subnet (CIDR)</label>
+                                    <input type="text" class="form-control" id="discover-subnet" placeholder="192.168.1.0/24">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Ports</label>
+                                    <input type="text" class="form-control" id="discover-ports" value="445,139">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-secondary w-100">
+                            <i class="fas fa-radar"></i> Discover Targets
+                        </button>
+                    </form>
+                    <div id="discovered-targets" class="mt-3" style="display:none;">
+                        <h6>Discovered Targets:</h6>
+                        <ul id="discovered-list" class="list-group list-group-flush"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Results & Visualization -->
+        <div class="col-md-6">
+            <!-- Chain Visualization -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-sitemap"></i> Chain Visualization
+                </div>
+                <div class="card-body">
+                    <div id="chain-visual" style="min-height: 200px; background: #1a1a2e; border-radius: 8px; padding: 20px;">
+                        <div class="text-center text-muted py-5" id="chain-placeholder">
+                            <i class="fas fa-project-diagram fa-3x mb-3"></i>
+                            <p>Execute a chain attack to see the pivot path visualization</p>
+                        </div>
+                        <div id="chain-nodes" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Output -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-terminal"></i> Live Output
+                    <button class="btn btn-sm btn-outline-light float-end" onclick="clearOutput()">Clear</button>
+                </div>
+                <div class="card-body p-0">
+                    <pre id="live-output" class="bg-dark text-success p-3 m-0 font-monospace" style="height: 300px; overflow-y: auto; font-size: 12px;">[*] Ready for lateral movement operations...</pre>
+                </div>
+            </div>
+
+            <!-- Recent Movements -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-history"></i> Recent Movements
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Source</th>
+                                    <th>Target</th>
+                                    <th>Method</th>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movements-table">
+                                {% for m in recent_movements %}
+                                <tr>
+                                    <td class="font-monospace small">{{ m.source }}</td>
+                                    <td class="font-monospace small">{{ m.target }}</td>
+                                    <td><span class="badge bg-info">{{ m.method }}</span></td>
+                                    <td class="small">{{ m.username }}</td>
+                                    <td>
+                                        {% if m.status == 'success' %}
+                                        <span class="badge bg-success">Success</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No recent movements</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credential Modal -->
+<div class="modal fade" id="credModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-key"></i> Available Credentials</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm" id="creds-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th>Source</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chain-node {
+    display: inline-block;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    margin: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.chain-node.success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+.chain-node.failed {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+}
+.chain-arrow {
+    display: inline-block;
+    color: #4a90d9;
+    margin: 0 10px;
+    font-size: 20px;
+}
+.output-line-success { color: #38ef7d; }
+.output-line-error { color: #f45c43; }
+.output-line-info { color: #4a90d9; }
+</style>
+
+<script>
+// Utility functions
+function appendOutput(message, type = 'info') {
+    const output = document.getElementById('live-output');
+    const timestamp = new Date().toLocaleTimeString();
+    const colorClass = type === 'success' ? 'output-line-success' : 
+                       type === 'error' ? 'output-line-error' : 'output-line-info';
+    output.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+    output.scrollTop = output.scrollHeight;
+}
+
+function clearOutput() {
+    document.getElementById('live-output').innerHTML = '[*] Output cleared\n';
+}
+
+function updateChainVisualization(results) {
+    const container = document.getElementById('chain-nodes');
+    const placeholder = document.getElementById('chain-placeholder');
+    
+    placeholder.style.display = 'none';
+    container.style.display = 'block';
+    container.innerHTML = '';
+    
+    if (results.visited_hosts) {
+        // Hash thief pattern result
+        results.visited_hosts.forEach((host, index) => {
+            const status = results.pivot_path.find(p => p.to === host) ? 'success' : '';
+            container.innerHTML += `<div class="chain-node ${status}">${host}</div>`;
+            if (index < results.visited_hosts.length - 1) {
+                container.innerHTML += `<span class="chain-arrow">→</span>`;
+            }
+        });
+    } else if (Array.isArray(results)) {
+        // Pivot chain result
+        results.forEach((step, index) => {
+            const status = step.success ? 'success' : 'failed';
+            container.innerHTML += `<div class="chain-node ${status}">${step.target}</div>`;
+            if (index < results.length - 1) {
+                container.innerHTML += `<span class="chain-arrow">→</span>`;
+            }
+        });
+    }
+}
+
+function addMovementRow(movement) {
+    const tbody = document.getElementById('movements-table');
+    const statusBadge = movement.status === 'success' 
+        ? '<span class="badge bg-success">Success</span>'
+        : '<span class="badge bg-danger">Failed</span>';
+    
+    const row = `<tr>
+        <td class="font-monospace small">${movement.source || 'local'}</td>
+        <td class="font-monospace small">${movement.target}</td>
+        <td><span class="badge bg-info">${movement.method}</span></td>
+        <td class="small">${movement.username}</td>
+        <td>${statusBadge}</td>
+    </tr>`;
+    
+    tbody.insertAdjacentHTML('afterbegin', row);
+}
+
+// Quick Jump Form
+document.getElementById('quick-jump-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const opsecEnabled = document.getElementById('qj-opsec').checked;
+    
+    const data = {
+        target: document.getElementById('qj-target').value,
+        username: document.getElementById('qj-username').value,
+        password: document.getElementById('qj-password').value,
+        domain: document.getElementById('qj-domain').value,
+        nt_hash: document.getElementById('qj-nthash').value,
+        method: document.getElementById('qj-method').value,
+        command: document.getElementById('qj-command').value,
+        opsec: opsecEnabled
+    };
+    
+    const opsecLabel = opsecEnabled ? ' [OPSEC]' : '';
+    appendOutput(`Attempting ${data.method} on ${data.target}${opsecLabel}...`, 'info');
+    if (opsecEnabled) {
+        appendOutput('OPSEC Mode: Traffic routed through AWS/DO proxy with IP rotation', 'info');
+    }
+    
+    try {
+        const response = await fetch('/lateral/quick-jump', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            appendOutput(`SUCCESS: ${data.method} on ${data.target}`, 'success');
+            if (result.output) {
+                appendOutput(`Output:\n${result.output}`, 'info');
+            }
+            addMovementRow({
+                source: 'local',
+                target: data.target,
+                method: data.method,
+                username: data.username,
+                status: 'success'
+            });
+        } else {
+            appendOutput(`FAILED: ${result.error || 'Unknown error'}`, 'error');
+            addMovementRow({
+                source: 'local',
+                target: data.target,
+                method: data.method,
+                username: data.username,
+                status: 'failed'
+            });
+        }
+    } catch (err) {
+        appendOutput(`Error: ${err.message}`, 'error');
+    }
+});
+
+// Chain Form
+document.getElementById('chain-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const methods = [];
+    if (document.getElementById('method-wmiexec').checked) methods.push('wmiexec');
+    if (document.getElementById('method-psexec').checked) methods.push('psexec');
+    if (document.getElementById('method-smbexec').checked) methods.push('smbexec');
+    if (document.getElementById('method-dcomexec').checked) methods.push('dcomexec');
+    
+    const targets = document.getElementById('chain-targets').value
+        .split('\n')
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+    
+    const opsecEnabled = document.getElementById('chain-opsec').checked;
+    
+    const data = {
+        initial_target: document.getElementById('chain-initial').value,
+        targets: targets,
+        credentials: {
+            username: document.getElementById('chain-username').value,
+            password: document.getElementById('chain-password').value,
+            domain: document.getElementById('chain-domain').value
+        },
+        methods: methods,
+        options: {
+            dump_creds: document.getElementById('chain-dump-creds').checked,
+            opsec: opsecEnabled
+        }
+    };
+    
+    const opsecLabel = opsecEnabled ? ' [OPSEC MODE]' : '';
+    appendOutput(`Starting chain attack from ${data.initial_target}${opsecLabel}...`, 'info');
+    if (opsecEnabled) {
+        appendOutput('🛡️ OPSEC Mode: Traffic routed through AWS/DO proxy with IP rotation', 'info');
+    }
+    appendOutput(`Targets: ${[data.initial_target, ...targets].join(' → ')}`, 'info');
+    appendOutput(`Methods: ${methods.join(', ')}`, 'info');
+    
+    try {
+        const response = await fetch('/lateral/chain', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            appendOutput(`Chain complete! ${result.summary.successful}/${result.summary.total_hosts} hosts compromised`, 'success');
+            updateChainVisualization(result.results);
+            
+            // Update stats
+            document.getElementById('stat-success').textContent = 
+                parseInt(document.getElementById('stat-success').textContent) + result.summary.successful;
+        } else {
+            appendOutput(`Chain failed: ${result.error}`, 'error');
+        }
+    } catch (err) {
+        appendOutput(`Error: ${err.message}`, 'error');
+    }
+});
+
+// Network Discovery Form
+document.getElementById('discover-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const data = {
+        subnet: document.getElementById('discover-subnet').value,
+        ports: document.getElementById('discover-ports').value.split(',').map(p => parseInt(p.trim()))
+    };
+    
+    appendOutput(`Discovering targets in ${data.subnet}...`, 'info');
+    
+    try {
+        const response = await fetch('/lateral/discover', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            appendOutput(`Found ${result.count} potential targets`, 'success');
+            
+            const container = document.getElementById('discovered-targets');
+            const list = document.getElementById('discovered-list');
+            container.style.display = 'block';
+            list.innerHTML = '';
+            
+            result.targets.forEach(target => {
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="font-monospace">${target.ip || target.hostname}</span>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addToChain('${target.ip || target.hostname}')">
+                        Add to Chain
+                    </button>
+                </li>`;
+            });
+        } else {
+            appendOutput(`Discovery failed: ${result.error}`, 'error');
+        }
+    } catch (err) {
+        appendOutput(`Error: ${err.message}`, 'error');
+    }
+});
+
+function addToChain(ip) {
+    const textarea = document.getElementById('chain-targets');
+    if (textarea.value && !textarea.value.endsWith('\n')) {
+        textarea.value += '\n';
+    }
+    textarea.value += ip;
+    appendOutput(`Added ${ip} to chain targets`, 'info');
+}
+
+// Load credentials count on page load
+async function loadCredentialsCount() {
+    try {
+        const response = await fetch('/lateral/creds');
+        const result = await response.json();
+        document.getElementById('stat-creds').textContent = result.count || 0;
+    } catch (err) {
+        console.error('Failed to load credentials count:', err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadCredentialsCount);
+</script>
+{% endblock %}

