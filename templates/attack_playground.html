@@ -110,9 +110,9 @@
                         </div>
                         <div class="bg-white/5 rounded-lg p-3">
                             <p class="text-xs text-gray-500 mb-1">Payload:</p>
-                            <code class="text-red-400 text-xs">{{config}}</code>
+                            <code class="text-red-400 text-xs">{{ '{{config}}' }}</code>
                         </div>
-                        <a href="/vuln/ssti?name={{7*7}}" class="block w-full text-center py-2 rounded-lg bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-colors">
+                        <a href="/vuln/ssti?name=%7B%7B7*7%7D%7D" class="block w-full text-center py-2 rounded-lg bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-colors">
                             <i class="fas fa-play mr-2"></i>Test Et
                         </a>
                     </div>
@@ -344,7 +344,7 @@
                             <span class="px-2 py-1 rounded bg-red-500/10 text-red-400">os.popen</span>
                         </div>
                         <code class="block text-xs text-gray-500 bg-black/30 p-2 rounded font-mono overflow-x-auto">
-                            {{''.__class__.__mro__[1].__subclasses__()[..].popen('id')}}
+                            {{ "{{''.__class__.__mro__[1].__subclasses__()[..].popen('id')}}" }}
                         </code>
                     </div>
 
