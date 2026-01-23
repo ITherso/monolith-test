@@ -212,10 +212,13 @@ def beacon_register():
         return jsonify({"success": False, "error": str(e)}), 400
 
 
-@c2_bp.route("/c2/beacon/checkin", methods=["POST"])
-def beacon_checkin():
+# NOTE: Legacy beacon endpoints - replaced by beacon_bp in c2_beacon.py
+# Use /c2/beacon/* endpoints from beacon_bp for real beacon management
+
+@c2_bp.route("/c2/legacy/beacon/checkin", methods=["POST"])
+def legacy_beacon_checkin():
     """
-    Agent check-in endpoint.
+    Legacy Agent check-in endpoint.
     Returns pending tasks for the agent.
     """
     data = request.get_json()
@@ -233,8 +236,8 @@ def beacon_checkin():
     })
 
 
-@c2_bp.route("/c2/beacon/result", methods=["POST"])
-def beacon_result():
+@c2_bp.route("/c2/legacy/beacon/result", methods=["POST"])
+def legacy_beacon_result():
     """
     Agent result submission endpoint.
     Called when an agent completes a task.

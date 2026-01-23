@@ -30,6 +30,7 @@ register_error_handlers = _try_import('register_error_handlers', lambda: __impor
 socketio = _try_import('socketio', lambda: __import__('cyberapp.extensions', fromlist=['socketio']).socketio)
 vulnerable_bp = _try_import('vulnerable_bp', lambda: __import__('cyberapp.routes.vulnerable', fromlist=['vulnerable_bp']).vulnerable_bp)
 api_vuln_bp = _try_import('api_vuln_bp', lambda: __import__('cyberapp.routes.api_vulnerable', fromlist=['api_vuln_bp']).api_vuln_bp)
+beacon_bp = _try_import('beacon_bp', lambda: __import__('cyberapp.routes.c2_beacon', fromlist=['beacon_bp']).beacon_bp)
 
 
 def create_app(run_migrations_on_start=True):
@@ -57,6 +58,7 @@ def create_app(run_migrations_on_start=True):
     if distributed_bp: app.register_blueprint(distributed_bp)
     if vulnerable_bp: app.register_blueprint(vulnerable_bp)
     if api_vuln_bp: app.register_blueprint(api_vuln_bp)
+    if beacon_bp: app.register_blueprint(beacon_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

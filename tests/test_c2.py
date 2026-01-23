@@ -150,21 +150,41 @@ class TestC2Beacon:
         assert 'success' in data
     
     def test_beacon_checkin(self, api_client):
-        """Test agent checkin beacon."""
-        agent_id = str(uuid.uuid4())
+        """Test agent checkin beacon - new beacon API."""
+        # New beacon checkin API doesn't require agent_id for first checkin
         resp = api_client.post('/c2/beacon/checkin', 
-                              json={'agent_id': agent_id},
+                              json={
+                                  'hostname': 'TESTHOST',
+                                  'username': 'testuser',
+                                  'os': 'Linux',
+                                  'arch': 'x64',
+                                  'pid': 12345
+                              },
                               content_type='application/json')
         assert resp.status_code == 200
+        data = json.loads(resp.data)
+        # New API returns status "registered" for new beacons
+        assert data.get('status') in ['ok', 'registered']
     
     def test_beacon_result(self, api_client):
-        """Test submitting task result."""
-        resp = api_client.post('/c2/beacon/result', 
+        """Test submitting task result - new beacon API."""
+        # First register a beacon
+        reg_resp = api_client.post('/c2/beacon/checkin',
                               json={
-                                  'agent_id': 'test-agent',
+                                  'hostname': 'RESULTTEST',
+                                  'username': 'test',
+                                  'os': 'Linux'
+                              },
+                              content_type='application/json')
+        assert reg_resp.status_code == 200
+        beacon_id = json.loads(reg_resp.data).get('id')
+        
+        # Submit result
+        resp = api_client.post(f'/c2/beacon/result/{beacon_id}', 
+                              json={
                                   'task_id': 'test-task',
                                   'output': 'Command output here',
-                                  'status': 'completed'
+                                  'success': True
                               },
                               content_type='application/json')
         assert resp.status_code == 200
@@ -390,6 +410,142 @@ class TestC2Framework:
         server = C2Server()
         tasks = server.list_tasks()
         assert isinstance(tasks, list)
+
+
+class TestBeaconManager:
+    """Tests for new beacon management system."""
+    
+    def test_beacon_manager_singleton(self):
+        """Test BeaconManager singleton pattern."""
+        from cybermodules.c2_beacon import get_beacon_manager
+        m1 = get_beacon_manager()
+        m2 = get_beacon_manager()
+        assert m1 is m2
+    
+    def test_beacon_checkin_new(self):
+        """Test new beacon checkin."""
+        from cybermodules.c2_beacon import get_beacon_manager
+        manager = get_beacon_manager()
+        response = manager.handle_checkin({
+            'hostname': 'TEST-BEACON',
+            'username': 'testuser',
+            'os': 'Windows 10',
+            'arch': 'x64',
+            'pid': 9999,
+            'ip_internal': '10.0.0.5',
+            'integrity': 'high'
+        }, '127.0.0.1')
+        assert response['status'] == 'registered'
+        assert 'id' in response
+        assert 'sleep' in response
+    
+    def test_beacon_checkin_existing(self):
+        """Test existing beacon checkin."""
+        from cybermodules.c2_beacon import get_beacon_manager
+        manager = get_beacon_manager()
+        # First checkin
+        resp1 = manager.handle_checkin({
+            'hostname': 'EXISTING-BEACON',
+            'username': 'test'
+        }, '127.0.0.1')
+        beacon_id = resp1['id']
+        
+        # Second checkin with ID
+        resp2 = manager.handle_checkin({
+            'id': beacon_id,
+            'hostname': 'EXISTING-BEACON'
+        }, '127.0.0.1')
+        assert resp2['status'] == 'ok'
+        assert 'tasks' in resp2
+    
+    def test_queue_task(self):
+        """Test task queueing."""
+        from cybermodules.c2_beacon import get_beacon_manager
+        manager = get_beacon_manager()
+        
+        # Create beacon
+        resp = manager.handle_checkin({'hostname': 'TASK-TEST'}, '127.0.0.1')
+        beacon_id = resp['id']
+        
+        # Queue task
+        task_id = manager.queue_task(beacon_id, 'shell', ['whoami'])
+        assert task_id is not None
+        
+        # Check task in checkin response
+        resp2 = manager.handle_checkin({'id': beacon_id}, '127.0.0.1')
+        assert len(resp2.get('tasks', [])) > 0
+    
+    def test_handle_result(self):
+        """Test result handling."""
+        from cybermodules.c2_beacon import get_beacon_manager
+        manager = get_beacon_manager()
+        
+        # Create beacon and task
+        resp = manager.handle_checkin({'hostname': 'RESULT-TEST'}, '127.0.0.1')
+        beacon_id = resp['id']
+        task_id = manager.queue_task(beacon_id, 'shell', ['id'])
+        
+        # Send result
+        result = manager.handle_result(beacon_id, {
+            'task_id': task_id,
+            'output': 'uid=0(root) gid=0(root)',
+            'success': True
+        })
+        assert result['status'] == 'received'
+    
+    def test_list_beacons(self):
+        """Test listing beacons."""
+        from cybermodules.c2_beacon import get_beacon_manager
+        manager = get_beacon_manager()
+        beacons = manager.list_beacons()
+        assert isinstance(beacons, list)
+    
+    def test_get_stats(self, api_client):
+        """Test C2 stats endpoint."""
+        resp = api_client.get('/c2/stats')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+        assert 'stats' in data
+        assert 'total_beacons' in data['stats']
+
+
+class TestPayloadGenerator:
+    """Tests for payload generator."""
+    
+    def test_list_payload_types(self):
+        """Test listing payload types."""
+        from cybermodules.payload_generator import get_payload_generator
+        gen = get_payload_generator()
+        types = gen.list_types()
+        assert len(types) >= 4
+        type_names = [t['type'] for t in types]
+        assert 'python' in type_names
+        assert 'powershell' in type_names
+    
+    def test_generate_python_payload(self):
+        """Test Python payload generation."""
+        from cybermodules.payload_generator import get_payload_generator
+        gen = get_payload_generator('http://test:8080/c2/beacon')
+        payload = gen.generate('python', {'sleep': 60, 'jitter': 20})
+        assert 'http://test:8080/c2/beacon' in payload
+        assert 'def main' in payload or 'while True' in payload
+    
+    def test_generate_powershell_payload(self):
+        """Test PowerShell payload generation."""
+        from cybermodules.payload_generator import get_payload_generator
+        gen = get_payload_generator('http://test:8080/c2/beacon')
+        payload = gen.generate('powershell')
+        assert '$C2' in payload
+        assert 'Invoke-RestMethod' in payload
+    
+    def test_generate_bash_payload(self):
+        """Test Bash payload generation."""
+        from cybermodules.payload_generator import get_payload_generator
+        gen = get_payload_generator()
+        payload = gen.generate('bash')
+        assert '#!/bin/bash' in payload
+        assert 'curl' in payload
 
 
 class TestC2Security:
