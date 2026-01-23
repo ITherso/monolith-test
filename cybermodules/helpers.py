@@ -53,6 +53,38 @@ def log_to_intel(scan_id, msg_type, data):
         return False
 
 
+def log_security_finding(scan_id, finding_type, severity, title, description, evidence=None):
+    """
+    Log security finding to database - used by golden ticket and other modules
+    """
+    from cyberapp.models.db import db_conn
+    from datetime import datetime
+    
+    try:
+        with db_conn() as conn:
+            conn.execute(
+                """INSERT INTO security_findings 
+                   (scan_id, finding_type, severity, title, description, evidence, timestamp) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (scan_id, finding_type, severity, title, description, evidence, datetime.now().isoformat())
+            )
+            conn.commit()
+        return True
+    except Exception as e:
+        # Table might not exist, try intel table instead
+        try:
+            with db_conn() as conn:
+                conn.execute(
+                    "INSERT INTO intel (scan_id, type, data, timestamp) VALUES (?, ?, ?, ?)",
+                    (scan_id, f"{finding_type}:{severity}", f"{title}: {description}", datetime.now().isoformat())
+                )
+                conn.commit()
+            return True
+        except:
+            print(f"[HELPERS] Security finding log error: {e}")
+            return False
+
+
 def run_automated_hashdump(scan_id, target, username, password, domain=""):
     """
     Hashdump + crack workflow - tek fonksiyon ile çağrı

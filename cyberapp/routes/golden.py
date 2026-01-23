@@ -4,7 +4,7 @@ Golden Ticket otomasyonu için Flask route'ları.
 """
 from flask import Blueprint, render_template, request, jsonify, redirect, session
 
-from cybermodules.golden_ticket import GoldenTicketAutomation
+from cybermodules.golden_ticket import GoldenTicketEngine as GoldenTicketAutomation
 
 golden_bp = Blueprint("golden", __name__)
 

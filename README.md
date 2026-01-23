@@ -1,3 +1,7 @@
+# Monolith Pentest Framework
+
+> ⚠️ **WARNING**: This application contains intentional security vulnerabilities for educational and red team training purposes. **DO NOT deploy in production environments.**
+
 ## Production Başlatma (Senior Seviye)
 
 Uygulamayı production-ready şekilde başlatmak için:
@@ -13,7 +17,43 @@ PYTHONPATH=. .venv/bin/gunicorn -w 4 -b 0.0.0.0:8080 wsgi:app
 ```
 
 Bu şekilde uygulama, 4 worker ile 8080 portunda production-ready olarak çalışır.
-# Monolith Pentest Framework
+
+---
+
+## 🎯 Vulnerable by Design - Attack Paths
+
+Bu proje, **red team eğitimi** ve **pentest pratikleri** için kasıtlı güvenlik açıkları içerir.
+
+### Attack Path Documentation
+
+| # | Attack Path | Difficulty | Description |
+|---|-------------|------------|-------------|
+| 1 | [SQL Injection → Data Leak](docs/attack-paths/sql-injection-to-data-leak.md) | Easy | SQLi ile veritabanı dump |
+| 2 | [Command Injection → RCE](docs/attack-paths/command-injection-to-rce.md) | Easy | CMDi ile reverse shell |
+| 3 | [SSTI → RCE](docs/attack-paths/ssti-to-rce.md) | Medium | Template injection ile kod çalıştırma |
+| 4 | [Deserialization → RCE](docs/attack-paths/deserialization-to-rce.md) | Hard | Pickle/JSON deserialization |
+| 5 | [JWT Weakness → IDOR](docs/attack-paths/jwt-weakness-to-idor.md) | Medium | Zayıf JWT ile hesap ele geçirme |
+| 6 | [File Upload → Webshell](docs/attack-paths/file-upload-to-webshell.md) | Easy | Webshell yükleme |
+| 7 | [SSRF → Internal Leak](docs/attack-paths/ssrf-to-internal-leak.md) | Medium | Cloud metadata çalma |
+| 8 | [CORS Misconfig → Cred Leak](docs/attack-paths/cors-misconfig-to-cred-leak.md) | Medium | CORS ile credential theft |
+| 9 | [Weak Creds → Dashboard → RCE](docs/attack-paths/weak-creds-to-rce.md) | Easy-Medium | Brute-force + CMDi chain |
+
+### Default Credentials (Lab Only!)
+```
+admin:admin123
+analyst:analyst123
+```
+
+### Vulnerable Endpoints
+- `/vuln/sqli?id=` - SQL Injection
+- `/vuln/cmdi?cmd=` - Command Injection  
+- `/vuln/ssti?name=` - Server-Side Template Injection
+- `/vuln/deserialize` - Insecure Deserialization
+- `/vuln/upload` - Unrestricted File Upload
+- `/vuln/ssrf?url=` - Server-Side Request Forgery
+- `/api/vuln/` - API vulnerabilities (JWT, IDOR, Mass Assignment)
+
+---
 
 ![Coverage Target](https://img.shields.io/badge/coverage%20target-50%25-yellow)
 
