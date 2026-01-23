@@ -1,3 +1,5 @@
+run-prod:
+	PYTHONPATH=. .venv/bin/gunicorn -w 4 -b 0.0.0.0:8080 wsgi:app
 .PHONY: run test worker db-upgrade db-current db-revision update-badge
 
 run:

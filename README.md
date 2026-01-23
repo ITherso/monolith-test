@@ -1,3 +1,18 @@
+## Production Başlatma (Senior Seviye)
+
+Uygulamayı production-ready şekilde başlatmak için:
+
+```bash
+make run-prod
+```
+
+veya doğrudan:
+
+```bash
+PYTHONPATH=. .venv/bin/gunicorn -w 4 -b 0.0.0.0:8080 wsgi:app
+```
+
+Bu şekilde uygulama, 4 worker ile 8080 portunda production-ready olarak çalışır.
 # Monolith Pentest Framework
 
 ![Coverage Target](https://img.shields.io/badge/coverage%20target-50%25-yellow)

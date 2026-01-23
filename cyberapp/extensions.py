@@ -4,4 +4,4 @@ except Exception:
     SocketIO = None
 
 
-socketio = SocketIO(cors_allowed_origins="*", async_mode="threading") if SocketIO else None
+socketio = SocketIO(cors_allowed_origins="*", async_mode="eventlet") if SocketIO else None
