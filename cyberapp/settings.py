@@ -6,6 +6,10 @@ SECRET_KEY = secrets.token_urlsafe(32)
 ADMIN_USER = "admin"
 ANALYST_USER = "analyst"
 
+# ⚠️ VULNERABLE: Weak default credentials (hardcoded fallback)
+DEFAULT_ADMIN_PASS = "admin123"  # Intentionally weak
+DEFAULT_ANALYST_PASS = "analyst123"  # Intentionally weak
+
 try:
     from dotenv import load_dotenv
 
@@ -30,7 +34,8 @@ elif os.path.exists(_env_file):
         ADMIN_PASS = None
 
 if not ADMIN_PASS:
-    ADMIN_PASS = secrets.token_urlsafe(16)
+    # ⚠️ VULNERABLE: Falls back to weak default password
+    ADMIN_PASS = DEFAULT_ADMIN_PASS
     try:
         with open(_env_file, "a") as ef:
             ef.write(f"ADMIN_PASS={ADMIN_PASS}\n")
@@ -52,7 +57,8 @@ elif os.path.exists(_env_file):
         ANALYST_PASS = None
 
 if not ANALYST_PASS:
-    ANALYST_PASS = secrets.token_urlsafe(16)
+    # ⚠️ VULNERABLE: Falls back to weak default password
+    ANALYST_PASS = DEFAULT_ANALYST_PASS
     try:
         with open(_env_file, "a") as ef:
             ef.write(f"ANALYST_PASS={ANALYST_PASS}\n")

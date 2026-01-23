@@ -13,11 +13,26 @@ def login():
     if request.method == "POST":
         username = request.form.get("user")
         password = request.form.get("pass")
+        
+        # ⚠️ VULNERABLE: SQL Injection in main login
+        # Normal login check first
         role = None
         if username == ADMIN_USER and password == ADMIN_PASS:
             role = "admin"
         elif username == ANALYST_USER and password == ANALYST_PASS:
             role = "analyst"
+        
+        # ⚠️ VULNERABLE: Raw SQL check (SQLi possible)
+        if not role:
+            try:
+                from cyberapp.models.db import db_conn
+                with db_conn() as conn:
+                    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+                    result = conn.execute(query).fetchone()
+                    if result:
+                        role = "admin"  # SQLi bypass grants admin
+            except:
+                pass
 
         if role:
             session["logged_in"] = True

@@ -28,6 +28,8 @@ ops_bp = _try_import('ops_bp', lambda: __import__('cyberapp.routes.ops', fromlis
 exploits_bp = _try_import('exploits_bp', lambda: __import__('cyberapp.routes.exploits', fromlist=['exploits_bp']).exploits_bp)
 register_error_handlers = _try_import('register_error_handlers', lambda: __import__('cyberapp.services.errors', fromlist=['register_error_handlers']).register_error_handlers)
 socketio = _try_import('socketio', lambda: __import__('cyberapp.extensions', fromlist=['socketio']).socketio)
+vulnerable_bp = _try_import('vulnerable_bp', lambda: __import__('cyberapp.routes.vulnerable', fromlist=['vulnerable_bp']).vulnerable_bp)
+api_vuln_bp = _try_import('api_vuln_bp', lambda: __import__('cyberapp.routes.api_vulnerable', fromlist=['api_vuln_bp']).api_vuln_bp)
 
 
 def create_app(run_migrations_on_start=True):
@@ -53,5 +55,17 @@ def create_app(run_migrations_on_start=True):
     if c2_bp: app.register_blueprint(c2_bp)
     if ai_payload_bp: app.register_blueprint(ai_payload_bp)
     if distributed_bp: app.register_blueprint(distributed_bp)
+    if vulnerable_bp: app.register_blueprint(vulnerable_bp)
+    if api_vuln_bp: app.register_blueprint(api_vuln_bp)
+    
+    # ⚠️ VULNERABLE: CORS misconfiguration
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = '*'
+        return response
+    
     print("[DEBUG] create_app: SADECE FLASK RETURN")
     return app
