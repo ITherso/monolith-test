@@ -13,7 +13,7 @@ from flask import Flask
 kerberos_bp = _try_import('kerberos_bp', lambda: __import__('cyberapp.routes.kerberos', fromlist=['kerberos_bp']).kerberos_bp)
 golden_bp = _try_import('golden_bp', lambda: __import__('cyberapp.routes.golden', fromlist=['golden_bp']).golden_bp)
 graph_bp = _try_import('graph_bp', lambda: __import__('cyberapp.routes.attack_graph', fromlist=['graph_bp']).graph_bp)
-c2_bp = _try_import('c2_bp', lambda: __import__('cyberapp.routes.c2', fromlist=['c2_bp']).c2_bp)
+c2_bp = _try_import('c2_bp', lambda: __import__('cyberapp.routes.c2_advanced', fromlist=['c2_bp']).c2_bp)
 ai_payload_bp = _try_import('ai_payload_bp', lambda: __import__('cyberapp.routes.ai_payload', fromlist=['ai_payload_bp']).ai_payload_bp)
 distributed_bp = _try_import('distributed_bp', lambda: __import__('cyberapp.routes.distributed', fromlist=['distributed_bp']).distributed_bp)
 run_migrations = _try_import('run_migrations', lambda: __import__('cyberapp.migrations', fromlist=['run_migrations']).run_migrations)
