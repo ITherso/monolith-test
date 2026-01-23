@@ -90,6 +90,14 @@ def index():
     )
 
 
+@dashboard_bp.route("/attack-playground")
+def attack_playground():
+    """Attack Playground - Vulnerable by Design training lab."""
+    if not session.get("logged_in"):
+        return redirect("/login")
+    return render_template("attack_playground.html")
+
+
 def _has_openai():
     try:
         import openai  # type: ignore
