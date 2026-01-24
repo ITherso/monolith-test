@@ -15,3 +15,7 @@ pyzmq
 scipy
 cryptography
 numpy
+
+# AMSI/ETW Bypass PRO Dependencies
+pycryptodome
+# pywin32  # Windows only - install manually on Windows

@@ -1,0 +1,823 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="main-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="logo-text">SHADOW<span class="accent">ARSENAL</span></span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>DASHBOARD</span></a></li>
+            <li class="nav-item"><a href="/evasion/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>EVASION TEST</span></a></li>
+            <li class="nav-item"><a href="/evasion/amsi/" class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 12l-3-2v4l3 2 3-2v-4l-3 2z"/></svg><span>AMSI/ETW BYPASS</span></a></li>
+            <li class="nav-item"><a href="/evasion/sleep/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>SLEEP EVASION</span></a></li>
+            <li class="nav-item"><a href="/kerberos" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span>KERBEROS</span></a></li>
+            <li class="nav-item"><a href="/lateral/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/></svg><span>LATERAL MOVE</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="status-indicator online"><span class="status-dot"></span><span>AI ENGINE READY</span></div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-area">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <path d="M12 12l-3-2v4l3 2 3-2v-4l-3 2z"/>
+                        </svg>
+                        <span>AMSI/ETW BYPASS PRO</span>
+                    </h1>
+                    <p class="page-subtitle">AI-Dynamic Unhooking Engine with Multi-Layer Bypass Chain</p>
+                </div>
+                <div class="header-right">
+                    <div class="quick-stats">
+                        <div class="quick-stat red">
+                            <span class="stat-value" id="detectedEDR">--</span>
+                            <span class="stat-label">Detected EDR</span>
+                        </div>
+                        <div class="quick-stat cyan">
+                            <span class="stat-value" id="bypassCount">0</span>
+                            <span class="stat-label">Generated</span>
+                        </div>
+                        <div class="quick-stat green">
+                            <span class="stat-value">98%</span>
+                            <span class="stat-label">ETW Blind</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Info Banner -->
+        <section class="info-banner red">
+            <div class="info-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <div class="info-content">
+                <h3>AI-Dynamic AMSI/ETW Bypass Ultimate Edition</h3>
+                <div class="info-items">
+                    <div class="info-item"><span class="badge red">AI-ADAPT</span><span>LLM + rule-based EDR adaptation - auto-selects optimal technique</span></div>
+                    <div class="info-item"><span class="badge purple">MULTI-LAYER</span><span>Reflection + Memory Unhook + Indirect Syscalls + ETW Mutate</span></div>
+                    <div class="info-item"><span class="badge cyan">RUNTIME MUTATE</span><span>Hook mutation + post-patch reseed (EDR re-hooking prevention)</span></div>
+                    <div class="info-item"><span class="badge orange">OPSEC</span><span>Telemetry spoof + log forge + fake ETW events</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <section class="tabs-section">
+            <div class="tabs-nav">
+                <button class="tab-btn active red" data-tab="generate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Generate Bypass</span>
+                </button>
+                <button class="tab-btn purple" data-tab="techniques">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Techniques</span>
+                </button>
+                <button class="tab-btn cyan" data-tab="edr">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    <span>EDR Profiles</span>
+                </button>
+                <button class="tab-btn orange" data-tab="loader">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Payload Loader</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Forms Column -->
+            <div class="forms-column">
+                <!-- Generate Bypass Panel -->
+                <div class="form-panel" id="generate-panel">
+                    <div class="panel-header red">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Generate AI-Dynamic Bypass</h2>
+                            <p>AI selects optimal bypass for detected EDR</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Quick Presets -->
+                        <div class="profile-presets">
+                            <h4>Quick Presets</h4>
+                            <div class="preset-cards">
+                                <div class="preset-card selected" data-preset="ai" onclick="loadPreset('ai')">
+                                    <div class="preset-icon">🤖</div>
+                                    <h5>AI Auto</h5>
+                                    <p>Optimal for EDR</p>
+                                </div>
+                                <div class="preset-card" data-preset="ghost" onclick="loadPreset('ghost')">
+                                    <div class="preset-icon">👻</div>
+                                    <h5>Ghost Mode</h5>
+                                    <p>Max OPSEC Level 4</p>
+                                </div>
+                                <div class="preset-card" data-preset="fast" onclick="loadPreset('fast')">
+                                    <div class="preset-icon">⚡</div>
+                                    <h5>Fast</h5>
+                                    <p>Minimal overhead</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-divider"></div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>Target</label>
+                            <select id="bypassTarget" class="form-input red">
+                                <option value="combined">🔗 Combined (AMSI + ETW + Unhook)</option>
+                                <option value="amsi">🛡️ AMSI Only</option>
+                                <option value="etw">📊 ETW Only</option>
+                                <option value="unhook">🔓 NTDLL Unhook Only</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Technique Override</label>
+                            <select id="bypassTechnique" class="form-input red">
+                                <option value="">🤖 AI Auto-Select</option>
+                                <option value="reflection">Reflection Patch</option>
+                                <option value="memory_patch">Memory Patch</option>
+                                <option value="context_corruption">Context Corruption</option>
+                                <option value="clr_unhook">CLR Unhook</option>
+                                <option value="freshy_calls">FreshyCalls</option>
+                                <option value="hardware_breakpoint">Hardware Breakpoint</option>
+                                <option value="syscall_direct">Direct Syscall</option>
+                                <option value="ntdll_unhook">NTDLL Unhook</option>
+                                <option value="hybrid">Hybrid Multi-Layer</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>EDR Override</label>
+                            <select id="edrOverride" class="form-input red">
+                                <option value="">Auto-Detect</option>
+                                <option value="falcon">CrowdStrike Falcon</option>
+                                <option value="defender">MS Defender ATP</option>
+                                <option value="carbonblack">Carbon Black</option>
+                                <option value="sentinelone">SentinelOne</option>
+                                <option value="elastic">Elastic EDR</option>
+                                <option value="sophos">Sophos Intercept X</option>
+                                <option value="none">No EDR</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>OPSEC Level</label>
+                            <div class="opsec-selector">
+                                <button class="opsec-btn" data-level="1" onclick="setOpsecLevel(1)">1<span>Basic</span></button>
+                                <button class="opsec-btn" data-level="2" onclick="setOpsecLevel(2)">2<span>Medium</span></button>
+                                <button class="opsec-btn active" data-level="3" onclick="setOpsecLevel(3)">3<span>High</span></button>
+                                <button class="opsec-btn" data-level="4" onclick="setOpsecLevel(4)">4<span>Paranoid</span></button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="enableMutation" checked>
+                                <span class="toggle-switch"></span>
+                                <span>Enable Runtime Mutation</span>
+                            </label>
+                        </div>
+
+                        <button class="btn-submit red" onclick="generateBypass()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Generate Bypass Code
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Techniques Panel -->
+                <div class="form-panel hidden" id="techniques-panel">
+                    <div class="panel-header purple">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Bypass Techniques</h2>
+                            <p>Available evasion techniques</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="technique-cards">
+                            <div class="technique-card" data-tech="reflection">
+                                <div class="tech-header">
+                                    <span class="tech-icon">🔄</span>
+                                    <h4>Reflection Patch</h4>
+                                    <span class="tech-badge amsi">AMSI</span>
+                                </div>
+                                <p>.NET reflection to patch amsiInitFailed</p>
+                                <span class="tech-best">Best vs: Defender, Elastic</span>
+                            </div>
+                            <div class="technique-card" data-tech="memory_patch">
+                                <div class="tech-header">
+                                    <span class="tech-icon">💾</span>
+                                    <h4>Memory Patch</h4>
+                                    <span class="tech-badge amsi">AMSI</span>
+                                </div>
+                                <p>Direct memory patch of AmsiScanBuffer</p>
+                                <span class="tech-best">Best vs: Basic AV</span>
+                            </div>
+                            <div class="technique-card" data-tech="freshy_calls">
+                                <div class="tech-header">
+                                    <span class="tech-icon">🆕</span>
+                                    <h4>FreshyCalls</h4>
+                                    <span class="tech-badge syscall">SYSCALL</span>
+                                </div>
+                                <p>Extract fresh syscalls from clean NTDLL</p>
+                                <span class="tech-best">Best vs: Falcon, S1</span>
+                            </div>
+                            <div class="technique-card" data-tech="ntdll_unhook">
+                                <div class="tech-header">
+                                    <span class="tech-icon">🔓</span>
+                                    <h4>NTDLL Unhook</h4>
+                                    <span class="tech-badge unhook">UNHOOK</span>
+                                </div>
+                                <p>Restore NTDLL .text from disk copy</p>
+                                <span class="tech-best">Best vs: Carbon Black</span>
+                            </div>
+                            <div class="technique-card" data-tech="etw_patch">
+                                <div class="tech-header">
+                                    <span class="tech-icon">📊</span>
+                                    <h4>ETW Patch</h4>
+                                    <span class="tech-badge etw">ETW</span>
+                                </div>
+                                <p>Patch EtwEventWrite to return success</p>
+                                <span class="tech-best">Best vs: All EDRs</span>
+                            </div>
+                            <div class="technique-card" data-tech="hardware_bp">
+                                <div class="tech-header">
+                                    <span class="tech-icon">🔧</span>
+                                    <h4>Hardware BP</h4>
+                                    <span class="tech-badge syscall">DEBUG</span>
+                                </div>
+                                <p>Clear debug registers, avoid tracing</p>
+                                <span class="tech-best">Best vs: SentinelOne</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EDR Profiles Panel -->
+                <div class="form-panel hidden" id="edr-panel">
+                    <div class="panel-header cyan">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
+                        <div class="panel-title">
+                            <h2>EDR Detection Profiles</h2>
+                            <p>AI-recommended techniques per EDR</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div id="edrProfiles"></div>
+                    </div>
+                </div>
+
+                <!-- Payload Loader Panel -->
+                <div class="form-panel hidden" id="loader-panel">
+                    <div class="panel-header orange">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Bypass Loader Generator</h2>
+                            <p>Wrap your payload with bypass chain</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label class="form-label">PowerShell Payload</label>
+                            <textarea id="payloadCode" class="form-textarea" rows="6" placeholder="Write-Host '[+] Payload executed'&#10;# Your PowerShell code here..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="obfuscateLoader">
+                                <span class="toggle-switch"></span>
+                                <span>Base64 Obfuscate</span>
+                            </label>
+                        </div>
+
+                        <button class="btn-submit orange" onclick="generateLoader()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/></svg>
+                            Generate Loader
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal & Output Column -->
+            <div class="terminal-column">
+                <!-- OPSEC Features Panel -->
+                <div class="opsec-panel">
+                    <div class="opsec-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>OPSEC Features (Level <span id="currentOpsecLevel">3</span>)</span>
+                    </div>
+                    <div class="opsec-body">
+                        <div class="opsec-feature" id="feat-etw">
+                            <span class="feature-icon">📊</span>
+                            <span class="feature-name">ETW Blind</span>
+                            <span class="feature-status enabled">ENABLED</span>
+                        </div>
+                        <div class="opsec-feature" id="feat-unhook">
+                            <span class="feature-icon">🔓</span>
+                            <span class="feature-name">NTDLL Unhook</span>
+                            <span class="feature-status enabled">ENABLED</span>
+                        </div>
+                        <div class="opsec-feature" id="feat-spoof">
+                            <span class="feature-icon">🎭</span>
+                            <span class="feature-name">Telemetry Spoof</span>
+                            <span class="feature-status enabled">ENABLED</span>
+                        </div>
+                        <div class="opsec-feature" id="feat-logs">
+                            <span class="feature-icon">🧹</span>
+                            <span class="feature-name">Log Forge</span>
+                            <span class="feature-status disabled">LEVEL 4+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal Output -->
+                <div class="terminal-panel">
+                    <div class="terminal-header">
+                        <div class="terminal-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                        <div class="terminal-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/></svg><span>Bypass Engine Output</span></div>
+                        <div class="terminal-actions">
+                            <button class="btn-copy" onclick="copyCode()" title="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                            <button class="btn-clear" onclick="clearTerminal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/></svg></button>
+                        </div>
+                    </div>
+                    <div class="terminal-body" id="terminal">
+                        <div class="terminal-content" id="terminal-content">
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>AI-Dynamic AMSI/ETW Bypass Engine v2.0</span></div>
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>Multi-layer bypass: Reflection + Unhook + Syscall + ETW</span></div>
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>EDR auto-detection enabled</span></div>
+                            <div class="terminal-divider"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Output -->
+                <div class="code-panel">
+                    <div class="code-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        <span>Generated Code</span>
+                        <span class="code-length" id="codeLength">0 chars</span>
+                    </div>
+                    <div class="code-body">
+                        <pre id="generatedCode"># Click "Generate Bypass Code" to create bypass chain</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+let currentTab = 'generate';
+let opsecLevel = 3;
+let generatedCode = '';
+let bypassCount = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initTabs();
+    loadEDRProfiles();
+    checkStatus();
+    updateOpsecFeatures();
+});
+
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(tab + '-panel').classList.remove('hidden');
+            currentTab = tab;
+            log('─'.repeat(40), 'dim');
+            log(`Switched to ${tab.toUpperCase()} mode`, 'info');
+        });
+    });
+}
+
+function log(message, type = 'info') {
+    const terminal = document.getElementById('terminal-content');
+    const div = document.createElement('div');
+    div.className = `terminal-line ${type}`;
+    if (type === 'dim') {
+        div.innerHTML = `<span class="divider">${message}</span>`;
+    } else {
+        const prefixes = { success: '[+]', error: '[!]', warning: '[*]', info: '[*]' };
+        div.innerHTML = `<span class="prompt">${prefixes[type] || '[*]'}</span><span>${message}</span>`;
+    }
+    terminal.appendChild(div);
+    document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+}
+
+function clearTerminal() {
+    document.getElementById('terminal-content').innerHTML = `
+        <div class="terminal-line info"><span class="prompt">[*]</span><span>Terminal cleared</span></div>
+        <div class="terminal-divider"></div>
+    `;
+}
+
+async function checkStatus() {
+    try {
+        const response = await fetch('/evasion/amsi/status');
+        const data = await response.json();
+        if (data.success && data.available) {
+            log('AMSI/ETW Bypass module loaded', 'success');
+            log(`Available techniques: ${data.techniques.length}`, 'info');
+            log(`EDR profiles: ${data.edr_profiles.length}`, 'info');
+        } else {
+            log('Module not available!', 'error');
+        }
+    } catch (e) {
+        log(`Status check failed: ${e.message}`, 'error');
+    }
+}
+
+async function loadEDRProfiles() {
+    try {
+        const response = await fetch('/evasion/amsi/profiles');
+        const data = await response.json();
+        if (data.success) {
+            renderEDRProfiles(data.profiles);
+        }
+    } catch (e) {
+        console.error('Failed to load profiles:', e);
+    }
+}
+
+function renderEDRProfiles(profiles) {
+    const container = document.getElementById('edrProfiles');
+    container.innerHTML = Object.entries(profiles).map(([key, p]) => `
+        <div class="edr-card" data-edr="${key}">
+            <div class="edr-header">
+                <span class="edr-name">${p.name}</span>
+                <span class="edr-badge ${p.syscall_monitoring ? 'danger' : 'safe'}">${p.syscall_monitoring ? 'Syscall Monitor' : 'User-mode'}</span>
+            </div>
+            <div class="edr-hooks">
+                <span class="hook-label">Hooks:</span>
+                ${p.hook_types.map(h => `<span class="hook-badge">${h}</span>`).join('')}
+            </div>
+            <div class="edr-techniques">
+                <span class="tech-label">Recommended:</span>
+                ${p.recommended_techniques.map(t => `<span class="tech-badge">${t}</span>`).join('')}
+            </div>
+            <div class="edr-apis">
+                <span class="api-label">Monitored APIs:</span>
+                <span class="api-count">${p.monitored_apis.length} functions</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadPreset(preset) {
+    document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector(`.preset-card[data-preset="${preset}"]`)?.classList.add('selected');
+    
+    if (preset === 'ghost') {
+        setOpsecLevel(4);
+        document.getElementById('bypassTarget').value = 'combined';
+    } else if (preset === 'fast') {
+        setOpsecLevel(1);
+        document.getElementById('bypassTarget').value = 'amsi';
+    } else {
+        setOpsecLevel(3);
+        document.getElementById('bypassTarget').value = 'combined';
+    }
+    
+    log(`Loaded preset: ${preset}`, 'success');
+}
+
+function setOpsecLevel(level) {
+    opsecLevel = level;
+    document.querySelectorAll('.opsec-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.level) === level);
+    });
+    document.getElementById('currentOpsecLevel').textContent = level;
+    updateOpsecFeatures();
+}
+
+function updateOpsecFeatures() {
+    const features = {
+        'feat-etw': opsecLevel >= 1,
+        'feat-unhook': opsecLevel >= 2,
+        'feat-spoof': opsecLevel >= 2,
+        'feat-logs': opsecLevel >= 4
+    };
+    
+    Object.entries(features).forEach(([id, enabled]) => {
+        const el = document.getElementById(id);
+        const status = el.querySelector('.feature-status');
+        if (enabled) {
+            status.textContent = 'ENABLED';
+            status.className = 'feature-status enabled';
+        } else {
+            status.textContent = `LEVEL ${id === 'feat-logs' ? '4' : '2'}+`;
+            status.className = 'feature-status disabled';
+        }
+    });
+}
+
+async function generateBypass() {
+    log('─'.repeat(40), 'dim');
+    log('Generating AI-dynamic bypass...', 'info');
+    
+    const target = document.getElementById('bypassTarget').value;
+    const technique = document.getElementById('bypassTechnique').value;
+    const edrOverride = document.getElementById('edrOverride').value;
+    const enableMutation = document.getElementById('enableMutation').checked;
+    
+    try {
+        const response = await fetch('/evasion/amsi/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target,
+                technique: technique || null,
+                edr_override: edrOverride || null,
+                opsec_level: opsecLevel,
+                enable_mutation: enableMutation
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            generatedCode = data.code;
+            document.getElementById('generatedCode').textContent = data.code;
+            document.getElementById('codeLength').textContent = `${data.code_length} chars`;
+            document.getElementById('detectedEDR').textContent = data.detected_edr.toUpperCase();
+            
+            bypassCount++;
+            document.getElementById('bypassCount').textContent = bypassCount;
+            
+            log(`Bypass generated: ${data.bypass_type}`, 'success');
+            log(`  Target: ${data.target}`, 'info');
+            log(`  Technique: ${data.technique}`, 'info');
+            log(`  Detected EDR: ${data.detected_edr}`, 'info');
+            log(`  OPSEC Level: ${opsecLevel}`, 'info');
+            log(`  Code length: ${data.code_length} characters`, 'info');
+            
+            if (data.recommended) {
+                log(`  AI Recommended: AMSI=${data.recommended.amsi}, ETW=${data.recommended.etw}`, 'info');
+            }
+        } else {
+            log(`Generation failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+}
+
+async function generateLoader() {
+    const payload = document.getElementById('payloadCode').value;
+    const obfuscate = document.getElementById('obfuscateLoader').checked;
+    
+    if (!payload.trim()) {
+        log('Please enter a payload', 'error');
+        return;
+    }
+    
+    log('─'.repeat(40), 'dim');
+    log('Generating bypass loader...', 'info');
+    
+    try {
+        const response = await fetch('/evasion/amsi/loader', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                payload,
+                opsec_level: opsecLevel,
+                obfuscate
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            generatedCode = data.loader;
+            document.getElementById('generatedCode').textContent = data.loader;
+            document.getElementById('codeLength').textContent = `${data.loader_length} chars`;
+            
+            log('Loader generated successfully', 'success');
+            log(`  Size: ${data.loader_length} characters`, 'info');
+            log(`  Obfuscated: ${data.obfuscated ? 'Yes' : 'No'}`, 'info');
+        } else {
+            log(`Generation failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+}
+
+function copyCode() {
+    if (generatedCode) {
+        navigator.clipboard.writeText(generatedCode);
+        log('Code copied to clipboard!', 'success');
+    }
+}
+</script>
+
+<style>
+.main-container { display: flex; min-height: 100vh; }
+.sidebar { width: 260px; background: rgba(15, 15, 25, 0.95); border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.logo { display: flex; align-items: center; gap: 12px; color: #fff; }
+.logo svg { width: 32px; height: 32px; color: #ff4757; }
+.logo-text { font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+.logo-text .accent { color: #ff4757; }
+.nav-menu { list-style: none; padding: 15px 10px; margin: 0; flex: 1; }
+.nav-item { margin-bottom: 5px; }
+.nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 1px; border-radius: 8px; transition: all 0.3s ease; }
+.nav-link svg { width: 20px; height: 20px; }
+.nav-link:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.nav-link.active { background: rgba(255, 71, 87, 0.1); color: #ff4757; }
+.sidebar-footer { padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.status-indicator { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 10px #00ff88; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.content-area { flex: 1; margin-left: 260px; padding: 30px; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; }
+
+.page-header { margin-bottom: 25px; }
+.header-content { display: flex; justify-content: space-between; align-items: flex-start; }
+.page-title { display: flex; align-items: center; gap: 15px; font-size: 24px; font-weight: 700; color: #fff; margin: 0 0 8px 0; }
+.page-title svg { width: 28px; height: 28px; color: #ff4757; }
+.page-subtitle { color: rgba(255, 255, 255, 0.5); font-size: 13px; margin: 0 0 0 43px; }
+.quick-stats { display: flex; gap: 15px; }
+.quick-stat { text-align: center; padding: 15px 20px; border-radius: 10px; }
+.quick-stat.red { background: rgba(255, 71, 87, 0.1); border: 1px solid rgba(255, 71, 87, 0.3); }
+.quick-stat.cyan { background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); }
+.quick-stat.green { background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); }
+.quick-stat .stat-value { display: block; font-size: 24px; font-weight: 700; }
+.quick-stat.red .stat-value { color: #ff4757; }
+.quick-stat.cyan .stat-value { color: #00d4ff; }
+.quick-stat.green .stat-value { color: #00ff88; }
+.quick-stat .stat-label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+
+.info-banner { display: flex; gap: 20px; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+.info-banner.red { background: rgba(255, 71, 87, 0.05); border: 1px solid rgba(255, 71, 87, 0.2); }
+.info-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: rgba(255, 71, 87, 0.1); border-radius: 10px; }
+.info-icon svg { width: 24px; height: 24px; color: #ff4757; }
+.info-content h3 { font-size: 14px; font-weight: 600; color: #ff4757; margin: 0 0 12px 0; }
+.info-items { display: flex; flex-direction: column; gap: 8px; }
+.info-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+.badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.badge.red { background: rgba(255, 71, 87, 0.2); color: #ff4757; border: 1px solid rgba(255, 71, 87, 0.4); }
+.badge.purple { background: rgba(167, 139, 250, 0.2); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.4); }
+.badge.cyan { background: rgba(0, 212, 255, 0.2); color: #00d4ff; border: 1px solid rgba(0, 212, 255, 0.4); }
+.badge.orange { background: rgba(255, 107, 53, 0.2); color: #ff6b35; border: 1px solid rgba(255, 107, 53, 0.4); }
+
+.tabs-section { margin-bottom: 25px; }
+.tabs-nav { display: flex; gap: 10px; flex-wrap: wrap; }
+.tab-btn { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.6); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.tab-btn svg { width: 18px; height: 18px; }
+.tab-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.tab-btn.active.red { background: rgba(255, 71, 87, 0.1); border-color: rgba(255, 71, 87, 0.4); color: #ff4757; }
+.tab-btn.active.purple { background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.4); color: #a78bfa; }
+.tab-btn.active.cyan { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.4); color: #00d4ff; }
+.tab-btn.active.orange { background: rgba(255, 107, 53, 0.1); border-color: rgba(255, 107, 53, 0.4); color: #ff6b35; }
+
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+
+.form-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; }
+.form-panel.hidden { display: none; }
+.panel-header { display: flex; align-items: center; gap: 15px; padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.panel-header.red { background: linear-gradient(90deg, rgba(255, 71, 87, 0.1) 0%, transparent 100%); }
+.panel-header.purple { background: linear-gradient(90deg, rgba(167, 139, 250, 0.1) 0%, transparent 100%); }
+.panel-header.cyan { background: linear-gradient(90deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%); }
+.panel-header.orange { background: linear-gradient(90deg, rgba(255, 107, 53, 0.1) 0%, transparent 100%); }
+.panel-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+.panel-icon svg { width: 24px; height: 24px; }
+.panel-header.red .panel-icon { background: rgba(255, 71, 87, 0.1); color: #ff4757; }
+.panel-header.purple .panel-icon { background: rgba(167, 139, 250, 0.1); color: #a78bfa; }
+.panel-header.cyan .panel-icon { background: rgba(0, 212, 255, 0.1); color: #00d4ff; }
+.panel-header.orange .panel-icon { background: rgba(255, 107, 53, 0.1); color: #ff6b35; }
+.panel-title h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px 0; }
+.panel-header.red .panel-title h2 { color: #ff4757; }
+.panel-header.purple .panel-title h2 { color: #a78bfa; }
+.panel-header.cyan .panel-title h2 { color: #00d4ff; }
+.panel-header.orange .panel-title h2 { color: #ff6b35; }
+.panel-title p { font-size: 12px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+.panel-body { padding: 20px; }
+
+.profile-presets h4 { font-size: 12px; color: rgba(255, 255, 255, 0.6); margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 1px; }
+.preset-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.preset-card { padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s; }
+.preset-card:hover { background: rgba(255, 71, 87, 0.05); border-color: rgba(255, 71, 87, 0.3); }
+.preset-card.selected { background: rgba(255, 71, 87, 0.1); border-color: rgba(255, 71, 87, 0.5); }
+.preset-icon { font-size: 24px; margin-bottom: 8px; }
+.preset-card h5 { font-size: 13px; font-weight: 600; color: #fff; margin: 0 0 4px 0; }
+.preset-card p { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+
+.form-divider { height: 1px; background: rgba(255, 255, 255, 0.05); margin: 20px 0; }
+
+.form-group { margin-bottom: 18px; }
+.form-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px; }
+.form-label svg { width: 14px; height: 14px; color: rgba(255, 255, 255, 0.4); }
+.form-input, .form-textarea { width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; font-size: 13px; transition: all 0.3s ease; }
+.form-input:focus, .form-textarea:focus { outline: none; background: rgba(0, 0, 0, 0.4); }
+.form-input.red:focus { border-color: rgba(255, 71, 87, 0.5); box-shadow: 0 0 15px rgba(255, 71, 87, 0.1); }
+.form-textarea { font-family: 'Monaco', 'Menlo', monospace; resize: vertical; min-height: 120px; }
+
+.opsec-selector { display: flex; gap: 10px; }
+.opsec-btn { flex: 1; padding: 15px 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.6); font-size: 18px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.3s; }
+.opsec-btn span { display: block; font-size: 10px; font-weight: 500; margin-top: 5px; }
+.opsec-btn:hover { background: rgba(255, 71, 87, 0.05); border-color: rgba(255, 71, 87, 0.3); }
+.opsec-btn.active { background: rgba(255, 71, 87, 0.1); border-color: rgba(255, 71, 87, 0.5); color: #ff4757; }
+
+.toggle-label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+.toggle-label input { display: none; }
+.toggle-switch { width: 44px; height: 24px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; position: relative; transition: all 0.3s; }
+.toggle-switch::after { content: ''; position: absolute; width: 18px; height: 18px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; top: 3px; left: 3px; transition: all 0.3s; }
+.toggle-label input:checked + .toggle-switch { background: rgba(255, 71, 87, 0.5); }
+.toggle-label input:checked + .toggle-switch::after { left: 23px; background: #ff4757; }
+
+.btn-submit { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.btn-submit svg { width: 18px; height: 18px; }
+.btn-submit.red { background: linear-gradient(135deg, #ff4757 0%, #c44141 100%); color: #fff; }
+.btn-submit.red:hover { box-shadow: 0 5px 20px rgba(255, 71, 87, 0.4); transform: translateY(-2px); }
+.btn-submit.orange { background: linear-gradient(135deg, #ff6b35 0%, #cc5500 100%); color: #fff; }
+.btn-submit.orange:hover { box-shadow: 0 5px 20px rgba(255, 107, 53, 0.4); transform: translateY(-2px); }
+
+.technique-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.technique-card { padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; cursor: pointer; transition: all 0.3s; }
+.technique-card:hover { background: rgba(167, 139, 250, 0.05); border-color: rgba(167, 139, 250, 0.3); }
+.tech-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.tech-icon { font-size: 18px; }
+.tech-header h4 { flex: 1; font-size: 13px; font-weight: 600; color: #fff; margin: 0; }
+.tech-badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; }
+.tech-badge.amsi { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+.tech-badge.etw { background: rgba(0, 212, 255, 0.2); color: #00d4ff; }
+.tech-badge.syscall { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+.tech-badge.unhook { background: rgba(255, 107, 53, 0.2); color: #ff6b35; }
+.technique-card p { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin: 0 0 8px 0; }
+.tech-best { font-size: 10px; color: #a78bfa; font-weight: 500; }
+
+.edr-card { padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; margin-bottom: 12px; }
+.edr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.edr-name { font-size: 14px; font-weight: 600; color: #fff; }
+.edr-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.edr-badge.danger { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+.edr-badge.safe { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+.edr-hooks, .edr-techniques, .edr-apis { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 11px; }
+.hook-label, .tech-label, .api-label { color: rgba(255, 255, 255, 0.5); }
+.hook-badge { padding: 2px 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; color: rgba(255, 255, 255, 0.7); }
+.api-count { color: rgba(255, 255, 255, 0.6); }
+
+.opsec-panel, .code-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.opsec-header, .code-header { display: flex; align-items: center; gap: 10px; padding: 15px 20px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.opsec-header svg, .code-header svg { width: 18px; height: 18px; color: #ff4757; }
+.opsec-body { padding: 15px; }
+.code-length { margin-left: auto; font-size: 11px; color: rgba(255, 255, 255, 0.4); }
+
+.opsec-feature { display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.opsec-feature:last-child { border-bottom: none; }
+.feature-icon { font-size: 18px; }
+.feature-name { flex: 1; font-size: 13px; color: rgba(255, 255, 255, 0.8); }
+.feature-status { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
+.feature-status.enabled { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+.feature-status.disabled { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.4); }
+
+.code-body { padding: 0; max-height: 300px; overflow-y: auto; }
+.code-body pre { margin: 0; padding: 15px; font-family: 'Monaco', 'Menlo', monospace; font-size: 11px; color: rgba(255, 255, 255, 0.8); white-space: pre-wrap; word-break: break-all; }
+
+.terminal-panel { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.terminal-header { display: flex; align-items: center; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.terminal-dots { display: flex; gap: 6px; margin-right: 15px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27ca40; }
+.terminal-title { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 12px; color: rgba(255, 255, 255, 0.5); }
+.terminal-title svg { width: 14px; height: 14px; }
+.terminal-actions { display: flex; gap: 8px; }
+.btn-copy, .btn-clear { padding: 5px; background: transparent; border: none; color: rgba(255, 255, 255, 0.4); cursor: pointer; }
+.btn-copy svg, .btn-clear svg { width: 16px; height: 16px; }
+.btn-copy:hover { color: #00d4ff; }
+.btn-clear:hover { color: #ff5f56; }
+.terminal-body { height: 200px; overflow-y: auto; padding: 15px; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; }
+.terminal-line { margin-bottom: 6px; display: flex; gap: 8px; }
+.terminal-line .prompt { color: #00ff88; font-weight: 600; }
+.terminal-line.error .prompt { color: #ff5f56; }
+.terminal-line.warning .prompt { color: #ffbd2e; }
+.terminal-line.success .prompt { color: #27ca40; }
+.terminal-line span:last-child { color: rgba(255, 255, 255, 0.8); word-break: break-all; }
+.terminal-divider { border-top: 1px dashed rgba(255, 255, 255, 0.1); margin: 10px 0; }
+.divider { color: rgba(255, 255, 255, 0.2); }
+</style>
+{% endblock %}

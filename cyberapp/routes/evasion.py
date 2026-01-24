@@ -895,3 +895,327 @@ obfuscator = AIAdaptiveSleepObfuscator(
         }
     })
 
+
+# ============================================================
+# AMSI/ETW BYPASS PRO ROUTES
+# ============================================================
+
+# Import AMSI/ETW bypass module
+try:
+    from evasion.amsi_bypass import (
+        AMSIETWBypassEngine,
+        BypassTechnique,
+        EDRProduct as AMSIEDRProduct,
+        EDR_PROFILES as AMSI_EDR_PROFILES,
+        create_bypass_engine,
+        ai_bypass,
+        ghost_bypass,
+        fast_bypass,
+        # Legacy classes
+        AMSIBypass,
+        ETWBypass,
+        DefenderBypass,
+    )
+    HAS_AMSI_BYPASS = True
+except ImportError as e:
+    HAS_AMSI_BYPASS = False
+    logger.warning(f"AMSI/ETW bypass module not available: {e}")
+
+
+# Store bypass engine sessions
+_bypass_engines = {}
+
+
+@evasion_bp.route('/amsi/')
+def amsi_bypass_page():
+    """AMSI/ETW Bypass configuration page"""
+    return render_template('amsi_bypass.html')
+
+
+@evasion_bp.route('/amsi/status', methods=['GET'])
+def amsi_status():
+    """Get AMSI/ETW bypass module status"""
+    return jsonify({
+        'success': True,
+        'available': HAS_AMSI_BYPASS,
+        'techniques': [t.value for t in BypassTechnique] if HAS_AMSI_BYPASS else [],
+        'edr_profiles': [e.value for e in AMSIEDRProduct] if HAS_AMSI_BYPASS else [],
+        'active_sessions': len(_bypass_engines),
+    })
+
+
+@evasion_bp.route('/amsi/profiles', methods=['GET'])
+def get_amsi_profiles():
+    """Get available EDR profiles for bypass"""
+    if not HAS_AMSI_BYPASS:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    profiles = {}
+    for edr, profile in AMSI_EDR_PROFILES.items():
+        profiles[edr.value] = {
+            'name': profile.name,
+            'hook_types': [h.value for h in profile.hook_types],
+            'monitored_apis': profile.monitored_apis,
+            'recommended_techniques': [t.value for t in profile.recommended_techniques],
+            'syscall_monitoring': profile.syscall_monitoring,
+            'detection_capabilities': profile.detection_capabilities
+        }
+    
+    return jsonify({
+        'success': True,
+        'profiles': profiles,
+        'techniques': {t.value: t.name for t in BypassTechnique}
+    })
+
+
+@evasion_bp.route('/amsi/generate', methods=['POST'])
+def generate_bypass():
+    """
+    Generate AMSI/ETW bypass code
+    
+    JSON body:
+    {
+        "target": "amsi" | "etw" | "combined" | "unhook",
+        "technique": "reflection" | "memory_patch" | etc,
+        "edr_override": "falcon" | "defender" | null,
+        "opsec_level": 1-4,
+        "enable_mutation": true/false
+    }
+    """
+    if not HAS_AMSI_BYPASS:
+        return jsonify({
+            'success': False,
+            'error': 'AMSI/ETW bypass module not available'
+        }), 503
+    
+    data = request.get_json()
+    target = data.get('target', 'combined')
+    technique_str = data.get('technique')
+    edr_override = data.get('edr_override')
+    opsec_level = data.get('opsec_level', 3)
+    enable_mutation = data.get('enable_mutation', True)
+    
+    try:
+        # Create engine
+        engine = create_bypass_engine(
+            edr=edr_override,
+            opsec_level=opsec_level
+        )
+        engine.enable_mutation = enable_mutation
+        
+        # Parse technique if specified
+        technique = None
+        if technique_str:
+            try:
+                technique = BypassTechnique(technique_str)
+            except ValueError:
+                pass
+        
+        # Generate code based on target
+        if target == 'amsi':
+            code = engine.get_amsi_bypass(technique)
+            bypass_type = 'AMSI Bypass'
+        elif target == 'etw':
+            code = engine.get_etw_bypass(technique)
+            bypass_type = 'ETW Bypass'
+        elif target == 'unhook':
+            code = engine.get_unhook()
+            bypass_type = 'NTDLL Unhook'
+        else:  # combined
+            code = engine.get_combined_bypass()
+            bypass_type = 'Combined AI-Dynamic Bypass'
+        
+        return jsonify({
+            'success': True,
+            'bypass_type': bypass_type,
+            'target': target,
+            'technique': technique.value if technique else 'ai_selected',
+            'detected_edr': engine.detected_edr,
+            'opsec_level': opsec_level,
+            'code': code,
+            'code_length': len(code),
+            'recommended': engine.get_bypass_status()['recommended_techniques']
+        })
+    except Exception as e:
+        logger.error(f"Failed to generate bypass: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+
+@evasion_bp.route('/amsi/quick/<preset>', methods=['GET'])
+def quick_bypass(preset: str):
+    """
+    Get quick bypass by preset name
+    
+    Presets: ai, ghost, fast
+    """
+    if not HAS_AMSI_BYPASS:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    presets = {
+        'ai': ai_bypass,
+        'ghost': ghost_bypass,
+        'fast': fast_bypass
+    }
+    
+    if preset not in presets:
+        return jsonify({
+            'success': False,
+            'error': f"Unknown preset. Available: {list(presets.keys())}"
+        }), 400
+    
+    try:
+        code = presets[preset]()
+        return jsonify({
+            'success': True,
+            'preset': preset,
+            'code': code,
+            'code_length': len(code)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/amsi/session', methods=['POST'])
+def create_bypass_session():
+    """
+    Create persistent bypass session
+    
+    JSON body:
+    {
+        "session_id": "beacon_001",
+        "edr_override": "falcon",
+        "opsec_level": 3
+    }
+    """
+    if not HAS_AMSI_BYPASS:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    data = request.get_json()
+    session_id = data.get('session_id', f"amsi_{int(datetime.now().timestamp())}")
+    
+    try:
+        engine = create_bypass_engine(
+            edr=data.get('edr_override'),
+            opsec_level=data.get('opsec_level', 3)
+        )
+        
+        _bypass_engines[session_id] = engine
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'status': engine.get_bypass_status()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@evasion_bp.route('/amsi/sessions', methods=['GET'])
+def list_bypass_sessions():
+    """List all bypass sessions"""
+    if not HAS_AMSI_BYPASS:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    sessions = []
+    for sid, engine in _bypass_engines.items():
+        sessions.append({
+            'session_id': sid,
+            'detected_edr': engine.detected_edr,
+            'opsec_level': engine.opsec_level,
+            'status': engine.get_bypass_status()
+        })
+    
+    return jsonify({
+        'success': True,
+        'sessions': sessions,
+        'count': len(sessions)
+    })
+
+
+@evasion_bp.route('/amsi/session/<session_id>', methods=['DELETE'])
+def delete_bypass_session(session_id: str):
+    """Delete a bypass session"""
+    if session_id in _bypass_engines:
+        del _bypass_engines[session_id]
+        return jsonify({'success': True, 'message': f'Session {session_id} deleted'})
+    return jsonify({'success': False, 'error': 'Session not found'}), 404
+
+
+@evasion_bp.route('/amsi/legacy/<technique>', methods=['GET'])
+def legacy_bypass(technique: str):
+    """
+    Get legacy bypass code (backward compatibility)
+    
+    Techniques: reflection, memory_patch, context, clr, etw_patch, etw_provider
+    """
+    if not HAS_AMSI_BYPASS:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    legacy_map = {
+        'reflection': AMSIBypass.get_reflection_bypass,
+        'memory_patch': AMSIBypass.get_memory_patch_bypass,
+        'context': AMSIBypass.get_context_corruption_bypass,
+        'clr': AMSIBypass.get_clr_bypass,
+        'etw_patch': ETWBypass.get_etw_patch,
+        'etw_provider': ETWBypass.get_etw_provider_bypass,
+        'defender_enum': DefenderBypass.get_defender_exclusion_enum,
+        'defender_disable': DefenderBypass.get_defender_disable,
+    }
+    
+    if technique not in legacy_map:
+        return jsonify({
+            'success': False,
+            'error': f"Unknown technique. Available: {list(legacy_map.keys())}"
+        }), 400
+    
+    try:
+        code = legacy_map[technique]()
+        return jsonify({
+            'success': True,
+            'technique': technique,
+            'code': code
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/amsi/loader', methods=['POST'])
+def generate_bypass_loader():
+    """
+    Generate bypass loader for payload
+    
+    JSON body:
+    {
+        "payload": "Write-Host 'Hello'",
+        "opsec_level": 3,
+        "obfuscate": true
+    }
+    """
+    if not HAS_AMSI_BYPASS:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    data = request.get_json()
+    payload = data.get('payload', "Write-Host '[+] Payload executed successfully'")
+    opsec_level = data.get('opsec_level', 3)
+    obfuscate = data.get('obfuscate', False)
+    
+    try:
+        from evasion.amsi_bypass import generate_bypass_loader, get_obfuscated_bypass
+        
+        if obfuscate:
+            loader = get_obfuscated_bypass()
+            loader += f"\n\n# Payload\n{payload}"
+        else:
+            loader = generate_bypass_loader(payload)
+        
+        return jsonify({
+            'success': True,
+            'loader': loader,
+            'loader_length': len(loader),
+            'obfuscated': obfuscate
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
