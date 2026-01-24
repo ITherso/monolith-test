@@ -55,6 +55,18 @@ from .sleepmask_cloaking import (
     generate_ps_cloaking_stub
 )
 
+# NEW: Process Injection Masterclass (Ultimate Ghosting)
+from .process_injection_masterclass import (
+    ProcessInjectionMasterclass, AIInjectionSelector, EDRDetector,
+    PEBTEBMutator, PPIDSpoofEngine, ProcessArtifactWiper,
+    InjectionTechnique, EDRProduct as InjectionEDRProduct,
+    MutationTarget, ArtifactType, InjectionResult,
+    EDR_INJECTION_PROFILES,
+    create_masterclass_injector, quick_inject,
+    get_ai_recommendation as get_injection_recommendation,
+    detect_edr
+)
+
 __all__ = [
     # Sleep & Timing
     'SleepObfuscator',
@@ -133,4 +145,22 @@ __all__ = [
     'quick_cloak',
     'get_ai_recommendation',
     'generate_ps_cloaking_stub',
+    
+    # Process Injection Masterclass (NEW - Ultimate Ghosting)
+    'ProcessInjectionMasterclass',
+    'AIInjectionSelector',
+    'EDRDetector',
+    'PEBTEBMutator',
+    'PPIDSpoofEngine',
+    'ProcessArtifactWiper',
+    'InjectionTechnique',
+    'InjectionEDRProduct',
+    'MutationTarget',
+    'ArtifactType',
+    'InjectionResult',
+    'EDR_INJECTION_PROFILES',
+    'create_masterclass_injector',
+    'quick_inject',
+    'get_injection_recommendation',
+    'detect_edr',
 ]

