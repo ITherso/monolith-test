@@ -67,6 +67,19 @@ from .process_injection_masterclass import (
     detect_edr
 )
 
+# NEW: Syscall Obfuscator Monster (Ultimate ML-Dynamic)
+from .syscall_obfuscator import (
+    SyscallObfuscatorMonster, AIObfuscationSelector, GANStubMutator,
+    StubEncryptor, SpoofCallGenerator, SyscallArtifactWiper, FreshSSNResolver,
+    EDRDetectorForSyscall, ObfuscationLayer as SyscallObfuscationLayer,
+    EDRProfile as SyscallEDRProfile, StubPattern, SpoofTarget,
+    ObfuscationConfig as SyscallObfuscationConfig, ObfuscatedStub,
+    SyscallObfuscationResult, EDR_OBFUSCATION_PROFILES,
+    create_obfuscator_monster, quick_obfuscate_call,
+    get_ai_recommendation as get_syscall_recommendation,
+    detect_edr as detect_edr_for_syscall
+)
+
 __all__ = [
     # Sleep & Timing
     'SleepObfuscator',
@@ -163,4 +176,26 @@ __all__ = [
     'quick_inject',
     'get_injection_recommendation',
     'detect_edr',
+    
+    # Syscall Obfuscator Monster (NEW - ML-Dynamic)
+    'SyscallObfuscatorMonster',
+    'AIObfuscationSelector',
+    'GANStubMutator',
+    'StubEncryptor',
+    'SpoofCallGenerator',
+    'SyscallArtifactWiper',
+    'FreshSSNResolver',
+    'EDRDetectorForSyscall',
+    'SyscallObfuscationLayer',
+    'SyscallEDRProfile',
+    'StubPattern',
+    'SpoofTarget',
+    'SyscallObfuscationConfig',
+    'ObfuscatedStub',
+    'SyscallObfuscationResult',
+    'EDR_OBFUSCATION_PROFILES',
+    'create_obfuscator_monster',
+    'quick_obfuscate_call',
+    'get_syscall_recommendation',
+    'detect_edr_for_syscall',
 ]

