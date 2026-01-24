@@ -791,3 +791,241 @@ SUCCESSFUL MOVES
             'domain': self.target_domain or self.domain,
             'discovered_at': datetime.now().isoformat()
         }
+
+
+# =============================================================================
+# CLOUD PIVOT INTEGRATION
+# =============================================================================
+
+class CloudLateralMovement:
+    """
+    Cloud Lateral Movement - Zero-Trust Bypass
+    
+    Extends lateral movement to cloud environments:
+    - Azure AD via PRT hijacking
+    - AWS via metadata relay
+    - GCP via service account abuse
+    - Hybrid AD pivoting
+    """
+    
+    def __init__(self, scan_id: str, config: dict = None):
+        self.scan_id = scan_id
+        self.config = config or {}
+        self.cloud_pivot = None
+        self._init_cloud_pivot()
+    
+    def _init_cloud_pivot(self):
+        """Initialize cloud pivot orchestrator"""
+        try:
+            from cybermodules.cloud_pivot import CloudPivotOrchestrator, CloudProvider
+            self.cloud_pivot = CloudPivotOrchestrator(self.config)
+            self.CloudProvider = CloudProvider
+            print(f"[CLOUD] Cloud pivot initialized")
+        except ImportError as e:
+            print(f"[CLOUD] Cloud pivot not available: {e}")
+    
+    async def pivot_to_azure(
+        self,
+        target: str = "localhost",
+        method: str = "prt_hijack"
+    ) -> dict:
+        """
+        Pivot to Azure AD via PRT hijacking
+        
+        Methods:
+        - prt_hijack: Extract PRT from Azure AD joined device
+        - device_code_phish: Phish user via device code flow
+        - aadc_exploit: Exploit Azure AD Connect sync account
+        - golden_saml: Forge SAML tokens via ADFS
+        
+        Args:
+            target: Target machine (for PRT extraction)
+            method: Pivot method
+        
+        Returns:
+            Pivot result dictionary
+        """
+        if not self.cloud_pivot:
+            return {"success": False, "error": "Cloud pivot not initialized"}
+        
+        try:
+            if method == "prt_hijack":
+                result = await self.cloud_pivot.pivot_azure_prt(target)
+            elif method == "device_code_phish":
+                # Start device code phishing
+                user_code, device_code = await self.cloud_pivot.azure_prt.device_code_phish()
+                
+                if user_code:
+                    return {
+                        "success": True,
+                        "status": "pending_auth",
+                        "user_code": user_code,
+                        "device_code": device_code,
+                        "message": f"Send user to https://microsoft.com/devicelogin with code: {user_code}",
+                    }
+            elif method == "aadc_exploit":
+                result = await self.cloud_pivot.pivot_hybrid_ad()
+            else:
+                result = await self.cloud_pivot.pivot_azure_prt(target)
+            
+            return result.to_dict() if hasattr(result, 'to_dict') else result
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def pivot_to_aws(
+        self,
+        ssrf_url: str = None,
+        method: str = "imds"
+    ) -> dict:
+        """
+        Pivot to AWS via metadata service
+        
+        Methods:
+        - imds: Direct IMDS access (when on EC2)
+        - ssrf: Relay through SSRF vulnerability
+        
+        Args:
+            ssrf_url: Vulnerable URL for SSRF relay
+            method: Pivot method
+        
+        Returns:
+            Pivot result dictionary
+        """
+        if not self.cloud_pivot:
+            return {"success": False, "error": "Cloud pivot not initialized"}
+        
+        try:
+            result = await self.cloud_pivot.pivot_aws_metadata(ssrf_url)
+            return result.to_dict() if hasattr(result, 'to_dict') else result
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def pivot_to_gcp(self) -> dict:
+        """
+        Pivot to GCP via metadata service
+        
+        Returns:
+            Pivot result dictionary
+        """
+        if not self.cloud_pivot:
+            return {"success": False, "error": "Cloud pivot not initialized"}
+        
+        try:
+            result = await self.cloud_pivot.pivot_gcp_metadata()
+            return result.to_dict() if hasattr(result, 'to_dict') else result
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def auto_cloud_pivot(
+        self,
+        source: str = "onprem",
+        target_provider: str = None
+    ) -> list:
+        """
+        Automatic cloud pivot - detect environment and pivot
+        
+        Args:
+            source: Source environment (onprem, ec2, gce, azure_vm)
+            target_provider: Target cloud provider (azure, aws, gcp)
+        
+        Returns:
+            List of pivot results
+        """
+        if not self.cloud_pivot:
+            return [{"success": False, "error": "Cloud pivot not initialized"}]
+        
+        try:
+            provider = None
+            if target_provider:
+                provider = self.CloudProvider(target_provider)
+            
+            results = await self.cloud_pivot.auto_pivot(source, provider)
+            return [r.to_dict() for r in results]
+        except Exception as e:
+            return [{"success": False, "error": str(e)}]
+    
+    def suggest_attack_path(
+        self,
+        current_access: list = None,
+        target_provider: str = None
+    ) -> list:
+        """
+        Get AI-powered attack path suggestions
+        
+        Includes cloud weak credential analysis.
+        
+        Args:
+            current_access: Current access types (domain_user, local_admin, etc.)
+            target_provider: Target cloud provider
+        
+        Returns:
+            List of suggested attack paths
+        """
+        if not self.cloud_pivot:
+            return []
+        
+        try:
+            provider = None
+            if target_provider:
+                provider = self.CloudProvider(target_provider)
+            
+            return self.cloud_pivot.suggest_attack_path(current_access, provider)
+        except Exception as e:
+            return [{"error": str(e)}]
+    
+    def get_pivot_summary(self) -> dict:
+        """Get summary of all cloud pivot operations"""
+        if not self.cloud_pivot:
+            return {}
+        
+        return self.cloud_pivot.get_pivot_summary()
+
+
+# Helper function for synchronous calls
+def cloud_pivot_sync(
+    scan_id: str,
+    method: str,
+    target: str = None,
+    config: dict = None
+) -> dict:
+    """
+    Synchronous wrapper for cloud pivot operations
+    
+    Args:
+        scan_id: Scan identifier
+        method: Pivot method (azure_prt, aws_imds, gcp_metadata, auto)
+        target: Target for method
+        config: Configuration dictionary
+    
+    Returns:
+        Pivot result dictionary
+    """
+    import asyncio
+    
+    cloud = CloudLateralMovement(scan_id, config)
+    
+    async def run():
+        if method == "azure_prt":
+            return await cloud.pivot_to_azure(target or "localhost", "prt_hijack")
+        elif method == "azure_device_code":
+            return await cloud.pivot_to_azure(target, "device_code_phish")
+        elif method == "aws_imds":
+            return await cloud.pivot_to_aws()
+        elif method == "aws_ssrf":
+            return await cloud.pivot_to_aws(ssrf_url=target)
+        elif method == "gcp_metadata":
+            return await cloud.pivot_to_gcp()
+        elif method == "auto":
+            return await cloud.auto_cloud_pivot()
+        else:
+            return {"error": f"Unknown method: {method}"}
+    
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    return loop.run_until_complete(run())
+
