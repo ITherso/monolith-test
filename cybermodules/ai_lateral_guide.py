@@ -113,6 +113,28 @@ except ImportError:
     PersistenceGodMonster = None
     PersistenceChain = None
 
+# Try to import Report Generator
+try:
+    from tools.report_generator import (
+        ReportGenerator,
+        ReportConfig,
+        ReportFormat,
+        ChainLog,
+        ChainLogEntry,
+        SigmaRuleGenerator,
+        MITREMapper,
+        AISummaryGenerator,
+        create_report_generator,
+        quick_report,
+        create_sample_chain_log,
+        MITRE_TECHNIQUES,
+    )
+    HAS_REPORT_GENERATOR = True
+except ImportError:
+    HAS_REPORT_GENERATOR = False
+    ReportGenerator = None
+    ChainLog = None
+
 # Try to import LLM engine
 try:
     from cybermodules.llm_engine import LLMEngine
@@ -2496,3 +2518,252 @@ Return as JSON array.
             )
         
         return result
+    
+    # =========================================================================
+    # REPORTING & VISUALIZATION
+    # =========================================================================
+    
+    def generate_chain_report(
+        self,
+        chain_log: Any = None,
+        output_dir: str = "reports",
+        format: str = "html",
+        include_sigma: bool = True,
+        include_mitre: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Generate comprehensive attack chain report.
+        
+        Args:
+            chain_log: ChainLog object or None for sample
+            output_dir: Output directory for reports
+            format: Output format (html, pdf, json, all)
+            include_sigma: Include Sigma detection rules
+            include_mitre: Include MITRE ATT&CK mapping
+        
+        Returns:
+            Dict with report paths and generated content
+        """
+        result = {
+            'success': False,
+            'report_path': '',
+            'html_path': '',
+            'pdf_path': '',
+            'sigma_rules': [],
+            'mitre_coverage': {},
+            'ai_summary': '',
+            'twitter_thread': [],
+            'error': None,
+        }
+        
+        if not HAS_REPORT_GENERATOR:
+            result['error'] = 'Report generator module not available'
+            return result
+        
+        try:
+            # Create chain log if not provided
+            if chain_log is None:
+                chain_log = create_sample_chain_log()
+            
+            # Create report generator with config
+            config = ReportConfig(
+                enable_ai_summary=True,
+                enable_mitre_map=include_mitre,
+                enable_sigma_generate=include_sigma,
+                format=ReportFormat[format.upper()],
+                output_dir=output_dir,
+                anonymize_data=True,
+            )
+            
+            generator = ReportGenerator(config)
+            report_result = generator.generate_report(chain_log, output_dir)
+            
+            # Copy results
+            result['success'] = report_result.success
+            result['report_path'] = report_result.report_path
+            result['html_path'] = report_result.html_path
+            result['pdf_path'] = report_result.pdf_path
+            result['ai_summary'] = report_result.ai_summary
+            result['twitter_thread'] = report_result.twitter_thread
+            result['sigma_rules'] = [r.to_yaml() for r in report_result.sigma_rules]
+            result['mitre_coverage'] = {
+                k: {
+                    'technique_id': v.technique_id,
+                    'technique_name': v.technique_name,
+                    'tactic': v.tactic.name,
+                    'success_count': v.success_count,
+                    'evasion_score': v.evasion_score,
+                }
+                for k, v in report_result.mitre_coverage.items()
+            }
+            
+            if report_result.error:
+                result['error'] = report_result.error
+            
+        except Exception as e:
+            result['error'] = str(e)
+            self.log_action("report_generation", f"Failed: {e}")
+        
+        return result
+    
+    def get_ai_report_summary(
+        self,
+        chain_log: Any = None,
+        style: str = "executive"
+    ) -> str:
+        """
+        Get AI-generated report summary.
+        
+        Args:
+            chain_log: ChainLog object or None for sample
+            style: Summary style (executive, technical, twitter)
+        
+        Returns:
+            AI-generated summary string
+        """
+        if not HAS_REPORT_GENERATOR:
+            return "Report generator not available"
+        
+        try:
+            # Create chain log if not provided
+            if chain_log is None:
+                chain_log = create_sample_chain_log()
+            
+            # Map to MITRE
+            mapper = MITREMapper()
+            mitre_coverage = mapper.map_chain_log(chain_log)
+            
+            # Generate summary
+            ai_gen = AISummaryGenerator()
+            return ai_gen.generate_summary(chain_log, mitre_coverage, style)
+            
+        except Exception as e:
+            return f"Summary generation failed: {e}"
+    
+    def generate_sigma_rules(
+        self,
+        chain_log: Any = None
+    ) -> List[str]:
+        """
+        Generate Sigma detection rules from chain log.
+        
+        Args:
+            chain_log: ChainLog object or None for sample
+        
+        Returns:
+            List of Sigma rules in YAML format
+        """
+        if not HAS_REPORT_GENERATOR:
+            return ["# Report generator not available"]
+        
+        try:
+            # Create chain log if not provided
+            if chain_log is None:
+                chain_log = create_sample_chain_log()
+            
+            # Map to MITRE
+            mapper = MITREMapper()
+            mitre_coverage = mapper.map_chain_log(chain_log)
+            
+            # Generate rules
+            generator = SigmaRuleGenerator()
+            rules = generator.generate_rules(chain_log, mitre_coverage)
+            
+            return [r.to_yaml() for r in rules]
+            
+        except Exception as e:
+            return [f"# Rule generation failed: {e}"]
+    
+    def get_mitre_heatmap_data(
+        self,
+        chain_log: Any = None
+    ) -> Dict[str, Any]:
+        """
+        Get MITRE ATT&CK heatmap data for visualization.
+        
+        Args:
+            chain_log: ChainLog object or None for sample
+        
+        Returns:
+            Dict with heatmap data for each tactic/technique
+        """
+        if not HAS_REPORT_GENERATOR:
+            return {"error": "Report generator not available"}
+        
+        try:
+            # Create chain log if not provided
+            if chain_log is None:
+                chain_log = create_sample_chain_log()
+            
+            # Map to MITRE
+            mapper = MITREMapper()
+            mitre_coverage = mapper.map_chain_log(chain_log)
+            
+            return mapper.generate_heatmap_data(mitre_coverage)
+            
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def generate_twitter_thread(
+        self,
+        chain_log: Any = None
+    ) -> List[str]:
+        """
+        Generate Twitter/X thread for demo.
+        
+        Args:
+            chain_log: ChainLog object or None for sample
+        
+        Returns:
+            List of tweets for thread
+        """
+        if not HAS_REPORT_GENERATOR:
+            return ["Report generator not available"]
+        
+        try:
+            # Create chain log if not provided
+            if chain_log is None:
+                chain_log = create_sample_chain_log()
+            
+            # Map to MITRE
+            mapper = MITREMapper()
+            mitre_coverage = mapper.map_chain_log(chain_log)
+            
+            # Generate thread
+            ai_gen = AISummaryGenerator()
+            return ai_gen.generate_twitter_thread(chain_log, mitre_coverage)
+            
+        except Exception as e:
+            return [f"Thread generation failed: {e}"]
+    
+    def create_report_generator(
+        self,
+        format: str = "html",
+        style: str = "dark",
+        anonymize: bool = True
+    ):
+        """
+        Create configured ReportGenerator instance.
+        
+        Args:
+            format: Output format
+            style: Visual theme
+            anonymize: Anonymize sensitive data
+        
+        Returns:
+            ReportGenerator instance or None
+        """
+        if not HAS_REPORT_GENERATOR:
+            return None
+        
+        try:
+            return create_report_generator(
+                enable_ai=True,
+                enable_mitre=True,
+                enable_sigma=True,
+                format=format,
+                style=style
+            )
+        except Exception as e:
+            self.log_action("create_report_generator", f"Failed: {e}")
+            return None

@@ -19,3 +19,8 @@ numpy
 # AMSI/ETW Bypass PRO Dependencies
 pycryptodome
 # pywin32  # Windows only - install manually on Windows
+
+# Reporting + Visualization Pro Dependencies
+pypandoc  # PDF generation (requires pandoc binary)
+pyyaml    # YAML processing for Sigma rules
+jinja2    # HTML templating

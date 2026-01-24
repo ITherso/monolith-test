@@ -638,6 +638,125 @@ edr_persistence_profiles:
     install_delay_ms: [500, 2000]
     notes: "No EDR - use reliable scheduled task"
 
+# === NEW: Reporting & Visualization Pro Settings ===
+reporting:
+  enabled: true
+  
+  # Auto-generate report after chain completion
+  auto_report: true
+  
+  # AI-Dynamic summary
+  ai_summary:
+    enabled: true
+    style: "executive"  # executive, technical, twitter
+    include_recommendations: true
+    edr_breakdown: true
+  
+  # MITRE ATT&CK mapping
+  mitre_mapping:
+    enabled: true
+    generate_heatmap: true
+    include_subtechniques: true
+    coverage_threshold: 0.7  # Minimum coverage to highlight
+  
+  # Detection rule generation
+  detection_rules:
+    sigma:
+      enabled: true
+      level: "HIGH"  # INFORMATIONAL, LOW, MEDIUM, HIGH, CRITICAL
+      include_correlation: true  # Cross-technique rules
+    yara:
+      enabled: true
+      string_patterns: true
+      hex_patterns: true
+    snort: false
+    suricata: false
+  
+  # Output formats
+  output:
+    format: "html"  # html, pdf, json, markdown, all
+    output_dir: "reports"
+    filename_prefix: "chain_report"
+    timestamp_suffix: true
+  
+  # HTML report settings
+  html:
+    theme: "hacker"  # dark, light, hacker
+    interactive: true
+    tabs:
+      summary: true
+      mitre_coverage: true
+      sigma_rules: true
+      timeline: true
+      attack_flow: true
+    mermaid_diagrams: true
+    htmx_live: true
+  
+  # PDF settings
+  pdf:
+    enabled: true
+    encrypt: false
+    password: ""  # Leave empty or set password
+    watermark: false
+    watermark_text: "CONFIDENTIAL"
+  
+  # Data anonymization (OPSEC)
+  anonymize:
+    enabled: true
+    anonymize_ips: true
+    anonymize_hostnames: true
+    anonymize_users: true
+    anonymize_paths: true
+    preserve_format: true  # Keep IP/hostname format structure
+  
+  # Demo preparation
+  demo:
+    generate_twitter_thread: true
+    video_timestamps: true
+    highlight_evasion_wins: true
+    export_screenshots: false
+
+# EDR-specific reporting profiles
+edr_reporting_profiles:
+  crowdstrike_falcon:
+    ai_summary:
+      style: "technical"
+      edr_breakdown: true
+    detection_rules:
+      sigma_level: "HIGH"
+      include_falcon_specific: true
+    demo:
+      highlight_text: "Falcon bypass achieved with %{bypass_rate}% evasion"
+  
+  sentinelone:
+    ai_summary:
+      style: "technical"
+      edr_breakdown: true
+    detection_rules:
+      sigma_level: "HIGH"
+      include_s1_specific: true
+    demo:
+      highlight_text: "SentinelOne ML engine evaded via GAN mutation"
+  
+  defender_atp:
+    ai_summary:
+      style: "executive"
+      edr_breakdown: true
+    detection_rules:
+      sigma_level: "MEDIUM"
+      include_defender_specific: true
+    demo:
+      highlight_text: "Defender ATP bypassed through entropy modulation"
+  
+  none:
+    ai_summary:
+      style: "executive"
+      edr_breakdown: false
+    detection_rules:
+      sigma_level: "LOW"
+    demo:
+      highlight_text: "Full chain execution completed"
+
 # Logging
 logging:
   enabled: false

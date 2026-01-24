@@ -385,3 +385,210 @@ pytest tests/test_persistence_god.py -v
 pytest tests/test_persistence_god.py::TestAIPersistenceSelector -v
 pytest tests/test_persistence_god.py::TestPersistenceIntegration -v
 ```
+
+---
+
+## Report Generator Pro Flow
+
+```mermaid
+sequenceDiagram
+    participant B as Beacon/Chain
+    participant R as ReportGenerator
+    participant M as MITREMapper
+    participant A as AISummaryGenerator
+    participant S as SigmaRuleGenerator
+    participant H as HTMLReportGenerator
+    participant AN as DataAnonymizer
+    
+    B->>R: generate_report(chain_log)
+    
+    Note over R: Phase 1: MITRE Mapping
+    R->>M: map_chain_log(chain_log)
+    M->>M: Match techniques to tactics
+    M->>M: Calculate coverage scores
+    M-->>R: mitre_coverage{}
+    
+    Note over R: Phase 2: AI Summary
+    R->>A: generate_summary(chain_log, coverage)
+    A->>A: Calculate stats (bypass %, success %)
+    A->>A: Apply executive template
+    A-->>R: ai_summary
+    
+    Note over R: Phase 3: Detection Rules
+    R->>S: generate_rules(chain_log, coverage)
+    S->>S: Per-tactic rule templates
+    S->>S: Inject artifacts into rules
+    S-->>R: sigma_rules[]
+    
+    Note over R: Phase 4: OPSEC Anonymization
+    R->>AN: anonymize_chain_log(chain_log)
+    AN->>AN: Replace IPs → format-preserved
+    AN->>AN: Replace hostnames
+    AN->>AN: Replace usernames
+    AN-->>R: safe_chain_log
+    
+    Note over R: Phase 5: Report Generation
+    R->>H: generate_report(all_data)
+    H->>H: Build tabs (Summary, MITRE, Sigma)
+    H->>H: Generate Mermaid diagrams
+    H->>H: Apply theme CSS
+    H-->>R: html_content
+    
+    R-->>B: ReportResult{paths, rules, summary}
+```
+
+## MITRE ATT&CK Heatmap Data Flow
+
+```mermaid
+flowchart TD
+    subgraph "Input"
+        CL[Chain Log Entries]
+    end
+    
+    subgraph "Processing"
+        TECH[Extract Techniques]
+        MAP[Map to MITRE Tactics]
+        SCORE[Calculate Scores]
+        AGG[Aggregate by Tactic]
+    end
+    
+    subgraph "Output"
+        HEAT[Heatmap Data]
+        MERMAID[Mermaid Diagram]
+        JSON[JSON Export]
+    end
+    
+    CL --> TECH
+    TECH --> MAP
+    MAP --> SCORE
+    SCORE --> AGG
+    
+    AGG --> HEAT
+    AGG --> MERMAID
+    AGG --> JSON
+    
+    style CL fill:#4ecdc4,stroke:#333
+    style HEAT fill:#ff6b6b,stroke:#333
+    style MERMAID fill:#45b7d1,stroke:#333
+    style JSON fill:#96ceb4,stroke:#333
+```
+
+## Sigma Rule Generation Flow
+
+```mermaid
+flowchart LR
+    subgraph "Input"
+        TECH[Technique ID]
+        ART[Artifacts]
+    end
+    
+    subgraph "Template Selection"
+        T1[Process Injection?]
+        T2[Persistence?]
+        T3[Credential Access?]
+        T4[Lateral Movement?]
+        T5[Defense Evasion?]
+    end
+    
+    subgraph "Rule Building"
+        LOG[Logsource Config]
+        DET[Detection Logic]
+        META[Metadata Tags]
+    end
+    
+    subgraph "Output"
+        YAML[Sigma YAML]
+    end
+    
+    TECH --> T1
+    TECH --> T2
+    TECH --> T3
+    TECH --> T4
+    TECH --> T5
+    
+    T1 --> LOG
+    T2 --> LOG
+    T3 --> LOG
+    T4 --> LOG
+    T5 --> LOG
+    
+    LOG --> DET
+    ART --> DET
+    DET --> META
+    META --> YAML
+    
+    style TECH fill:#4ecdc4
+    style ART fill:#4ecdc4
+    style YAML fill:#ff6b6b
+```
+
+## Report Generator Usage
+
+```python
+from tools.report_generator import (
+    ReportGenerator,
+    ReportConfig,
+    ReportFormat,
+    create_sample_chain_log,
+)
+
+# Create report generator
+config = ReportConfig(
+    enable_ai_summary=True,
+    enable_mitre_map=True,
+    enable_sigma_generate=True,
+    format=ReportFormat.HTML,
+    output_dir="reports",
+    anonymize_data=True,
+    theme="hacker",
+)
+
+generator = ReportGenerator(config)
+
+# Generate report from chain log
+chain_log = create_sample_chain_log()
+result = generator.generate_report(chain_log)
+
+print(f"Report: {result.report_path}")
+print(f"Sigma Rules: {len(result.sigma_rules)}")
+print(f"MITRE Coverage: {len(result.mitre_coverage)} techniques")
+```
+
+### AI Lateral Guide Report Integration
+
+```python
+from cybermodules.ai_lateral_guide import AILateralGuide
+
+guide = AILateralGuide()
+
+# Full report generation
+result = guide.generate_chain_report(
+    format="html",
+    include_sigma=True,
+    include_mitre=True,
+)
+
+# Quick AI summary
+summary = guide.get_ai_report_summary(style="executive")
+
+# Get MITRE heatmap data
+heatmap = guide.get_mitre_heatmap_data()
+
+# Generate Twitter thread for demo
+thread = guide.generate_twitter_thread()
+for tweet in thread:
+    print(tweet)
+```
+
+## Testing
+
+```bash
+# Report generator tests
+pytest tests/test_report_generator.py -v
+
+# Specific components
+pytest tests/test_report_generator.py::TestMITREMapper -v
+pytest tests/test_report_generator.py::TestSigmaRuleGenerator -v
+pytest tests/test_report_generator.py::TestAISummaryGenerator -v
+pytest tests/test_report_generator.py::TestDataAnonymizer -v
+```
