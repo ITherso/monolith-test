@@ -1,642 +1,482 @@
 {% extends "base.html" %}
-
-{% block title %}NTLM Relay & Coercion{% endblock %}
-
 {% block body %}
-<div class="container-fluid mt-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2><i class="fas fa-exchange-alt text-danger"></i> NTLM Relay & Coercion</h2>
-            <p class="text-muted">NTLM relay attacks with coercion triggers (PetitPotam, PrinterBug, DFSCoerce)</p>
+<div class="main-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="logo-text">SHADOW<span class="accent">ARSENAL</span></span>
+            </div>
         </div>
-    </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>DASHBOARD</span></a></li>
+            <li class="nav-item"><a href="/kerberos" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span>KERBEROS</span></a></li>
+            <li class="nav-item"><a href="/relay/" class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8"/><path d="M12 8l4 4-4 4"/><circle cx="12" cy="12" r="10"/></svg><span>NTLM RELAY</span></a></li>
+            <li class="nav-item"><a href="/evasion/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><span>EVASION TEST</span></a></li>
+            <li class="nav-item"><a href="/lateral/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 3l-7 7"/><path d="M3 3l7 7"/><path d="M16 21h5v-5"/><path d="M8 21H3v-5"/><path d="M21 21l-7-7"/><path d="M3 21l7-7"/></svg><span>LATERAL MOVE</span></a></li>
+            <li class="nav-item"><a href="/c2" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3H6a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3V6a3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3h12a3 3 0 003-3 3 3 0 00-3-3z"/></svg><span>C2 IMPLANT</span></a></li>
+            <li class="nav-item"><a href="/exploit" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>EXPLOIT</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="status-indicator online"><span class="status-dot"></span><span>RELAY ACTIVE</span></div>
+        </div>
+    </nav>
 
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-satellite-dish"></i> Relay Status</h5>
-                    <h2 id="relay-status">Stopped</h2>
+    <!-- Main Content -->
+    <main class="content-area">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 12h8"/>
+                            <path d="M12 8l4 4-4 4"/>
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                        <span>NTLM RELAY & COERCION</span>
+                    </h1>
+                    <p class="page-subtitle">NTLM relay attacks with PetitPotam, PrinterBug, and DFSCoerce coercion triggers</p>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-key"></i> Captured Hashes</h5>
-                    <h2 id="captured-hashes">0</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-bullseye"></i> Coerced Hosts</h5>
-                    <h2 id="coerced-hosts">0</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-trophy"></i> Successful Relays</h5>
-                    <h2 id="successful-relays">0</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Left Panel: Relay Configuration -->
-        <div class="col-md-6">
-            <!-- Relay Server Panel -->
-            <div class="card mb-4">
-                <div class="card-header bg-danger text-white">
-                    <i class="fas fa-server"></i> NTLM Relay Server
-                    <span class="badge bg-light text-dark float-end" id="relay-badge">Stopped</span>
-                </div>
-                <div class="card-body">
-                    <!-- Tabs for relay types -->
-                    <ul class="nav nav-pills mb-3" id="relayTabs">
-                        <li class="nav-item">
-                            <a class="nav-link active" data-bs-toggle="pill" href="#ldap-relay">
-                                <i class="fas fa-sitemap"></i> LDAP
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="pill" href="#smb-relay">
-                                <i class="fas fa-folder"></i> SMB
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="pill" href="#adcs-relay">
-                                <i class="fas fa-certificate"></i> AD CS
-                            </a>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content">
-                        <!-- LDAP Relay -->
-                        <div class="tab-pane fade show active" id="ldap-relay">
-                            <form id="ldap-relay-form">
-                                <div class="mb-3">
-                                    <label class="form-label">Target DC</label>
-                                    <input type="text" class="form-control" id="ldap-target-dc" placeholder="dc01.corp.local" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Attack Type</label>
-                                    <select class="form-select" id="ldap-attack">
-                                        <option value="rbcd" selected>RBCD (Resource-Based Constrained Delegation)</option>
-                                        <option value="shadow_creds">Shadow Credentials</option>
-                                        <option value="add_computer">Add Computer Account</option>
-                                        <option value="delegate">Delegate Access</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3" id="delegate-to-group">
-                                    <label class="form-label">Delegate To (Machine Account)</label>
-                                    <input type="text" class="form-control" id="ldap-delegate-to" placeholder="EVILPC$">
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="ldap-ssl" checked>
-                                    <label class="form-check-label" for="ldap-ssl">Use LDAPS (SSL)</label>
-                                </div>
-                                <button type="submit" class="btn btn-danger w-100">
-                                    <i class="fas fa-play"></i> Start LDAP Relay
-                                </button>
-                            </form>
+                <div class="header-right">
+                    <div class="quick-stats">
+                        <div class="quick-stat orange">
+                            <span class="stat-value" id="relayCount">0</span>
+                            <span class="stat-label">Active Relays</span>
                         </div>
-
-                        <!-- SMB Relay -->
-                        <div class="tab-pane fade" id="smb-relay">
-                            <form id="smb-relay-form">
-                                <div class="mb-3">
-                                    <label class="form-label">Targets (one per line)</label>
-                                    <textarea class="form-control font-monospace" id="smb-targets" rows="4" placeholder="192.168.1.10&#10;192.168.1.11&#10;dc01.corp.local"></textarea>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Command (Optional)</label>
-                                    <input type="text" class="form-control font-monospace" id="smb-command" placeholder="whoami /all">
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="smb-dump-secrets">
-                                    <label class="form-check-label" for="smb-dump-secrets">Dump Secrets (SAM/LSA)</label>
-                                </div>
-                                <button type="submit" class="btn btn-danger w-100">
-                                    <i class="fas fa-play"></i> Start SMB Relay
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- AD CS Relay -->
-                        <div class="tab-pane fade" id="adcs-relay">
-                            <form id="adcs-relay-form">
-                                <div class="mb-3">
-                                    <label class="form-label">CA Host</label>
-                                    <input type="text" class="form-control" id="adcs-ca-host" placeholder="ca01.corp.local" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Template (Optional)</label>
-                                    <input type="text" class="form-control" id="adcs-template" placeholder="Machine">
-                                </div>
-                                <div class="alert alert-warning">
-                                    <i class="fas fa-exclamation-triangle"></i> <strong>ESC8 Attack:</strong> This relays machine authentication to AD CS to request a certificate.
-                                </div>
-                                <button type="submit" class="btn btn-danger w-100">
-                                    <i class="fas fa-play"></i> Start AD CS Relay (ESC8)
-                                </button>
-                            </form>
+                        <div class="quick-stat green">
+                            <span class="stat-value" id="hashCount">0</span>
+                            <span class="stat-label">Captured Hashes</span>
                         </div>
                     </div>
-
-                    <hr>
-                    <button class="btn btn-secondary w-100" id="stop-relay-btn" disabled>
-                        <i class="fas fa-stop"></i> Stop Relay Server
-                    </button>
                 </div>
             </div>
+        </header>
 
-            <!-- Coercion Panel -->
-            <div class="card mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <i class="fas fa-bolt"></i> Coercion Triggers
+        <!-- Info Banner -->
+        <section class="info-banner orange">
+            <div class="info-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+            </div>
+            <div class="info-content">
+                <h3>Attack Chain Overview</h3>
+                <div class="info-items">
+                    <div class="info-item"><span class="badge orange">COERCE</span><span>Force target to authenticate (PetitPotam/PrinterBug/DFSCoerce)</span></div>
+                    <div class="info-item"><span class="badge cyan">RELAY</span><span>Relay captured authentication to LDAP/SMB/AD CS</span></div>
+                    <div class="info-item"><span class="badge purple">EXPLOIT</span><span>Perform RBCD delegation or certificate theft</span></div>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Target Host</label>
-                            <input type="text" class="form-control" id="coerce-target" placeholder="dc01.corp.local">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Listener IP</label>
-                            <input type="text" class="form-control" id="coerce-listener" placeholder="192.168.1.100">
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Username (Optional)</label>
-                            <input type="text" class="form-control" id="coerce-username" placeholder="user">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Password (Optional)</label>
-                            <input type="password" class="form-control" id="coerce-password">
-                        </div>
-                    </div>
+            </div>
+        </section>
 
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('petitpotam')">
-                                <i class="fas fa-lock"></i> PetitPotam
-                            </button>
+        <!-- Tab Navigation -->
+        <section class="tabs-section">
+            <div class="tabs-nav">
+                <button class="tab-btn active orange" data-tab="relay">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8"/><path d="M12 8l4 4-4 4"/></svg>
+                    <span>Relay Server</span>
+                </button>
+                <button class="tab-btn cyan" data-tab="coerce">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span>Coercion</span>
+                </button>
+                <button class="tab-btn purple" data-tab="hashes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <span>Captured Hashes</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Forms Column -->
+            <div class="forms-column">
+                <!-- Relay Server Panel -->
+                <div class="form-panel" id="relay-panel">
+                    <div class="panel-header orange">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
+                        <div class="panel-title">
+                            <h2>NTLM Relay Server</h2>
+                            <p>Configure and start relay server for authentication capture</p>
                         </div>
-                        <div class="col-md-6">
-                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('printerbug')">
-                                <i class="fas fa-print"></i> PrinterBug
-                            </button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>Target Host (Relay To)</label>
+                            <input type="text" id="relay-target" class="form-input orange" placeholder="dc01.corp.local">
                         </div>
-                        <div class="col-md-6">
-                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('dfscoerce')">
-                                <i class="fas fa-network-wired"></i> DFSCoerce
-                            </button>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Relay Protocol</label>
+                                <select id="relay-protocol" class="form-input orange">
+                                    <option value="ldaps">LDAPS (AD CS Attack)</option>
+                                    <option value="ldap">LDAP (Delegation)</option>
+                                    <option value="smb">SMB (Code Exec)</option>
+                                    <option value="http">HTTP (ADCS Web)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Attack Type</label>
+                                <select id="relay-attack" class="form-input orange">
+                                    <option value="rbcd">RBCD Delegation</option>
+                                    <option value="shadow">Shadow Credentials</option>
+                                    <option value="adcs">AD CS Certificate</option>
+                                    <option value="dcsync">DCSync Rights</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('shadowcoerce')">
-                                <i class="fas fa-cloud"></i> ShadowCoerce
+
+                        <div class="form-group" id="delegate-group" style="display:none;">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Delegate To (Computer)</label>
+                            <input type="text" id="delegate-to" class="form-input orange" placeholder="attacker-pc$">
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn-submit orange" onclick="startRelay()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                Start Relay Server
+                            </button>
+                            <button class="btn-secondary" onclick="stopRelay()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                Stop
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <hr>
-                    <button class="btn btn-warning w-100" onclick="checkAllCoercion()">
-                        <i class="fas fa-search"></i> Check All Coercion Methods
-                    </button>
+                <!-- Coercion Panel -->
+                <div class="form-panel hidden" id="coerce-panel">
+                    <div class="panel-header cyan">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Coercion Triggers</h2>
+                            <p>Force target to authenticate to relay server</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="coercion-cards">
+                            <div class="coercion-card" data-method="petitpotam">
+                                <div class="coercion-icon">🔓</div>
+                                <h4>PetitPotam</h4>
+                                <p>EFS-RPC coercion (MS-EFSRPC)</p>
+                                <span class="coercion-status">Recommended</span>
+                            </div>
+                            <div class="coercion-card" data-method="printerbug">
+                                <div class="coercion-icon">🖨️</div>
+                                <h4>PrinterBug</h4>
+                                <p>Print Spooler RPC abuse</p>
+                                <span class="coercion-status">Legacy</span>
+                            </div>
+                            <div class="coercion-card" data-method="dfscoerce">
+                                <div class="coercion-icon">📁</div>
+                                <h4>DFSCoerce</h4>
+                                <p>DFS-N API coercion</p>
+                                <span class="coercion-status">Alternative</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/></svg>Target to Coerce</label>
+                            <input type="text" id="coerce-target" class="form-input cyan" placeholder="dc01.corp.local">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Username</label>
+                                <input type="text" id="coerce-user" class="form-input cyan" placeholder="CORP\\user">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>Password/Hash</label>
+                                <input type="password" id="coerce-pass" class="form-input cyan" placeholder="Password or NT hash">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Listener IP (Your IP)</label>
+                            <input type="text" id="listener-ip" class="form-input cyan" placeholder="10.10.10.50">
+                        </div>
+
+                        <button class="btn-submit cyan" onclick="triggerCoercion()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            Trigger Coercion
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hashes Panel -->
+                <div class="form-panel hidden" id="hashes-panel">
+                    <div class="panel-header purple">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Captured Hashes</h2>
+                            <p>NetNTLMv2 hashes from relay attacks</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="hash-stats">
+                            <div class="hash-stat"><span class="hash-stat-value" id="ntlmv2-count">0</span><span class="hash-stat-label">NTLMv2</span></div>
+                            <div class="hash-stat"><span class="hash-stat-value" id="ntlmv1-count">0</span><span class="hash-stat-label">NTLMv1</span></div>
+                            <div class="hash-stat"><span class="hash-stat-value" id="machine-count">0</span><span class="hash-stat-label">Machine$</span></div>
+                        </div>
+
+                        <div class="hash-table-container">
+                            <table class="hash-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Domain</th>
+                                        <th>Type</th>
+                                        <th>Hash Preview</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hashes-tbody">
+                                    <tr class="empty-row">
+                                        <td colspan="5">
+                                            <div class="empty-state">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                                                <p>No hashes captured yet</p>
+                                                <span>Start a relay and trigger coercion</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn-submit purple" onclick="refreshHashes()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                                Refresh
+                            </button>
+                            <button class="btn-secondary" onclick="exportHashes()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Column -->
+            <div class="terminal-column">
+                <div class="terminal-panel">
+                    <div class="terminal-header">
+                        <div class="terminal-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                        <div class="terminal-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg><span>Relay Output</span></div>
+                        <button class="btn-clear" onclick="clearTerminal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                    </div>
+                    <div class="terminal-body" id="terminal">
+                        <div class="terminal-content" id="terminal-content">
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>NTLM Relay Module Ready</span></div>
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>Configure relay target and start server</span></div>
+                            <div class="terminal-line warning"><span class="prompt">[!]</span><span>Ensure SMB signing is disabled on target</span></div>
+                            <div class="terminal-divider"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attack Chain Visualization -->
+                <div class="chain-panel">
+                    <div class="chain-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        <span>Attack Chain</span>
+                    </div>
+                    <div class="chain-body">
+                        <div class="chain-step" id="step-coerce">
+                            <div class="step-icon">1</div>
+                            <div class="step-content">
+                                <h5>Coercion</h5>
+                                <p>Trigger authentication</p>
+                            </div>
+                            <div class="step-status pending">Pending</div>
+                        </div>
+                        <div class="chain-arrow">→</div>
+                        <div class="chain-step" id="step-relay">
+                            <div class="step-icon">2</div>
+                            <div class="step-content">
+                                <h5>Relay</h5>
+                                <p>Capture & forward</p>
+                            </div>
+                            <div class="step-status pending">Pending</div>
+                        </div>
+                        <div class="chain-arrow">→</div>
+                        <div class="chain-step" id="step-exploit">
+                            <div class="step-icon">3</div>
+                            <div class="step-content">
+                                <h5>Exploit</h5>
+                                <p>RBCD / ADCS</p>
+                            </div>
+                            <div class="step-status pending">Pending</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Right Panel: Attack Chains & Output -->
-        <div class="col-md-6">
-            <!-- Attack Chains -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <i class="fas fa-link"></i> Full Attack Chains
-                </div>
-                <div class="card-body">
-                    <!-- RBCD Chain -->
-                    <div class="card bg-dark mb-3">
-                        <div class="card-header">
-                            <i class="fas fa-user-shield text-success"></i> RBCD Attack Chain
-                        </div>
-                        <div class="card-body">
-                            <form id="rbcd-chain-form">
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
-                                        <input type="text" class="form-control form-control-sm" id="rbcd-coerce-target" placeholder="Coerce Target (DC)">
-                                    </div>
-                                    <div class="col-md-6 mb-2">
-                                        <input type="text" class="form-control form-control-sm" id="rbcd-dc-target" placeholder="DC Target">
-                                    </div>
-                                    <div class="col-md-6 mb-2">
-                                        <input type="text" class="form-control form-control-sm" id="rbcd-delegate-to" placeholder="Delegate To (EVILPC$)">
-                                    </div>
-                                    <div class="col-md-6 mb-2">
-                                        <input type="text" class="form-control form-control-sm" id="rbcd-listener" placeholder="Listener IP">
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-success btn-sm w-100 mt-2">
-                                    <i class="fas fa-rocket"></i> Execute RBCD Chain
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- AD CS Chain -->
-                    <div class="card bg-dark mb-3">
-                        <div class="card-header">
-                            <i class="fas fa-certificate text-info"></i> AD CS ESC8 Chain
-                        </div>
-                        <div class="card-body">
-                            <form id="adcs-chain-form">
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
-                                        <input type="text" class="form-control form-control-sm" id="adcs-chain-coerce" placeholder="Coerce Target">
-                                    </div>
-                                    <div class="col-md-6 mb-2">
-                                        <input type="text" class="form-control form-control-sm" id="adcs-chain-ca" placeholder="CA Host">
-                                    </div>
-                                    <div class="col-md-12 mb-2">
-                                        <input type="text" class="form-control form-control-sm" id="adcs-chain-listener" placeholder="Listener IP">
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-info btn-sm w-100 mt-2">
-                                    <i class="fas fa-rocket"></i> Execute AD CS Chain
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Output Terminal -->
-            <div class="card">
-                <div class="card-header bg-dark text-success font-monospace">
-                    <i class="fas fa-terminal"></i> Output
-                    <button class="btn btn-sm btn-outline-secondary float-end" onclick="clearOutput()">
-                        <i class="fas fa-trash"></i> Clear
-                    </button>
-                </div>
-                <div class="card-body bg-black p-0" style="height: 400px; overflow-y: auto;">
-                    <pre class="text-success font-monospace p-3 m-0" id="output-terminal" style="min-height: 100%;">[*] NTLM Relay Module Ready
-[*] Configure relay server and trigger coercion
-[*] Waiting for commands...
-</pre>
-                </div>
-            </div>
-
-            <!-- Captured Hashes -->
-            <div class="card mt-4">
-                <div class="card-header bg-info text-white">
-                    <i class="fas fa-key"></i> Captured Hashes
-                    <button class="btn btn-sm btn-outline-light float-end" onclick="refreshHashes()">
-                        <i class="fas fa-sync"></i> Refresh
-                    </button>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Domain</th>
-                                    <th>Type</th>
-                                    <th>Hash</th>
-                                </tr>
-                            </thead>
-                            <tbody id="hashes-table">
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">No hashes captured yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </main>
 </div>
 
 <script>
-let relayRunning = false;
-let coercedCount = 0;
-let capturedHashes = 0;
-let successfulRelays = 0;
+let currentTab = 'relay';
+let selectedCoercion = 'petitpotam';
+let relayActive = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initTabs();
+    initCoercionCards();
+    initAttackTypeChange();
+});
+
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(tab + '-panel').classList.remove('hidden');
+            currentTab = tab;
+            log('─'.repeat(40), 'dim');
+            log(`Switched to ${tab.toUpperCase()} mode`, 'info');
+        });
+    });
+}
+
+function initCoercionCards() {
+    document.querySelectorAll('.coercion-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.coercion-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedCoercion = this.dataset.method;
+            log(`Selected coercion method: ${selectedCoercion.toUpperCase()}`, 'info');
+        });
+    });
+    document.querySelector('.coercion-card').classList.add('selected');
+}
+
+function initAttackTypeChange() {
+    document.getElementById('relay-attack').addEventListener('change', function() {
+        document.getElementById('delegate-group').style.display = this.value === 'rbcd' ? 'block' : 'none';
+    });
+}
 
 function log(message, type = 'info') {
-    const terminal = document.getElementById('output-terminal');
-    const timestamp = new Date().toLocaleTimeString();
-    const prefix = type === 'success' ? '[+]' : type === 'error' ? '[!]' : type === 'warning' ? '[*]' : '[*]';
-    const color = type === 'success' ? 'text-success' : type === 'error' ? 'text-danger' : type === 'warning' ? 'text-warning' : 'text-info';
-    terminal.innerHTML += `<span class="${color}">${prefix} [${timestamp}] ${message}</span>\n`;
-    terminal.scrollTop = terminal.scrollHeight;
+    const terminal = document.getElementById('terminal-content');
+    const div = document.createElement('div');
+    div.className = `terminal-line ${type}`;
+    if (type === 'dim') {
+        div.innerHTML = `<span class="divider">${message}</span>`;
+    } else {
+        const prefixes = { success: '[+]', error: '[!]', warning: '[*]', info: '[*]' };
+        div.innerHTML = `<span class="prompt">${prefixes[type] || '[*]'}</span><span>${message}</span>`;
+    }
+    terminal.appendChild(div);
+    document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
 }
 
-function clearOutput() {
-    document.getElementById('output-terminal').innerHTML = '[*] Output cleared\n';
+function clearTerminal() {
+    document.getElementById('terminal-content').innerHTML = `
+        <div class="terminal-line info"><span class="prompt">[*]</span><span>Terminal cleared</span></div>
+        <div class="terminal-divider"></div>
+    `;
 }
 
-// LDAP Relay
-document.getElementById('ldap-relay-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const targetDc = document.getElementById('ldap-target-dc').value;
-    const attack = document.getElementById('ldap-attack').value;
-    const delegateTo = document.getElementById('ldap-delegate-to').value;
-    const useSsl = document.getElementById('ldap-ssl').checked;
-
-    log(`Starting LDAP relay to ${targetDc} with ${attack} attack...`, 'info');
-
+async function startRelay() {
+    const target = document.getElementById('relay-target').value;
+    const protocol = document.getElementById('relay-protocol').value;
+    const attack = document.getElementById('relay-attack').value;
+    
+    if (!target) { log('Target host required!', 'error'); return; }
+    
+    log('─'.repeat(40), 'dim');
+    log(`Starting relay server targeting: ${target}`, 'info');
+    log(`Protocol: ${protocol.toUpperCase()}, Attack: ${attack.toUpperCase()}`, 'info');
+    
     try {
-        const response = await fetch('/relay/start/ldap', {
+        const response = await fetch('/relay/start', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                target_dc: targetDc,
-                attack: attack,
-                delegate_to: delegateTo,
-                use_ssl: useSsl
+                target: target,
+                protocol: protocol,
+                attack_type: attack,
+                delegate_to: document.getElementById('delegate-to').value
             })
         });
         const data = await response.json();
         if (data.success) {
-            log(`LDAP relay started successfully!`, 'success');
-            relayRunning = true;
-            updateRelayStatus();
+            log('Relay server started successfully!', 'success');
+            log(`Listening for incoming authentications...`, 'info');
+            relayActive = true;
+            updateStep('relay', 'active');
+            document.getElementById('relayCount').textContent = '1';
         } else {
-            log(`Failed: ${data.error}`, 'error');
+            log(`Error: ${data.error}`, 'error');
         }
     } catch (e) {
-        log(`Error: ${e.message}`, 'error');
+        log(`Connection error: ${e.message}`, 'error');
     }
-});
+}
 
-// SMB Relay
-document.getElementById('smb-relay-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const targets = document.getElementById('smb-targets').value.split('\n').filter(t => t.trim());
-    const command = document.getElementById('smb-command').value;
-    const dumpSecrets = document.getElementById('smb-dump-secrets').checked;
-
-    log(`Starting SMB relay to ${targets.length} targets...`, 'info');
-
+async function stopRelay() {
+    log('Stopping relay server...', 'warning');
     try {
-        const response = await fetch('/relay/start/smb', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                targets: targets,
-                command: command || null,
-                dump_secrets: dumpSecrets
-            })
-        });
-        const data = await response.json();
-        if (data.success) {
-            log(`SMB relay started successfully!`, 'success');
-            relayRunning = true;
-            updateRelayStatus();
-        } else {
-            log(`Failed: ${data.error}`, 'error');
-        }
+        await fetch('/relay/stop', { method: 'POST' });
+        log('Relay server stopped', 'success');
+        relayActive = false;
+        updateStep('relay', 'pending');
+        document.getElementById('relayCount').textContent = '0';
     } catch (e) {
         log(`Error: ${e.message}`, 'error');
     }
-});
+}
 
-// AD CS Relay
-document.getElementById('adcs-relay-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const caHost = document.getElementById('adcs-ca-host').value;
-    const template = document.getElementById('adcs-template').value;
-
-    log(`Starting AD CS relay to ${caHost} (ESC8)...`, 'info');
-
-    try {
-        const response = await fetch('/relay/start/adcs', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                ca_host: caHost,
-                template: template || null
-            })
-        });
-        const data = await response.json();
-        if (data.success) {
-            log(`AD CS relay started successfully!`, 'success');
-            relayRunning = true;
-            updateRelayStatus();
-        } else {
-            log(`Failed: ${data.error}`, 'error');
-        }
-    } catch (e) {
-        log(`Error: ${e.message}`, 'error');
-    }
-});
-
-// Stop relay
-document.getElementById('stop-relay-btn').addEventListener('click', async function() {
-    log('Stopping relay server...', 'info');
-    try {
-        const response = await fetch('/relay/stop', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            log('Relay server stopped', 'success');
-            relayRunning = false;
-            updateRelayStatus();
-        } else {
-            log(`Failed: ${data.error}`, 'error');
-        }
-    } catch (e) {
-        log(`Error: ${e.message}`, 'error');
-    }
-});
-
-// Coercion triggers
-async function triggerCoercion(method) {
+async function triggerCoercion() {
     const target = document.getElementById('coerce-target').value;
-    const listener = document.getElementById('coerce-listener').value;
-    const username = document.getElementById('coerce-username').value;
-    const password = document.getElementById('coerce-password').value;
-
-    if (!target || !listener) {
-        log('Target and Listener IP are required!', 'error');
-        return;
-    }
-
-    log(`Triggering ${method} coercion on ${target}...`, 'info');
-
+    const user = document.getElementById('coerce-user').value;
+    const pass = document.getElementById('coerce-pass').value;
+    const listener = document.getElementById('listener-ip').value;
+    
+    if (!target || !listener) { log('Target and listener IP required!', 'error'); return; }
+    
+    log('─'.repeat(40), 'dim');
+    log(`Triggering ${selectedCoercion.toUpperCase()} coercion...`, 'warning');
+    log(`Target: ${target} → Listener: ${listener}`, 'info');
+    
+    updateStep('coerce', 'active');
+    
     try {
-        const response = await fetch(`/relay/coerce/${method}`, {
+        const response = await fetch('/relay/coerce', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
+                method: selectedCoercion,
                 target: target,
                 listener: listener,
-                username: username || null,
-                password: password || null
+                username: user,
+                password: pass
             })
         });
         const data = await response.json();
         if (data.success) {
-            log(`${method} coercion triggered successfully!`, 'success');
-            coercedCount++;
-            document.getElementById('coerced-hosts').textContent = coercedCount;
+            log('Coercion triggered successfully!', 'success');
+            log('Waiting for authentication callback...', 'info');
+            updateStep('coerce', 'complete');
         } else {
             log(`Coercion failed: ${data.error}`, 'error');
+            updateStep('coerce', 'error');
         }
     } catch (e) {
         log(`Error: ${e.message}`, 'error');
-    }
-}
-
-async function checkAllCoercion() {
-    const target = document.getElementById('coerce-target').value;
-    const listener = document.getElementById('coerce-listener').value;
-
-    if (!target || !listener) {
-        log('Target and Listener IP are required!', 'error');
-        return;
-    }
-
-    log(`Checking all coercion methods on ${target}...`, 'info');
-
-    try {
-        const response = await fetch('/relay/coerce/check', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                target: target,
-                listener: listener
-            })
-        });
-        const data = await response.json();
-        if (data.success) {
-            log(`Coercion check complete:`, 'success');
-            data.results.forEach(r => {
-                const status = r.vulnerable ? '✓ VULNERABLE' : '✗ Not vulnerable';
-                const type = r.vulnerable ? 'success' : 'warning';
-                log(`  ${r.method}: ${status}`, type);
-            });
-        } else {
-            log(`Check failed: ${data.error}`, 'error');
-        }
-    } catch (e) {
-        log(`Error: ${e.message}`, 'error');
-    }
-}
-
-// RBCD Chain
-document.getElementById('rbcd-chain-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const coerceTarget = document.getElementById('rbcd-coerce-target').value;
-    const dcTarget = document.getElementById('rbcd-dc-target').value;
-    const delegateTo = document.getElementById('rbcd-delegate-to').value;
-    const listener = document.getElementById('rbcd-listener').value;
-
-    if (!coerceTarget || !dcTarget || !delegateTo || !listener) {
-        log('All fields are required for RBCD chain!', 'error');
-        return;
-    }
-
-    log(`Executing RBCD attack chain...`, 'info');
-    log(`  Coerce: ${coerceTarget} → Relay: ${dcTarget} → Delegate: ${delegateTo}`, 'info');
-
-    try {
-        const response = await fetch('/relay/chain/rbcd', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                coerce_target: coerceTarget,
-                dc_target: dcTarget,
-                delegate_to: delegateTo,
-                listener_ip: listener
-            })
-        });
-        const data = await response.json();
-        if (data.success) {
-            log(`RBCD chain completed successfully!`, 'success');
-            if (data.service_ticket) {
-                log(`Service ticket obtained: ${data.service_ticket}`, 'success');
-            }
-            successfulRelays++;
-            document.getElementById('successful-relays').textContent = successfulRelays;
-        } else {
-            log(`Chain failed: ${data.error}`, 'error');
-        }
-    } catch (e) {
-        log(`Error: ${e.message}`, 'error');
-    }
-});
-
-// AD CS Chain
-document.getElementById('adcs-chain-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const coerceTarget = document.getElementById('adcs-chain-coerce').value;
-    const caHost = document.getElementById('adcs-chain-ca').value;
-    const listener = document.getElementById('adcs-chain-listener').value;
-
-    if (!coerceTarget || !caHost || !listener) {
-        log('All fields are required for AD CS chain!', 'error');
-        return;
-    }
-
-    log(`Executing AD CS ESC8 attack chain...`, 'info');
-
-    try {
-        const response = await fetch('/relay/chain/adcs', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                coerce_target: coerceTarget,
-                ca_host: caHost,
-                listener_ip: listener
-            })
-        });
-        const data = await response.json();
-        if (data.success) {
-            log(`AD CS chain completed!`, 'success');
-            if (data.certificate) {
-                log(`Certificate obtained!`, 'success');
-            }
-            successfulRelays++;
-            document.getElementById('successful-relays').textContent = successfulRelays;
-        } else {
-            log(`Chain failed: ${data.error}`, 'error');
-        }
-    } catch (e) {
-        log(`Error: ${e.message}`, 'error');
-    }
-});
-
-function updateRelayStatus() {
-    const statusEl = document.getElementById('relay-status');
-    const badge = document.getElementById('relay-badge');
-    const stopBtn = document.getElementById('stop-relay-btn');
-
-    if (relayRunning) {
-        statusEl.textContent = 'Running';
-        statusEl.classList.remove('text-white');
-        statusEl.classList.add('text-success');
-        badge.textContent = 'Running';
-        badge.classList.remove('bg-light', 'text-dark');
-        badge.classList.add('bg-success', 'text-white');
-        stopBtn.disabled = false;
-    } else {
-        statusEl.textContent = 'Stopped';
-        statusEl.classList.remove('text-success');
-        statusEl.classList.add('text-white');
-        badge.textContent = 'Stopped';
-        badge.classList.remove('bg-success', 'text-white');
-        badge.classList.add('bg-light', 'text-dark');
-        stopBtn.disabled = true;
     }
 }
 
@@ -644,38 +484,213 @@ async function refreshHashes() {
     try {
         const response = await fetch('/relay/hashes');
         const data = await response.json();
-        if (data.success && data.hashes.length > 0) {
-            const tbody = document.getElementById('hashes-table');
-            tbody.innerHTML = '';
-            data.hashes.forEach(h => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${h.username}</td>
-                        <td>${h.domain}</td>
-                        <td><span class="badge bg-info">${h.type}</span></td>
-                        <td class="font-monospace small">${h.hash.substring(0, 32)}...</td>
-                    </tr>
-                `;
-            });
-            capturedHashes = data.hashes.length;
-            document.getElementById('captured-hashes').textContent = capturedHashes;
+        const tbody = document.getElementById('hashes-tbody');
+        
+        if (data.success && data.hashes && data.hashes.length > 0) {
+            tbody.innerHTML = data.hashes.map(h => `
+                <tr>
+                    <td><span class="hash-user">${h.username}</span></td>
+                    <td>${h.domain}</td>
+                    <td><span class="badge ${h.type === 'NTLMv2' ? 'cyan' : 'orange'}">${h.type}</span></td>
+                    <td class="hash-preview">${h.hash.substring(0, 32)}...</td>
+                    <td><button class="btn-mini" onclick="copyHash('${h.hash}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button></td>
+                </tr>
+            `).join('');
+            document.getElementById('hashCount').textContent = data.hashes.length;
+            log(`Loaded ${data.hashes.length} captured hashes`, 'success');
+        } else {
+            log('No hashes captured yet', 'info');
         }
     } catch (e) {
-        console.error('Failed to refresh hashes:', e);
+        log(`Error refreshing hashes: ${e.message}`, 'error');
     }
 }
 
-// Auto-refresh hashes every 5 seconds
-setInterval(refreshHashes, 5000);
+function exportHashes() {
+    log('Exporting hashes to hashcat format...', 'info');
+    window.open('/relay/hashes/export', '_blank');
+}
 
-// Show/hide delegate-to field based on attack type
-document.getElementById('ldap-attack').addEventListener('change', function() {
-    const delegateGroup = document.getElementById('delegate-to-group');
-    if (this.value === 'rbcd') {
-        delegateGroup.style.display = 'block';
-    } else {
-        delegateGroup.style.display = 'none';
+function copyHash(hash) {
+    navigator.clipboard.writeText(hash);
+    log('Hash copied to clipboard', 'success');
+}
+
+function updateStep(step, status) {
+    const el = document.getElementById('step-' + step);
+    if (el) {
+        const statusEl = el.querySelector('.step-status');
+        statusEl.className = 'step-status ' + status;
+        statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
     }
-});
+}
 </script>
+
+<style>
+.main-container { display: flex; min-height: 100vh; }
+
+.sidebar { width: 260px; background: rgba(15, 15, 25, 0.95); border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.logo { display: flex; align-items: center; gap: 12px; color: #fff; }
+.logo svg { width: 32px; height: 32px; color: #ff6b35; }
+.logo-text { font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+.logo-text .accent { color: #ff6b35; }
+.nav-menu { list-style: none; padding: 15px 10px; margin: 0; flex: 1; overflow-y: auto; }
+.nav-item { margin-bottom: 5px; }
+.nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 1px; border-radius: 8px; transition: all 0.3s ease; }
+.nav-link svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-link:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.nav-link.active { background: rgba(255, 107, 53, 0.1); color: #ff6b35; }
+.sidebar-footer { padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.status-indicator { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #666; }
+.status-indicator.online .status-dot { background: #00ff88; box-shadow: 0 0 10px #00ff88; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.content-area { flex: 1; margin-left: 260px; padding: 30px; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; }
+
+.page-header { margin-bottom: 25px; }
+.header-content { display: flex; justify-content: space-between; align-items: flex-start; }
+.page-title { display: flex; align-items: center; gap: 15px; font-size: 24px; font-weight: 700; color: #fff; margin: 0 0 8px 0; letter-spacing: 1px; }
+.page-title svg { width: 28px; height: 28px; color: #ff6b35; }
+.page-subtitle { color: rgba(255, 255, 255, 0.5); font-size: 13px; margin: 0 0 0 43px; }
+.quick-stats { display: flex; gap: 15px; }
+.quick-stat { text-align: center; padding: 15px 25px; border-radius: 10px; }
+.quick-stat.orange { background: rgba(255, 107, 53, 0.1); border: 1px solid rgba(255, 107, 53, 0.3); }
+.quick-stat.green { background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); }
+.quick-stat .stat-value { display: block; font-size: 28px; font-weight: 700; }
+.quick-stat.orange .stat-value { color: #ff6b35; }
+.quick-stat.green .stat-value { color: #00ff88; }
+.quick-stat .stat-label { font-size: 11px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 1px; }
+
+.info-banner { display: flex; gap: 20px; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+.info-banner.orange { background: rgba(255, 107, 53, 0.05); border: 1px solid rgba(255, 107, 53, 0.2); }
+.info-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: rgba(255, 107, 53, 0.1); border-radius: 10px; flex-shrink: 0; }
+.info-icon svg { width: 24px; height: 24px; color: #ff6b35; }
+.info-content h3 { font-size: 14px; font-weight: 600; color: #ff6b35; margin: 0 0 12px 0; }
+.info-items { display: flex; flex-direction: column; gap: 8px; }
+.info-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+.badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.badge.orange { background: rgba(255, 107, 53, 0.2); color: #ff6b35; border: 1px solid rgba(255, 107, 53, 0.4); }
+.badge.cyan { background: rgba(0, 212, 255, 0.2); color: #00d4ff; border: 1px solid rgba(0, 212, 255, 0.4); }
+.badge.purple { background: rgba(167, 139, 250, 0.2); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.4); }
+
+.tabs-section { margin-bottom: 25px; }
+.tabs-nav { display: flex; gap: 10px; flex-wrap: wrap; }
+.tab-btn { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.6); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.tab-btn svg { width: 18px; height: 18px; }
+.tab-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.tab-btn.active.orange { background: rgba(255, 107, 53, 0.1); border-color: rgba(255, 107, 53, 0.4); color: #ff6b35; }
+.tab-btn.active.cyan { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.4); color: #00d4ff; }
+.tab-btn.active.purple { background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.4); color: #a78bfa; }
+
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+
+.form-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; }
+.form-panel.hidden { display: none; }
+.panel-header { display: flex; align-items: center; gap: 15px; padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.panel-header.orange { background: linear-gradient(90deg, rgba(255, 107, 53, 0.1) 0%, transparent 100%); border-bottom-color: rgba(255, 107, 53, 0.2); }
+.panel-header.cyan { background: linear-gradient(90deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%); border-bottom-color: rgba(0, 212, 255, 0.2); }
+.panel-header.purple { background: linear-gradient(90deg, rgba(167, 139, 250, 0.1) 0%, transparent 100%); border-bottom-color: rgba(167, 139, 250, 0.2); }
+.panel-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+.panel-icon svg { width: 24px; height: 24px; }
+.panel-header.orange .panel-icon { background: rgba(255, 107, 53, 0.1); color: #ff6b35; }
+.panel-header.cyan .panel-icon { background: rgba(0, 212, 255, 0.1); color: #00d4ff; }
+.panel-header.purple .panel-icon { background: rgba(167, 139, 250, 0.1); color: #a78bfa; }
+.panel-title h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px 0; }
+.panel-header.orange .panel-title h2 { color: #ff6b35; }
+.panel-header.cyan .panel-title h2 { color: #00d4ff; }
+.panel-header.purple .panel-title h2 { color: #a78bfa; }
+.panel-title p { font-size: 12px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+.panel-body { padding: 20px; }
+
+.form-group { margin-bottom: 18px; }
+.form-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px; }
+.form-label svg { width: 14px; height: 14px; color: rgba(255, 255, 255, 0.4); }
+.form-input { width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; font-size: 13px; transition: all 0.3s ease; }
+.form-input:focus { outline: none; background: rgba(0, 0, 0, 0.4); }
+.form-input.orange:focus { border-color: rgba(255, 107, 53, 0.5); box-shadow: 0 0 15px rgba(255, 107, 53, 0.1); }
+.form-input.cyan:focus { border-color: rgba(0, 212, 255, 0.5); box-shadow: 0 0 15px rgba(0, 212, 255, 0.1); }
+.form-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.btn-group { display: flex; gap: 10px; }
+.btn-submit { display: flex; align-items: center; justify-content: center; gap: 10px; flex: 1; padding: 14px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.btn-submit svg { width: 18px; height: 18px; }
+.btn-submit.orange { background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: #fff; }
+.btn-submit.orange:hover { box-shadow: 0 5px 20px rgba(255, 107, 53, 0.4); transform: translateY(-2px); }
+.btn-submit.cyan { background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); color: #000; }
+.btn-submit.cyan:hover { box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4); transform: translateY(-2px); }
+.btn-submit.purple { background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); color: #fff; }
+.btn-submit.purple:hover { box-shadow: 0 5px 20px rgba(167, 139, 250, 0.4); transform: translateY(-2px); }
+.btn-secondary { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.7); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.btn-secondary svg { width: 18px; height: 18px; }
+.btn-secondary:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+.coercion-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.coercion-card { padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.3s ease; }
+.coercion-card:hover { background: rgba(0, 212, 255, 0.05); border-color: rgba(0, 212, 255, 0.3); }
+.coercion-card.selected { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.5); }
+.coercion-icon { font-size: 24px; margin-bottom: 8px; }
+.coercion-card h4 { font-size: 13px; font-weight: 600; color: #fff; margin: 0 0 4px 0; }
+.coercion-card p { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin: 0 0 8px 0; }
+.coercion-status { font-size: 9px; padding: 3px 8px; background: rgba(0, 212, 255, 0.2); color: #00d4ff; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.hash-stats { display: flex; gap: 15px; margin-bottom: 20px; }
+.hash-stat { flex: 1; text-align: center; padding: 12px; background: rgba(167, 139, 250, 0.05); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 8px; }
+.hash-stat-value { display: block; font-size: 24px; font-weight: 700; color: #a78bfa; }
+.hash-stat-label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+.hash-table-container { max-height: 250px; overflow-y: auto; margin-bottom: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
+.hash-table { width: 100%; border-collapse: collapse; }
+.hash-table th, .hash-table td { padding: 10px 12px; text-align: left; font-size: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.hash-table th { background: rgba(0, 0, 0, 0.3); color: rgba(255, 255, 255, 0.7); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; }
+.hash-table td { color: rgba(255, 255, 255, 0.8); }
+.hash-user { color: #a78bfa; font-weight: 500; }
+.hash-preview { font-family: monospace; font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+.btn-mini { padding: 5px 8px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 4px; color: #a78bfa; cursor: pointer; transition: all 0.2s; }
+.btn-mini svg { width: 14px; height: 14px; }
+.btn-mini:hover { background: rgba(167, 139, 250, 0.2); }
+.empty-row td { padding: 40px; }
+.empty-state { text-align: center; color: rgba(255, 255, 255, 0.4); }
+.empty-state svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.3; }
+.empty-state p { margin: 0; font-size: 14px; }
+.empty-state span { font-size: 12px; opacity: 0.7; }
+
+.terminal-panel { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.terminal-header { display: flex; align-items: center; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.terminal-dots { display: flex; gap: 6px; margin-right: 15px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27ca40; }
+.terminal-title { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 12px; color: rgba(255, 255, 255, 0.5); }
+.terminal-title svg { width: 14px; height: 14px; }
+.btn-clear { padding: 5px; background: transparent; border: none; color: rgba(255, 255, 255, 0.4); cursor: pointer; }
+.btn-clear svg { width: 16px; height: 16px; }
+.btn-clear:hover { color: #ff5f56; }
+.terminal-body { height: 300px; overflow-y: auto; padding: 15px; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; }
+.terminal-line { margin-bottom: 6px; display: flex; gap: 8px; }
+.terminal-line .prompt { color: #00ff88; font-weight: 600; }
+.terminal-line.error .prompt { color: #ff5f56; }
+.terminal-line.warning .prompt { color: #ffbd2e; }
+.terminal-line.success .prompt { color: #27ca40; }
+.terminal-line span:last-child { color: rgba(255, 255, 255, 0.8); }
+.terminal-divider { border-top: 1px dashed rgba(255, 255, 255, 0.1); margin: 10px 0; }
+.divider { color: rgba(255, 255, 255, 0.2); }
+
+.chain-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; }
+.chain-header { display: flex; align-items: center; gap: 10px; padding: 15px 20px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.chain-header svg { width: 18px; height: 18px; color: #ff6b35; }
+.chain-body { padding: 20px; display: flex; align-items: center; justify-content: space-between; }
+.chain-step { flex: 1; display: flex; align-items: center; gap: 12px; padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; }
+.step-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(255, 107, 53, 0.1); border-radius: 8px; font-size: 14px; font-weight: 700; color: #ff6b35; }
+.step-content h5 { font-size: 13px; font-weight: 600; color: #fff; margin: 0 0 2px 0; }
+.step-content p { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+.step-status { font-size: 9px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; margin-left: auto; }
+.step-status.pending { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.5); }
+.step-status.active { background: rgba(0, 212, 255, 0.2); color: #00d4ff; animation: pulse 1.5s infinite; }
+.step-status.complete { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+.step-status.error { background: rgba(255, 95, 86, 0.2); color: #ff5f56; }
+.chain-arrow { color: rgba(255, 255, 255, 0.3); font-size: 20px; padding: 0 10px; }
+</style>
 {% endblock %}

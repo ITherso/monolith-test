@@ -1,658 +1,835 @@
 {% extends "base.html" %}
-
-{% block title %}Evasion Testing{% endblock %}
-
 {% block body %}
-<div class="container-fluid mt-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2><i class="fas fa-shield-virus text-warning"></i> Evasion Testing Suite</h2>
-            <p class="text-muted">Static YARA scanning, string detection, entropy analysis, and behavioral testing</p>
+<div class="main-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="logo-text">SHADOW<span class="accent">ARSENAL</span></span>
+            </div>
         </div>
-    </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>DASHBOARD</span></a></li>
+            <li class="nav-item"><a href="/kerberos" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span>KERBEROS</span></a></li>
+            <li class="nav-item"><a href="/relay/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8"/><path d="M12 8l4 4-4 4"/><circle cx="12" cy="12" r="10"/></svg><span>NTLM RELAY</span></a></li>
+            <li class="nav-item"><a href="/evasion/" class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><span>EVASION TEST</span></a></li>
+            <li class="nav-item"><a href="/lateral/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 3l-7 7"/><path d="M3 3l7 7"/><path d="M16 21h5v-5"/><path d="M8 21H3v-5"/><path d="M21 21l-7-7"/><path d="M3 21l7-7"/></svg><span>LATERAL MOVE</span></a></li>
+            <li class="nav-item"><a href="/c2" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3H6a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3V6a3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3h12a3 3 0 003-3 3 3 0 00-3-3z"/></svg><span>C2 IMPLANT</span></a></li>
+            <li class="nav-item"><a href="/exploit" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>EXPLOIT</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="status-indicator online"><span class="status-dot"></span><span>SCANNER READY</span></div>
+        </div>
+    </nav>
 
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-check-circle"></i> Clean</h5>
-                    <h2 id="stat-clean">0</h2>
+    <!-- Main Content -->
+    <main class="content-area">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <path d="M9 12l2 2 4-4"/>
+                        </svg>
+                        <span>EVASION TESTING SUITE</span>
+                    </h1>
+                    <p class="page-subtitle">YARA scanning, string detection, entropy analysis, and behavioral testing</p>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-exclamation-triangle"></i> Medium Risk</h5>
-                    <h2 id="stat-medium">0</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-skull-crossbones"></i> High Risk</h5>
-                    <h2 id="stat-high">0</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-dark text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-file-alt"></i> Total Scans</h5>
-                    <h2 id="stat-total">0</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Left Panel: Test Options -->
-        <div class="col-md-5">
-            <!-- File Upload Test -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <i class="fas fa-file-upload"></i> File Upload Test
-                </div>
-                <div class="card-body">
-                    <form id="file-test-form" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label class="form-label">Select File</label>
-                            <input type="file" class="form-control" id="test-file" required>
-                            <small class="text-muted">Supported: EXE, DLL, PS1, BAT, BIN, etc.</small>
+                <div class="header-right">
+                    <div class="quick-stats">
+                        <div class="quick-stat green">
+                            <span class="stat-value" id="cleanCount">0</span>
+                            <span class="stat-label">Clean</span>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-search"></i> Scan File
+                        <div class="quick-stat yellow">
+                            <span class="stat-value" id="mediumCount">0</span>
+                            <span class="stat-label">Medium Risk</span>
+                        </div>
+                        <div class="quick-stat red">
+                            <span class="stat-value" id="highCount">0</span>
+                            <span class="stat-label">High Risk</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Info Banner -->
+        <section class="info-banner green">
+            <div class="info-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+            </div>
+            <div class="info-content">
+                <h3>Testing Capabilities</h3>
+                <div class="info-items">
+                    <div class="info-item"><span class="badge green">YARA</span><span>Scan against 500+ detection rules including CobaltStrike, Mimikatz, etc.</span></div>
+                    <div class="info-item"><span class="badge yellow">STRINGS</span><span>Detect suspicious API calls, paths, and indicators</span></div>
+                    <div class="info-item"><span class="badge red">ENTROPY</span><span>Analyze packed/encrypted sections for anomalies</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <section class="tabs-section">
+            <div class="tabs-nav">
+                <button class="tab-btn active green" data-tab="file">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>File Analysis</span>
+                </button>
+                <button class="tab-btn yellow" data-tab="code">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    <span>Code Scanner</span>
+                </button>
+                <button class="tab-btn purple" data-tab="behavioral">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>Behavioral</span>
+                </button>
+                <button class="tab-btn cyan" data-tab="reports">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>Reports</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Forms Column -->
+            <div class="forms-column">
+                <!-- File Analysis Panel -->
+                <div class="form-panel" id="file-panel">
+                    <div class="panel-header green">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                        <div class="panel-title">
+                            <h2>File Analysis</h2>
+                            <p>Upload binary or script for comprehensive analysis</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="upload-zone" id="dropZone">
+                            <div class="upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </div>
+                            <h4>Drop file here or click to upload</h4>
+                            <p>Supports: EXE, DLL, PS1, PY, CS, C, shellcode</p>
+                            <input type="file" id="fileInput" hidden>
+                        </div>
+
+                        <div class="test-options">
+                            <h5>Analysis Options</h5>
+                            <div class="options-grid">
+                                <label class="option-card selected">
+                                    <input type="checkbox" name="tests" value="yara" checked>
+                                    <span class="option-icon">🎯</span>
+                                    <span class="option-name">YARA Rules</span>
+                                    <span class="option-desc">500+ detection rules</span>
+                                </label>
+                                <label class="option-card selected">
+                                    <input type="checkbox" name="tests" value="strings" checked>
+                                    <span class="option-icon">📝</span>
+                                    <span class="option-name">String Analysis</span>
+                                    <span class="option-desc">API & IOC detection</span>
+                                </label>
+                                <label class="option-card selected">
+                                    <input type="checkbox" name="tests" value="entropy" checked>
+                                    <span class="option-icon">📊</span>
+                                    <span class="option-name">Entropy Check</span>
+                                    <span class="option-desc">Packer detection</span>
+                                </label>
+                                <label class="option-card">
+                                    <input type="checkbox" name="tests" value="pe">
+                                    <span class="option-icon">🔬</span>
+                                    <span class="option-name">PE Analysis</span>
+                                    <span class="option-desc">Header inspection</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button class="btn-submit green" onclick="analyzeFile()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Analyze File
                         </button>
-                    </form>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Code Test -->
-            <div class="card mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <i class="fas fa-code"></i> Code Pattern Test
-                </div>
-                <div class="card-body">
-                    <form id="code-test-form">
-                        <div class="mb-3">
-                            <label class="form-label">Language</label>
-                            <select class="form-select" id="code-language">
-                                <option value="python" selected>Python</option>
-                                <option value="powershell">PowerShell</option>
-                                <option value="csharp">C#</option>
-                                <option value="vba">VBA</option>
-                                <option value="javascript">JavaScript</option>
-                            </select>
+                <!-- Code Scanner Panel -->
+                <div class="form-panel hidden" id="code-panel">
+                    <div class="panel-header yellow">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Code Scanner</h2>
+                            <p>Paste code for real-time detection analysis</p>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Code</label>
-                            <textarea class="form-control font-monospace" id="test-code" rows="8" placeholder="import ctypes
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                Code to Analyze
+                            </label>
+                            <textarea id="codeInput" class="code-editor" placeholder="Paste your code here...
+# Example:
+import ctypes
 kernel32 = ctypes.windll.kernel32
-VirtualAlloc = kernel32.VirtualAlloc
-..."></textarea>
+kernel32.VirtualAlloc(0, 4096, 0x3000, 0x40)"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-warning w-100">
-                            <i class="fas fa-search"></i> Analyze Code
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Language</label>
+                                <select id="codeLang" class="form-input yellow">
+                                    <option value="python">Python</option>
+                                    <option value="powershell">PowerShell</option>
+                                    <option value="csharp">C#</option>
+                                    <option value="c">C/C++</option>
+                                    <option value="vba">VBA</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Scan Depth</label>
+                                <select id="scanDepth" class="form-input yellow">
+                                    <option value="quick">Quick Scan</option>
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="deep">Deep Analysis</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn-submit yellow" onclick="scanCode()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Scan Code
                         </button>
-                    </form>
+                    </div>
+                </div>
+
+                <!-- Behavioral Panel -->
+                <div class="form-panel hidden" id="behavioral-panel">
+                    <div class="panel-header purple">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Behavioral Testing</h2>
+                            <p>Simulate sandbox and AV behavioral detection</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="behavior-tests">
+                            <div class="behavior-card" data-test="sandbox">
+                                <div class="behavior-icon">🏜️</div>
+                                <h4>Sandbox Detection</h4>
+                                <p>Test anti-sandbox techniques</p>
+                                <div class="behavior-status">Ready</div>
+                            </div>
+                            <div class="behavior-card" data-test="timing">
+                                <div class="behavior-icon">⏱️</div>
+                                <h4>Timing Analysis</h4>
+                                <p>Sleep acceleration detection</p>
+                                <div class="behavior-status">Ready</div>
+                            </div>
+                            <div class="behavior-card" data-test="hooks">
+                                <div class="behavior-icon">🪝</div>
+                                <h4>API Hook Check</h4>
+                                <p>Detect userland hooks</p>
+                                <div class="behavior-status">Ready</div>
+                            </div>
+                            <div class="behavior-card" data-test="memory">
+                                <div class="behavior-icon">💾</div>
+                                <h4>Memory Scan</h4>
+                                <p>In-memory signature check</p>
+                                <div class="behavior-status">Ready</div>
+                            </div>
+                        </div>
+
+                        <button class="btn-submit purple" onclick="runBehavioralTests()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Run All Tests
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reports Panel -->
+                <div class="form-panel hidden" id="reports-panel">
+                    <div class="panel-header cyan">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Scan Reports</h2>
+                            <p>View and export analysis results</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="reports-list" id="reportsList">
+                            <div class="empty-state">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+                                <p>No reports yet</p>
+                                <span>Run a scan to generate reports</span>
+                            </div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn-submit cyan" onclick="refreshReports()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/></svg>
+                                Refresh
+                            </button>
+                            <button class="btn-secondary" onclick="exportReports()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export All
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Base64 Test -->
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <i class="fas fa-file-code"></i> Raw Bytes Test
-                </div>
-                <div class="card-body">
-                    <form id="bytes-test-form">
-                        <div class="mb-3">
-                            <label class="form-label">Payload Name</label>
-                            <input type="text" class="form-control" id="bytes-name" placeholder="payload.bin">
+            <!-- Results Column -->
+            <div class="terminal-column">
+                <!-- Results Panel -->
+                <div class="results-panel">
+                    <div class="results-header">
+                        <div class="results-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                            <span>Analysis Results</span>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Base64 Data</label>
-                            <textarea class="form-control font-monospace" id="test-bytes" rows="4" placeholder="TVqQAAMAAAAEAAAA//8AALgAAAAA..."></textarea>
+                        <div class="results-score" id="riskScore">
+                            <span class="score-label">Risk Score</span>
+                            <span class="score-value clean">N/A</span>
                         </div>
-                        <button type="submit" class="btn btn-info w-100">
-                            <i class="fas fa-search"></i> Scan Bytes
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Middle Panel: Individual Scanners -->
-        <div class="col-md-3">
-            <!-- YARA Scanner -->
-            <div class="card mb-4">
-                <div class="card-header bg-danger text-white">
-                    <i class="fas fa-virus"></i> YARA Scanner
-                </div>
-                <div class="card-body">
-                    <form id="yara-form">
-                        <div class="mb-3">
-                            <label class="form-label">Base64 Data</label>
-                            <textarea class="form-control font-monospace" id="yara-data" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Custom Rules (Optional)</label>
-                            <textarea class="form-control font-monospace small" id="yara-rules" rows="3" placeholder='rule custom {
-    strings: $a = "test"
-    condition: $a
-}'></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-danger btn-sm w-100">
-                            <i class="fas fa-search"></i> YARA Scan
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- String Scanner -->
-            <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <i class="fas fa-font"></i> String Scanner
-                </div>
-                <div class="card-body">
-                    <form id="string-form">
-                        <div class="mb-3">
-                            <label class="form-label">Base64 Data</label>
-                            <textarea class="form-control font-monospace" id="string-data" rows="3"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-secondary btn-sm w-100">
-                            <i class="fas fa-search"></i> Find Strings
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Entropy Analyzer -->
-            <div class="card mb-4">
-                <div class="card-header bg-dark text-white">
-                    <i class="fas fa-chart-line"></i> Entropy Analysis
-                </div>
-                <div class="card-body">
-                    <form id="entropy-form">
-                        <div class="mb-3">
-                            <label class="form-label">Base64 Data</label>
-                            <textarea class="form-control font-monospace" id="entropy-data" rows="3"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-dark btn-sm w-100">
-                            <i class="fas fa-chart-bar"></i> Analyze
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Behavioral Analyzer -->
-            <div class="card mb-4">
-                <div class="card-header bg-purple text-white" style="background: #6f42c1;">
-                    <i class="fas fa-brain"></i> Behavioral
-                </div>
-                <div class="card-body">
-                    <form id="behavioral-form">
-                        <div class="mb-3">
-                            <select class="form-select form-select-sm" id="behavioral-lang">
-                                <option value="python">Python</option>
-                                <option value="powershell">PowerShell</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <textarea class="form-control font-monospace" id="behavioral-code" rows="3"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-sm w-100" style="background: #6f42c1; color: white;">
-                            <i class="fas fa-microscope"></i> Analyze
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Panel: Results -->
-        <div class="col-md-4">
-            <!-- Results Panel -->
-            <div class="card mb-4">
-                <div class="card-header bg-dark text-white">
-                    <i class="fas fa-clipboard-list"></i> Scan Results
-                    <button class="btn btn-sm btn-outline-light float-end" onclick="clearResults()">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
-                    <div id="results-container">
-                        <div class="text-center text-muted p-4">
-                            <i class="fas fa-search fa-3x mb-3"></i>
+                    </div>
+                    <div class="results-body" id="resultsBody">
+                        <div class="result-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             <p>Run a scan to see results</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Risk Legend -->
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <i class="fas fa-info-circle"></i> Risk Levels
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-success"><i class="fas fa-check"></i> CLEAN (0)</span>
-                        <span class="badge bg-info"><i class="fas fa-info"></i> LOW (1-29)</span>
-                        <span class="badge bg-warning text-dark"><i class="fas fa-exclamation"></i> MEDIUM (30-59)</span>
-                        <span class="badge bg-danger"><i class="fas fa-times"></i> HIGH (60-99)</span>
-                        <span class="badge bg-dark"><i class="fas fa-skull"></i> CRITICAL (100+)</span>
+                <!-- Detection Breakdown -->
+                <div class="breakdown-panel">
+                    <div class="breakdown-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+                        <span>Detection Breakdown</span>
                     </div>
-                    <hr>
-                    <small class="text-muted">
-                        <strong>Detection Factors:</strong> YARA matches, suspicious strings, high entropy, 
-                        API patterns, shellcode signatures, obfuscation indicators.
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reports List -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <i class="fas fa-history"></i> Recent Reports
-                    <button class="btn btn-sm btn-outline-light float-end" onclick="refreshReports()">
-                        <i class="fas fa-sync"></i> Refresh
-                    </button>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>File/Name</th>
-                                    <th>Risk Level</th>
-                                    <th>Score</th>
-                                    <th>YARA</th>
-                                    <th>Strings</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reports-table">
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">No reports yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="breakdown-body">
+                        <div class="breakdown-item">
+                            <div class="breakdown-label">
+                                <span class="breakdown-icon yara">🎯</span>
+                                <span>YARA Rules</span>
+                            </div>
+                            <div class="breakdown-bar">
+                                <div class="breakdown-fill" id="yaraBar" style="width: 0%"></div>
+                            </div>
+                            <span class="breakdown-count" id="yaraCount">0/0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-label">
+                                <span class="breakdown-icon strings">📝</span>
+                                <span>Suspicious Strings</span>
+                            </div>
+                            <div class="breakdown-bar">
+                                <div class="breakdown-fill yellow" id="stringsBar" style="width: 0%"></div>
+                            </div>
+                            <span class="breakdown-count" id="stringsCount">0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-label">
+                                <span class="breakdown-icon entropy">📊</span>
+                                <span>Entropy Level</span>
+                            </div>
+                            <div class="breakdown-bar">
+                                <div class="breakdown-fill cyan" id="entropyBar" style="width: 0%"></div>
+                            </div>
+                            <span class="breakdown-count" id="entropyLevel">0.0</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Report Modal -->
-<div class="modal fade" id="reportModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content bg-dark text-white">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-file-alt"></i> Full Report</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <pre id="report-content" class="bg-black p-3 rounded" style="max-height: 500px; overflow-y: auto;"></pre>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="downloadReport()">
-                    <i class="fas fa-download"></i> Download
-                </button>
+                <!-- Terminal Output -->
+                <div class="terminal-panel">
+                    <div class="terminal-header">
+                        <div class="terminal-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                        <div class="terminal-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg><span>Scanner Output</span></div>
+                        <button class="btn-clear" onclick="clearTerminal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button>
+                    </div>
+                    <div class="terminal-body" id="terminal">
+                        <div class="terminal-content" id="terminal-content">
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>Evasion Testing Suite Ready</span></div>
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>YARA Engine: 547 rules loaded</span></div>
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>String DB: 12,431 indicators</span></div>
+                            <div class="terminal-divider"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <script>
-let stats = { clean: 0, medium: 0, high: 0, total: 0 };
-let currentReportId = null;
+let currentTab = 'file';
+let selectedFile = null;
 
-function updateStats(risk) {
-    stats.total++;
-    if (risk === 'CLEAN' || risk === 'LOW') stats.clean++;
-    else if (risk === 'MEDIUM') stats.medium++;
-    else stats.high++;
+document.addEventListener('DOMContentLoaded', function() {
+    initTabs();
+    initUploadZone();
+    initOptionCards();
+    initBehaviorCards();
+});
 
-    document.getElementById('stat-clean').textContent = stats.clean;
-    document.getElementById('stat-medium').textContent = stats.medium;
-    document.getElementById('stat-high').textContent = stats.high;
-    document.getElementById('stat-total').textContent = stats.total;
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(tab + '-panel').classList.remove('hidden');
+            currentTab = tab;
+            log('─'.repeat(40), 'dim');
+            log(`Switched to ${tab.toUpperCase()} mode`, 'info');
+        });
+    });
 }
 
-function getRiskBadge(risk) {
-    const badges = {
-        'CLEAN': 'bg-success',
-        'LOW': 'bg-info',
-        'MEDIUM': 'bg-warning text-dark',
-        'HIGH': 'bg-danger',
-        'CRITICAL': 'bg-dark'
-    };
-    return `<span class="badge ${badges[risk] || 'bg-secondary'}">${risk}</span>`;
+function initUploadZone() {
+    const zone = document.getElementById('dropZone');
+    const input = document.getElementById('fileInput');
+    
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        handleFile(e.dataTransfer.files[0]);
+    });
+    input.addEventListener('change', (e) => handleFile(e.target.files[0]));
 }
 
-function displayResult(data, title) {
-    const container = document.getElementById('results-container');
-    const resultHtml = `
-        <div class="border-bottom p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong>${title}</strong>
-                ${getRiskBadge(data.overall_risk || 'UNKNOWN')}
+function handleFile(file) {
+    if (file) {
+        selectedFile = file;
+        document.getElementById('dropZone').innerHTML = `
+            <div class="file-selected">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <h4>${file.name}</h4>
+                <p>${(file.size / 1024).toFixed(2)} KB</p>
             </div>
-            <div class="small">
-                <div class="row">
-                    <div class="col-6">
-                        <span class="text-muted">Score:</span> <strong>${data.total_score || 0}</strong>
-                    </div>
-                    <div class="col-6">
-                        <span class="text-muted">YARA:</span> <strong>${data.yara_matches || 0}</strong>
-                    </div>
-                    <div class="col-6">
-                        <span class="text-muted">Strings:</span> <strong>${data.suspicious_strings || 0}</strong>
-                    </div>
-                    <div class="col-6">
-                        <span class="text-muted">Entropy:</span> <strong>${(data.entropy || 0).toFixed(2)}</strong>
-                    </div>
-                </div>
-                ${data.recommendations ? `
-                <div class="mt-2">
-                    <span class="text-warning"><i class="fas fa-lightbulb"></i> Recommendations:</span>
-                    <ul class="mb-0 ps-3 small">
-                        ${data.recommendations.slice(0, 3).map(r => `<li>${r}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-                ${data.report_id ? `
-                <button class="btn btn-sm btn-outline-info mt-2" onclick="viewReport('${data.report_id}')">
-                    <i class="fas fa-eye"></i> View Full Report
-                </button>
-                ` : ''}
-            </div>
-        </div>
-    `;
-    container.innerHTML = resultHtml + container.innerHTML;
-    updateStats(data.overall_risk || 'UNKNOWN');
+        `;
+        log(`File selected: ${file.name}`, 'success');
+    }
 }
 
-function clearResults() {
-    document.getElementById('results-container').innerHTML = `
-        <div class="text-center text-muted p-4">
-            <i class="fas fa-search fa-3x mb-3"></i>
-            <p>Run a scan to see results</p>
-        </div>
+function initOptionCards() {
+    document.querySelectorAll('.option-card').forEach(card => {
+        card.addEventListener('click', function() {
+            this.classList.toggle('selected');
+        });
+    });
+}
+
+function initBehaviorCards() {
+    document.querySelectorAll('.behavior-card').forEach(card => {
+        card.addEventListener('click', function() {
+            this.classList.toggle('selected');
+        });
+    });
+}
+
+function log(message, type = 'info') {
+    const terminal = document.getElementById('terminal-content');
+    const div = document.createElement('div');
+    div.className = `terminal-line ${type}`;
+    if (type === 'dim') {
+        div.innerHTML = `<span class="divider">${message}</span>`;
+    } else {
+        const prefixes = { success: '[+]', error: '[!]', warning: '[*]', info: '[*]' };
+        div.innerHTML = `<span class="prompt">${prefixes[type] || '[*]'}</span><span>${message}</span>`;
+    }
+    terminal.appendChild(div);
+    document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+}
+
+function clearTerminal() {
+    document.getElementById('terminal-content').innerHTML = `
+        <div class="terminal-line info"><span class="prompt">[*]</span><span>Terminal cleared</span></div>
+        <div class="terminal-divider"></div>
     `;
 }
 
-// File Test
-document.getElementById('file-test-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const file = document.getElementById('test-file').files[0];
-    if (!file) return;
-
+async function analyzeFile() {
+    if (!selectedFile) { log('Please select a file first!', 'error'); return; }
+    
+    const tests = Array.from(document.querySelectorAll('input[name="tests"]:checked')).map(c => c.value);
+    
+    log('─'.repeat(40), 'dim');
+    log(`Analyzing: ${selectedFile.name}`, 'info');
+    log(`Tests: ${tests.join(', ')}`, 'info');
+    
     const formData = new FormData();
-    formData.append('file', file);
-
+    formData.append('file', selectedFile);
+    formData.append('tests', JSON.stringify(tests));
+    
     try {
         const response = await fetch('/evasion/test/file', {
             method: 'POST',
             body: formData
         });
         const data = await response.json();
+        
         if (data.success) {
-            displayResult(data, file.name);
-            refreshReports();
+            log('Analysis complete!', 'success');
+            displayResults(data);
         } else {
-            alert('Error: ' + data.error);
+            log(`Error: ${data.error}`, 'error');
         }
     } catch (e) {
-        alert('Error: ' + e.message);
+        log(`Error: ${e.message}`, 'error');
     }
-});
+}
 
-// Code Test
-document.getElementById('code-test-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const code = document.getElementById('test-code').value;
-    const language = document.getElementById('code-language').value;
-
-    if (!code) return;
-
+async function scanCode() {
+    const code = document.getElementById('codeInput').value;
+    const lang = document.getElementById('codeLang').value;
+    
+    if (!code.trim()) { log('Please enter code to scan!', 'error'); return; }
+    
+    log('─'.repeat(40), 'dim');
+    log(`Scanning ${lang} code...`, 'info');
+    
     try {
         const response = await fetch('/evasion/test/code', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ code, language })
+            body: JSON.stringify({ code, language: lang })
         });
         const data = await response.json();
+        
         if (data.success) {
-            displayResult(data, `Code (${language})`);
-            refreshReports();
+            log('Scan complete!', 'success');
+            displayResults(data);
         } else {
-            alert('Error: ' + data.error);
+            log(`Error: ${data.error}`, 'error');
         }
     } catch (e) {
-        alert('Error: ' + e.message);
+        log(`Error: ${e.message}`, 'error');
     }
-});
+}
 
-// Bytes Test
-document.getElementById('bytes-test-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data_b64 = document.getElementById('test-bytes').value;
-    const name = document.getElementById('bytes-name').value || 'payload.bin';
-
-    if (!data_b64) return;
-
-    try {
-        const response = await fetch('/evasion/test/bytes', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ data: data_b64, name })
-        });
-        const data = await response.json();
-        if (data.success) {
-            displayResult(data, name);
-            refreshReports();
-        } else {
-            alert('Error: ' + data.error);
-        }
-    } catch (e) {
-        alert('Error: ' + e.message);
-    }
-});
-
-// YARA Scan
-document.getElementById('yara-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data_b64 = document.getElementById('yara-data').value;
-    const rules = document.getElementById('yara-rules').value;
-
-    if (!data_b64) return;
-
-    try {
-        const response = await fetch('/evasion/yara', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                data: data_b64, 
-                rules: rules ? [rules] : [] 
-            })
-        });
-        const data = await response.json();
-        if (data.success) {
-            displayResult({
-                overall_risk: data.total_matches > 0 ? 'HIGH' : 'CLEAN',
-                total_score: data.total_matches * 20,
-                yara_matches: data.total_matches,
-                recommendations: data.matches.map(m => `Rule: ${m.rule} - ${m.description}`)
-            }, 'YARA Scan');
-        } else {
-            alert('Error: ' + data.error);
-        }
-    } catch (e) {
-        alert('Error: ' + e.message);
-    }
-});
-
-// String Scan
-document.getElementById('string-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data_b64 = document.getElementById('string-data').value;
-
-    if (!data_b64) return;
-
-    try {
-        const response = await fetch('/evasion/strings', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ data: data_b64 })
-        });
-        const data = await response.json();
-        if (data.success) {
-            const risk = data.total_risk > 50 ? 'HIGH' : data.total_risk > 20 ? 'MEDIUM' : 'LOW';
-            displayResult({
-                overall_risk: risk,
-                total_score: data.total_risk,
-                suspicious_strings: data.total_found,
-                recommendations: Object.keys(data.by_category).map(c => `${c}: ${data.by_category[c].length} found`)
-            }, 'String Scan');
-        } else {
-            alert('Error: ' + data.error);
-        }
-    } catch (e) {
-        alert('Error: ' + e.message);
-    }
-});
-
-// Entropy Analysis
-document.getElementById('entropy-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data_b64 = document.getElementById('entropy-data').value;
-
-    if (!data_b64) return;
-
-    try {
-        const response = await fetch('/evasion/entropy', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ data: data_b64 })
-        });
-        const data = await response.json();
-        if (data.success) {
-            const risk = data.is_encrypted ? 'HIGH' : data.is_packed ? 'MEDIUM' : 'LOW';
-            displayResult({
-                overall_risk: risk,
-                entropy: data.overall_entropy,
-                recommendations: [
-                    data.risk_assessment,
-                    `Packed: ${data.is_packed}`,
-                    `Encrypted: ${data.is_encrypted}`,
-                    `High entropy sections: ${data.high_entropy_sections}`
-                ]
-            }, 'Entropy Analysis');
-        } else {
-            alert('Error: ' + data.error);
-        }
-    } catch (e) {
-        alert('Error: ' + e.message);
-    }
-});
-
-// Behavioral Analysis
-document.getElementById('behavioral-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const code = document.getElementById('behavioral-code').value;
-    const language = document.getElementById('behavioral-lang').value;
-
-    if (!code) return;
-
+async function runBehavioralTests() {
+    const selectedTests = Array.from(document.querySelectorAll('.behavior-card.selected')).map(c => c.dataset.test);
+    
+    log('─'.repeat(40), 'dim');
+    log('Running behavioral tests...', 'info');
+    
     try {
         const response = await fetch('/evasion/behavioral', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ code, language })
+            body: JSON.stringify({ tests: selectedTests })
         });
         const data = await response.json();
+        
         if (data.success) {
-            displayResult({
-                overall_risk: data.risk_level,
-                total_score: data.score,
-                behavioral_score: data.score,
-                recommendations: [
-                    `Patterns: ${data.patterns_found.join(', ') || 'None'}`,
-                    `APIs: ${data.api_calls.join(', ') || 'None'}`
-                ]
-            }, 'Behavioral Analysis');
-        } else {
-            alert('Error: ' + data.error);
+            log('Behavioral tests complete!', 'success');
+            data.results.forEach(r => {
+                const status = r.passed ? 'success' : 'error';
+                log(`${r.test}: ${r.passed ? 'PASSED' : 'FAILED'} - ${r.message}`, status);
+            });
         }
     } catch (e) {
-        alert('Error: ' + e.message);
-    }
-});
-
-async function viewReport(reportId) {
-    currentReportId = reportId;
-    try {
-        const response = await fetch(`/evasion/report/${reportId}/markdown`);
-        const markdown = await response.text();
-        document.getElementById('report-content').textContent = markdown;
-        new bootstrap.Modal(document.getElementById('reportModal')).show();
-    } catch (e) {
-        alert('Error loading report: ' + e.message);
+        log(`Error: ${e.message}`, 'error');
     }
 }
 
-function downloadReport() {
-    if (!currentReportId) return;
-    const content = document.getElementById('report-content').textContent;
-    const blob = new Blob([content], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `evasion_report_${currentReportId}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+function displayResults(data) {
+    const resultsBody = document.getElementById('resultsBody');
+    const riskClass = data.risk_level === 'clean' ? 'clean' : data.risk_level === 'medium' ? 'medium' : 'high';
+    
+    document.querySelector('.score-value').textContent = data.risk_score || 'N/A';
+    document.querySelector('.score-value').className = 'score-value ' + riskClass;
+    
+    // Update breakdown bars
+    if (data.yara_matches) {
+        document.getElementById('yaraBar').style.width = `${Math.min(data.yara_matches * 10, 100)}%`;
+        document.getElementById('yaraCount').textContent = data.yara_matches;
+    }
+    if (data.suspicious_strings) {
+        document.getElementById('stringsBar').style.width = `${Math.min(data.suspicious_strings * 5, 100)}%`;
+        document.getElementById('stringsCount').textContent = data.suspicious_strings;
+    }
+    if (data.entropy) {
+        document.getElementById('entropyBar').style.width = `${(data.entropy / 8) * 100}%`;
+        document.getElementById('entropyLevel').textContent = data.entropy.toFixed(2);
+    }
+    
+    resultsBody.innerHTML = `
+        <div class="result-summary ${riskClass}">
+            <div class="summary-icon">${riskClass === 'clean' ? '✅' : riskClass === 'medium' ? '⚠️' : '🚨'}</div>
+            <div class="summary-text">
+                <h4>${riskClass === 'clean' ? 'Clean' : riskClass === 'medium' ? 'Medium Risk' : 'High Risk'}</h4>
+                <p>${data.summary || 'Analysis complete'}</p>
+            </div>
+        </div>
+        ${data.detections ? data.detections.map(d => `
+            <div class="detection-item">
+                <span class="detection-rule">${d.rule}</span>
+                <span class="detection-desc">${d.description}</span>
+            </div>
+        `).join('') : ''}
+    `;
+    
+    // Update stats
+    if (riskClass === 'clean') document.getElementById('cleanCount').textContent = parseInt(document.getElementById('cleanCount').textContent) + 1;
+    else if (riskClass === 'medium') document.getElementById('mediumCount').textContent = parseInt(document.getElementById('mediumCount').textContent) + 1;
+    else document.getElementById('highCount').textContent = parseInt(document.getElementById('highCount').textContent) + 1;
 }
 
 async function refreshReports() {
+    log('Refreshing reports...', 'info');
     try {
         const response = await fetch('/evasion/reports');
         const data = await response.json();
-        if (data.success) {
-            const tbody = document.getElementById('reports-table');
-            if (data.reports.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No reports yet</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.reports.map(r => `
-                <tr>
-                    <td>${r.file_name}</td>
-                    <td>${getRiskBadge(r.risk)}</td>
-                    <td>${r.score}</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-info" onclick="viewReport('${r.id}')">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>
+        if (data.success && data.reports.length > 0) {
+            document.getElementById('reportsList').innerHTML = data.reports.map(r => `
+                <div class="report-item">
+                    <span class="report-name">${r.filename}</span>
+                    <span class="report-date">${r.date}</span>
+                    <span class="report-risk ${r.risk}">${r.risk}</span>
+                </div>
             `).join('');
         }
     } catch (e) {
-        console.error('Failed to refresh reports:', e);
+        log(`Error: ${e.message}`, 'error');
     }
 }
 
-// Initial load
-refreshReports();
+function exportReports() {
+    log('Exporting reports...', 'info');
+    window.open('/evasion/reports/export', '_blank');
+}
 </script>
+
+<style>
+.main-container { display: flex; min-height: 100vh; }
+
+.sidebar { width: 260px; background: rgba(15, 15, 25, 0.95); border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.logo { display: flex; align-items: center; gap: 12px; color: #fff; }
+.logo svg { width: 32px; height: 32px; color: #00ff88; }
+.logo-text { font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+.logo-text .accent { color: #00ff88; }
+.nav-menu { list-style: none; padding: 15px 10px; margin: 0; flex: 1; overflow-y: auto; }
+.nav-item { margin-bottom: 5px; }
+.nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 1px; border-radius: 8px; transition: all 0.3s ease; }
+.nav-link svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-link:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.nav-link.active { background: rgba(0, 255, 136, 0.1); color: #00ff88; }
+.sidebar-footer { padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.status-indicator { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #666; }
+.status-indicator.online .status-dot { background: #00ff88; box-shadow: 0 0 10px #00ff88; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.content-area { flex: 1; margin-left: 260px; padding: 30px; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; }
+
+.page-header { margin-bottom: 25px; }
+.header-content { display: flex; justify-content: space-between; align-items: flex-start; }
+.page-title { display: flex; align-items: center; gap: 15px; font-size: 24px; font-weight: 700; color: #fff; margin: 0 0 8px 0; letter-spacing: 1px; }
+.page-title svg { width: 28px; height: 28px; color: #00ff88; }
+.page-subtitle { color: rgba(255, 255, 255, 0.5); font-size: 13px; margin: 0 0 0 43px; }
+.quick-stats { display: flex; gap: 15px; }
+.quick-stat { text-align: center; padding: 15px 20px; border-radius: 10px; }
+.quick-stat.green { background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); }
+.quick-stat.yellow { background: rgba(255, 189, 46, 0.1); border: 1px solid rgba(255, 189, 46, 0.3); }
+.quick-stat.red { background: rgba(255, 95, 86, 0.1); border: 1px solid rgba(255, 95, 86, 0.3); }
+.quick-stat .stat-value { display: block; font-size: 28px; font-weight: 700; }
+.quick-stat.green .stat-value { color: #00ff88; }
+.quick-stat.yellow .stat-value { color: #ffbd2e; }
+.quick-stat.red .stat-value { color: #ff5f56; }
+.quick-stat .stat-label { font-size: 11px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 1px; }
+
+.info-banner { display: flex; gap: 20px; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+.info-banner.green { background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); }
+.info-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: rgba(0, 255, 136, 0.1); border-radius: 10px; flex-shrink: 0; }
+.info-icon svg { width: 24px; height: 24px; color: #00ff88; }
+.info-content h3 { font-size: 14px; font-weight: 600; color: #00ff88; margin: 0 0 12px 0; }
+.info-items { display: flex; flex-direction: column; gap: 8px; }
+.info-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+.badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.badge.green { background: rgba(0, 255, 136, 0.2); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4); }
+.badge.yellow { background: rgba(255, 189, 46, 0.2); color: #ffbd2e; border: 1px solid rgba(255, 189, 46, 0.4); }
+.badge.red { background: rgba(255, 95, 86, 0.2); color: #ff5f56; border: 1px solid rgba(255, 95, 86, 0.4); }
+.badge.cyan { background: rgba(0, 212, 255, 0.2); color: #00d4ff; border: 1px solid rgba(0, 212, 255, 0.4); }
+.badge.purple { background: rgba(167, 139, 250, 0.2); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.4); }
+
+.tabs-section { margin-bottom: 25px; }
+.tabs-nav { display: flex; gap: 10px; flex-wrap: wrap; }
+.tab-btn { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.6); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.tab-btn svg { width: 18px; height: 18px; }
+.tab-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.tab-btn.active.green { background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.4); color: #00ff88; }
+.tab-btn.active.yellow { background: rgba(255, 189, 46, 0.1); border-color: rgba(255, 189, 46, 0.4); color: #ffbd2e; }
+.tab-btn.active.purple { background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.4); color: #a78bfa; }
+.tab-btn.active.cyan { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.4); color: #00d4ff; }
+
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+
+.form-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; }
+.form-panel.hidden { display: none; }
+.panel-header { display: flex; align-items: center; gap: 15px; padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.panel-header.green { background: linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, transparent 100%); border-bottom-color: rgba(0, 255, 136, 0.2); }
+.panel-header.yellow { background: linear-gradient(90deg, rgba(255, 189, 46, 0.1) 0%, transparent 100%); border-bottom-color: rgba(255, 189, 46, 0.2); }
+.panel-header.purple { background: linear-gradient(90deg, rgba(167, 139, 250, 0.1) 0%, transparent 100%); border-bottom-color: rgba(167, 139, 250, 0.2); }
+.panel-header.cyan { background: linear-gradient(90deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%); border-bottom-color: rgba(0, 212, 255, 0.2); }
+.panel-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+.panel-icon svg { width: 24px; height: 24px; }
+.panel-header.green .panel-icon { background: rgba(0, 255, 136, 0.1); color: #00ff88; }
+.panel-header.yellow .panel-icon { background: rgba(255, 189, 46, 0.1); color: #ffbd2e; }
+.panel-header.purple .panel-icon { background: rgba(167, 139, 250, 0.1); color: #a78bfa; }
+.panel-header.cyan .panel-icon { background: rgba(0, 212, 255, 0.1); color: #00d4ff; }
+.panel-title h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px 0; }
+.panel-header.green .panel-title h2 { color: #00ff88; }
+.panel-header.yellow .panel-title h2 { color: #ffbd2e; }
+.panel-header.purple .panel-title h2 { color: #a78bfa; }
+.panel-header.cyan .panel-title h2 { color: #00d4ff; }
+.panel-title p { font-size: 12px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+.panel-body { padding: 20px; }
+
+.upload-zone { border: 2px dashed rgba(0, 255, 136, 0.3); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s ease; margin-bottom: 20px; }
+.upload-zone:hover, .upload-zone.dragover { border-color: #00ff88; background: rgba(0, 255, 136, 0.05); }
+.upload-icon svg { width: 48px; height: 48px; color: rgba(0, 255, 136, 0.5); margin-bottom: 15px; }
+.upload-zone h4 { color: #fff; font-size: 14px; margin: 0 0 8px 0; }
+.upload-zone p { color: rgba(255, 255, 255, 0.5); font-size: 12px; margin: 0; }
+.file-selected { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.file-selected svg { width: 40px; height: 40px; color: #00ff88; }
+.file-selected h4 { color: #00ff88; margin: 0; }
+.file-selected p { color: rgba(255, 255, 255, 0.5); margin: 0; }
+
+.test-options { margin-bottom: 20px; }
+.test-options h5 { font-size: 12px; color: rgba(255, 255, 255, 0.6); margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 1px; }
+.options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.option-card { display: flex; flex-direction: column; align-items: center; padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; cursor: pointer; transition: all 0.3s ease; text-align: center; }
+.option-card input { display: none; }
+.option-card:hover { background: rgba(0, 255, 136, 0.05); border-color: rgba(0, 255, 136, 0.3); }
+.option-card.selected { background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.5); }
+.option-icon { font-size: 20px; margin-bottom: 8px; }
+.option-name { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+.option-desc { font-size: 10px; color: rgba(255, 255, 255, 0.5); }
+
+.form-group { margin-bottom: 18px; }
+.form-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px; }
+.form-label svg { width: 14px; height: 14px; color: rgba(255, 255, 255, 0.4); }
+.form-input { width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; font-size: 13px; transition: all 0.3s ease; }
+.form-input:focus { outline: none; background: rgba(0, 0, 0, 0.4); }
+.form-input.yellow:focus { border-color: rgba(255, 189, 46, 0.5); box-shadow: 0 0 15px rgba(255, 189, 46, 0.1); }
+.form-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.code-editor { width: 100%; height: 200px; padding: 15px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 189, 46, 0.2); border-radius: 8px; color: #00ff88; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; resize: vertical; }
+.code-editor:focus { outline: none; border-color: rgba(255, 189, 46, 0.5); }
+
+.behavior-tests { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+.behavior-card { padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.3s ease; }
+.behavior-card:hover { background: rgba(167, 139, 250, 0.05); border-color: rgba(167, 139, 250, 0.3); }
+.behavior-card.selected { background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.5); }
+.behavior-icon { font-size: 24px; margin-bottom: 8px; }
+.behavior-card h4 { font-size: 13px; font-weight: 600; color: #fff; margin: 0 0 4px 0; }
+.behavior-card p { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin: 0 0 8px 0; }
+.behavior-status { font-size: 9px; padding: 3px 8px; background: rgba(0, 255, 136, 0.2); color: #00ff88; border-radius: 4px; text-transform: uppercase; }
+
+.btn-group { display: flex; gap: 10px; }
+.btn-submit { display: flex; align-items: center; justify-content: center; gap: 10px; flex: 1; padding: 14px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.btn-submit svg { width: 18px; height: 18px; }
+.btn-submit.green { background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%); color: #000; }
+.btn-submit.green:hover { box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4); transform: translateY(-2px); }
+.btn-submit.yellow { background: linear-gradient(135deg, #ffbd2e 0%, #f7931e 100%); color: #000; }
+.btn-submit.yellow:hover { box-shadow: 0 5px 20px rgba(255, 189, 46, 0.4); transform: translateY(-2px); }
+.btn-submit.purple { background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); color: #fff; }
+.btn-submit.purple:hover { box-shadow: 0 5px 20px rgba(167, 139, 250, 0.4); transform: translateY(-2px); }
+.btn-submit.cyan { background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); color: #000; }
+.btn-submit.cyan:hover { box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4); transform: translateY(-2px); }
+.btn-secondary { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.7); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.btn-secondary svg { width: 18px; height: 18px; }
+.btn-secondary:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+.results-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.results-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.results-title { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.results-title svg { width: 18px; height: 18px; color: #00ff88; }
+.results-score { text-align: right; }
+.score-label { display: block; font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+.score-value { font-size: 18px; font-weight: 700; }
+.score-value.clean { color: #00ff88; }
+.score-value.medium { color: #ffbd2e; }
+.score-value.high { color: #ff5f56; }
+.results-body { padding: 20px; min-height: 150px; }
+.result-placeholder { text-align: center; color: rgba(255, 255, 255, 0.4); padding: 40px; }
+.result-placeholder svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.3; }
+.result-summary { display: flex; align-items: center; gap: 15px; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+.result-summary.clean { background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); }
+.result-summary.medium { background: rgba(255, 189, 46, 0.1); border: 1px solid rgba(255, 189, 46, 0.3); }
+.result-summary.high { background: rgba(255, 95, 86, 0.1); border: 1px solid rgba(255, 95, 86, 0.3); }
+.summary-icon { font-size: 24px; }
+.summary-text h4 { margin: 0 0 4px 0; font-size: 14px; color: #fff; }
+.summary-text p { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.detection-item { display: flex; justify-content: space-between; padding: 10px 15px; background: rgba(255, 95, 86, 0.05); border-left: 3px solid #ff5f56; margin-bottom: 8px; border-radius: 0 8px 8px 0; }
+.detection-rule { font-size: 12px; font-weight: 600; color: #ff5f56; }
+.detection-desc { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+
+.breakdown-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.breakdown-header { display: flex; align-items: center; gap: 10px; padding: 15px 20px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.breakdown-header svg { width: 18px; height: 18px; color: #00d4ff; }
+.breakdown-body { padding: 20px; }
+.breakdown-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+.breakdown-label { display: flex; align-items: center; gap: 8px; width: 140px; font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+.breakdown-icon { font-size: 16px; }
+.breakdown-bar { flex: 1; height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden; }
+.breakdown-fill { height: 100%; background: #ff5f56; border-radius: 4px; transition: width 0.5s ease; }
+.breakdown-fill.yellow { background: #ffbd2e; }
+.breakdown-fill.cyan { background: #00d4ff; }
+.breakdown-count { font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.8); width: 50px; text-align: right; }
+
+.terminal-panel { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; }
+.terminal-header { display: flex; align-items: center; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.terminal-dots { display: flex; gap: 6px; margin-right: 15px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27ca40; }
+.terminal-title { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 12px; color: rgba(255, 255, 255, 0.5); }
+.terminal-title svg { width: 14px; height: 14px; }
+.btn-clear { padding: 5px; background: transparent; border: none; color: rgba(255, 255, 255, 0.4); cursor: pointer; }
+.btn-clear svg { width: 16px; height: 16px; }
+.btn-clear:hover { color: #ff5f56; }
+.terminal-body { height: 200px; overflow-y: auto; padding: 15px; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; }
+.terminal-line { margin-bottom: 6px; display: flex; gap: 8px; }
+.terminal-line .prompt { color: #00ff88; font-weight: 600; }
+.terminal-line.error .prompt { color: #ff5f56; }
+.terminal-line.warning .prompt { color: #ffbd2e; }
+.terminal-line.success .prompt { color: #27ca40; }
+.terminal-line span:last-child { color: rgba(255, 255, 255, 0.8); }
+.terminal-divider { border-top: 1px dashed rgba(255, 255, 255, 0.1); margin: 10px 0; }
+.divider { color: rgba(255, 255, 255, 0.2); }
+
+.empty-state { text-align: center; color: rgba(255, 255, 255, 0.4); padding: 40px; }
+.empty-state svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.3; }
+.empty-state p { margin: 0; font-size: 14px; }
+.empty-state span { font-size: 12px; opacity: 0.7; }
+
+.reports-list { max-height: 300px; overflow-y: auto; }
+.report-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; margin-bottom: 10px; }
+.report-name { font-size: 13px; color: #fff; font-weight: 500; }
+.report-date { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+.report-risk { font-size: 10px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+.report-risk.clean { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+.report-risk.medium { background: rgba(255, 189, 46, 0.2); color: #ffbd2e; }
+.report-risk.high { background: rgba(255, 95, 86, 0.2); color: #ff5f56; }
+</style>
 {% endblock %}

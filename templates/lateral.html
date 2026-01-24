@@ -1,609 +1,950 @@
 {% extends "base.html" %}
-
-{% block title %}Lateral Movement Chain{% endblock %}
-
 {% block body %}
-<div class="container-fluid mt-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2><i class="fas fa-project-diagram"></i> Lateral Movement Chain</h2>
-            <p class="text-muted">Impacket-based lateral movement with credential harvesting and pivot chain execution</p>
+<div class="main-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="logo-text">SHADOW<span class="accent">ARSENAL</span></span>
+            </div>
         </div>
-    </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>DASHBOARD</span></a></li>
+            <li class="nav-item"><a href="/kerberos" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span>KERBEROS</span></a></li>
+            <li class="nav-item"><a href="/relay/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8"/><path d="M12 8l4 4-4 4"/><circle cx="12" cy="12" r="10"/></svg><span>NTLM RELAY</span></a></li>
+            <li class="nav-item"><a href="/evasion/" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><span>EVASION TEST</span></a></li>
+            <li class="nav-item"><a href="/lateral/" class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 3l-7 7"/><path d="M3 3l7 7"/><path d="M16 21h5v-5"/><path d="M8 21H3v-5"/><path d="M21 21l-7-7"/><path d="M3 21l7-7"/></svg><span>LATERAL MOVE</span></a></li>
+            <li class="nav-item"><a href="/c2" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3H6a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3V6a3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3h12a3 3 0 003-3 3 3 0 00-3-3z"/></svg><span>C2 IMPLANT</span></a></li>
+            <li class="nav-item"><a href="/exploit" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>EXPLOIT</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="status-indicator online"><span class="status-dot"></span><span>CHAIN READY</span></div>
+        </div>
+    </nav>
 
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Successful Pivots</h5>
-                    <h2 id="stat-success">{{ recent_movements|selectattr('status', 'eq', 'success')|list|length }}</h2>
+    <!-- Main Content -->
+    <main class="content-area">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 3h5v5"/>
+                            <path d="M8 3H3v5"/>
+                            <path d="M21 3l-7 7"/>
+                            <path d="M3 3l7 7"/>
+                            <path d="M16 21h5v-5"/>
+                            <path d="M8 21H3v-5"/>
+                            <path d="M21 21l-7-7"/>
+                            <path d="M3 21l7-7"/>
+                        </svg>
+                        <span>LATERAL MOVEMENT CHAIN</span>
+                    </h1>
+                    <p class="page-subtitle">Multi-hop lateral movement with WMI, PSExec, DCOM, and credential harvesting</p>
+                </div>
+                <div class="header-right">
+                    <div class="quick-stats">
+                        <div class="quick-stat blue">
+                            <span class="stat-value" id="chainCount">0</span>
+                            <span class="stat-label">Active Chains</span>
+                        </div>
+                        <div class="quick-stat purple">
+                            <span class="stat-value" id="hopCount">0</span>
+                            <span class="stat-label">Total Hops</span>
+                        </div>
+                        <div class="quick-stat green">
+                            <span class="stat-value" id="credsCount">0</span>
+                            <span class="stat-label">Credentials</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Failed Attempts</h5>
-                    <h2 id="stat-failed">{{ recent_movements|selectattr('status', 'eq', 'failed')|list|length }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Active Chains</h5>
-                    <h2 id="stat-chains">{{ chains|length }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title">Available Creds</h5>
-                    <h2 id="stat-creds">-</h2>
-                </div>
-            </div>
-        </div>
-    </div>
+        </header>
 
-    <div class="row">
-        <!-- Left Panel: Chain Configuration -->
-        <div class="col-md-6">
-            <!-- Quick Jump -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <i class="fas fa-bolt"></i> Quick Jump
-                    <small class="float-end">Single target lateral movement</small>
+        <!-- Info Banner -->
+        <section class="info-banner blue">
+            <div class="info-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+            </div>
+            <div class="info-content">
+                <h3>Lateral Movement Methods</h3>
+                <div class="info-items">
+                    <div class="info-item"><span class="badge blue">WMI</span><span>Windows Management Instrumentation - stealthy process execution</span></div>
+                    <div class="info-item"><span class="badge purple">PSEXEC</span><span>PsExec-style service creation for command execution</span></div>
+                    <div class="info-item"><span class="badge cyan">DCOM</span><span>Distributed COM objects for remote execution</span></div>
+                    <div class="info-item"><span class="badge orange">WINRM</span><span>Windows Remote Management for PowerShell remoting</span></div>
                 </div>
-                <div class="card-body">
-                    <form id="quick-jump-form">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Target</label>
-                                    <input type="text" class="form-control" id="qj-target" placeholder="192.168.1.50" required>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <section class="tabs-section">
+            <div class="tabs-nav">
+                <button class="tab-btn active blue" data-tab="chain">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    <span>Chain Builder</span>
+                </button>
+                <button class="tab-btn purple" data-tab="quick">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span>Quick Jump</span>
+                </button>
+                <button class="tab-btn green" data-tab="creds">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <span>Credentials</span>
+                </button>
+                <button class="tab-btn cyan" data-tab="discover">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Discovery</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Forms Column -->
+            <div class="forms-column">
+                <!-- Chain Builder Panel -->
+                <div class="form-panel" id="chain-panel">
+                    <div class="panel-header blue">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Chain Builder</h2>
+                            <p>Build multi-hop lateral movement chains</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="chain-builder">
+                            <div class="chain-nodes" id="chainNodes">
+                                <div class="chain-node source">
+                                    <div class="node-icon">🏠</div>
+                                    <div class="node-info">
+                                        <span class="node-label">Source</span>
+                                        <input type="text" id="sourceHost" class="node-input" placeholder="Current host">
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Method</label>
-                                    <select class="form-select" id="qj-method">
-                                        <option value="wmiexec" selected>WMIExec</option>
-                                        <option value="psexec">PsExec</option>
-                                        <option value="smbexec">SMBExec</option>
-                                        <option value="dcomexec">DCOMExec</option>
-                                        <option value="atexec">AtExec</option>
+                                <div class="chain-connector">
+                                    <div class="connector-line"></div>
+                                    <select class="connector-method" id="method1">
+                                        <option value="wmi">WMI</option>
+                                        <option value="psexec">PSExec</option>
+                                        <option value="dcom">DCOM</option>
+                                        <option value="winrm">WinRM</option>
                                     </select>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Domain</label>
-                                    <input type="text" class="form-control" id="qj-domain" placeholder="CORP">
+                                <div class="chain-node target">
+                                    <div class="node-icon">🎯</div>
+                                    <div class="node-info">
+                                        <span class="node-label">Target 1</span>
+                                        <input type="text" id="target1" class="node-input" placeholder="10.10.10.50">
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
+                            <button class="btn-add-hop" onclick="addHop()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Add Hop
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Credentials</label>
+                            <select id="chainCreds" class="form-input blue">
+                                <option value="">Select credentials...</option>
+                                <option value="current">Current Session</option>
+                                <option value="custom">Custom Credentials</option>
+                            </select>
+                        </div>
+
+                        <div id="customCredsGroup" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-group">
                                     <label class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="qj-username" placeholder="admin" required>
+                                    <input type="text" id="chainUser" class="form-input blue" placeholder="DOMAIN\\user">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Password/Hash</label>
+                                    <input type="password" id="chainPass" class="form-input blue" placeholder="Password or NTLM hash">
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="qj-password" placeholder="P@ssw0rd">
-                                </div>
-                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">NT Hash (optional)</label>
-                            <input type="text" class="form-control font-monospace" id="qj-nthash" placeholder="aad3b435b51404eeaad3b435b51404ee:...">
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Command to Execute</label>
+                            <input type="text" id="chainCommand" class="form-input blue" placeholder="whoami /all">
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Command (optional)</label>
-                            <input type="text" class="form-control font-monospace" id="qj-command" placeholder="whoami /all">
+
+                        <div class="chain-options">
+                            <label class="option-toggle">
+                                <input type="checkbox" id="harvestCreds" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Harvest credentials at each hop</span>
+                            </label>
+                            <label class="option-toggle">
+                                <input type="checkbox" id="cleanupTraces">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Clean up traces after execution</span>
+                            </label>
                         </div>
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="qj-opsec">
-                                <label class="form-check-label"><i class="fas fa-shield-alt text-success"></i> OPSEC Mode (IP Rotation via AWS/DO Proxy)</label>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-play"></i> Execute Jump
+
+                        <button class="btn-submit blue" onclick="executeChain()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Execute Chain
                         </button>
-                    </form>
+                    </div>
+                </div>
+
+                <!-- Quick Jump Panel -->
+                <div class="form-panel hidden" id="quick-panel">
+                    <div class="panel-header purple">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Quick Jump</h2>
+                            <p>Single-hop lateral movement execution</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="method-cards">
+                            <div class="method-card selected" data-method="wmi">
+                                <div class="method-icon">⚡</div>
+                                <h4>WMIExec</h4>
+                                <p>Stealthy WMI execution</p>
+                            </div>
+                            <div class="method-card" data-method="psexec">
+                                <div class="method-icon">🔧</div>
+                                <h4>PSExec</h4>
+                                <p>Service-based execution</p>
+                            </div>
+                            <div class="method-card" data-method="dcom">
+                                <div class="method-icon">🌐</div>
+                                <h4>DCOM</h4>
+                                <p>COM object execution</p>
+                            </div>
+                            <div class="method-card" data-method="winrm">
+                                <div class="method-icon">🔌</div>
+                                <h4>WinRM</h4>
+                                <p>PowerShell remoting</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/></svg>Target Host</label>
+                            <input type="text" id="quickTarget" class="form-input purple" placeholder="10.10.10.50 or hostname">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" id="quickUser" class="form-input purple" placeholder="DOMAIN\\user">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Password/Hash</label>
+                                <input type="password" id="quickPass" class="form-input purple" placeholder="Password or NTLM">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/></svg>Command</label>
+                            <input type="text" id="quickCommand" class="form-input purple" placeholder="whoami">
+                        </div>
+
+                        <button class="btn-submit purple" onclick="quickJump()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            Execute
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Credentials Panel -->
+                <div class="form-panel hidden" id="creds-panel">
+                    <div class="panel-header green">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Credential Store</h2>
+                            <p>Harvested credentials from lateral movement</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="creds-stats">
+                            <div class="creds-stat"><span class="creds-stat-value" id="ntlmCount">0</span><span class="creds-stat-label">NTLM Hashes</span></div>
+                            <div class="creds-stat"><span class="creds-stat-value" id="plainCount">0</span><span class="creds-stat-label">Plaintext</span></div>
+                            <div class="creds-stat"><span class="creds-stat-value" id="ticketCount">0</span><span class="creds-stat-label">Tickets</span></div>
+                        </div>
+
+                        <div class="creds-table-container">
+                            <table class="creds-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Domain</th>
+                                        <th>Type</th>
+                                        <th>Source</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="credsTbody">
+                                    <tr class="empty-row">
+                                        <td colspan="5">
+                                            <div class="empty-state">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                                                <p>No credentials harvested yet</p>
+                                                <span>Execute lateral movement to harvest</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn-submit green" onclick="refreshCreds()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/></svg>
+                                Refresh
+                            </button>
+                            <button class="btn-secondary" onclick="dumpCreds()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Dump SAM/LSA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discovery Panel -->
+                <div class="form-panel hidden" id="discover-panel">
+                    <div class="panel-header cyan">
+                        <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+                        <div class="panel-title">
+                            <h2>Network Discovery</h2>
+                            <p>Discover targets for lateral movement</p>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="discovery-options">
+                            <label class="discovery-card selected" data-type="ad">
+                                <input type="radio" name="discType" value="ad" checked>
+                                <span class="discovery-icon">🏢</span>
+                                <span class="discovery-name">AD Computers</span>
+                            </label>
+                            <label class="discovery-card" data-type="subnet">
+                                <input type="radio" name="discType" value="subnet">
+                                <span class="discovery-icon">🌐</span>
+                                <span class="discovery-name">Subnet Scan</span>
+                            </label>
+                            <label class="discovery-card" data-type="sessions">
+                                <input type="radio" name="discType" value="sessions">
+                                <span class="discovery-icon">👥</span>
+                                <span class="discovery-name">User Sessions</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Target Range / Domain</label>
+                            <input type="text" id="discTarget" class="form-input cyan" placeholder="CORP.LOCAL or 10.10.10.0/24">
+                        </div>
+
+                        <button class="btn-submit cyan" onclick="runDiscovery()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Start Discovery
+                        </button>
+
+                        <div class="discovery-results" id="discoveryResults">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Chain Configuration -->
-            <div class="card mb-4">
-                <div class="card-header bg-danger text-white">
-                    <i class="fas fa-link"></i> Chain Attack
-                    <small class="float-end">Multi-hop lateral movement</small>
+            <!-- Terminal & Visualization Column -->
+            <div class="terminal-column">
+                <!-- Network Visualization -->
+                <div class="network-panel">
+                    <div class="network-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="19" cy="12" r="3"/><circle cx="5" cy="12" r="3"/><circle cx="12" cy="19" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8.5" y1="6.5" x2="5.5" y2="9.5"/><line x1="15.5" y1="6.5" x2="18.5" y2="9.5"/></svg>
+                        <span>Network Topology</span>
+                    </div>
+                    <div class="network-body" id="networkVisualization">
+                        <div class="network-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="19" cy="12" r="3"/><circle cx="5" cy="12" r="3"/><circle cx="12" cy="19" r="3"/></svg>
+                            <p>Execute a chain to visualize network path</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form id="chain-form">
-                        <div class="mb-3">
-                            <label class="form-label">Initial Target (Foothold)</label>
-                            <input type="text" class="form-control" id="chain-initial" placeholder="192.168.1.10" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Target Hosts (one per line)</label>
-                            <textarea class="form-control font-monospace" id="chain-targets" rows="4" placeholder="192.168.1.20&#10;192.168.1.30&#10;dc01.corp.local"></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Domain</label>
-                                    <input type="text" class="form-control" id="chain-domain" placeholder="CORP">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="chain-username" placeholder="admin">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="chain-password">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Methods to Try</label>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="method-wmiexec" value="wmiexec" checked>
-                                <label class="form-check-label">WMIExec</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="method-psexec" value="psexec" checked>
-                                <label class="form-check-label">PsExec</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="method-smbexec" value="smbexec" checked>
-                                <label class="form-check-label">SMBExec</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="method-dcomexec" value="dcomexec">
-                                <label class="form-check-label">DCOMExec</label>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="chain-dump-creds" checked>
-                                <label class="form-check-label">Dump credentials on each hop (Hash Thief mode)</label>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="chain-opsec">
-                                <label class="form-check-label"><i class="fas fa-shield-alt text-success"></i> OPSEC Mode (IP Rotation via AWS/DO Proxy)</label>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100">
-                            <i class="fas fa-project-diagram"></i> Execute Chain Attack
-                        </button>
-                    </form>
-                </div>
-            </div>
 
-            <!-- Network Discovery -->
-            <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <i class="fas fa-search"></i> Network Discovery
-                </div>
-                <div class="card-body">
-                    <form id="discover-form">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="mb-3">
-                                    <label class="form-label">Subnet (CIDR)</label>
-                                    <input type="text" class="form-control" id="discover-subnet" placeholder="192.168.1.0/24">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Ports</label>
-                                    <input type="text" class="form-control" id="discover-ports" value="445,139">
-                                </div>
-                            </div>
+                <!-- Terminal Output -->
+                <div class="terminal-panel">
+                    <div class="terminal-header">
+                        <div class="terminal-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                        <div class="terminal-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg><span>Execution Output</span></div>
+                        <button class="btn-clear" onclick="clearTerminal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button>
+                    </div>
+                    <div class="terminal-body" id="terminal">
+                        <div class="terminal-content" id="terminal-content">
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>Lateral Movement Engine Ready</span></div>
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>Impacket modules loaded</span></div>
+                            <div class="terminal-line info"><span class="prompt">[*]</span><span>Available methods: WMI, PSExec, DCOM, WinRM</span></div>
+                            <div class="terminal-divider"></div>
                         </div>
-                        <button type="submit" class="btn btn-secondary w-100">
-                            <i class="fas fa-radar"></i> Discover Targets
-                        </button>
-                    </form>
-                    <div id="discovered-targets" class="mt-3" style="display:none;">
-                        <h6>Discovered Targets:</h6>
-                        <ul id="discovered-list" class="list-group list-group-flush"></ul>
+                    </div>
+                </div>
+
+                <!-- Execution Progress -->
+                <div class="progress-panel">
+                    <div class="progress-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        <span>Chain Progress</span>
+                    </div>
+                    <div class="progress-body" id="chainProgress">
+                        <div class="progress-empty">No active chain execution</div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Right Panel: Results & Visualization -->
-        <div class="col-md-6">
-            <!-- Chain Visualization -->
-            <div class="card mb-4">
-                <div class="card-header bg-dark text-white">
-                    <i class="fas fa-sitemap"></i> Chain Visualization
-                </div>
-                <div class="card-body">
-                    <div id="chain-visual" style="min-height: 200px; background: #1a1a2e; border-radius: 8px; padding: 20px;">
-                        <div class="text-center text-muted py-5" id="chain-placeholder">
-                            <i class="fas fa-project-diagram fa-3x mb-3"></i>
-                            <p>Execute a chain attack to see the pivot path visualization</p>
-                        </div>
-                        <div id="chain-nodes" style="display:none;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Live Output -->
-            <div class="card mb-4">
-                <div class="card-header bg-dark text-white">
-                    <i class="fas fa-terminal"></i> Live Output
-                    <button class="btn btn-sm btn-outline-light float-end" onclick="clearOutput()">Clear</button>
-                </div>
-                <div class="card-body p-0">
-                    <pre id="live-output" class="bg-dark text-success p-3 m-0 font-monospace" style="height: 300px; overflow-y: auto; font-size: 12px;">[*] Ready for lateral movement operations...</pre>
-                </div>
-            </div>
-
-            <!-- Recent Movements -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-history"></i> Recent Movements
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-dark sticky-top">
-                                <tr>
-                                    <th>Source</th>
-                                    <th>Target</th>
-                                    <th>Method</th>
-                                    <th>User</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="movements-table">
-                                {% for m in recent_movements %}
-                                <tr>
-                                    <td class="font-monospace small">{{ m.source }}</td>
-                                    <td class="font-monospace small">{{ m.target }}</td>
-                                    <td><span class="badge bg-info">{{ m.method }}</span></td>
-                                    <td class="small">{{ m.username }}</td>
-                                    <td>
-                                        {% if m.status == 'success' %}
-                                        <span class="badge bg-success">Success</span>
-                                        {% else %}
-                                        <span class="badge bg-danger">Failed</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">No recent movements</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </main>
 </div>
-
-<!-- Credential Modal -->
-<div class="modal fade" id="credModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-key"></i> Available Credentials</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-sm" id="creds-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Password</th>
-                            <th>Source</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.chain-node {
-    display: inline-block;
-    padding: 10px 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 8px;
-    margin: 5px;
-    font-family: monospace;
-    font-size: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-}
-.chain-node.success {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-}
-.chain-node.failed {
-    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-}
-.chain-arrow {
-    display: inline-block;
-    color: #4a90d9;
-    margin: 0 10px;
-    font-size: 20px;
-}
-.output-line-success { color: #38ef7d; }
-.output-line-error { color: #f45c43; }
-.output-line-info { color: #4a90d9; }
-</style>
 
 <script>
-// Utility functions
-function appendOutput(message, type = 'info') {
-    const output = document.getElementById('live-output');
-    const timestamp = new Date().toLocaleTimeString();
-    const colorClass = type === 'success' ? 'output-line-success' : 
-                       type === 'error' ? 'output-line-error' : 'output-line-info';
-    output.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
-    output.scrollTop = output.scrollHeight;
-}
+let currentTab = 'chain';
+let selectedMethod = 'wmi';
+let hopCount = 1;
 
-function clearOutput() {
-    document.getElementById('live-output').innerHTML = '[*] Output cleared\n';
-}
-
-function updateChainVisualization(results) {
-    const container = document.getElementById('chain-nodes');
-    const placeholder = document.getElementById('chain-placeholder');
-    
-    placeholder.style.display = 'none';
-    container.style.display = 'block';
-    container.innerHTML = '';
-    
-    if (results.visited_hosts) {
-        // Hash thief pattern result
-        results.visited_hosts.forEach((host, index) => {
-            const status = results.pivot_path.find(p => p.to === host) ? 'success' : '';
-            container.innerHTML += `<div class="chain-node ${status}">${host}</div>`;
-            if (index < results.visited_hosts.length - 1) {
-                container.innerHTML += `<span class="chain-arrow">→</span>`;
-            }
-        });
-    } else if (Array.isArray(results)) {
-        // Pivot chain result
-        results.forEach((step, index) => {
-            const status = step.success ? 'success' : 'failed';
-            container.innerHTML += `<div class="chain-node ${status}">${step.target}</div>`;
-            if (index < results.length - 1) {
-                container.innerHTML += `<span class="chain-arrow">→</span>`;
-            }
-        });
-    }
-}
-
-function addMovementRow(movement) {
-    const tbody = document.getElementById('movements-table');
-    const statusBadge = movement.status === 'success' 
-        ? '<span class="badge bg-success">Success</span>'
-        : '<span class="badge bg-danger">Failed</span>';
-    
-    const row = `<tr>
-        <td class="font-monospace small">${movement.source || 'local'}</td>
-        <td class="font-monospace small">${movement.target}</td>
-        <td><span class="badge bg-info">${movement.method}</span></td>
-        <td class="small">${movement.username}</td>
-        <td>${statusBadge}</td>
-    </tr>`;
-    
-    tbody.insertAdjacentHTML('afterbegin', row);
-}
-
-// Quick Jump Form
-document.getElementById('quick-jump-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const opsecEnabled = document.getElementById('qj-opsec').checked;
-    
-    const data = {
-        target: document.getElementById('qj-target').value,
-        username: document.getElementById('qj-username').value,
-        password: document.getElementById('qj-password').value,
-        domain: document.getElementById('qj-domain').value,
-        nt_hash: document.getElementById('qj-nthash').value,
-        method: document.getElementById('qj-method').value,
-        command: document.getElementById('qj-command').value,
-        opsec: opsecEnabled
-    };
-    
-    const opsecLabel = opsecEnabled ? ' [OPSEC]' : '';
-    appendOutput(`Attempting ${data.method} on ${data.target}${opsecLabel}...`, 'info');
-    if (opsecEnabled) {
-        appendOutput('OPSEC Mode: Traffic routed through AWS/DO proxy with IP rotation', 'info');
-    }
-    
-    try {
-        const response = await fetch('/lateral/quick-jump', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            appendOutput(`SUCCESS: ${data.method} on ${data.target}`, 'success');
-            if (result.output) {
-                appendOutput(`Output:\n${result.output}`, 'info');
-            }
-            addMovementRow({
-                source: 'local',
-                target: data.target,
-                method: data.method,
-                username: data.username,
-                status: 'success'
-            });
-        } else {
-            appendOutput(`FAILED: ${result.error || 'Unknown error'}`, 'error');
-            addMovementRow({
-                source: 'local',
-                target: data.target,
-                method: data.method,
-                username: data.username,
-                status: 'failed'
-            });
-        }
-    } catch (err) {
-        appendOutput(`Error: ${err.message}`, 'error');
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    initTabs();
+    initMethodCards();
+    initDiscoveryCards();
+    initCredsSelect();
 });
 
-// Chain Form
-document.getElementById('chain-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const methods = [];
-    if (document.getElementById('method-wmiexec').checked) methods.push('wmiexec');
-    if (document.getElementById('method-psexec').checked) methods.push('psexec');
-    if (document.getElementById('method-smbexec').checked) methods.push('smbexec');
-    if (document.getElementById('method-dcomexec').checked) methods.push('dcomexec');
-    
-    const targets = document.getElementById('chain-targets').value
-        .split('\n')
-        .map(t => t.trim())
-        .filter(t => t.length > 0);
-    
-    const opsecEnabled = document.getElementById('chain-opsec').checked;
-    
-    const data = {
-        initial_target: document.getElementById('chain-initial').value,
-        targets: targets,
-        credentials: {
-            username: document.getElementById('chain-username').value,
-            password: document.getElementById('chain-password').value,
-            domain: document.getElementById('chain-domain').value
-        },
-        methods: methods,
-        options: {
-            dump_creds: document.getElementById('chain-dump-creds').checked,
-            opsec: opsecEnabled
-        }
-    };
-    
-    const opsecLabel = opsecEnabled ? ' [OPSEC MODE]' : '';
-    appendOutput(`Starting chain attack from ${data.initial_target}${opsecLabel}...`, 'info');
-    if (opsecEnabled) {
-        appendOutput('🛡️ OPSEC Mode: Traffic routed through AWS/DO proxy with IP rotation', 'info');
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(tab + '-panel').classList.remove('hidden');
+            currentTab = tab;
+            log('─'.repeat(40), 'dim');
+            log(`Switched to ${tab.toUpperCase()} mode`, 'info');
+        });
+    });
+}
+
+function initMethodCards() {
+    document.querySelectorAll('.method-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedMethod = this.dataset.method;
+            log(`Selected method: ${selectedMethod.toUpperCase()}`, 'info');
+        });
+    });
+}
+
+function initDiscoveryCards() {
+    document.querySelectorAll('.discovery-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.discovery-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+}
+
+function initCredsSelect() {
+    document.getElementById('chainCreds').addEventListener('change', function() {
+        document.getElementById('customCredsGroup').style.display = this.value === 'custom' ? 'block' : 'none';
+    });
+}
+
+function log(message, type = 'info') {
+    const terminal = document.getElementById('terminal-content');
+    const div = document.createElement('div');
+    div.className = `terminal-line ${type}`;
+    if (type === 'dim') {
+        div.innerHTML = `<span class="divider">${message}</span>`;
+    } else {
+        const prefixes = { success: '[+]', error: '[!]', warning: '[*]', info: '[*]' };
+        div.innerHTML = `<span class="prompt">${prefixes[type] || '[*]'}</span><span>${message}</span>`;
     }
-    appendOutput(`Targets: ${[data.initial_target, ...targets].join(' → ')}`, 'info');
-    appendOutput(`Methods: ${methods.join(', ')}`, 'info');
+    terminal.appendChild(div);
+    document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+}
+
+function clearTerminal() {
+    document.getElementById('terminal-content').innerHTML = `
+        <div class="terminal-line info"><span class="prompt">[*]</span><span>Terminal cleared</span></div>
+        <div class="terminal-divider"></div>
+    `;
+}
+
+function addHop() {
+    hopCount++;
+    const nodes = document.getElementById('chainNodes');
+    const html = `
+        <div class="chain-connector">
+            <div class="connector-line"></div>
+            <select class="connector-method" id="method${hopCount}">
+                <option value="wmi">WMI</option>
+                <option value="psexec">PSExec</option>
+                <option value="dcom">DCOM</option>
+                <option value="winrm">WinRM</option>
+            </select>
+        </div>
+        <div class="chain-node target">
+            <div class="node-icon">🎯</div>
+            <div class="node-info">
+                <span class="node-label">Target ${hopCount}</span>
+                <input type="text" id="target${hopCount}" class="node-input" placeholder="IP or hostname">
+            </div>
+            <button class="node-remove" onclick="removeHop(this)">×</button>
+        </div>
+    `;
+    nodes.insertAdjacentHTML('beforeend', html);
+    document.getElementById('hopCount').textContent = hopCount;
+    log(`Added hop ${hopCount} to chain`, 'info');
+}
+
+function removeHop(btn) {
+    const node = btn.closest('.chain-node');
+    const connector = node.previousElementSibling;
+    connector.remove();
+    node.remove();
+    hopCount--;
+    document.getElementById('hopCount').textContent = hopCount;
+    log('Removed hop from chain', 'warning');
+}
+
+async function executeChain() {
+    const targets = [];
+    const methods = [];
+    
+    for (let i = 1; i <= hopCount; i++) {
+        const target = document.getElementById(`target${i}`)?.value;
+        const method = document.getElementById(`method${i}`)?.value;
+        if (target) {
+            targets.push(target);
+            methods.push(method || 'wmi');
+        }
+    }
+    
+    if (targets.length === 0) { log('Add at least one target!', 'error'); return; }
+    
+    const command = document.getElementById('chainCommand').value || 'whoami';
+    
+    log('─'.repeat(40), 'dim');
+    log('Starting chain execution...', 'info');
+    log(`Targets: ${targets.join(' → ')}`, 'info');
+    log(`Methods: ${methods.join(' → ')}`, 'info');
+    
+    updateProgress(targets, 0);
     
     try {
         const response = await fetch('/lateral/chain', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                targets,
+                methods,
+                command,
+                username: document.getElementById('chainUser')?.value,
+                password: document.getElementById('chainPass')?.value,
+                harvest_creds: document.getElementById('harvestCreds')?.checked,
+                cleanup: document.getElementById('cleanupTraces')?.checked
+            })
         });
+        const data = await response.json();
         
-        const result = await response.json();
-        
-        if (result.success) {
-            appendOutput(`Chain complete! ${result.summary.successful}/${result.summary.total_hosts} hosts compromised`, 'success');
-            updateChainVisualization(result.results);
-            
-            // Update stats
-            document.getElementById('stat-success').textContent = 
-                parseInt(document.getElementById('stat-success').textContent) + result.summary.successful;
+        if (data.success) {
+            log('Chain execution complete!', 'success');
+            data.results.forEach((r, i) => {
+                updateProgress(targets, i + 1);
+                log(`[Hop ${i+1}] ${targets[i]}: ${r.status}`, r.status === 'success' ? 'success' : 'error');
+                if (r.output) log(r.output, 'info');
+            });
+            document.getElementById('chainCount').textContent = parseInt(document.getElementById('chainCount').textContent) + 1;
+            visualizeNetwork(targets, methods);
         } else {
-            appendOutput(`Chain failed: ${result.error}`, 'error');
+            log(`Chain failed: ${data.error}`, 'error');
         }
-    } catch (err) {
-        appendOutput(`Error: ${err.message}`, 'error');
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
     }
-});
+}
 
-// Network Discovery Form
-document.getElementById('discover-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
+async function quickJump() {
+    const target = document.getElementById('quickTarget').value;
+    const user = document.getElementById('quickUser').value;
+    const pass = document.getElementById('quickPass').value;
+    const command = document.getElementById('quickCommand').value || 'whoami';
     
-    const data = {
-        subnet: document.getElementById('discover-subnet').value,
-        ports: document.getElementById('discover-ports').value.split(',').map(p => parseInt(p.trim()))
-    };
+    if (!target) { log('Target required!', 'error'); return; }
     
-    appendOutput(`Discovering targets in ${data.subnet}...`, 'info');
+    log('─'.repeat(40), 'dim');
+    log(`Quick jump to ${target} via ${selectedMethod.toUpperCase()}`, 'info');
+    
+    try {
+        const response = await fetch('/lateral/quick-jump', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target,
+                method: selectedMethod,
+                username: user,
+                password: pass,
+                command
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            log('Execution successful!', 'success');
+            if (data.output) log(data.output, 'info');
+            document.getElementById('hopCount').textContent = parseInt(document.getElementById('hopCount').textContent) + 1;
+        } else {
+            log(`Failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+}
+
+async function refreshCreds() {
+    log('Refreshing credentials...', 'info');
+    try {
+        const response = await fetch('/lateral/creds');
+        const data = await response.json();
+        const tbody = document.getElementById('credsTbody');
+        
+        if (data.success && data.credentials && data.credentials.length > 0) {
+            tbody.innerHTML = data.credentials.map(c => `
+                <tr>
+                    <td><span class="creds-user">${c.username}</span></td>
+                    <td>${c.domain}</td>
+                    <td><span class="badge ${c.type === 'NTLM' ? 'purple' : 'green'}">${c.type}</span></td>
+                    <td>${c.source}</td>
+                    <td><button class="btn-mini" onclick="useCreds('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button></td>
+                </tr>
+            `).join('');
+            document.getElementById('credsCount').textContent = data.credentials.length;
+            log(`Loaded ${data.credentials.length} credentials`, 'success');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+}
+
+async function dumpCreds() {
+    log('Starting credential dump...', 'warning');
+    // Implementation would call /lateral/dump endpoint
+    log('SAM/LSA/Secrets dump initiated', 'info');
+}
+
+async function runDiscovery() {
+    const target = document.getElementById('discTarget').value;
+    const type = document.querySelector('input[name="discType"]:checked').value;
+    
+    if (!target) { log('Target required!', 'error'); return; }
+    
+    log('─'.repeat(40), 'dim');
+    log(`Running ${type} discovery on ${target}...`, 'info');
     
     try {
         const response = await fetch('/lateral/discover', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+            body: JSON.stringify({ target, type })
         });
+        const data = await response.json();
         
-        const result = await response.json();
-        
-        if (result.success) {
-            appendOutput(`Found ${result.count} potential targets`, 'success');
-            
-            const container = document.getElementById('discovered-targets');
-            const list = document.getElementById('discovered-list');
-            container.style.display = 'block';
-            list.innerHTML = '';
-            
-            result.targets.forEach(target => {
-                list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="font-monospace">${target.ip || target.hostname}</span>
-                    <button class="btn btn-sm btn-outline-primary" onclick="addToChain('${target.ip || target.hostname}')">
-                        Add to Chain
-                    </button>
-                </li>`;
-            });
-        } else {
-            appendOutput(`Discovery failed: ${result.error}`, 'error');
+        if (data.success && data.results) {
+            log(`Found ${data.results.length} targets`, 'success');
+            document.getElementById('discoveryResults').innerHTML = data.results.map(r => `
+                <div class="discovery-item">
+                    <span class="discovery-host">${r.hostname || r.ip}</span>
+                    <span class="discovery-os">${r.os || 'Unknown'}</span>
+                    <button class="btn-mini" onclick="addToChain('${r.ip}')">+</button>
+                </div>
+            `).join('');
         }
-    } catch (err) {
-        appendOutput(`Error: ${err.message}`, 'error');
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
     }
-});
+}
+
+function updateProgress(targets, current) {
+    const progress = document.getElementById('chainProgress');
+    progress.innerHTML = targets.map((t, i) => `
+        <div class="progress-hop ${i < current ? 'complete' : i === current ? 'active' : ''}">
+            <span class="hop-num">${i + 1}</span>
+            <span class="hop-target">${t}</span>
+            <span class="hop-status">${i < current ? '✓' : i === current ? '⟳' : '○'}</span>
+        </div>
+    `).join('<div class="progress-arrow">→</div>');
+}
+
+function visualizeNetwork(targets, methods) {
+    const viz = document.getElementById('networkVisualization');
+    const nodes = ['Source', ...targets];
+    viz.innerHTML = `
+        <div class="network-graph">
+            ${nodes.map((n, i) => `
+                <div class="network-node ${i === 0 ? 'source' : 'target'}">
+                    <div class="node-circle">${i === 0 ? '🏠' : '🎯'}</div>
+                    <span class="node-name">${n}</span>
+                </div>
+                ${i < nodes.length - 1 ? `<div class="network-edge"><span>${methods[i] || ''}</span></div>` : ''}
+            `).join('')}
+        </div>
+    `;
+}
+
+function useCreds(id) {
+    log(`Selected credentials: ${id}`, 'info');
+}
 
 function addToChain(ip) {
-    const textarea = document.getElementById('chain-targets');
-    if (textarea.value && !textarea.value.endsWith('\n')) {
-        textarea.value += '\n';
-    }
-    textarea.value += ip;
-    appendOutput(`Added ${ip} to chain targets`, 'info');
+    addHop();
+    document.getElementById(`target${hopCount}`).value = ip;
+    log(`Added ${ip} to chain`, 'success');
 }
-
-// Load credentials count on page load
-async function loadCredentialsCount() {
-    try {
-        const response = await fetch('/lateral/creds');
-        const result = await response.json();
-        document.getElementById('stat-creds').textContent = result.count || 0;
-    } catch (err) {
-        console.error('Failed to load credentials count:', err);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', loadCredentialsCount);
 </script>
+
+<style>
+.main-container { display: flex; min-height: 100vh; }
+
+.sidebar { width: 260px; background: rgba(15, 15, 25, 0.95); border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.logo { display: flex; align-items: center; gap: 12px; color: #fff; }
+.logo svg { width: 32px; height: 32px; color: #60a5fa; }
+.logo-text { font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+.logo-text .accent { color: #60a5fa; }
+.nav-menu { list-style: none; padding: 15px 10px; margin: 0; flex: 1; overflow-y: auto; }
+.nav-item { margin-bottom: 5px; }
+.nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 1px; border-radius: 8px; transition: all 0.3s ease; }
+.nav-link svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-link:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.nav-link.active { background: rgba(96, 165, 250, 0.1); color: #60a5fa; }
+.sidebar-footer { padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.status-indicator { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #666; }
+.status-indicator.online .status-dot { background: #00ff88; box-shadow: 0 0 10px #00ff88; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.content-area { flex: 1; margin-left: 260px; padding: 30px; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; }
+
+.page-header { margin-bottom: 25px; }
+.header-content { display: flex; justify-content: space-between; align-items: flex-start; }
+.page-title { display: flex; align-items: center; gap: 15px; font-size: 24px; font-weight: 700; color: #fff; margin: 0 0 8px 0; letter-spacing: 1px; }
+.page-title svg { width: 28px; height: 28px; color: #60a5fa; }
+.page-subtitle { color: rgba(255, 255, 255, 0.5); font-size: 13px; margin: 0 0 0 43px; }
+.quick-stats { display: flex; gap: 15px; }
+.quick-stat { text-align: center; padding: 15px 20px; border-radius: 10px; }
+.quick-stat.blue { background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.3); }
+.quick-stat.purple { background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); }
+.quick-stat.green { background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); }
+.quick-stat .stat-value { display: block; font-size: 28px; font-weight: 700; }
+.quick-stat.blue .stat-value { color: #60a5fa; }
+.quick-stat.purple .stat-value { color: #a78bfa; }
+.quick-stat.green .stat-value { color: #00ff88; }
+.quick-stat .stat-label { font-size: 11px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 1px; }
+
+.info-banner { display: flex; gap: 20px; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+.info-banner.blue { background: rgba(96, 165, 250, 0.05); border: 1px solid rgba(96, 165, 250, 0.2); }
+.info-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: rgba(96, 165, 250, 0.1); border-radius: 10px; flex-shrink: 0; }
+.info-icon svg { width: 24px; height: 24px; color: #60a5fa; }
+.info-content h3 { font-size: 14px; font-weight: 600; color: #60a5fa; margin: 0 0 12px 0; }
+.info-items { display: flex; flex-direction: column; gap: 8px; }
+.info-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+.badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.badge.blue { background: rgba(96, 165, 250, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4); }
+.badge.purple { background: rgba(167, 139, 250, 0.2); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.4); }
+.badge.cyan { background: rgba(0, 212, 255, 0.2); color: #00d4ff; border: 1px solid rgba(0, 212, 255, 0.4); }
+.badge.orange { background: rgba(255, 107, 53, 0.2); color: #ff6b35; border: 1px solid rgba(255, 107, 53, 0.4); }
+.badge.green { background: rgba(0, 255, 136, 0.2); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4); }
+
+.tabs-section { margin-bottom: 25px; }
+.tabs-nav { display: flex; gap: 10px; flex-wrap: wrap; }
+.tab-btn { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.6); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.tab-btn svg { width: 18px; height: 18px; }
+.tab-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.tab-btn.active.blue { background: rgba(96, 165, 250, 0.1); border-color: rgba(96, 165, 250, 0.4); color: #60a5fa; }
+.tab-btn.active.purple { background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.4); color: #a78bfa; }
+.tab-btn.active.green { background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.4); color: #00ff88; }
+.tab-btn.active.cyan { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.4); color: #00d4ff; }
+
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+
+.form-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; }
+.form-panel.hidden { display: none; }
+.panel-header { display: flex; align-items: center; gap: 15px; padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.panel-header.blue { background: linear-gradient(90deg, rgba(96, 165, 250, 0.1) 0%, transparent 100%); border-bottom-color: rgba(96, 165, 250, 0.2); }
+.panel-header.purple { background: linear-gradient(90deg, rgba(167, 139, 250, 0.1) 0%, transparent 100%); border-bottom-color: rgba(167, 139, 250, 0.2); }
+.panel-header.green { background: linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, transparent 100%); border-bottom-color: rgba(0, 255, 136, 0.2); }
+.panel-header.cyan { background: linear-gradient(90deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%); border-bottom-color: rgba(0, 212, 255, 0.2); }
+.panel-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+.panel-icon svg { width: 24px; height: 24px; }
+.panel-header.blue .panel-icon { background: rgba(96, 165, 250, 0.1); color: #60a5fa; }
+.panel-header.purple .panel-icon { background: rgba(167, 139, 250, 0.1); color: #a78bfa; }
+.panel-header.green .panel-icon { background: rgba(0, 255, 136, 0.1); color: #00ff88; }
+.panel-header.cyan .panel-icon { background: rgba(0, 212, 255, 0.1); color: #00d4ff; }
+.panel-title h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px 0; }
+.panel-header.blue .panel-title h2 { color: #60a5fa; }
+.panel-header.purple .panel-title h2 { color: #a78bfa; }
+.panel-header.green .panel-title h2 { color: #00ff88; }
+.panel-header.cyan .panel-title h2 { color: #00d4ff; }
+.panel-title p { font-size: 12px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+.panel-body { padding: 20px; }
+
+.chain-builder { margin-bottom: 20px; }
+.chain-nodes { display: flex; flex-direction: column; gap: 10px; }
+.chain-node { display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; position: relative; }
+.chain-node.source { border-color: rgba(0, 255, 136, 0.3); background: rgba(0, 255, 136, 0.05); }
+.chain-node.target { border-color: rgba(96, 165, 250, 0.3); background: rgba(96, 165, 250, 0.05); }
+.node-icon { font-size: 24px; }
+.node-info { flex: 1; }
+.node-label { display: block; font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; margin-bottom: 5px; }
+.node-input { width: 100%; padding: 8px 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; font-size: 13px; }
+.node-input:focus { outline: none; border-color: rgba(96, 165, 250, 0.5); }
+.node-remove { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; background: rgba(255, 95, 86, 0.2); border: none; border-radius: 4px; color: #ff5f56; cursor: pointer; font-size: 14px; line-height: 1; }
+.node-remove:hover { background: rgba(255, 95, 86, 0.4); }
+.chain-connector { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 5px 0; }
+.connector-line { flex: 1; height: 2px; background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.5), transparent); }
+.connector-method { padding: 6px 12px; background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 6px; color: #60a5fa; font-size: 11px; font-weight: 600; cursor: pointer; }
+.btn-add-hop { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; margin-top: 15px; background: rgba(255, 255, 255, 0.02); border: 2px dashed rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.5); font-size: 13px; cursor: pointer; transition: all 0.3s; }
+.btn-add-hop svg { width: 18px; height: 18px; }
+.btn-add-hop:hover { border-color: rgba(96, 165, 250, 0.5); color: #60a5fa; background: rgba(96, 165, 250, 0.05); }
+
+.form-group { margin-bottom: 18px; }
+.form-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px; }
+.form-label svg { width: 14px; height: 14px; color: rgba(255, 255, 255, 0.4); }
+.form-input { width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; font-size: 13px; transition: all 0.3s ease; }
+.form-input:focus { outline: none; background: rgba(0, 0, 0, 0.4); }
+.form-input.blue:focus { border-color: rgba(96, 165, 250, 0.5); box-shadow: 0 0 15px rgba(96, 165, 250, 0.1); }
+.form-input.purple:focus { border-color: rgba(167, 139, 250, 0.5); box-shadow: 0 0 15px rgba(167, 139, 250, 0.1); }
+.form-input.cyan:focus { border-color: rgba(0, 212, 255, 0.5); box-shadow: 0 0 15px rgba(0, 212, 255, 0.1); }
+.form-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.chain-options { margin-bottom: 20px; }
+.option-toggle { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; cursor: pointer; }
+.option-toggle input { display: none; }
+.toggle-slider { width: 40px; height: 22px; background: rgba(255, 255, 255, 0.1); border-radius: 11px; position: relative; transition: all 0.3s; }
+.toggle-slider::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; transition: all 0.3s; }
+.option-toggle input:checked + .toggle-slider { background: rgba(96, 165, 250, 0.5); }
+.option-toggle input:checked + .toggle-slider::after { left: 21px; background: #60a5fa; }
+.toggle-label { font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+
+.method-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+.method-card { padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.3s ease; }
+.method-card:hover { background: rgba(167, 139, 250, 0.05); border-color: rgba(167, 139, 250, 0.3); }
+.method-card.selected { background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.5); }
+.method-icon { font-size: 24px; margin-bottom: 8px; }
+.method-card h4 { font-size: 13px; font-weight: 600; color: #fff; margin: 0 0 4px 0; }
+.method-card p { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin: 0; }
+
+.creds-stats { display: flex; gap: 15px; margin-bottom: 20px; }
+.creds-stat { flex: 1; text-align: center; padding: 12px; background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 8px; }
+.creds-stat-value { display: block; font-size: 24px; font-weight: 700; color: #00ff88; }
+.creds-stat-label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+.creds-table-container { max-height: 200px; overflow-y: auto; margin-bottom: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
+.creds-table { width: 100%; border-collapse: collapse; }
+.creds-table th, .creds-table td { padding: 10px 12px; text-align: left; font-size: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.creds-table th { background: rgba(0, 0, 0, 0.3); color: rgba(255, 255, 255, 0.7); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; }
+.creds-table td { color: rgba(255, 255, 255, 0.8); }
+.creds-user { color: #00ff88; font-weight: 500; }
+
+.discovery-options { display: flex; gap: 12px; margin-bottom: 20px; }
+.discovery-card { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; cursor: pointer; transition: all 0.3s ease; text-align: center; }
+.discovery-card input { display: none; }
+.discovery-card:hover { background: rgba(0, 212, 255, 0.05); border-color: rgba(0, 212, 255, 0.3); }
+.discovery-card.selected { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.5); }
+.discovery-icon { font-size: 24px; margin-bottom: 8px; }
+.discovery-name { font-size: 12px; font-weight: 600; color: #fff; }
+.discovery-results { margin-top: 20px; max-height: 200px; overflow-y: auto; }
+.discovery-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; margin-bottom: 8px; }
+.discovery-host { font-size: 13px; color: #00d4ff; font-weight: 500; }
+.discovery-os { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+
+.btn-group { display: flex; gap: 10px; }
+.btn-submit { display: flex; align-items: center; justify-content: center; gap: 10px; flex: 1; padding: 14px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.btn-submit svg { width: 18px; height: 18px; }
+.btn-submit.blue { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); color: #fff; }
+.btn-submit.blue:hover { box-shadow: 0 5px 20px rgba(96, 165, 250, 0.4); transform: translateY(-2px); }
+.btn-submit.purple { background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); color: #fff; }
+.btn-submit.purple:hover { box-shadow: 0 5px 20px rgba(167, 139, 250, 0.4); transform: translateY(-2px); }
+.btn-submit.green { background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%); color: #000; }
+.btn-submit.green:hover { box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4); transform: translateY(-2px); }
+.btn-submit.cyan { background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); color: #000; }
+.btn-submit.cyan:hover { box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4); transform: translateY(-2px); }
+.btn-secondary { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.7); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.btn-secondary svg { width: 18px; height: 18px; }
+.btn-secondary:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.btn-mini { padding: 5px 8px; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 4px; color: #00ff88; cursor: pointer; transition: all 0.2s; }
+.btn-mini svg { width: 14px; height: 14px; }
+.btn-mini:hover { background: rgba(0, 255, 136, 0.2); }
+
+.network-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.network-header { display: flex; align-items: center; gap: 10px; padding: 15px 20px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.network-header svg { width: 18px; height: 18px; color: #60a5fa; }
+.network-body { padding: 30px; min-height: 150px; display: flex; align-items: center; justify-content: center; }
+.network-placeholder { text-align: center; color: rgba(255, 255, 255, 0.4); }
+.network-placeholder svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.3; }
+.network-graph { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.network-node { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.node-circle { width: 50px; height: 50px; background: rgba(96, 165, 250, 0.1); border: 2px solid rgba(96, 165, 250, 0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.network-node.source .node-circle { border-color: rgba(0, 255, 136, 0.5); background: rgba(0, 255, 136, 0.1); }
+.node-name { font-size: 11px; color: rgba(255, 255, 255, 0.7); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.network-edge { display: flex; align-items: center; padding: 0 10px; }
+.network-edge span { font-size: 10px; color: rgba(96, 165, 250, 0.7); text-transform: uppercase; }
+
+.terminal-panel { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.terminal-header { display: flex; align-items: center; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.terminal-dots { display: flex; gap: 6px; margin-right: 15px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27ca40; }
+.terminal-title { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 12px; color: rgba(255, 255, 255, 0.5); }
+.terminal-title svg { width: 14px; height: 14px; }
+.btn-clear { padding: 5px; background: transparent; border: none; color: rgba(255, 255, 255, 0.4); cursor: pointer; }
+.btn-clear svg { width: 16px; height: 16px; }
+.btn-clear:hover { color: #ff5f56; }
+.terminal-body { height: 250px; overflow-y: auto; padding: 15px; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; }
+.terminal-line { margin-bottom: 6px; display: flex; gap: 8px; }
+.terminal-line .prompt { color: #00ff88; font-weight: 600; }
+.terminal-line.error .prompt { color: #ff5f56; }
+.terminal-line.warning .prompt { color: #ffbd2e; }
+.terminal-line.success .prompt { color: #27ca40; }
+.terminal-line span:last-child { color: rgba(255, 255, 255, 0.8); }
+.terminal-divider { border-top: 1px dashed rgba(255, 255, 255, 0.1); margin: 10px 0; }
+.divider { color: rgba(255, 255, 255, 0.2); }
+
+.progress-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; }
+.progress-header { display: flex; align-items: center; gap: 10px; padding: 15px 20px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.progress-header svg { width: 18px; height: 18px; color: #a78bfa; }
+.progress-body { padding: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.progress-empty { color: rgba(255, 255, 255, 0.4); font-size: 13px; }
+.progress-hop { display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; }
+.progress-hop.active { border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.1); }
+.progress-hop.complete { border-color: rgba(0, 255, 136, 0.5); background: rgba(0, 255, 136, 0.1); }
+.hop-num { width: 20px; height: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.progress-hop.active .hop-num { background: rgba(0, 212, 255, 0.3); color: #00d4ff; }
+.progress-hop.complete .hop-num { background: rgba(0, 255, 136, 0.3); color: #00ff88; }
+.hop-target { font-size: 12px; color: rgba(255, 255, 255, 0.8); }
+.hop-status { font-size: 14px; }
+.progress-arrow { color: rgba(255, 255, 255, 0.3); }
+
+.empty-row td { padding: 40px; }
+.empty-state { text-align: center; color: rgba(255, 255, 255, 0.4); }
+.empty-state svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.3; }
+.empty-state p { margin: 0; font-size: 14px; }
+.empty-state span { font-size: 12px; opacity: 0.7; }
+</style>
 {% endblock %}
