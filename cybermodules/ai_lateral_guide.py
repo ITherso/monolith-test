@@ -925,14 +925,26 @@ Be concise and tactical.
             "blocked_count": len(blocked_techniques),
         }
 
-    def suggest_attack_path(self, start: str, goal: str) -> List[Dict]:
+    def suggest_attack_path(self, start: str, goal: str, 
+                           include_syscall_risk: bool = True) -> List[Dict]:
         """
         Suggest optimal attack path from start to goal
         Uses graph analysis and AI for path optimization
+        
+        Args:
+            start: Starting host
+            goal: Goal host
+            include_syscall_risk: Include syscall detection risk analysis
+        
+        Returns:
+            List of path steps with detection risk assessment
         """
         
         if not self.llm_engine:
-            return self._simple_path(start, goal)
+            path = self._simple_path(start, goal)
+            if include_syscall_risk:
+                path = self._add_syscall_risk_to_path(path)
+            return path
         
         context = {
             'start': start,
@@ -941,6 +953,23 @@ Be concise and tactical.
             'credentials': {c: self._cred_to_dict(intel) for c, intel in self.credentials.items()},
             'history': self.movement_history[-10:]  # Last 10 movements
         }
+        
+        # Enhanced prompt with syscall risk consideration
+        syscall_risk_section = ""
+        if include_syscall_risk:
+            syscall_risk_section = """
+6. Syscall Detection Risk:
+   - Consider EDR syscall monitoring (Sysmon Event ID 10, EDR hooks)
+   - Prefer techniques with low syscall detection risk
+   - Indirect syscalls reduce risk vs direct Win32 API calls
+   - LOTL techniques have lower syscall footprint
+   
+   Rate each step's syscall detection risk:
+   - LOW: LOTL techniques (WMI, PowerShell remoting)
+   - MEDIUM: Standard lateral movement (SMB, RPC)
+   - HIGH: Process injection requiring NtAllocateVirtualMemory, NtWriteVirtualMemory
+   - CRITICAL: Direct syscalls without obfuscation
+"""
         
         prompt = f"""
 Analyze this network state and suggest the optimal lateral movement path:
@@ -962,15 +991,186 @@ Suggest the optimal path considering:
 2. Credential reuse across hosts
 3. High-value intermediate targets
 4. Defense evasion requirements
+5. EDR/AV presence on targets
+{syscall_risk_section}
 
-Return as JSON array of steps with: target, method, credential, reasoning
+Return as JSON array of steps with:
+- target: target hostname
+- method: lateral movement technique
+- credential: credential to use
+- reasoning: why this step
+- syscall_risk: LOW/MEDIUM/HIGH/CRITICAL
+- edr_considerations: array of EDR evasion notes
+- recommended_syscall_technique: hells_gate/halos_gate/syswhispers3/lotl
 """
         
         try:
             response = self._query_llm(prompt)
-            return json.loads(response)
+            path = json.loads(response)
+            
+            # Enhance with programmatic risk analysis
+            if include_syscall_risk:
+                path = self._add_syscall_risk_to_path(path)
+            
+            return path
         except Exception:
-            return self._simple_path(start, goal)
+            path = self._simple_path(start, goal)
+            if include_syscall_risk:
+                path = self._add_syscall_risk_to_path(path)
+            return path
+    
+    def _add_syscall_risk_to_path(self, path: List[Dict]) -> List[Dict]:
+        """Add syscall detection risk analysis to each path step"""
+        
+        # Syscall risk mapping for different techniques
+        syscall_risk_map = {
+            # Low risk - LOTL / minimal syscalls
+            "wmi": {"risk": "LOW", "score": 0.15, "syscalls_needed": ["NtOpenProcess"]},
+            "wmiexec": {"risk": "LOW", "score": 0.15, "syscalls_needed": ["NtOpenProcess"]},
+            "psremoting": {"risk": "LOW", "score": 0.1, "syscalls_needed": []},
+            "winrm": {"risk": "LOW", "score": 0.1, "syscalls_needed": []},
+            "dcom": {"risk": "LOW", "score": 0.2, "syscalls_needed": ["NtOpenProcess"]},
+            "mshta": {"risk": "LOW", "score": 0.2, "syscalls_needed": []},
+            
+            # Medium risk - standard lateral movement
+            "psexec": {"risk": "MEDIUM", "score": 0.35, "syscalls_needed": ["NtCreateFile", "NtWriteFile", "NtCreateThreadEx"]},
+            "smbexec": {"risk": "MEDIUM", "score": 0.3, "syscalls_needed": ["NtCreateFile"]},
+            "atexec": {"risk": "MEDIUM", "score": 0.25, "syscalls_needed": []},
+            "schtaskexec": {"risk": "MEDIUM", "score": 0.25, "syscalls_needed": []},
+            
+            # High risk - process injection
+            "process_hollow": {"risk": "HIGH", "score": 0.6, "syscalls_needed": [
+                "NtCreateProcess", "NtAllocateVirtualMemory", "NtWriteVirtualMemory",
+                "NtSetContextThread", "NtResumeThread"
+            ]},
+            "dll_injection": {"risk": "HIGH", "score": 0.55, "syscalls_needed": [
+                "NtOpenProcess", "NtAllocateVirtualMemory", "NtWriteVirtualMemory",
+                "NtCreateThreadEx"
+            ]},
+            "thread_hijack": {"risk": "HIGH", "score": 0.65, "syscalls_needed": [
+                "NtOpenProcess", "NtOpenThread", "NtSuspendThread",
+                "NtSetContextThread", "NtResumeThread"
+            ]},
+            
+            # Critical risk - direct shellcode execution
+            "shellcode_inject": {"risk": "CRITICAL", "score": 0.8, "syscalls_needed": [
+                "NtAllocateVirtualMemory", "NtWriteVirtualMemory",
+                "NtProtectVirtualMemory", "NtCreateThreadEx"
+            ]},
+            "apc_injection": {"risk": "CRITICAL", "score": 0.75, "syscalls_needed": [
+                "NtAllocateVirtualMemory", "NtWriteVirtualMemory",
+                "NtQueueApcThread"
+            ]},
+        }
+        
+        for step in path:
+            method = step.get('method', '').lower()
+            
+            # Get risk info or default to medium
+            risk_info = syscall_risk_map.get(method, {
+                "risk": "MEDIUM",
+                "score": 0.4,
+                "syscalls_needed": []
+            })
+            
+            # Add syscall risk information
+            step['syscall_detection'] = {
+                'risk_level': risk_info['risk'],
+                'risk_score': risk_info['score'],
+                'syscalls_needed': risk_info['syscalls_needed'],
+                'edr_trigger_likelihood': self._calculate_edr_trigger(risk_info),
+                'mitigation_recommendations': self._get_syscall_mitigations(risk_info['risk']),
+            }
+            
+            # Recommend syscall technique based on risk
+            if risk_info['risk'] in ['HIGH', 'CRITICAL']:
+                step['recommended_syscall_config'] = {
+                    'technique': 'syswhispers3',
+                    'use_indirect': True,
+                    'jit_resolve': True,
+                    'add_jitter': True,
+                    'obfuscation_level': 'aggressive' if risk_info['risk'] == 'CRITICAL' else 'standard',
+                }
+            elif risk_info['risk'] == 'MEDIUM':
+                step['recommended_syscall_config'] = {
+                    'technique': 'halos_gate',
+                    'use_indirect': True,
+                    'jit_resolve': True,
+                    'add_jitter': False,
+                    'obfuscation_level': 'standard',
+                }
+            else:
+                step['recommended_syscall_config'] = {
+                    'technique': 'direct',
+                    'use_indirect': False,
+                    'jit_resolve': False,
+                    'add_jitter': False,
+                    'obfuscation_level': 'minimal',
+                }
+        
+        return path
+    
+    def _calculate_edr_trigger(self, risk_info: Dict) -> Dict:
+        """Calculate EDR trigger likelihood for different EDR products"""
+        base_score = risk_info['score']
+        syscalls = risk_info['syscalls_needed']
+        
+        # EDR-specific sensitivity
+        edr_sensitivity = {
+            'crowdstrike': 0.9,    # Very sensitive to syscall patterns
+            'defender_atp': 0.85,  # High sensitivity
+            'sentinelone': 0.8,    # High sensitivity
+            'carbon_black': 0.75,  # Medium-high
+            'elastic_edr': 0.7,    # Medium
+            'sysmon': 0.6,         # Medium (requires config)
+        }
+        
+        triggers = {}
+        for edr, sensitivity in edr_sensitivity.items():
+            # Higher sensitivity = more likely to trigger
+            trigger_chance = min(base_score * sensitivity, 0.95)
+            
+            # Specific syscall detection
+            high_risk_syscalls = ['NtAllocateVirtualMemory', 'NtWriteVirtualMemory', 
+                                  'NtCreateThreadEx', 'NtQueueApcThread']
+            for sc in syscalls:
+                if sc in high_risk_syscalls:
+                    trigger_chance = min(trigger_chance + 0.1, 0.95)
+            
+            triggers[edr] = round(trigger_chance, 2)
+        
+        return triggers
+    
+    def _get_syscall_mitigations(self, risk_level: str) -> List[str]:
+        """Get mitigation recommendations based on risk level"""
+        mitigations = {
+            'LOW': [
+                "Standard OPSEC sufficient",
+                "Consider timing-based evasion"
+            ],
+            'MEDIUM': [
+                "Use indirect syscalls (Hell's Gate/Halo's Gate)",
+                "Add execution jitter",
+                "Obfuscate payload (standard level)"
+            ],
+            'HIGH': [
+                "Use SysWhispers3 with indirect syscalls",
+                "Map fresh ntdll copy to avoid hooks",
+                "Use aggressive obfuscation",
+                "Consider LOTL alternatives",
+                "Add sleep masking between operations"
+            ],
+            'CRITICAL': [
+                "Use maximum obfuscation (paranoid level)",
+                "Implement sleep masking with Ekko/Foliage",
+                "Map fresh ntdll and unhook",
+                "Use indirect syscalls with JIT resolution",
+                "Consider module stomping",
+                "Implement hardware breakpoint evasion",
+                "STRONGLY consider LOTL alternative"
+            ]
+        }
+        return mitigations.get(risk_level, mitigations['MEDIUM'])
     
     def _build_analysis_context(self, current_host: str = None) -> Dict:
         """Build context for AI analysis"""

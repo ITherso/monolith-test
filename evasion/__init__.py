@@ -14,6 +14,8 @@ Modules:
 - fallback_channels: WebSocket/DNS/ICMP fallback
 - go_agent: Go-based cross-platform agent
 - rust_agent: Rust-based memory-safe agent
+- indirect_syscalls: Hell's Gate / Halo's Gate syscall evasion
+- multi_layer_obfuscation: Cobalt Strike UDRL-style obfuscation
 """
 
 from .sleep_obfuscation import SleepObfuscator, SleepMask
@@ -30,6 +32,18 @@ from .fallback_channels import (
 )
 from .go_agent import GoAgentGenerator, GoAgentConfig
 from .rust_agent import RustAgentGenerator, RustAgentConfig
+
+# NEW: Indirect Syscalls
+from .indirect_syscalls import (
+    SyscallTechnique, SyscallStatus, SyscallEntry, SyscallConfig,
+    SyscallResult, HellsGateResolver, IndirectSyscallExecutor, SyscallManager
+)
+
+# NEW: Multi-Layer Obfuscation
+from .multi_layer_obfuscation import (
+    ObfuscationLayer, ObfuscationLevel, LayerConfig, ObfuscationConfig,
+    ObfuscationResult, MultiLayerObfuscator, PayloadTransformer
+)
 
 __all__ = [
     # Sleep & Timing
@@ -75,4 +89,23 @@ __all__ = [
     'GoAgentConfig',
     'RustAgentGenerator',
     'RustAgentConfig',
+    
+    # Indirect Syscalls (NEW)
+    'SyscallTechnique',
+    'SyscallStatus',
+    'SyscallEntry',
+    'SyscallConfig',
+    'SyscallResult',
+    'HellsGateResolver',
+    'IndirectSyscallExecutor',
+    'SyscallManager',
+    
+    # Multi-Layer Obfuscation (NEW)
+    'ObfuscationLayer',
+    'ObfuscationLevel',
+    'LayerConfig',
+    'ObfuscationConfig',
+    'ObfuscationResult',
+    'MultiLayerObfuscator',
+    'PayloadTransformer',
 ]

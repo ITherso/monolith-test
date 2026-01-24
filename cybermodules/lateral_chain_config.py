@@ -2,6 +2,11 @@
 Lateral Movement Chain Configuration
 YAML-based configuration for lateral movement chains
 Supports target definitions, credential sets, method ordering, and AI-driven suggestions
+
+Enhanced with:
+- Obfuscation level configuration
+- Indirect syscall configuration
+- EDR evasion settings
 """
 
 import os
@@ -31,6 +36,54 @@ class CredentialType(Enum):
     KERBEROS_TICKET = "kerberos_ticket"
     SSH_KEY = "ssh_key"
     CERTIFICATE = "certificate"
+
+
+class ObfuscationLevel(Enum):
+    """Obfuscation levels for payloads"""
+    NONE = "none"                   # No obfuscation
+    MINIMAL = "minimal"             # Basic XOR + Base64
+    STANDARD = "standard"           # XOR + Compress + AES + Base64
+    AGGRESSIVE = "aggressive"       # All layers + metamorphic
+    PARANOID = "paranoid"          # Maximum obfuscation + anti-analysis
+
+
+class SyscallTechnique(Enum):
+    """Indirect syscall techniques"""
+    HELLS_GATE = "hells_gate"           # Original Hell's Gate
+    HALOS_GATE = "halos_gate"           # Halo's Gate (neighbor SSN)
+    TARTARUS_GATE = "tartarus_gate"     # Tartarus Gate (exception handling)
+    SYSWHISPERS2 = "syswhispers2"       # SysWhispers2 style
+    SYSWHISPERS3 = "syswhispers3"       # SysWhispers3 (indirect + dynamic)
+    FRESH_COPY = "fresh_copy"           # Map fresh ntdll copy
+    DIRECT = "direct"                   # Direct syscall (no indirection)
+
+
+@dataclass
+class SyscallConfig:
+    """Indirect syscall configuration"""
+    enabled: bool = True
+    technique: SyscallTechnique = SyscallTechnique.SYSWHISPERS3
+    use_indirect: bool = True           # Use indirect syscalls
+    use_fresh_ntdll: bool = False       # Map clean ntdll from disk
+    jit_resolve: bool = True            # Resolve SSN just-in-time
+    randomize_order: bool = True        # Randomize syscall order
+    add_jitter: bool = True             # Add timing jitter
+    encrypt_stubs: bool = True          # Encrypt syscall stubs in memory
+    detect_hooks: bool = True           # Detect ntdll hooks first
+
+
+@dataclass
+class AdvancedObfuscationConfig:
+    """Advanced obfuscation configuration"""
+    level: ObfuscationLevel = ObfuscationLevel.STANDARD
+    layers: List[str] = field(default_factory=lambda: ["xor_rolling", "zlib", "aes_gcm", "base64"])
+    random_layer_order: bool = False
+    add_junk_layers: bool = False
+    preserve_entropy: bool = True
+    target_entropy: float = 7.0
+    max_size_increase: float = 3.0
+    embed_key_in_payload: bool = True
+    anti_emulation: bool = True
 
 
 @dataclass
@@ -120,6 +173,15 @@ class LateralChainConfig:
     reflective_loader: bool = False
     sleep_between_jumps: int = 5
     
+    # Obfuscation settings (NEW)
+    obfuscation_level: ObfuscationLevel = ObfuscationLevel.STANDARD
+    obfuscation_config: Optional[AdvancedObfuscationConfig] = None
+    
+    # Syscall settings (NEW)
+    syscall_config: Optional[SyscallConfig] = None
+    use_indirect_syscalls: bool = True
+    syscall_technique: SyscallTechnique = SyscallTechnique.SYSWHISPERS3
+    
     # Beacon settings
     deploy_beacon: bool = False
     beacon_type: str = "python"  # python, go, rust
@@ -129,6 +191,16 @@ class LateralChainConfig:
     log_level: str = "info"
     save_loot: bool = True
     loot_path: str = "/tmp/loot"
+    
+    def __post_init__(self):
+        """Initialize default configs if not provided"""
+        if self.obfuscation_config is None:
+            self.obfuscation_config = AdvancedObfuscationConfig(level=self.obfuscation_level)
+        if self.syscall_config is None:
+            self.syscall_config = SyscallConfig(
+                enabled=self.use_indirect_syscalls,
+                technique=self.syscall_technique
+            )
     
     def get_credential_by_name(self, name: str) -> Optional[CredentialSet]:
         """Get credential set by name"""
@@ -148,6 +220,51 @@ class LateralChainConfig:
         """Get high-value targets (DCs, servers, etc.)"""
         hvt_tags = ['dc', 'domain_controller', 'server', 'admin', 'exchange', 'sql']
         return [t for t in self.targets if any(tag in hvt_tags for tag in t.tags)]
+    
+    def get_detection_risk(self) -> Dict[str, Any]:
+        """Calculate detection risk based on configuration"""
+        risk_score = 0.0
+        factors = []
+        
+        # Syscall detection risk
+        if self.use_indirect_syscalls:
+            if self.syscall_technique in [SyscallTechnique.SYSWHISPERS3, SyscallTechnique.HALOS_GATE]:
+                risk_score += 0.1
+                factors.append("Low syscall risk (indirect syscalls)")
+            elif self.syscall_technique == SyscallTechnique.DIRECT:
+                risk_score += 0.4
+                factors.append("Higher syscall risk (direct syscalls)")
+            else:
+                risk_score += 0.2
+                factors.append("Medium syscall risk")
+        else:
+            risk_score += 0.5
+            factors.append("High syscall risk (no indirect syscalls)")
+        
+        # Obfuscation impact
+        obf_risk = {
+            ObfuscationLevel.NONE: 0.5,
+            ObfuscationLevel.MINIMAL: 0.3,
+            ObfuscationLevel.STANDARD: 0.2,
+            ObfuscationLevel.AGGRESSIVE: 0.1,
+            ObfuscationLevel.PARANOID: 0.05,
+        }
+        risk_score += obf_risk.get(self.obfuscation_level, 0.3)
+        factors.append(f"Obfuscation: {self.obfuscation_level.value}")
+        
+        # Evasion profile
+        if self.evasion_profile == "paranoid":
+            risk_score -= 0.1
+        elif self.evasion_profile == "stealth":
+            risk_score -= 0.05
+        
+        return {
+            "overall_risk": min(max(risk_score, 0), 1.0),
+            "factors": factors,
+            "syscall_technique": self.syscall_technique.value,
+            "obfuscation_level": self.obfuscation_level.value,
+            "evasion_profile": self.evasion_profile,
+        }
 
 
 class LateralChainConfigLoader:
@@ -252,6 +369,14 @@ class LateralChainConfigLoader:
             evasion_profile=data.get('evasion', {}).get('profile', 'default'),
             reflective_loader=data.get('evasion', {}).get('reflective_loader', False),
             sleep_between_jumps=data.get('evasion', {}).get('sleep_between_jumps', 5),
+            # Obfuscation settings (NEW)
+            obfuscation_level=self._parse_obfuscation_level(data.get('obfuscation', {}).get('level', 'standard')),
+            obfuscation_config=self._parse_obfuscation_config(data.get('obfuscation', {})),
+            # Syscall settings (NEW)
+            use_indirect_syscalls=data.get('syscall', {}).get('enabled', True),
+            syscall_technique=self._parse_syscall_technique(data.get('syscall', {}).get('technique', 'syswhispers3')),
+            syscall_config=self._parse_syscall_config(data.get('syscall', {})),
+            # Beacon
             deploy_beacon=data.get('beacon', {}).get('deploy', False),
             beacon_type=data.get('beacon', {}).get('type', 'python'),
             beacon_config=data.get('beacon', {}).get('config', {}),
@@ -264,6 +389,54 @@ class LateralChainConfigLoader:
         self._log(f"Loaded chain config: {config.name} with {len(targets)} targets, {len(credentials)} creds")
         
         return config
+    
+    def _parse_obfuscation_level(self, level_str: str) -> ObfuscationLevel:
+        """Parse obfuscation level from string"""
+        try:
+            return ObfuscationLevel(level_str.lower())
+        except ValueError:
+            return ObfuscationLevel.STANDARD
+    
+    def _parse_syscall_technique(self, tech_str: str) -> SyscallTechnique:
+        """Parse syscall technique from string"""
+        try:
+            return SyscallTechnique(tech_str.lower())
+        except ValueError:
+            return SyscallTechnique.SYSWHISPERS3
+    
+    def _parse_obfuscation_config(self, data: Dict) -> AdvancedObfuscationConfig:
+        """Parse advanced obfuscation configuration"""
+        if not data:
+            return AdvancedObfuscationConfig()
+        
+        return AdvancedObfuscationConfig(
+            level=self._parse_obfuscation_level(data.get('level', 'standard')),
+            layers=data.get('layers', ["xor_rolling", "zlib", "aes_gcm", "base64"]),
+            random_layer_order=data.get('random_layer_order', False),
+            add_junk_layers=data.get('add_junk_layers', False),
+            preserve_entropy=data.get('preserve_entropy', True),
+            target_entropy=data.get('target_entropy', 7.0),
+            max_size_increase=data.get('max_size_increase', 3.0),
+            embed_key_in_payload=data.get('embed_key_in_payload', True),
+            anti_emulation=data.get('anti_emulation', True)
+        )
+    
+    def _parse_syscall_config(self, data: Dict) -> SyscallConfig:
+        """Parse syscall configuration"""
+        if not data:
+            return SyscallConfig()
+        
+        return SyscallConfig(
+            enabled=data.get('enabled', True),
+            technique=self._parse_syscall_technique(data.get('technique', 'syswhispers3')),
+            use_indirect=data.get('use_indirect', True),
+            use_fresh_ntdll=data.get('use_fresh_ntdll', False),
+            jit_resolve=data.get('jit_resolve', True),
+            randomize_order=data.get('randomize_order', True),
+            add_jitter=data.get('add_jitter', True),
+            encrypt_stubs=data.get('encrypt_stubs', True),
+            detect_hooks=data.get('detect_hooks', True)
+        )
     
     def _log(self, message: str):
         """Log to intel table"""
@@ -298,10 +471,53 @@ class LateralChainConfigLoader:
                 if cred_ref not in cred_names:
                     errors.append(f"Step references unknown credential: {cred_ref}")
         
+        # Validate obfuscation configuration (NEW)
+        valid_obf_levels = [level.value for level in ObfuscationLevel]
+        if self.config.obfuscation_level.value not in valid_obf_levels:
+            errors.append(f"Invalid obfuscation level: {self.config.obfuscation_level}")
+        
+        if self.config.obfuscation_config:
+            obf_cfg = self.config.obfuscation_config
+            valid_layers = [
+                "xor_strings", "aes_strings", "rc4_strings", "string_stack", "string_hash",
+                "control_flow", "dead_code", "opaque_predicates", "metamorphic",
+                "zlib", "lzma", "brotli", "lz4",
+                "aes_gcm", "aes_ctr", "chacha20", "xor_rolling", "rc4",
+                "base64", "base85", "hex", "custom_alphabet", "uuid_encode"
+            ]
+            for layer in obf_cfg.layers:
+                if layer not in valid_layers:
+                    warnings.append(f"Unknown obfuscation layer: {layer}")
+            
+            if obf_cfg.target_entropy < 1.0 or obf_cfg.target_entropy > 8.0:
+                warnings.append(f"Target entropy {obf_cfg.target_entropy} outside valid range (1.0-8.0)")
+            
+            if obf_cfg.max_size_increase < 1.0:
+                errors.append("max_size_increase must be >= 1.0")
+        
+        # Validate syscall configuration (NEW)
+        valid_syscall_tech = [tech.value for tech in SyscallTechnique]
+        if self.config.syscall_technique.value not in valid_syscall_tech:
+            errors.append(f"Invalid syscall technique: {self.config.syscall_technique}")
+        
+        if self.config.syscall_config:
+            sc_cfg = self.config.syscall_config
+            if sc_cfg.use_fresh_ntdll and not sc_cfg.enabled:
+                warnings.append("use_fresh_ntdll enabled but syscalls disabled")
+            
+            if sc_cfg.technique == SyscallTechnique.DIRECT and sc_cfg.use_indirect:
+                warnings.append("Direct syscall technique selected but use_indirect is True")
+        
+        # Security recommendations based on config
+        detection_risk = self.config.get_detection_risk()
+        if detection_risk["overall_risk"] > 0.5:
+            warnings.append(f"High detection risk ({detection_risk['overall_risk']:.2f}) - consider enabling more evasion features")
+        
         return {
             'valid': len(errors) == 0,
             'errors': errors,
-            'warnings': warnings
+            'warnings': warnings,
+            'detection_risk': detection_risk
         }
     
     def to_yaml(self) -> str:
@@ -353,6 +569,21 @@ class LateralChainConfigLoader:
                 'profile': self.config.evasion_profile,
                 'reflective_loader': self.config.reflective_loader,
                 'sleep_between_jumps': self.config.sleep_between_jumps
+            },
+            'obfuscation': {
+                'level': self.config.obfuscation_level.value,
+                'layers': self.config.obfuscation_config.layers if self.config.obfuscation_config else [],
+                'random_layer_order': self.config.obfuscation_config.random_layer_order if self.config.obfuscation_config else False,
+                'anti_emulation': self.config.obfuscation_config.anti_emulation if self.config.obfuscation_config else True,
+                'target_entropy': self.config.obfuscation_config.target_entropy if self.config.obfuscation_config else 7.0,
+            },
+            'syscall': {
+                'enabled': self.config.use_indirect_syscalls,
+                'technique': self.config.syscall_technique.value,
+                'use_indirect': self.config.syscall_config.use_indirect if self.config.syscall_config else True,
+                'use_fresh_ntdll': self.config.syscall_config.use_fresh_ntdll if self.config.syscall_config else False,
+                'jit_resolve': self.config.syscall_config.jit_resolve if self.config.syscall_config else True,
+                'detect_hooks': self.config.syscall_config.detect_hooks if self.config.syscall_config else True,
             },
             'beacon': {
                 'deploy': self.config.deploy_beacon,
@@ -468,6 +699,31 @@ evasion:
   profile: stealth  # stealth, paranoid, aggressive
   reflective_loader: true
   sleep_between_jumps: 5  # seconds
+
+# Obfuscation settings (NEW)
+obfuscation:
+  level: standard  # none, minimal, standard, aggressive, paranoid
+  layers:
+    - xor_rolling
+    - zlib
+    - aes_gcm
+    - base64
+  random_layer_order: false
+  anti_emulation: true
+  target_entropy: 7.0
+  max_size_increase: 3.0
+
+# Indirect Syscall settings (NEW)
+syscall:
+  enabled: true
+  technique: syswhispers3  # hells_gate, halos_gate, tartarus_gate, syswhispers2, syswhispers3, fresh_copy, direct
+  use_indirect: true
+  use_fresh_ntdll: false
+  jit_resolve: true
+  randomize_order: true
+  add_jitter: true
+  encrypt_stubs: true
+  detect_hooks: true
 
 # Beacon deployment settings
 beacon:
