@@ -7,3 +7,11 @@ ldap3
 requests
 python-dotenv
 alembic
+pymetasploit3
+flask-socketio
+eventlet
+pyzmq
+# AI Sleep Obfuscation Dependencies
+scipy
+cryptography
+numpy

