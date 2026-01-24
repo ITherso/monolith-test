@@ -80,6 +80,18 @@ from .syscall_obfuscator import (
     detect_edr as detect_edr_for_syscall
 )
 
+# NEW: Persistence God Monster (Ultimate Full Chain)
+from .persistence_god import (
+    PersistenceGodMonster, AIPersistenceSelector, PersistenceChainExecutor,
+    ArtifactMutator, SpoofEventGenerator, TimestampStomper, PersistenceArtifactWiper,
+    EDRDetectorForPersistence, PersistenceChain, EDRPersistProfile,
+    MutationTarget as PersistMutationTarget, SpoofEventType,
+    PersistenceConfig, PersistenceResult, InstalledPersistence,
+    EDR_PERSISTENCE_PROFILES,
+    create_persistence_god, quick_persist,
+    get_ai_persist_recommendation, detect_edr_for_persist
+)
+
 __all__ = [
     # Sleep & Timing
     'SleepObfuscator',
@@ -198,4 +210,26 @@ __all__ = [
     'quick_obfuscate_call',
     'get_syscall_recommendation',
     'detect_edr_for_syscall',
+    
+    # Persistence God Monster (NEW - Full Chain)
+    'PersistenceGodMonster',
+    'AIPersistenceSelector',
+    'PersistenceChainExecutor',
+    'ArtifactMutator',
+    'SpoofEventGenerator',
+    'TimestampStomper',
+    'PersistenceArtifactWiper',
+    'EDRDetectorForPersistence',
+    'PersistenceChain',
+    'EDRPersistProfile',
+    'PersistMutationTarget',
+    'SpoofEventType',
+    'PersistenceConfig',
+    'PersistenceResult',
+    'InstalledPersistence',
+    'EDR_PERSISTENCE_PROFILES',
+    'create_persistence_god',
+    'quick_persist',
+    'get_ai_persist_recommendation',
+    'detect_edr_for_persist',
 ]

