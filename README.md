@@ -69,6 +69,17 @@ Access the UI at `http://localhost:8080`
 │  │  │  Persistence  │ │ Anti-Sandbox  │ │Traffic Masking│ │Header Rotation│       │   │
 │  │  │  God Mode     │ │ VM Detection  │ │ C2 Disguise   │ │ JA3 Rotation  │       │   │
 │  │  └───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘       │   │
+│  │                                                                                  │   │
+│  │  ┌─────────────────────────────── 🧠 ML EVASION ──────────────────────────────┐│   │
+│  │  │                                                                            ││   │
+│  │  │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐             ││   │
+│  │  │  │ GAN      │───▶│ Mutation │───▶│ YARA     │───▶│ VT 0/70  │             ││   │
+│  │  │  │Generator │    │ Engine   │    │ Evader   │    │ Validator│             ││   │
+│  │  │  └──────────┘    └──────────┘    └──────────┘    └──────────┘             ││   │
+│  │  │                                                                            ││   │
+│  │  │  EDR Targets: CrowdStrike │ SentinelOne │ Defender │ Carbon Black         ││   │
+│  │  │  Mutations: Metamorphic │ Polymorphic │ Shikata │ Dead Code │ Syscall     ││   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘│   │
 │  └─────────────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                         │
 │  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
@@ -152,7 +163,8 @@ Access the UI at `http://localhost:8080`
 │  │   ├── sleepmask_cloak.py         # Memory cloaking                                   │
 │  │   ├── process_injection.py       # Injection techniques                              │
 │  │   ├── syscall_obfuscator.py      # Syscall unhooking                                 │
-│  │   └── persistence_god.py         # Persistence mechanisms                            │
+│  │   ├── persistence_god.py         # Persistence mechanisms                            │
+│  │   └── ml_evasion.py              # 🧠 GAN-powered ML evasion (0/70 VT)              │
 │  │                                                                                      │
 │  ├── tools/                 # Standalone tools                                          │
 │  │   └── report_generator.py        # Professional reporting                            │
@@ -182,6 +194,7 @@ Access the UI at `http://localhost:8080`
 | **🥷 Relay Ninja** | Domain takeover <2min via delegation + coercion | `/relay` |
 | **NTLM Relay** | LDAP/SMB/AD CS relay with coercion triggers | `/relay` |
 | **Evasion Testing** | YARA, strings, entropy, behavioral analysis | `/evasion` |
+| **🧠 ML Evasion Booster** | GAN-powered payload mutation, 0/70 VT target | `/evasion` |
 | **Lateral Movement** | WMI/PSExec/DCOM with evasion profiles | `/lateral` |
 | **C2 Framework** | Beacon management with multi-language agents | `/c2` |
 | **Process Injection** | Shellcode injection with LOTL execution | `/payloads` |
@@ -521,6 +534,348 @@ curl -X POST http://localhost:8080/evasion/entropy \
 - `obfuscation_detect` - Obfuscation indicators
 - `crypto_patterns` - Encryption markers
 - `c2_indicators` - C2 communication patterns
+
+---
+
+## 🧠 ML Evasion Booster - GAN-Powered Payload Mutation
+
+**VirusTotal 0/70 Detection** hedefli, GAN-tabanlı akıllı payload mutasyonu.
+
+### 🎯 Neden ML Evasion?
+
+Geleneksel evasion teknikleri (XOR, junk insertion) artık modern EDR/AV tarafından kolayca tespit ediliyor. ML Evasion Booster, **Generative Adversarial Network (GAN)** kullanarak:
+
+- EDR signature pattern'lerini **öğrenir**
+- Payload'ı **akıllıca mutate** eder
+- Detection olasılığını **minimize** eder
+- YARA/Sigma kurallarını **otomatik bypass** eder
+
+### 🏗️ Mimari Şema
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                          🧠 ML EVASION BOOSTER ARCHITECTURE                             │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌─────────────────┐
+                              │  Original       │
+                              │  Payload        │
+                              │  (Detectable)   │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                           FEATURE EXTRACTION LAYER                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
+│  │  Byte N-Grams   │  │    Entropy      │  │  Statistical    │  │  Header         │     │
+│  │  (1, 2, 3-gram) │  │   Calculation   │  │   Features      │  │  Analysis       │     │
+│  │                 │  │                 │  │                 │  │                 │     │
+│  │  • Unigram 256  │  │  • Shannon H    │  │  • Mean/Std     │  │  • PE/ELF       │     │
+│  │  • Bigram 1000  │  │  • Normalized   │  │  • Printable %  │  │  • MZ/\x7fELF   │     │
+│  │  • Trigram 1000 │  │  • Per-section  │  │  • Null ratio   │  │  • Sections     │     │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘     │
+│           │                    │                    │                    │              │
+│           └────────────────────┴──────────┬─────────┴────────────────────┘              │
+│                                           │                                              │
+│                                           ▼                                              │
+│                              ┌───────────────────────┐                                   │
+│                              │   Feature Vector      │                                   │
+│                              │   (2266 dimensions)   │                                   │
+│                              └───────────┬───────────┘                                   │
+└──────────────────────────────────────────┼───────────────────────────────────────────────┘
+                                           │
+                                           ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                              GAN EVASION ENGINE                                          │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────────────────────┐      ┌─────────────────────────────────┐           │
+│  │         🎲 GENERATOR            │      │       🔍 DISCRIMINATOR          │           │
+│  │                                 │      │                                 │           │
+│  │  Input: Noise + Features        │      │  Input: Payload Features        │           │
+│  │  ┌───────────────────────────┐  │      │  ┌───────────────────────────┐  │           │
+│  │  │ Dense(100+2266, 512)      │  │      │  │ Dense(2266, 256)          │  │           │
+│  │  │ LeakyReLU                 │  │      │  │ LeakyReLU                 │  │           │
+│  │  │ Dense(512, 256)           │  │      │  │ Dense(256, 128)           │  │           │
+│  │  │ LeakyReLU                 │  │      │  │ LeakyReLU                 │  │           │
+│  │  │ Dense(256, 128)           │  │      │  │ Dense(128, 64)            │  │           │
+│  │  │ LeakyReLU                 │  │      │  │ LeakyReLU                 │  │           │
+│  │  │ Dense(128, 50)            │  │      │  │ Dense(64, 1)              │  │           │
+│  │  │ Tanh (mutation vector)    │  │      │  │ Sigmoid (detection prob)  │  │           │
+│  │  └───────────────────────────┘  │      │  └───────────────────────────┘  │           │
+│  │                                 │      │                                 │           │
+│  │  Output: Mutation Vector (50)   │      │  Output: P(detected) [0, 1]    │           │
+│  └─────────────────┬───────────────┘      └─────────────────┬───────────────┘           │
+│                    │                                        │                            │
+│                    │        ADVERSARIAL TRAINING            │                            │
+│                    │   ◄────────────────────────────────────┤                            │
+│                    │   Generator tries to fool Discriminator│                            │
+│                    │   Discriminator learns EDR signatures  │                            │
+│                    ▼                                        │                            │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐    │
+│  │                           EDR PREDICTOR                                         │    │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │    │
+│  │  │ CrowdStrike │  │ SentinelOne │  │  Defender   │  │   Generic   │            │    │
+│  │  │  Predictor  │  │  Predictor  │  │  Predictor  │  │  Predictor  │            │    │
+│  │  │             │  │             │  │             │  │             │            │    │
+│  │  │ P=0.85 HIGH │  │ P=0.72 MED  │  │ P=0.45 LOW  │  │ P=0.60 MED  │            │    │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘            │    │
+│  │                                                                                 │    │
+│  │  → Recommendation: Target Defender first (lowest detection)                     │    │
+│  │  → Apply: METAMORPHIC + SYSCALL_STUB mutations                                  │    │
+│  └─────────────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+                                           │
+                                           ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                              PAYLOAD MUTATOR                                             │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  Mutation Vector (50 values) → Applied to Payload via 10 Mutation Techniques:           │
+│                                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐    │
+│  │ MUTATION TECHNIQUES                                                             │    │
+│  ├─────────────────────────────────────────────────────────────────────────────────┤    │
+│  │                                                                                 │    │
+│  │  1. BYTE_SUB         │ Byte substitution at strategic positions                │    │
+│  │  2. XOR              │ Multi-key XOR with runtime decoder                       │    │
+│  │  3. JUNK_INSERTION   │ Non-functional code insertion                            │    │
+│  │  4. POLYMORPHIC      │ Self-modifying decoder stubs                             │    │
+│  │  5. METAMORPHIC      │ Instruction substitution (same semantics)               │    │
+│  │  6. SHIKATA_GA_NAI   │ Metasploit-style polymorphic XOR encoder                │    │
+│  │  7. DEAD_CODE        │ Unreachable code blocks insertion                        │    │
+│  │  8. INSTRUCTION_SUB  │ Equivalent instruction replacement                       │    │
+│  │  9. REGISTER_RENAME  │ Register reassignment                                    │    │
+│  │  10. CUSTOM          │ User-defined mutation functions                          │    │
+│  │                                                                                 │    │
+│  └─────────────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                          │
+│  Mutation Selection Algorithm:                                                           │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐     │
+│  │  for each iteration (max 10):                                                  │     │
+│  │      mutation_vector = Generator.generate(noise, features)                     │     │
+│  │      mutated = Mutator.apply(payload, mutation_vector)                         │     │
+│  │      detection = Discriminator.predict(mutated)                                │     │
+│  │      if detection < target_threshold:                                          │     │
+│  │          return mutated  # SUCCESS!                                            │     │
+│  │      else:                                                                     │     │
+│  │          # Backprop: Generator learns from failure                             │     │
+│  │          Generator.update(detection_gradient)                                  │     │
+│  └────────────────────────────────────────────────────────────────────────────────┘     │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+                                           │
+                                           ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                           YARA/SIGMA EVADER                                              │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌───────────────────────────────┐    ┌───────────────────────────────┐                 │
+│  │      YARA RULE BYPASS         │    │     SIGMA RULE BYPASS         │                 │
+│  ├───────────────────────────────┤    ├───────────────────────────────┤                 │
+│  │                               │    │                               │                 │
+│  │  Pattern: \xfc\x48\x83\xe4    │    │  Detection: cmd.exe /c        │                 │
+│  │  Strategy: REORDER + XOR     │    │  Strategy: powershell IEX     │                 │
+│  │  Effectiveness: 92%           │    │  Effectiveness: 87%           │                 │
+│  │                               │    │                               │                 │
+│  │  Pattern: mimikatz           │    │  Detection: whoami /all       │                 │
+│  │  Strategy: ENCODE + SPLIT    │    │  Strategy: [Environment]::    │                 │
+│  │  Effectiveness: 95%           │    │  Effectiveness: 89%           │                 │
+│  │                               │    │                               │                 │
+│  │  Pattern: cobalt             │    │  Detection: net user /add     │                 │
+│  │  Strategy: METAMORPHIC       │    │  Strategy: Add-LocalGroupMem  │                 │
+│  │  Effectiveness: 88%           │    │  Effectiveness: 91%           │                 │
+│  └───────────────────────────────┘    └───────────────────────────────┘                 │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+                                           │
+                                           ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                          VIRUSTOTAL VALIDATOR                                            │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│     ┌───────────────┐         ┌───────────────┐         ┌───────────────┐              │
+│     │   Original    │         │   Mutated     │         │   Target      │              │
+│     │   Payload     │  ───►   │   Payload     │  ───►   │   0/70        │              │
+│     │   45/70 ❌    │         │   3/70 ⚠️     │         │   ✅          │              │
+│     └───────────────┘         └───────────────┘         └───────────────┘              │
+│                                                                                          │
+│     Iteration 1: 45/70 → XOR + JUNK → 28/70                                             │
+│     Iteration 2: 28/70 → METAMORPHIC → 15/70                                            │
+│     Iteration 3: 15/70 → SHIKATA → 8/70                                                 │
+│     Iteration 4: 8/70 → DEAD_CODE → 3/70                                                │
+│     Iteration 5: 3/70 → INSTRUCTION_SUB → 0/70 ✅                                       │
+│                                                                                          │
+│     🎯 VT API Integration: Automatic validation after each mutation                     │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+                                           │
+                                           ▼
+                              ┌─────────────────┐
+                              │  Evaded         │
+                              │  Payload        │
+                              │  (0/70 VT) ✅   │
+                              └─────────────────┘
+```
+
+### 🔧 Kullanım
+
+#### Python API
+
+```python
+from evasion.ml_evasion import MLEvasionBooster, evade_payload, predict_edr_detection
+
+# Quick evasion (convenience function)
+evaded_payload = evade_payload(
+    payload=original_shellcode,
+    target_edr="defender",
+    max_iterations=10
+)
+
+# Full booster with all features
+booster = MLEvasionBooster()
+
+# Boost evasion with GAN + YARA + VT validation
+result = booster.boost_evasion(
+    payload=original_shellcode,
+    target_edr="crowdstrike",
+    max_iterations=15,
+    validate_vt=True  # Requires VT_API_KEY
+)
+
+print(f"Original detections: {result['original_detections']}")
+print(f"Final detections: {result['final_detections']}")
+print(f"Mutations applied: {result['mutations_applied']}")
+print(f"Evasion success: {result['success']}")
+
+# Get AI-powered guidance
+guidance = booster.get_ai_guidance(payload)
+print(f"Recommended mutations: {guidance['recommendations']}")
+print(f"EDR predictions: {guidance['edr_predictions']}")
+print(f"Risk level: {guidance['risk_level']}")
+
+# Predict EDR detection probabilities
+predictions = predict_edr_detection(payload)
+for edr, pred in predictions.items():
+    print(f"{edr}: {pred.detection_probability:.1%} detection chance")
+    print(f"  Recommended: {pred.recommended_mutations}")
+```
+
+#### GANEvasionEngine (Low-Level)
+
+```python
+from evasion.ml_evasion import GANEvasionEngine, DetectionType
+
+engine = GANEvasionEngine()
+
+# Evade payload
+evaded, result = engine.evade(
+    payload=shellcode,
+    target_edr="sentinelone",
+    max_iterations=10,
+    target_detection_rate=0.1  # Target <10% detection
+)
+
+print(f"Evasion result: {result.evasion_result}")
+print(f"Original hash: {result.original_hash}")
+print(f"Mutated hash: {result.mutated_hash}")
+print(f"Mutations: {result.mutations_applied}")
+
+# Get bypass recommendations
+recommendations = engine.get_bypass_recommendations(payload)
+for edr, rec in recommendations.items():
+    print(f"\n{edr}:")
+    print(f"  Detection: {rec['detection_probability']:.1%}")
+    print(f"  Mutations: {rec['recommended_mutations']}")
+
+# Train discriminator on your samples
+engine.train_discriminator(
+    detected_samples=[detected_payload1, detected_payload2],
+    evaded_samples=[evaded_payload1, evaded_payload2],
+    epochs=100
+)
+```
+
+#### YARA/Sigma Evader
+
+```python
+from evasion.ml_evasion import YARASigmaEvader
+
+evader = YARASigmaEvader()
+
+# Evade YARA rules
+evaded = evader.evade_yara(payload, max_mutations=5)
+
+# Evade Sigma rules
+evaded = evader.evade_sigma(payload)
+
+# Get evasion strategies for specific pattern
+strategies = evader.get_strategies_for_pattern(b'\xfc\x48\x83\xe4')
+```
+
+### 📊 Mutation Types
+
+| Type | Description | Effectiveness | Detection Risk |
+|------|-------------|---------------|----------------|
+| `BYTE_SUB` | Strategic byte substitution | Medium | Low |
+| `XOR` | Multi-key XOR encoding | High | Medium |
+| `JUNK_INSERTION` | Non-functional code | Medium | Low |
+| `POLYMORPHIC` | Self-modifying decoder | Very High | Low |
+| `METAMORPHIC` | Semantic-preserving transform | Very High | Very Low |
+| `SHIKATA_GA_NAI` | Metasploit encoder style | High | Medium |
+| `DEAD_CODE` | Unreachable blocks | Medium | Very Low |
+| `INSTRUCTION_SUB` | Equivalent opcodes | High | Very Low |
+| `SYSCALL_STUB` | Direct syscall conversion | Very High | Low |
+| `CUSTOM` | User-defined transforms | Variable | Variable |
+
+### 🎯 Supported EDRs
+
+| EDR | Signature Patterns | Mutation Strategy |
+|-----|-------------------|-------------------|
+| **CrowdStrike Falcon** | Memory scanning, API hooks | METAMORPHIC + SYSCALL |
+| **SentinelOne** | Behavioral analysis | DEAD_CODE + INSTRUCTION_SUB |
+| **Microsoft Defender** | YARA + Cloud ML | XOR + POLYMORPHIC |
+| **Carbon Black** | Process injection patterns | SHIKATA + JUNK |
+| **Cylance** | ML-based detection | METAMORPHIC + ENTROPY_MASK |
+
+### 🔬 Nasıl Çalışır?
+
+1. **Feature Extraction**: Payload'dan 2266 boyutlu feature vector çıkarılır
+   - Byte n-gram frekansları (256 + 1000 + 1000)
+   - Shannon entropy
+   - İstatistiksel özellikler (mean, std, median)
+   - Header analizi (PE/ELF)
+
+2. **GAN Training**: Generator ve Discriminator adversarial olarak eğitilir
+   - Generator: Detection'ı minimize eden mutation vector üretir
+   - Discriminator: EDR gibi davranarak payload'ları sınıflandırır
+
+3. **EDR Prediction**: Her EDR için ayrı predictor
+   - CrowdStrike, SentinelOne, Defender için özelleştirilmiş modeller
+   - Pattern-based + ML-based hybrid detection
+
+4. **Mutation Application**: GAN'ın ürettiği vector'e göre payload mutate edilir
+   - 10 farklı mutation tekniği
+   - Iterative refinement (target detection rate'e ulaşana kadar)
+
+5. **Validation**: VirusTotal API ile final kontrol
+   - 0/70 hedefi
+   - Otomatik retry with different mutations
+
+### ⚠️ Etik Kullanım
+
+Bu modül **yalnızca yasal pentest ve red team operasyonları** için tasarlanmıştır:
+
+- ✅ Authorized penetration testing
+- ✅ Red team exercises with written permission
+- ✅ Security research in controlled environments
+- ✅ Educational purposes in lab settings
+- ❌ Malware development
+- ❌ Unauthorized access attempts
+- ❌ Any illegal activities
 
 ---
 
