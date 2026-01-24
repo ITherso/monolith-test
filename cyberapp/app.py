@@ -32,6 +32,8 @@ vulnerable_bp = _try_import('vulnerable_bp', lambda: __import__('cyberapp.routes
 api_vuln_bp = _try_import('api_vuln_bp', lambda: __import__('cyberapp.routes.api_vulnerable', fromlist=['api_vuln_bp']).api_vuln_bp)
 beacon_bp = _try_import('beacon_bp', lambda: __import__('cyberapp.routes.c2_beacon', fromlist=['beacon_bp']).beacon_bp)
 lateral_bp = _try_import('lateral_bp', lambda: __import__('cyberapp.routes.lateral', fromlist=['lateral_bp']).lateral_bp)
+relay_bp = _try_import('relay_bp', lambda: __import__('cyberapp.routes.relay', fromlist=['relay_bp']).relay_bp)
+evasion_bp = _try_import('evasion_bp', lambda: __import__('cyberapp.routes.evasion', fromlist=['evasion_bp']).evasion_bp)
 
 
 def create_app(run_migrations_on_start=True):
@@ -61,6 +63,8 @@ def create_app(run_migrations_on_start=True):
     if api_vuln_bp: app.register_blueprint(api_vuln_bp)
     if beacon_bp: app.register_blueprint(beacon_bp)
     if lateral_bp: app.register_blueprint(lateral_bp)
+    if relay_bp: app.register_blueprint(relay_bp)
+    if evasion_bp: app.register_blueprint(evasion_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

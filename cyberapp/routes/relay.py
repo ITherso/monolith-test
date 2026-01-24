@@ -4,6 +4,7 @@ NTLM Relay Routes
 API endpoints for NTLM relay and coercion attacks
 
 Endpoints:
+- GET /relay/ - Relay page
 - POST /relay/start - Start relay server
 - POST /relay/stop - Stop relay server
 - POST /relay/coerce - Trigger coercion
@@ -12,7 +13,7 @@ Endpoints:
 - GET /relay/hashes - Get captured hashes
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 import logging
 from datetime import datetime
 
@@ -30,6 +31,12 @@ relay_bp = Blueprint('relay', __name__, url_prefix='/relay')
 
 # Global relay server instance
 _relay_server: NTLMRelayServer = None
+
+
+@relay_bp.route('/')
+def index():
+    """NTLM Relay page"""
+    return render_template('relay.html')
 
 
 # ============================================================

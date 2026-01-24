@@ -1,0 +1,681 @@
+{% extends "base.html" %}
+
+{% block title %}NTLM Relay & Coercion{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-exchange-alt text-danger"></i> NTLM Relay & Coercion</h2>
+            <p class="text-muted">NTLM relay attacks with coercion triggers (PetitPotam, PrinterBug, DFSCoerce)</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-satellite-dish"></i> Relay Status</h5>
+                    <h2 id="relay-status">Stopped</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-key"></i> Captured Hashes</h5>
+                    <h2 id="captured-hashes">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-bullseye"></i> Coerced Hosts</h5>
+                    <h2 id="coerced-hosts">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-trophy"></i> Successful Relays</h5>
+                    <h2 id="successful-relays">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Panel: Relay Configuration -->
+        <div class="col-md-6">
+            <!-- Relay Server Panel -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-server"></i> NTLM Relay Server
+                    <span class="badge bg-light text-dark float-end" id="relay-badge">Stopped</span>
+                </div>
+                <div class="card-body">
+                    <!-- Tabs for relay types -->
+                    <ul class="nav nav-pills mb-3" id="relayTabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="pill" href="#ldap-relay">
+                                <i class="fas fa-sitemap"></i> LDAP
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="pill" href="#smb-relay">
+                                <i class="fas fa-folder"></i> SMB
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="pill" href="#adcs-relay">
+                                <i class="fas fa-certificate"></i> AD CS
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- LDAP Relay -->
+                        <div class="tab-pane fade show active" id="ldap-relay">
+                            <form id="ldap-relay-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Target DC</label>
+                                    <input type="text" class="form-control" id="ldap-target-dc" placeholder="dc01.corp.local" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Attack Type</label>
+                                    <select class="form-select" id="ldap-attack">
+                                        <option value="rbcd" selected>RBCD (Resource-Based Constrained Delegation)</option>
+                                        <option value="shadow_creds">Shadow Credentials</option>
+                                        <option value="add_computer">Add Computer Account</option>
+                                        <option value="delegate">Delegate Access</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3" id="delegate-to-group">
+                                    <label class="form-label">Delegate To (Machine Account)</label>
+                                    <input type="text" class="form-control" id="ldap-delegate-to" placeholder="EVILPC$">
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="ldap-ssl" checked>
+                                    <label class="form-check-label" for="ldap-ssl">Use LDAPS (SSL)</label>
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="fas fa-play"></i> Start LDAP Relay
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- SMB Relay -->
+                        <div class="tab-pane fade" id="smb-relay">
+                            <form id="smb-relay-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Targets (one per line)</label>
+                                    <textarea class="form-control font-monospace" id="smb-targets" rows="4" placeholder="192.168.1.10&#10;192.168.1.11&#10;dc01.corp.local"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Command (Optional)</label>
+                                    <input type="text" class="form-control font-monospace" id="smb-command" placeholder="whoami /all">
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="smb-dump-secrets">
+                                    <label class="form-check-label" for="smb-dump-secrets">Dump Secrets (SAM/LSA)</label>
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="fas fa-play"></i> Start SMB Relay
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- AD CS Relay -->
+                        <div class="tab-pane fade" id="adcs-relay">
+                            <form id="adcs-relay-form">
+                                <div class="mb-3">
+                                    <label class="form-label">CA Host</label>
+                                    <input type="text" class="form-control" id="adcs-ca-host" placeholder="ca01.corp.local" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Template (Optional)</label>
+                                    <input type="text" class="form-control" id="adcs-template" placeholder="Machine">
+                                </div>
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> <strong>ESC8 Attack:</strong> This relays machine authentication to AD CS to request a certificate.
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="fas fa-play"></i> Start AD CS Relay (ESC8)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <button class="btn btn-secondary w-100" id="stop-relay-btn" disabled>
+                        <i class="fas fa-stop"></i> Stop Relay Server
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coercion Panel -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-bolt"></i> Coercion Triggers
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Target Host</label>
+                            <input type="text" class="form-control" id="coerce-target" placeholder="dc01.corp.local">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Listener IP</label>
+                            <input type="text" class="form-control" id="coerce-listener" placeholder="192.168.1.100">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Username (Optional)</label>
+                            <input type="text" class="form-control" id="coerce-username" placeholder="user">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Password (Optional)</label>
+                            <input type="password" class="form-control" id="coerce-password">
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('petitpotam')">
+                                <i class="fas fa-lock"></i> PetitPotam
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('printerbug')">
+                                <i class="fas fa-print"></i> PrinterBug
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('dfscoerce')">
+                                <i class="fas fa-network-wired"></i> DFSCoerce
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-warning w-100" onclick="triggerCoercion('shadowcoerce')">
+                                <i class="fas fa-cloud"></i> ShadowCoerce
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <button class="btn btn-warning w-100" onclick="checkAllCoercion()">
+                        <i class="fas fa-search"></i> Check All Coercion Methods
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Attack Chains & Output -->
+        <div class="col-md-6">
+            <!-- Attack Chains -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-link"></i> Full Attack Chains
+                </div>
+                <div class="card-body">
+                    <!-- RBCD Chain -->
+                    <div class="card bg-dark mb-3">
+                        <div class="card-header">
+                            <i class="fas fa-user-shield text-success"></i> RBCD Attack Chain
+                        </div>
+                        <div class="card-body">
+                            <form id="rbcd-chain-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control form-control-sm" id="rbcd-coerce-target" placeholder="Coerce Target (DC)">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control form-control-sm" id="rbcd-dc-target" placeholder="DC Target">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control form-control-sm" id="rbcd-delegate-to" placeholder="Delegate To (EVILPC$)">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control form-control-sm" id="rbcd-listener" placeholder="Listener IP">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-sm w-100 mt-2">
+                                    <i class="fas fa-rocket"></i> Execute RBCD Chain
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- AD CS Chain -->
+                    <div class="card bg-dark mb-3">
+                        <div class="card-header">
+                            <i class="fas fa-certificate text-info"></i> AD CS ESC8 Chain
+                        </div>
+                        <div class="card-body">
+                            <form id="adcs-chain-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control form-control-sm" id="adcs-chain-coerce" placeholder="Coerce Target">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control form-control-sm" id="adcs-chain-ca" placeholder="CA Host">
+                                    </div>
+                                    <div class="col-md-12 mb-2">
+                                        <input type="text" class="form-control form-control-sm" id="adcs-chain-listener" placeholder="Listener IP">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-info btn-sm w-100 mt-2">
+                                    <i class="fas fa-rocket"></i> Execute AD CS Chain
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Terminal -->
+            <div class="card">
+                <div class="card-header bg-dark text-success font-monospace">
+                    <i class="fas fa-terminal"></i> Output
+                    <button class="btn btn-sm btn-outline-secondary float-end" onclick="clearOutput()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+                <div class="card-body bg-black p-0" style="height: 400px; overflow-y: auto;">
+                    <pre class="text-success font-monospace p-3 m-0" id="output-terminal" style="min-height: 100%;">[*] NTLM Relay Module Ready
+[*] Configure relay server and trigger coercion
+[*] Waiting for commands...
+</pre>
+                </div>
+            </div>
+
+            <!-- Captured Hashes -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-key"></i> Captured Hashes
+                    <button class="btn btn-sm btn-outline-light float-end" onclick="refreshHashes()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Domain</th>
+                                    <th>Type</th>
+                                    <th>Hash</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hashes-table">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No hashes captured yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let relayRunning = false;
+let coercedCount = 0;
+let capturedHashes = 0;
+let successfulRelays = 0;
+
+function log(message, type = 'info') {
+    const terminal = document.getElementById('output-terminal');
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = type === 'success' ? '[+]' : type === 'error' ? '[!]' : type === 'warning' ? '[*]' : '[*]';
+    const color = type === 'success' ? 'text-success' : type === 'error' ? 'text-danger' : type === 'warning' ? 'text-warning' : 'text-info';
+    terminal.innerHTML += `<span class="${color}">${prefix} [${timestamp}] ${message}</span>\n`;
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+function clearOutput() {
+    document.getElementById('output-terminal').innerHTML = '[*] Output cleared\n';
+}
+
+// LDAP Relay
+document.getElementById('ldap-relay-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const targetDc = document.getElementById('ldap-target-dc').value;
+    const attack = document.getElementById('ldap-attack').value;
+    const delegateTo = document.getElementById('ldap-delegate-to').value;
+    const useSsl = document.getElementById('ldap-ssl').checked;
+
+    log(`Starting LDAP relay to ${targetDc} with ${attack} attack...`, 'info');
+
+    try {
+        const response = await fetch('/relay/start/ldap', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target_dc: targetDc,
+                attack: attack,
+                delegate_to: delegateTo,
+                use_ssl: useSsl
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log(`LDAP relay started successfully!`, 'success');
+            relayRunning = true;
+            updateRelayStatus();
+        } else {
+            log(`Failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+});
+
+// SMB Relay
+document.getElementById('smb-relay-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const targets = document.getElementById('smb-targets').value.split('\n').filter(t => t.trim());
+    const command = document.getElementById('smb-command').value;
+    const dumpSecrets = document.getElementById('smb-dump-secrets').checked;
+
+    log(`Starting SMB relay to ${targets.length} targets...`, 'info');
+
+    try {
+        const response = await fetch('/relay/start/smb', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                targets: targets,
+                command: command || null,
+                dump_secrets: dumpSecrets
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log(`SMB relay started successfully!`, 'success');
+            relayRunning = true;
+            updateRelayStatus();
+        } else {
+            log(`Failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+});
+
+// AD CS Relay
+document.getElementById('adcs-relay-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const caHost = document.getElementById('adcs-ca-host').value;
+    const template = document.getElementById('adcs-template').value;
+
+    log(`Starting AD CS relay to ${caHost} (ESC8)...`, 'info');
+
+    try {
+        const response = await fetch('/relay/start/adcs', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                ca_host: caHost,
+                template: template || null
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log(`AD CS relay started successfully!`, 'success');
+            relayRunning = true;
+            updateRelayStatus();
+        } else {
+            log(`Failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+});
+
+// Stop relay
+document.getElementById('stop-relay-btn').addEventListener('click', async function() {
+    log('Stopping relay server...', 'info');
+    try {
+        const response = await fetch('/relay/stop', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            log('Relay server stopped', 'success');
+            relayRunning = false;
+            updateRelayStatus();
+        } else {
+            log(`Failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+});
+
+// Coercion triggers
+async function triggerCoercion(method) {
+    const target = document.getElementById('coerce-target').value;
+    const listener = document.getElementById('coerce-listener').value;
+    const username = document.getElementById('coerce-username').value;
+    const password = document.getElementById('coerce-password').value;
+
+    if (!target || !listener) {
+        log('Target and Listener IP are required!', 'error');
+        return;
+    }
+
+    log(`Triggering ${method} coercion on ${target}...`, 'info');
+
+    try {
+        const response = await fetch(`/relay/coerce/${method}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target: target,
+                listener: listener,
+                username: username || null,
+                password: password || null
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log(`${method} coercion triggered successfully!`, 'success');
+            coercedCount++;
+            document.getElementById('coerced-hosts').textContent = coercedCount;
+        } else {
+            log(`Coercion failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+}
+
+async function checkAllCoercion() {
+    const target = document.getElementById('coerce-target').value;
+    const listener = document.getElementById('coerce-listener').value;
+
+    if (!target || !listener) {
+        log('Target and Listener IP are required!', 'error');
+        return;
+    }
+
+    log(`Checking all coercion methods on ${target}...`, 'info');
+
+    try {
+        const response = await fetch('/relay/coerce/check', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target: target,
+                listener: listener
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log(`Coercion check complete:`, 'success');
+            data.results.forEach(r => {
+                const status = r.vulnerable ? '✓ VULNERABLE' : '✗ Not vulnerable';
+                const type = r.vulnerable ? 'success' : 'warning';
+                log(`  ${r.method}: ${status}`, type);
+            });
+        } else {
+            log(`Check failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+}
+
+// RBCD Chain
+document.getElementById('rbcd-chain-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const coerceTarget = document.getElementById('rbcd-coerce-target').value;
+    const dcTarget = document.getElementById('rbcd-dc-target').value;
+    const delegateTo = document.getElementById('rbcd-delegate-to').value;
+    const listener = document.getElementById('rbcd-listener').value;
+
+    if (!coerceTarget || !dcTarget || !delegateTo || !listener) {
+        log('All fields are required for RBCD chain!', 'error');
+        return;
+    }
+
+    log(`Executing RBCD attack chain...`, 'info');
+    log(`  Coerce: ${coerceTarget} → Relay: ${dcTarget} → Delegate: ${delegateTo}`, 'info');
+
+    try {
+        const response = await fetch('/relay/chain/rbcd', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                coerce_target: coerceTarget,
+                dc_target: dcTarget,
+                delegate_to: delegateTo,
+                listener_ip: listener
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log(`RBCD chain completed successfully!`, 'success');
+            if (data.service_ticket) {
+                log(`Service ticket obtained: ${data.service_ticket}`, 'success');
+            }
+            successfulRelays++;
+            document.getElementById('successful-relays').textContent = successfulRelays;
+        } else {
+            log(`Chain failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+});
+
+// AD CS Chain
+document.getElementById('adcs-chain-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const coerceTarget = document.getElementById('adcs-chain-coerce').value;
+    const caHost = document.getElementById('adcs-chain-ca').value;
+    const listener = document.getElementById('adcs-chain-listener').value;
+
+    if (!coerceTarget || !caHost || !listener) {
+        log('All fields are required for AD CS chain!', 'error');
+        return;
+    }
+
+    log(`Executing AD CS ESC8 attack chain...`, 'info');
+
+    try {
+        const response = await fetch('/relay/chain/adcs', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                coerce_target: coerceTarget,
+                ca_host: caHost,
+                listener_ip: listener
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log(`AD CS chain completed!`, 'success');
+            if (data.certificate) {
+                log(`Certificate obtained!`, 'success');
+            }
+            successfulRelays++;
+            document.getElementById('successful-relays').textContent = successfulRelays;
+        } else {
+            log(`Chain failed: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        log(`Error: ${e.message}`, 'error');
+    }
+});
+
+function updateRelayStatus() {
+    const statusEl = document.getElementById('relay-status');
+    const badge = document.getElementById('relay-badge');
+    const stopBtn = document.getElementById('stop-relay-btn');
+
+    if (relayRunning) {
+        statusEl.textContent = 'Running';
+        statusEl.classList.remove('text-white');
+        statusEl.classList.add('text-success');
+        badge.textContent = 'Running';
+        badge.classList.remove('bg-light', 'text-dark');
+        badge.classList.add('bg-success', 'text-white');
+        stopBtn.disabled = false;
+    } else {
+        statusEl.textContent = 'Stopped';
+        statusEl.classList.remove('text-success');
+        statusEl.classList.add('text-white');
+        badge.textContent = 'Stopped';
+        badge.classList.remove('bg-success', 'text-white');
+        badge.classList.add('bg-light', 'text-dark');
+        stopBtn.disabled = true;
+    }
+}
+
+async function refreshHashes() {
+    try {
+        const response = await fetch('/relay/hashes');
+        const data = await response.json();
+        if (data.success && data.hashes.length > 0) {
+            const tbody = document.getElementById('hashes-table');
+            tbody.innerHTML = '';
+            data.hashes.forEach(h => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${h.username}</td>
+                        <td>${h.domain}</td>
+                        <td><span class="badge bg-info">${h.type}</span></td>
+                        <td class="font-monospace small">${h.hash.substring(0, 32)}...</td>
+                    </tr>
+                `;
+            });
+            capturedHashes = data.hashes.length;
+            document.getElementById('captured-hashes').textContent = capturedHashes;
+        }
+    } catch (e) {
+        console.error('Failed to refresh hashes:', e);
+    }
+}
+
+// Auto-refresh hashes every 5 seconds
+setInterval(refreshHashes, 5000);
+
+// Show/hide delegate-to field based on attack type
+document.getElementById('ldap-attack').addEventListener('change', function() {
+    const delegateGroup = document.getElementById('delegate-to-group');
+    if (this.value === 'rbcd') {
+        delegateGroup.style.display = 'block';
+    } else {
+        delegateGroup.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

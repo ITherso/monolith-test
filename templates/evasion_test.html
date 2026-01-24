@@ -1,0 +1,658 @@
+{% extends "base.html" %}
+
+{% block title %}Evasion Testing{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-shield-virus text-warning"></i> Evasion Testing Suite</h2>
+            <p class="text-muted">Static YARA scanning, string detection, entropy analysis, and behavioral testing</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-check-circle"></i> Clean</h5>
+                    <h2 id="stat-clean">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-exclamation-triangle"></i> Medium Risk</h5>
+                    <h2 id="stat-medium">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-skull-crossbones"></i> High Risk</h5>
+                    <h2 id="stat-high">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-file-alt"></i> Total Scans</h5>
+                    <h2 id="stat-total">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Panel: Test Options -->
+        <div class="col-md-5">
+            <!-- File Upload Test -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-file-upload"></i> File Upload Test
+                </div>
+                <div class="card-body">
+                    <form id="file-test-form" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Select File</label>
+                            <input type="file" class="form-control" id="test-file" required>
+                            <small class="text-muted">Supported: EXE, DLL, PS1, BAT, BIN, etc.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Scan File
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Code Test -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-code"></i> Code Pattern Test
+                </div>
+                <div class="card-body">
+                    <form id="code-test-form">
+                        <div class="mb-3">
+                            <label class="form-label">Language</label>
+                            <select class="form-select" id="code-language">
+                                <option value="python" selected>Python</option>
+                                <option value="powershell">PowerShell</option>
+                                <option value="csharp">C#</option>
+                                <option value="vba">VBA</option>
+                                <option value="javascript">JavaScript</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Code</label>
+                            <textarea class="form-control font-monospace" id="test-code" rows="8" placeholder="import ctypes
+kernel32 = ctypes.windll.kernel32
+VirtualAlloc = kernel32.VirtualAlloc
+..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="fas fa-search"></i> Analyze Code
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Base64 Test -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-file-code"></i> Raw Bytes Test
+                </div>
+                <div class="card-body">
+                    <form id="bytes-test-form">
+                        <div class="mb-3">
+                            <label class="form-label">Payload Name</label>
+                            <input type="text" class="form-control" id="bytes-name" placeholder="payload.bin">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Base64 Data</label>
+                            <textarea class="form-control font-monospace" id="test-bytes" rows="4" placeholder="TVqQAAMAAAAEAAAA//8AALgAAAAA..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="fas fa-search"></i> Scan Bytes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Panel: Individual Scanners -->
+        <div class="col-md-3">
+            <!-- YARA Scanner -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-virus"></i> YARA Scanner
+                </div>
+                <div class="card-body">
+                    <form id="yara-form">
+                        <div class="mb-3">
+                            <label class="form-label">Base64 Data</label>
+                            <textarea class="form-control font-monospace" id="yara-data" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Custom Rules (Optional)</label>
+                            <textarea class="form-control font-monospace small" id="yara-rules" rows="3" placeholder='rule custom {
+    strings: $a = "test"
+    condition: $a
+}'></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                            <i class="fas fa-search"></i> YARA Scan
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- String Scanner -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-font"></i> String Scanner
+                </div>
+                <div class="card-body">
+                    <form id="string-form">
+                        <div class="mb-3">
+                            <label class="form-label">Base64 Data</label>
+                            <textarea class="form-control font-monospace" id="string-data" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-sm w-100">
+                            <i class="fas fa-search"></i> Find Strings
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Entropy Analyzer -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-chart-line"></i> Entropy Analysis
+                </div>
+                <div class="card-body">
+                    <form id="entropy-form">
+                        <div class="mb-3">
+                            <label class="form-label">Base64 Data</label>
+                            <textarea class="form-control font-monospace" id="entropy-data" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-dark btn-sm w-100">
+                            <i class="fas fa-chart-bar"></i> Analyze
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Behavioral Analyzer -->
+            <div class="card mb-4">
+                <div class="card-header bg-purple text-white" style="background: #6f42c1;">
+                    <i class="fas fa-brain"></i> Behavioral
+                </div>
+                <div class="card-body">
+                    <form id="behavioral-form">
+                        <div class="mb-3">
+                            <select class="form-select form-select-sm" id="behavioral-lang">
+                                <option value="python">Python</option>
+                                <option value="powershell">PowerShell</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control font-monospace" id="behavioral-code" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm w-100" style="background: #6f42c1; color: white;">
+                            <i class="fas fa-microscope"></i> Analyze
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Results -->
+        <div class="col-md-4">
+            <!-- Results Panel -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-clipboard-list"></i> Scan Results
+                    <button class="btn btn-sm btn-outline-light float-end" onclick="clearResults()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+                    <div id="results-container">
+                        <div class="text-center text-muted p-4">
+                            <i class="fas fa-search fa-3x mb-3"></i>
+                            <p>Run a scan to see results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Legend -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-info-circle"></i> Risk Levels
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-success"><i class="fas fa-check"></i> CLEAN (0)</span>
+                        <span class="badge bg-info"><i class="fas fa-info"></i> LOW (1-29)</span>
+                        <span class="badge bg-warning text-dark"><i class="fas fa-exclamation"></i> MEDIUM (30-59)</span>
+                        <span class="badge bg-danger"><i class="fas fa-times"></i> HIGH (60-99)</span>
+                        <span class="badge bg-dark"><i class="fas fa-skull"></i> CRITICAL (100+)</span>
+                    </div>
+                    <hr>
+                    <small class="text-muted">
+                        <strong>Detection Factors:</strong> YARA matches, suspicious strings, high entropy, 
+                        API patterns, shellcode signatures, obfuscation indicators.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-history"></i> Recent Reports
+                    <button class="btn btn-sm btn-outline-light float-end" onclick="refreshReports()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>File/Name</th>
+                                    <th>Risk Level</th>
+                                    <th>Score</th>
+                                    <th>YARA</th>
+                                    <th>Strings</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No reports yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-alt"></i> Full Report</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="report-content" class="bg-black p-3 rounded" style="max-height: 500px; overflow-y: auto;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadReport()">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let stats = { clean: 0, medium: 0, high: 0, total: 0 };
+let currentReportId = null;
+
+function updateStats(risk) {
+    stats.total++;
+    if (risk === 'CLEAN' || risk === 'LOW') stats.clean++;
+    else if (risk === 'MEDIUM') stats.medium++;
+    else stats.high++;
+
+    document.getElementById('stat-clean').textContent = stats.clean;
+    document.getElementById('stat-medium').textContent = stats.medium;
+    document.getElementById('stat-high').textContent = stats.high;
+    document.getElementById('stat-total').textContent = stats.total;
+}
+
+function getRiskBadge(risk) {
+    const badges = {
+        'CLEAN': 'bg-success',
+        'LOW': 'bg-info',
+        'MEDIUM': 'bg-warning text-dark',
+        'HIGH': 'bg-danger',
+        'CRITICAL': 'bg-dark'
+    };
+    return `<span class="badge ${badges[risk] || 'bg-secondary'}">${risk}</span>`;
+}
+
+function displayResult(data, title) {
+    const container = document.getElementById('results-container');
+    const resultHtml = `
+        <div class="border-bottom p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>${title}</strong>
+                ${getRiskBadge(data.overall_risk || 'UNKNOWN')}
+            </div>
+            <div class="small">
+                <div class="row">
+                    <div class="col-6">
+                        <span class="text-muted">Score:</span> <strong>${data.total_score || 0}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">YARA:</span> <strong>${data.yara_matches || 0}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">Strings:</span> <strong>${data.suspicious_strings || 0}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">Entropy:</span> <strong>${(data.entropy || 0).toFixed(2)}</strong>
+                    </div>
+                </div>
+                ${data.recommendations ? `
+                <div class="mt-2">
+                    <span class="text-warning"><i class="fas fa-lightbulb"></i> Recommendations:</span>
+                    <ul class="mb-0 ps-3 small">
+                        ${data.recommendations.slice(0, 3).map(r => `<li>${r}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                ${data.report_id ? `
+                <button class="btn btn-sm btn-outline-info mt-2" onclick="viewReport('${data.report_id}')">
+                    <i class="fas fa-eye"></i> View Full Report
+                </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    container.innerHTML = resultHtml + container.innerHTML;
+    updateStats(data.overall_risk || 'UNKNOWN');
+}
+
+function clearResults() {
+    document.getElementById('results-container').innerHTML = `
+        <div class="text-center text-muted p-4">
+            <i class="fas fa-search fa-3x mb-3"></i>
+            <p>Run a scan to see results</p>
+        </div>
+    `;
+}
+
+// File Test
+document.getElementById('file-test-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const file = document.getElementById('test-file').files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/evasion/test/file', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            displayResult(data, file.name);
+            refreshReports();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+});
+
+// Code Test
+document.getElementById('code-test-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const code = document.getElementById('test-code').value;
+    const language = document.getElementById('code-language').value;
+
+    if (!code) return;
+
+    try {
+        const response = await fetch('/evasion/test/code', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code, language })
+        });
+        const data = await response.json();
+        if (data.success) {
+            displayResult(data, `Code (${language})`);
+            refreshReports();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+});
+
+// Bytes Test
+document.getElementById('bytes-test-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data_b64 = document.getElementById('test-bytes').value;
+    const name = document.getElementById('bytes-name').value || 'payload.bin';
+
+    if (!data_b64) return;
+
+    try {
+        const response = await fetch('/evasion/test/bytes', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ data: data_b64, name })
+        });
+        const data = await response.json();
+        if (data.success) {
+            displayResult(data, name);
+            refreshReports();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+});
+
+// YARA Scan
+document.getElementById('yara-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data_b64 = document.getElementById('yara-data').value;
+    const rules = document.getElementById('yara-rules').value;
+
+    if (!data_b64) return;
+
+    try {
+        const response = await fetch('/evasion/yara', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                data: data_b64, 
+                rules: rules ? [rules] : [] 
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            displayResult({
+                overall_risk: data.total_matches > 0 ? 'HIGH' : 'CLEAN',
+                total_score: data.total_matches * 20,
+                yara_matches: data.total_matches,
+                recommendations: data.matches.map(m => `Rule: ${m.rule} - ${m.description}`)
+            }, 'YARA Scan');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+});
+
+// String Scan
+document.getElementById('string-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data_b64 = document.getElementById('string-data').value;
+
+    if (!data_b64) return;
+
+    try {
+        const response = await fetch('/evasion/strings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ data: data_b64 })
+        });
+        const data = await response.json();
+        if (data.success) {
+            const risk = data.total_risk > 50 ? 'HIGH' : data.total_risk > 20 ? 'MEDIUM' : 'LOW';
+            displayResult({
+                overall_risk: risk,
+                total_score: data.total_risk,
+                suspicious_strings: data.total_found,
+                recommendations: Object.keys(data.by_category).map(c => `${c}: ${data.by_category[c].length} found`)
+            }, 'String Scan');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+});
+
+// Entropy Analysis
+document.getElementById('entropy-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data_b64 = document.getElementById('entropy-data').value;
+
+    if (!data_b64) return;
+
+    try {
+        const response = await fetch('/evasion/entropy', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ data: data_b64 })
+        });
+        const data = await response.json();
+        if (data.success) {
+            const risk = data.is_encrypted ? 'HIGH' : data.is_packed ? 'MEDIUM' : 'LOW';
+            displayResult({
+                overall_risk: risk,
+                entropy: data.overall_entropy,
+                recommendations: [
+                    data.risk_assessment,
+                    `Packed: ${data.is_packed}`,
+                    `Encrypted: ${data.is_encrypted}`,
+                    `High entropy sections: ${data.high_entropy_sections}`
+                ]
+            }, 'Entropy Analysis');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+});
+
+// Behavioral Analysis
+document.getElementById('behavioral-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const code = document.getElementById('behavioral-code').value;
+    const language = document.getElementById('behavioral-lang').value;
+
+    if (!code) return;
+
+    try {
+        const response = await fetch('/evasion/behavioral', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code, language })
+        });
+        const data = await response.json();
+        if (data.success) {
+            displayResult({
+                overall_risk: data.risk_level,
+                total_score: data.score,
+                behavioral_score: data.score,
+                recommendations: [
+                    `Patterns: ${data.patterns_found.join(', ') || 'None'}`,
+                    `APIs: ${data.api_calls.join(', ') || 'None'}`
+                ]
+            }, 'Behavioral Analysis');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+});
+
+async function viewReport(reportId) {
+    currentReportId = reportId;
+    try {
+        const response = await fetch(`/evasion/report/${reportId}/markdown`);
+        const markdown = await response.text();
+        document.getElementById('report-content').textContent = markdown;
+        new bootstrap.Modal(document.getElementById('reportModal')).show();
+    } catch (e) {
+        alert('Error loading report: ' + e.message);
+    }
+}
+
+function downloadReport() {
+    if (!currentReportId) return;
+    const content = document.getElementById('report-content').textContent;
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `evasion_report_${currentReportId}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function refreshReports() {
+    try {
+        const response = await fetch('/evasion/reports');
+        const data = await response.json();
+        if (data.success) {
+            const tbody = document.getElementById('reports-table');
+            if (data.reports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No reports yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.reports.map(r => `
+                <tr>
+                    <td>${r.file_name}</td>
+                    <td>${getRiskBadge(r.risk)}</td>
+                    <td>${r.score}</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewReport('${r.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        console.error('Failed to refresh reports:', e);
+    }
+}
+
+// Initial load
+refreshReports();
+</script>
+{% endblock %}

