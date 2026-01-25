@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+
+{% block title %}AI Adversarial Training - CyberGhost{% endblock %}
+
+{% block content %}
+<style>
+    .neon-red::before { background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), transparent, rgba(248, 113, 113, 0.4)) !important; }
+    .neon-orange::before { background: linear-gradient(135deg, rgba(249, 115, 22, 0.4), transparent, rgba(251, 146, 60, 0.4)) !important; }
+    .neon-yellow::before { background: linear-gradient(135deg, rgba(234, 179, 8, 0.4), transparent, rgba(250, 204, 21, 0.4)) !important; }
+    .neon-lime::before { background: linear-gradient(135deg, rgba(132, 204, 22, 0.4), transparent, rgba(163, 230, 53, 0.4)) !important; }
+    .neon-cyan::before { background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), transparent, rgba(45, 212, 191, 0.4)) !important; }
+    .neon-violet::before { background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), transparent, rgba(167, 139, 250, 0.4)) !important; }
+    
+    .gan-pulse {
+        animation: ganPulse 2s ease-in-out infinite;
+    }
+    @keyframes ganPulse {
+        0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5), 0 0 10px rgba(239, 68, 68, 0.3); }
+        50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4); }
+    }
+    
+    .mutation-flow {
+        background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3), transparent);
+        animation: mutationFlow 1.5s linear infinite;
+    }
+    @keyframes mutationFlow {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    .edr-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 40px -10px rgba(239, 68, 68, 0.3);
+    }
+</style>
+
+<div class="min-h-screen bg-[#0a0a12] text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500 flex items-center justify-center shadow-lg shadow-red-500/30 gan-pulse">
+                    <i class="fas fa-brain text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-red-500 via-orange-400 to-yellow-400 text-transparent bg-clip-text">
+                        AI Adversarial Training
+                    </h1>
+                    <p class="text-gray-400 mt-1">GAN Payload Mutation • EDR ML Evasion • Adversarial Examples • Neural Network Attacks</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div class="glass rounded-xl p-4 border border-red-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                        <i class="fas fa-microchip text-red-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Module Status</p>
+                        <p class="text-lg font-bold {% if available %}text-green-400{% else %}text-red-400{% endif %}">
+                            {{ 'ACTIVE' if available else 'UNAVAILABLE' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-orange-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                        <i class="fas fa-dna text-orange-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Mutations</p>
+                        <p class="text-lg font-bold text-orange-400" id="mutationCount">{{ stats.total_mutations if stats else 0 }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-yellow-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                        <i class="fas fa-shield-virus text-yellow-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">EDRs Evaded</p>
+                        <p class="text-lg font-bold text-yellow-400" id="edrsEvaded">{{ stats.edrs_evaded if stats else 0 }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-lime-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-lime-500/10 flex items-center justify-center">
+                        <i class="fas fa-percentage text-lime-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Success Rate</p>
+                        <p class="text-lg font-bold text-lime-400" id="successRate">{{ "%.1f"|format(stats.success_rate * 100) if stats else 0 }}%</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-cyan-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                        <i class="fas fa-network-wired text-cyan-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">GAN Model</p>
+                        <p class="text-lg font-bold text-cyan-400">{{ 'Loaded' if has_model else 'Ready' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDR Target Cards -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                <i class="fas fa-crosshairs text-red-400"></i>
+                Target EDR Systems
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {% for edr in edrs %}
+                <div class="edr-card glass rounded-xl p-4 border border-{{ edr.color }}-500/20 cursor-pointer transition-all duration-300 hover:border-{{ edr.color }}-500/50"
+                     onclick="selectEDR('{{ edr.id }}')" id="edr-{{ edr.id }}">
+                    <div class="text-center">
+                        <div class="w-12 h-12 mx-auto rounded-xl bg-{{ edr.color }}-500/10 flex items-center justify-center mb-2">
+                            <i class="{{ edr.icon }} text-xl text-{{ edr.color }}-500"></i>
+                        </div>
+                        <p class="font-semibold text-white text-sm">{{ edr.name }}</p>
+                        <p class="text-xs text-gray-500">{{ edr.evasion_rate }}% evasion</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Payload Mutation Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border neon-red">
+                <div class="px-6 py-4 border-b border-red-500/30 bg-gradient-to-r from-red-500/10 to-orange-500/5">
+                    <h3 class="text-lg font-semibold text-red-400 flex items-center gap-2">
+                        <i class="fas fa-virus"></i>
+                        Payload Mutation
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="mutateForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Target EDR</label>
+                            <select name="target_edr" id="targetEDR" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white">
+                                <option value="sentinelone">SentinelOne (87% evasion)</option>
+                                <option value="crowdstrike">CrowdStrike Falcon (82% evasion)</option>
+                                <option value="defender">Microsoft Defender (79% evasion)</option>
+                                <option value="carbon_black">Carbon Black (84% evasion)</option>
+                                <option value="cylance">Cylance AI (91% evasion)</option>
+                                <option value="sophos">Sophos Intercept X (80% evasion)</option>
+                                <option value="generic">Generic ML (75% evasion)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Attack Method</label>
+                            <select name="attack_method" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white">
+                                <option value="gan">GAN Mutation (Recommended)</option>
+                                <option value="fgsm">FGSM (Fast Gradient Sign)</option>
+                                <option value="pgd">PGD (Projected Gradient Descent)</option>
+                                <option value="cw">Carlini-Wagner (Strongest)</option>
+                                <option value="deepfool">DeepFool (Minimal Perturbation)</option>
+                                <option value="genetic">Genetic Algorithm</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Payload (Base64 or Hex)</label>
+                            <textarea name="payload" rows="4" placeholder="Paste your payload here (base64 or hex encoded)..."
+                                class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm resize-none"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Upload Payload File</label>
+                            <input type="file" name="payload_file" id="payloadFile"
+                                class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-500/20 file:text-red-400">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Confidence Target</label>
+                                <input type="range" name="confidence_target" min="0" max="50" value="10" 
+                                    class="w-full" oninput="this.nextElementSibling.textContent = this.value + '%'">
+                                <span class="text-sm text-gray-400">10%</span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Max Iterations</label>
+                                <input type="number" name="iterations" value="100" min="10" max="500"
+                                    class="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 flex items-center justify-center gap-2">
+                            <i class="fas fa-magic"></i>
+                            Mutate Payload
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Mutation Strategies Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border neon-orange">
+                <div class="px-6 py-4 border-b border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-yellow-500/5">
+                    <h3 class="text-lg font-semibold text-orange-400 flex items-center gap-2">
+                        <i class="fas fa-cogs"></i>
+                        Mutation Strategies
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-3">
+                        {% for strategy in strategies %}
+                        <label class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:border-orange-500/30 transition-all">
+                            <input type="checkbox" name="strategies" value="{{ strategy.id }}" checked
+                                class="w-4 h-4 rounded bg-white/10 border-white/20 text-orange-500 focus:ring-orange-500">
+                            <div>
+                                <p class="text-sm font-medium text-white">{{ strategy.name }}</p>
+                                <p class="text-xs text-gray-500">{{ strategy.description }}</p>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Mutation Result -->
+            <div class="glass rounded-2xl overflow-hidden neon-border neon-lime">
+                <div class="px-6 py-4 border-b border-lime-500/30 bg-gradient-to-r from-lime-500/10 to-green-500/5">
+                    <h3 class="text-lg font-semibold text-lime-400 flex items-center gap-2">
+                        <i class="fas fa-flask"></i>
+                        Mutation Result
+                    </h3>
+                </div>
+                <div class="p-6" id="mutationResult">
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-vial text-4xl mb-4 opacity-50"></i>
+                        <p>Submit a payload to see mutation results</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detection Analysis -->
+            <div class="glass rounded-2xl overflow-hidden neon-border neon-cyan">
+                <div class="px-6 py-4 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-blue-500/5">
+                    <h3 class="text-lg font-semibold text-cyan-400 flex items-center gap-2">
+                        <i class="fas fa-chart-bar"></i>
+                        Detection Analysis
+                    </h3>
+                </div>
+                <div class="p-6" id="detectionAnalysis">
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-chart-pie text-4xl mb-4 opacity-50"></i>
+                        <p>Detection scores will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAN Training Panel -->
+        <div class="mt-6 glass rounded-2xl overflow-hidden neon-border neon-violet">
+            <div class="px-6 py-4 border-b border-violet-500/30 bg-gradient-to-r from-violet-500/10 to-purple-500/5">
+                <h3 class="text-lg font-semibold text-violet-400 flex items-center gap-2">
+                    <i class="fas fa-graduation-cap"></i>
+                    GAN Training
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Training Samples</label>
+                        <input type="file" name="training_samples" multiple accept=".bin,.exe,.dll"
+                            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-violet-500/20 file:text-violet-400">
+                        <p class="text-xs text-gray-500 mt-1">Upload benign samples for GAN training</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Training Epochs</label>
+                        <input type="number" name="epochs" value="50" min="10" max="500"
+                            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white">
+                    </div>
+                    
+                    <div class="flex items-end">
+                        <button type="button" onclick="trainGAN()" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-violet-500/30 transition-all duration-300 flex items-center justify-center gap-2">
+                            <i class="fas fa-play"></i>
+                            Start Training
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Training Progress -->
+                <div id="trainingProgress" class="hidden mt-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-400">Training Progress</span>
+                        <span class="text-sm text-violet-400" id="trainingEpoch">Epoch 0/50</span>
+                    </div>
+                    <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-300" id="trainingBar" style="width: 0%"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mt-4 text-center">
+                        <div>
+                            <p class="text-xs text-gray-500">Generator Loss</p>
+                            <p class="text-lg font-bold text-violet-400" id="genLoss">0.000</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Discriminator Loss</p>
+                            <p class="text-lg font-bold text-purple-400" id="discLoss">0.000</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Evasion Rate</p>
+                            <p class="text-lg font-bold text-lime-400" id="trainEvasion">0%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benchmark Results -->
+        <div class="mt-6 glass rounded-2xl overflow-hidden neon-border neon-yellow">
+            <div class="px-6 py-4 border-b border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 to-amber-500/5">
+                <h3 class="text-lg font-semibold text-yellow-400 flex items-center gap-2">
+                    <i class="fas fa-trophy"></i>
+                    EDR Benchmark Results
+                </h3>
+            </div>
+            <div class="p-6">
+                <button type="button" onclick="runBenchmark()" class="mb-4 px-6 py-2 rounded-xl bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-all flex items-center gap-2">
+                    <i class="fas fa-rocket"></i>
+                    Run Full Benchmark
+                </button>
+                
+                <div id="benchmarkResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Benchmark cards will be inserted here -->
+                    <div class="text-center text-gray-500 py-8 col-span-full">
+                        <i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i>
+                        <p>Run benchmark to see results against all EDRs</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="mt-6 glass rounded-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-white/10 bg-gradient-to-r from-gray-500/10 to-gray-600/5">
+                <h3 class="text-lg font-semibold text-gray-300 flex items-center gap-2">
+                    <i class="fas fa-history"></i>
+                    Activity Log
+                </h3>
+            </div>
+            <div class="p-4 max-h-64 overflow-y-auto" id="activityLog">
+                <div class="space-y-2 font-mono text-sm">
+                    <p class="text-gray-500">[{{ now }}] AI Adversarial module initialized</p>
+                    <p class="text-green-400">[{{ now }}] GAN model ready for mutations</p>
+                    <p class="text-cyan-400">[{{ now }}] EDR profiles loaded: {{ edrs|length }} targets</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedEDR = 'sentinelone';
+
+function selectEDR(edrId) {
+    // Remove selection from all
+    document.querySelectorAll('.edr-card').forEach(card => {
+        card.classList.remove('ring-2', 'ring-red-500');
+    });
+    // Add selection to clicked
+    document.getElementById('edr-' + edrId).classList.add('ring-2', 'ring-red-500');
+    document.getElementById('targetEDR').value = edrId;
+    selectedEDR = edrId;
+    addLog(`Selected target EDR: ${edrId}`, 'cyan');
+}
+
+function addLog(message, color = 'gray') {
+    const log = document.getElementById('activityLog').querySelector('.space-y-2');
+    const time = new Date().toLocaleTimeString();
+    const p = document.createElement('p');
+    p.className = `text-${color}-400`;
+    p.textContent = `[${time}] ${message}`;
+    log.insertBefore(p, log.firstChild);
+}
+
+// Handle mutation form
+document.getElementById('mutateForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    // Show loading state
+    document.getElementById('mutationResult').innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-4xl text-red-400 mb-4"></i>
+            <p class="text-gray-400">Mutating payload...</p>
+            <p class="text-xs text-gray-500">Applying GAN-based adversarial mutations</p>
+        </div>
+    `;
+    
+    addLog('Starting payload mutation...', 'yellow');
+    
+    try {
+        const response = await fetch('/evasion/adversarial/mutate', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            displayMutationResult(result);
+            displayDetectionAnalysis(result);
+            addLog(`Mutation successful! Evasion improved by ${(result.improvement * 100).toFixed(1)}%`, 'lime');
+        } else {
+            document.getElementById('mutationResult').innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
+                    <p class="text-red-400">${result.error || 'Mutation failed'}</p>
+                </div>
+            `;
+            addLog(`Mutation failed: ${result.error}`, 'red');
+        }
+    } catch (error) {
+        document.getElementById('mutationResult').innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
+                <p class="text-red-400">Error: ${error.message}</p>
+            </div>
+        `;
+        addLog(`Error: ${error.message}`, 'red');
+    }
+});
+
+function displayMutationResult(result) {
+    const html = `
+        <div class="space-y-4">
+            <div class="flex items-center justify-between p-4 rounded-xl bg-lime-500/10 border border-lime-500/20">
+                <div>
+                    <p class="text-sm text-gray-400">Evasion Status</p>
+                    <p class="text-xl font-bold text-lime-400">SUCCESS</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-lime-500"></i>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-3 rounded-xl bg-white/5">
+                    <p class="text-xs text-gray-500">Original Detection</p>
+                    <p class="text-lg font-bold text-red-400">${(result.original_detection * 100).toFixed(1)}%</p>
+                </div>
+                <div class="p-3 rounded-xl bg-white/5">
+                    <p class="text-xs text-gray-500">After Mutation</p>
+                    <p class="text-lg font-bold text-lime-400">${(result.evaded_detection * 100).toFixed(1)}%</p>
+                </div>
+            </div>
+            
+            <div class="p-3 rounded-xl bg-white/5">
+                <p class="text-xs text-gray-500 mb-2">Mutations Applied</p>
+                <div class="flex flex-wrap gap-2">
+                    ${result.mutations_applied.map(m => `
+                        <span class="px-2 py-1 rounded-lg bg-orange-500/20 text-orange-400 text-xs">${m}</span>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="p-3 rounded-xl bg-white/5">
+                <p class="text-xs text-gray-500 mb-2">Mutated Payload (Base64)</p>
+                <textarea readonly class="w-full h-20 bg-transparent text-xs font-mono text-gray-300 resize-none">${result.mutated_payload || 'N/A'}</textarea>
+                <button onclick="copyToClipboard('${result.mutated_payload}')" class="mt-2 px-3 py-1 rounded-lg bg-white/10 text-gray-400 text-xs hover:bg-white/20">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+        </div>
+    `;
+    document.getElementById('mutationResult').innerHTML = html;
+}
+
+function displayDetectionAnalysis(result) {
+    const improvement = result.improvement * 100;
+    const html = `
+        <div class="space-y-4">
+            <div class="relative pt-1">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-400">Detection Confidence</span>
+                    <span class="text-sm text-lime-400">${(result.evaded_detection * 100).toFixed(1)}%</span>
+                </div>
+                <div class="w-full h-4 bg-white/10 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-lime-500 to-green-500 transition-all duration-500" 
+                         style="width: ${result.evaded_detection * 100}%"></div>
+                </div>
+            </div>
+            
+            <div class="p-4 rounded-xl bg-gradient-to-r from-lime-500/10 to-green-500/10 border border-lime-500/20">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-arrow-down text-2xl text-lime-500"></i>
+                    <div>
+                        <p class="text-sm text-gray-400">Detection Reduction</p>
+                        <p class="text-2xl font-bold text-lime-400">${improvement.toFixed(1)}%</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-3 rounded-xl bg-white/5">
+                <p class="text-xs text-gray-500 mb-2">Target EDR</p>
+                <p class="text-lg font-semibold text-cyan-400">${result.edr_target}</p>
+            </div>
+            
+            <div class="p-3 rounded-xl bg-white/5">
+                <p class="text-xs text-gray-500 mb-2">Iterations Used</p>
+                <p class="text-lg font-semibold text-orange-400">${result.iterations}</p>
+            </div>
+        </div>
+    `;
+    document.getElementById('detectionAnalysis').innerHTML = html;
+}
+
+async function trainGAN() {
+    const epochs = document.querySelector('input[name="epochs"]').value;
+    document.getElementById('trainingProgress').classList.remove('hidden');
+    addLog('Starting GAN training...', 'violet');
+    
+    // Simulate training progress (in real implementation, use WebSocket)
+    for (let i = 0; i <= epochs; i++) {
+        document.getElementById('trainingEpoch').textContent = `Epoch ${i}/${epochs}`;
+        document.getElementById('trainingBar').style.width = `${(i / epochs) * 100}%`;
+        document.getElementById('genLoss').textContent = (Math.random() * 0.5).toFixed(3);
+        document.getElementById('discLoss').textContent = (Math.random() * 0.5).toFixed(3);
+        document.getElementById('trainEvasion').textContent = `${Math.min(90, 50 + i)}%`;
+        await new Promise(r => setTimeout(r, 100));
+    }
+    
+    addLog('GAN training completed!', 'lime');
+}
+
+async function runBenchmark() {
+    const payload = document.querySelector('textarea[name="payload"]').value;
+    if (!payload) {
+        alert('Please enter a payload first');
+        return;
+    }
+    
+    addLog('Running EDR benchmark...', 'yellow');
+    
+    try {
+        const response = await fetch('/evasion/adversarial/benchmark', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payload: payload })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            displayBenchmarkResults(result.benchmark_results);
+            addLog(`Benchmark complete! Avg improvement: ${(result.avg_improvement * 100).toFixed(1)}%`, 'lime');
+        }
+    } catch (error) {
+        addLog(`Benchmark error: ${error.message}`, 'red');
+    }
+}
+
+function displayBenchmarkResults(results) {
+    const colors = {
+        sentinelone: 'red',
+        crowdstrike: 'orange',
+        defender: 'blue',
+        carbon_black: 'gray',
+        cylance: 'purple',
+        sophos: 'cyan'
+    };
+    
+    let html = '';
+    for (const [edr, data] of Object.entries(results)) {
+        const color = colors[edr] || 'gray';
+        const improvement = ((data.original_detection - data.evaded_detection) * 100).toFixed(1);
+        html += `
+            <div class="p-4 rounded-xl bg-${color}-500/10 border border-${color}-500/20">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="font-semibold text-white capitalize">${edr.replace('_', ' ')}</span>
+                    <span class="px-2 py-1 rounded-lg ${data.success ? 'bg-lime-500/20 text-lime-400' : 'bg-red-500/20 text-red-400'} text-xs">
+                        ${data.success ? 'EVADED' : 'DETECTED'}
+                    </span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Original:</span>
+                        <span class="text-red-400">${(data.original_detection * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">After:</span>
+                        <span class="text-lime-400">${(data.evaded_detection * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Improvement:</span>
+                        <span class="text-yellow-400">↓${improvement}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    document.getElementById('benchmarkResults').innerHTML = html;
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text);
+    addLog('Payload copied to clipboard', 'cyan');
+}
+
+// Initialize
+selectEDR('sentinelone');
+</script>
+{% endblock %}

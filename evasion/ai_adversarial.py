@@ -37,23 +37,35 @@ except ImportError:
     HAS_NUMPY = False
     np = None
 
-try:
-    import tensorflow as tf
-    HAS_TF = True
-except ImportError:
-    HAS_TF = False
-    tf = None
+# TensorFlow disabled due to SIGILL on some CPUs
+# Set environment variable to enable: ENABLE_TF_ADVERSARIAL=1
+HAS_TF = False
+tf = None
+if os.environ.get('ENABLE_TF_ADVERSARIAL', '0') == '1':
+    try:
+        import tensorflow as tf
+        HAS_TF = True
+    except ImportError:
+        HAS_TF = False
+        tf = None
 
-try:
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-    HAS_TORCH = True
-except ImportError:
-    HAS_TORCH = False
-    torch = None
-    nn = None
-    optim = None
+# PyTorch disabled due to potential issues
+# Set environment variable to enable: ENABLE_TORCH_ADVERSARIAL=1
+HAS_TORCH = False
+torch = None
+nn = None
+optim = None
+if os.environ.get('ENABLE_TORCH_ADVERSARIAL', '0') == '1':
+    try:
+        import torch
+        import torch.nn as nn
+        import torch.optim as optim
+        HAS_TORCH = True
+    except ImportError:
+        HAS_TORCH = False
+        torch = None
+        nn = None
+        optim = None
 
 logger = logging.getLogger(__name__)
 

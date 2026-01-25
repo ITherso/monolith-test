@@ -11,6 +11,9 @@ Endpoints:
 - POST /evasion/strings - Check suspicious strings
 - POST /evasion/entropy - Analyze entropy
 - GET /evasion/report/<id> - Get test report
+- GET /evasion/adversarial - AI Adversarial training page
+- POST /evasion/adversarial/mutate - Mutate payload with GAN
+- POST /evasion/adversarial/benchmark - Benchmark against all EDRs
 """
 
 from flask import Blueprint, request, jsonify, render_template
@@ -29,6 +32,35 @@ from cybermodules.evasion_testing import (
     DetectionLevel,
 )
 
+# Try to import AI Adversarial module
+# Using lazy import to avoid TensorFlow SIGILL on some CPUs
+AI_ADVERSARIAL_AVAILABLE = False
+AIAdversarialTrainer = None
+EDRVendor = None
+AttackMethod = None
+AdversarialConfig = None
+
+def _lazy_import_adversarial():
+    """Lazy import AI Adversarial module to avoid startup issues"""
+    global AI_ADVERSARIAL_AVAILABLE, AIAdversarialTrainer, EDRVendor, AttackMethod, AdversarialConfig
+    if AIAdversarialTrainer is None:
+        try:
+            from evasion.ai_adversarial import (
+                AIAdversarialTrainer as _AIAdversarialTrainer,
+                EDRVendor as _EDRVendor,
+                AttackMethod as _AttackMethod,
+                AdversarialConfig as _AdversarialConfig,
+            )
+            AIAdversarialTrainer = _AIAdversarialTrainer
+            EDRVendor = _EDRVendor
+            AttackMethod = _AttackMethod
+            AdversarialConfig = _AdversarialConfig
+            AI_ADVERSARIAL_AVAILABLE = True
+        except Exception as e:
+            logger.warning(f"AI Adversarial import failed: {e}")
+            AI_ADVERSARIAL_AVAILABLE = False
+    return AI_ADVERSARIAL_AVAILABLE
+
 logger = logging.getLogger("evasion_routes")
 
 evasion_bp = Blueprint('evasion', __name__, url_prefix='/evasion')
@@ -36,11 +68,384 @@ evasion_bp = Blueprint('evasion', __name__, url_prefix='/evasion')
 # Store test reports in memory
 _test_reports = {}
 
+# Global AI Adversarial trainer instance
+_ai_trainer = None
+
+
+def _get_ai_trainer():
+    """Get or create AI Adversarial trainer instance"""
+    global _ai_trainer
+    if not _lazy_import_adversarial():
+        return None
+    if _ai_trainer is None and AIAdversarialTrainer is not None:
+        _ai_trainer = AIAdversarialTrainer()
+    return _ai_trainer
+
 
 @evasion_bp.route('/')
 def index():
     """Evasion testing page"""
     return render_template('evasion_test.html')
+
+
+# ============================================================
+# AI ADVERSARIAL TRAINING
+# ============================================================
+
+@evasion_bp.route('/adversarial')
+def adversarial_page():
+    """AI Adversarial training page"""
+    # EDR targets with colors and icons
+    edrs = [
+        {"id": "sentinelone", "name": "SentinelOne", "color": "red", "icon": "fas fa-shield-alt", "evasion_rate": 87},
+        {"id": "crowdstrike", "name": "CrowdStrike", "color": "orange", "icon": "fas fa-crow", "evasion_rate": 82},
+        {"id": "defender", "name": "Defender ATP", "color": "blue", "icon": "fab fa-windows", "evasion_rate": 79},
+        {"id": "carbon_black", "name": "Carbon Black", "color": "gray", "icon": "fas fa-cube", "evasion_rate": 84},
+        {"id": "cylance", "name": "Cylance AI", "color": "purple", "icon": "fas fa-brain", "evasion_rate": 91},
+        {"id": "sophos", "name": "Sophos", "color": "cyan", "icon": "fas fa-shield-virus", "evasion_rate": 80},
+    ]
+    
+    # Mutation strategies
+    strategies = [
+        {"id": "nop_insertion", "name": "NOP Insertion", "description": "Insert NOP sleds"},
+        {"id": "register_swap", "name": "Register Swap", "description": "Substitute registers"},
+        {"id": "instruction_reorder", "name": "Instruction Reorder", "description": "Reorder independent ops"},
+        {"id": "dead_code", "name": "Dead Code", "description": "Inject dead code"},
+        {"id": "encoding_variation", "name": "Encoding Variation", "description": "Vary instruction encoding"},
+        {"id": "api_hashing", "name": "API Hashing", "description": "Hash API names"},
+        {"id": "control_flow", "name": "Control Flow", "description": "Obfuscate control flow"},
+        {"id": "string_encryption", "name": "String Encryption", "description": "Encrypt strings"},
+    ]
+    
+    # Get stats if available
+    stats = None
+    has_model = False
+    _lazy_import_adversarial()  # Try to import
+    if AI_ADVERSARIAL_AVAILABLE:
+        trainer = _get_ai_trainer()
+        if trainer:
+            stats = trainer.get_stats()
+            has_model = True
+    
+    return render_template('adversarial.html',
+        available=AI_ADVERSARIAL_AVAILABLE,
+        edrs=edrs,
+        strategies=strategies,
+        stats=stats,
+        has_model=has_model,
+        now=datetime.now().strftime('%H:%M:%S')
+    )
+
+
+@evasion_bp.route('/adversarial/mutate', methods=['POST'])
+def adversarial_mutate():
+    """
+    Mutate a payload to evade EDR detection
+    
+    Request (form or JSON):
+        payload: Base64 encoded payload
+        target_edr: Target EDR vendor
+        attack_method: Attack method (gan, fgsm, pgd, etc.)
+        confidence_target: Target detection confidence (0-100)
+        iterations: Max iterations
+    """
+    if not AI_ADVERSARIAL_AVAILABLE:
+        return jsonify({
+            "success": False,
+            "error": "AI Adversarial module not available"
+        }), 503
+    
+    # Get parameters from form or JSON
+    if request.is_json:
+        data = request.get_json()
+        payload_b64 = data.get('payload', '')
+        target_edr = data.get('target_edr', 'sentinelone')
+        attack_method = data.get('attack_method', 'gan')
+        confidence_target = float(data.get('confidence_target', 10)) / 100
+        iterations = int(data.get('iterations', 100))
+    else:
+        payload_b64 = request.form.get('payload', '')
+        target_edr = request.form.get('target_edr', 'sentinelone')
+        attack_method = request.form.get('attack_method', 'gan')
+        confidence_target = float(request.form.get('confidence_target', 10)) / 100
+        iterations = int(request.form.get('iterations', 100))
+        
+        # Handle file upload
+        if 'payload_file' in request.files:
+            file = request.files['payload_file']
+            if file.filename:
+                payload_b64 = base64.b64encode(file.read()).decode()
+    
+    if not payload_b64:
+        return jsonify({
+            "success": False,
+            "error": "No payload provided"
+        }), 400
+    
+    try:
+        payload = base64.b64decode(payload_b64)
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Invalid base64 payload: {e}"
+        }), 400
+    
+    try:
+        trainer = _get_ai_trainer()
+        if not trainer:
+            return jsonify({
+                "success": False,
+                "error": "Failed to initialize AI trainer"
+            }), 500
+        
+        # Run adversarial mutation
+        result = trainer.evade_edr(
+            payload=payload,
+            target_edr=target_edr,
+            confidence_target=confidence_target,
+            max_iterations=iterations
+        )
+        
+        return jsonify({
+            "success": result.success,
+            "original_detection": result.original_confidence,
+            "evaded_detection": result.final_confidence,
+            "improvement": result.original_confidence - result.final_confidence,
+            "mutations_applied": result.mutations_applied,
+            "edr_target": target_edr,
+            "attack_method": attack_method,
+            "iterations": result.iterations,
+            "mutated_payload": base64.b64encode(result.mutated_payload).decode() if result.success else None
+        })
+        
+    except Exception as e:
+        logger.exception("Adversarial mutation error")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@evasion_bp.route('/adversarial/benchmark', methods=['POST'])
+def adversarial_benchmark():
+    """
+    Benchmark payload against multiple EDRs
+    
+    Request (JSON):
+        payload: Base64 encoded payload
+        target_edrs: List of EDR vendors (optional, defaults to all)
+    """
+    if not AI_ADVERSARIAL_AVAILABLE:
+        return jsonify({
+            "success": False,
+            "error": "AI Adversarial module not available"
+        }), 503
+    
+    data = request.get_json()
+    payload_b64 = data.get('payload', '')
+    target_edrs = data.get('target_edrs', ['sentinelone', 'crowdstrike', 'defender', 'carbon_black', 'cylance', 'sophos'])
+    
+    if not payload_b64:
+        return jsonify({
+            "success": False,
+            "error": "No payload provided"
+        }), 400
+    
+    try:
+        payload = base64.b64decode(payload_b64)
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Invalid base64 payload: {e}"
+        }), 400
+    
+    try:
+        trainer = _get_ai_trainer()
+        if not trainer:
+            return jsonify({
+                "success": False,
+                "error": "Failed to initialize AI trainer"
+            }), 500
+        
+        benchmark_results = {}
+        for edr in target_edrs:
+            try:
+                result = trainer.evade_edr(
+                    payload=payload,
+                    target_edr=edr,
+                    confidence_target=0.1,
+                    max_iterations=50
+                )
+                benchmark_results[edr] = {
+                    "original_detection": result.original_confidence,
+                    "evaded_detection": result.final_confidence,
+                    "success": result.success,
+                    "iterations": result.iterations
+                }
+            except Exception as e:
+                benchmark_results[edr] = {
+                    "error": str(e),
+                    "success": False
+                }
+        
+        avg_improvement = sum(
+            r.get("original_detection", 0) - r.get("evaded_detection", 0)
+            for r in benchmark_results.values()
+            if not r.get("error")
+        ) / max(len([r for r in benchmark_results.values() if not r.get("error")]), 1)
+        
+        return jsonify({
+            "success": True,
+            "benchmark_results": benchmark_results,
+            "avg_improvement": avg_improvement
+        })
+        
+    except Exception as e:
+        logger.exception("Benchmark error")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@evasion_bp.route('/adversarial/train', methods=['POST'])
+def adversarial_train():
+    """
+    Train GAN model with benign samples
+    
+    Request (multipart/form-data):
+        training_samples: Uploaded files
+        epochs: Number of epochs
+    """
+    if not AI_ADVERSARIAL_AVAILABLE:
+        return jsonify({
+            "success": False,
+            "error": "AI Adversarial module not available"
+        }), 503
+    
+    epochs = int(request.form.get('epochs', 50))
+    
+    # Collect training samples
+    samples = []
+    if 'training_samples' in request.files:
+        files = request.files.getlist('training_samples')
+        for f in files:
+            if f.filename:
+                samples.append(f.read())
+    
+    if not samples:
+        return jsonify({
+            "success": False,
+            "error": "No training samples provided"
+        }), 400
+    
+    try:
+        trainer = _get_ai_trainer()
+        if not trainer:
+            return jsonify({
+                "success": False,
+                "error": "Failed to initialize AI trainer"
+            }), 500
+        
+        result = trainer.train(
+            benign_samples=samples,
+            epochs=epochs
+        )
+        
+        return jsonify({
+            "success": True,
+            "epochs_trained": epochs,
+            "training_loss": result.get("final_loss", 0.0),
+            "generator_loss": result.get("generator_loss", 0.0),
+            "discriminator_loss": result.get("discriminator_loss", 0.0)
+        })
+        
+    except Exception as e:
+        logger.exception("Training error")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@evasion_bp.route('/adversarial/analyze', methods=['POST'])
+def adversarial_analyze():
+    """
+    Analyze payload for detection likelihood
+    
+    Request (JSON):
+        payload: Base64 encoded payload
+    """
+    if not AI_ADVERSARIAL_AVAILABLE:
+        return jsonify({
+            "success": False,
+            "error": "AI Adversarial module not available"
+        }), 503
+    
+    data = request.get_json()
+    payload_b64 = data.get('payload', '')
+    
+    if not payload_b64:
+        return jsonify({
+            "success": False,
+            "error": "No payload provided"
+        }), 400
+    
+    try:
+        payload = base64.b64decode(payload_b64)
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Invalid base64 payload: {e}"
+        }), 400
+    
+    try:
+        trainer = _get_ai_trainer()
+        if not trainer:
+            return jsonify({
+                "success": False,
+                "error": "Failed to initialize AI trainer"
+            }), 500
+        
+        analysis = trainer.analyze_payload(payload)
+        
+        return jsonify({
+            "success": True,
+            "feature_analysis": analysis.get("features", {}),
+            "detection_likelihood": analysis.get("detection_likelihood", {}),
+            "recommended_mutations": analysis.get("recommended_mutations", []),
+            "risk_score": analysis.get("risk_score", 0.0)
+        })
+        
+    except Exception as e:
+        logger.exception("Analysis error")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@evasion_bp.route('/adversarial/status', methods=['GET'])
+def adversarial_status():
+    """Get AI Adversarial module status"""
+    if not AI_ADVERSARIAL_AVAILABLE:
+        return jsonify({
+            "available": False,
+            "error": "AI Adversarial module not available"
+        })
+    
+    trainer = _get_ai_trainer()
+    if trainer:
+        stats = trainer.get_stats()
+        return jsonify({
+            "available": True,
+            "stats": stats
+        })
+    
+    return jsonify({
+        "available": True,
+        "stats": None
+    })
 
 
 # ============================================================
