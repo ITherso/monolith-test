@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Quantum-Resistant Crypto - CyberGhost{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-[#0a0a12] text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                    <i class="fas fa-atom text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 text-transparent bg-clip-text">
+                        Quantum-Resistant Cryptography
+                    </h1>
+                    <p class="text-gray-400 mt-1">Post-Quantum Encryption • Kyber KEM • Dilithium Signatures • Lattice Operations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass rounded-xl p-4 border border-violet-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-violet-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Module Status</p>
+                        <p class="text-lg font-bold {% if available %}text-green-400{% else %}text-red-400{% endif %}">
+                            {{ 'ACTIVE' if available else 'UNAVAILABLE' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-fuchsia-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-fuchsia-500/10 flex items-center justify-center">
+                        <i class="fas fa-key text-fuchsia-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Active Sessions</p>
+                        <p class="text-lg font-bold text-fuchsia-400">{{ sessions|length }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-cyan-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                        <i class="fas fa-lock text-cyan-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Algorithms</p>
+                        <p class="text-lg font-bold text-cyan-400">{{ algorithms|length }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-emerald-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <i class="fas fa-check-double text-emerald-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Quantum Safe</p>
+                        <p class="text-lg font-bold text-emerald-400">NIST PQC</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Key Generation Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-violet-500/20 bg-violet-500/5">
+                    <h3 class="text-lg font-semibold text-violet-400 flex items-center gap-2">
+                        <i class="fas fa-key"></i>
+                        Key Generation
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="keygenForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Algorithm</label>
+                            <select name="algorithm" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white">
+                                <optgroup label="Kyber KEM">
+                                    <option value="kyber512">Kyber-512 (NIST Level 1)</option>
+                                    <option value="kyber768" selected>Kyber-768 (NIST Level 3)</option>
+                                    <option value="kyber1024">Kyber-1024 (NIST Level 5)</option>
+                                </optgroup>
+                                <optgroup label="Dilithium Signatures">
+                                    <option value="dilithium2">Dilithium-2 (NIST Level 2)</option>
+                                    <option value="dilithium3">Dilithium-3 (NIST Level 3)</option>
+                                    <option value="dilithium5">Dilithium-5 (NIST Level 5)</option>
+                                </optgroup>
+                                <optgroup label="Hybrid PQ+Classical">
+                                    <option value="hybrid_aes">Hybrid PQ + AES-256-GCM</option>
+                                    <option value="hybrid_chacha">Hybrid PQ + ChaCha20-Poly1305</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Session Name</label>
+                            <input type="text" name="session_name" placeholder="my_pq_session" 
+                                   class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 font-mono">
+                        </div>
+                        
+                        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-magic"></i>
+                            Generate Quantum-Safe Keys
+                        </button>
+                    </form>
+                    
+                    <div id="keygenResult" class="mt-4 hidden">
+                        <div class="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="keygenOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Encryption Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-fuchsia-500/20 bg-fuchsia-500/5">
+                    <h3 class="text-lg font-semibold text-fuchsia-400 flex items-center gap-2">
+                        <i class="fas fa-lock"></i>
+                        Encrypt / Decrypt
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="cryptoForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Session</label>
+                            <select name="session_name" id="sessionSelect" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white">
+                                {% for session in sessions %}
+                                <option value="{{ session }}">{{ session }}</option>
+                                {% endfor %}
+                                <option value="">-- Generate keys first --</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Plaintext</label>
+                            <textarea name="plaintext" rows="3" placeholder="Enter data to encrypt..."
+                                      class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 font-mono"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="encryptData()" class="py-3 rounded-xl bg-fuchsia-500/20 border border-fuchsia-500/30 text-fuchsia-400 font-bold hover:bg-fuchsia-500/30 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-lock"></i>
+                                Encrypt
+                            </button>
+                            <button type="button" onclick="decryptData()" class="py-3 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-bold hover:bg-cyan-500/30 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-unlock"></i>
+                                Decrypt
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="cryptoResult" class="mt-4 hidden">
+                        <div class="bg-fuchsia-500/10 border border-fuchsia-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="cryptoOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Signatures -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-cyan-500/20 bg-cyan-500/5">
+                    <h3 class="text-lg font-semibold text-cyan-400 flex items-center gap-2">
+                        <i class="fas fa-signature"></i>
+                        Digital Signatures (Dilithium)
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="signForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Session (Dilithium only)</label>
+                            <select name="session_name" id="signSessionSelect" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white">
+                                {% for session in sessions %}
+                                <option value="{{ session }}">{{ session }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                            <textarea name="message" rows="2" placeholder="Enter message to sign..."
+                                      class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 font-mono"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="signMessage()" class="py-3 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-bold hover:bg-cyan-500/30 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-pen-fancy"></i>
+                                Sign
+                            </button>
+                            <button type="button" onclick="verifySignature()" class="py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-check-circle"></i>
+                                Verify
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="signResult" class="mt-4 hidden">
+                        <div class="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="signOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Analysis -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-amber-500/20 bg-amber-500/5">
+                    <h3 class="text-lg font-semibold text-amber-400 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Quantum Risk Analysis
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="riskForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Current Cryptography</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="crypto" value="RSA-2048" checked class="rounded border-white/20 bg-white/5 text-amber-500">
+                                    <span class="text-gray-300 text-sm">RSA-2048</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="crypto" value="RSA-4096" class="rounded border-white/20 bg-white/5 text-amber-500">
+                                    <span class="text-gray-300 text-sm">RSA-4096</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="crypto" value="AES-256" checked class="rounded border-white/20 bg-white/5 text-amber-500">
+                                    <span class="text-gray-300 text-sm">AES-256</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="crypto" value="ECDSA-P256" class="rounded border-white/20 bg-white/5 text-amber-500">
+                                    <span class="text-gray-300 text-sm">ECDSA-P256</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Data Sensitivity</label>
+                            <select name="sensitivity" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white">
+                                <option value="low">Low - Public Data</option>
+                                <option value="medium">Medium - Business Data</option>
+                                <option value="high" selected>High - Sensitive/PII</option>
+                                <option value="critical">Critical - National Security</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Time Horizon (Years)</label>
+                            <input type="range" name="time_horizon" min="1" max="30" value="10" 
+                                   class="w-full" oninput="document.getElementById('timeLabel').textContent = this.value + ' years'">
+                            <p class="text-center text-amber-400 mt-1" id="timeLabel">10 years</p>
+                        </div>
+                        
+                        <button type="button" onclick="analyzeRisk()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-search"></i>
+                            Analyze Quantum Risk
+                        </button>
+                    </form>
+                    
+                    <div id="riskResult" class="mt-4 hidden">
+                        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="riskOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benchmark Section -->
+        <div class="glass rounded-2xl overflow-hidden neon-border mt-6">
+            <div class="px-6 py-4 border-b border-emerald-500/20 bg-emerald-500/5">
+                <h3 class="text-lg font-semibold text-emerald-400 flex items-center gap-2">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Performance Benchmark
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <input type="number" id="benchIterations" value="10" min="1" max="100" 
+                           class="w-32 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                    <span class="text-gray-400">iterations</span>
+                    <button onclick="runBenchmark()" class="px-6 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold hover:bg-emerald-500/30 transition-all">
+                        <i class="fas fa-play mr-2"></i>Run Benchmark
+                    </button>
+                </div>
+                <div id="benchResult" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="benchOutput"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="glass rounded-2xl overflow-hidden neon-border mt-6">
+            <div class="px-6 py-4 border-b border-violet-500/20 bg-violet-500/5">
+                <h3 class="text-lg font-semibold text-violet-400 flex items-center gap-2">
+                    <i class="fas fa-list"></i>
+                    Active Quantum Sessions
+                </h3>
+            </div>
+            <div class="p-6">
+                <div id="sessionsContainer" class="space-y-3">
+                    {% for session in sessions %}
+                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                        <div>
+                            <span class="text-white font-mono">{{ session }}</span>
+                        </div>
+                        <button onclick="deleteSession('{{ session }}')" class="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                    <div id="noSessions" class="{% if sessions %}hidden{% endif %} text-center py-8 text-gray-500">
+                        <i class="fas fa-key text-3xl mb-3 opacity-30"></i>
+                        <p>No active sessions. Generate keys to start.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let lastCiphertext = null;
+    let lastSignature = null;
+
+    document.getElementById('keygenForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const data = {
+            algorithm: form.algorithm.value,
+            session_name: form.session_name.value || undefined
+        };
+        
+        try {
+            const res = await fetch('/quantum/keygen', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            document.getElementById('keygenResult').classList.remove('hidden');
+            document.getElementById('keygenOutput').textContent = JSON.stringify(result, null, 2);
+            
+            // Add to session select
+            if (result.session_name) {
+                const opt = document.createElement('option');
+                opt.value = result.session_name;
+                opt.textContent = result.session_name;
+                document.getElementById('sessionSelect').appendChild(opt.cloneNode(true));
+                document.getElementById('signSessionSelect').appendChild(opt);
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        }
+    });
+
+    async function encryptData() {
+        const session = document.getElementById('sessionSelect').value;
+        const plaintext = document.querySelector('[name="plaintext"]').value;
+        
+        const res = await fetch('/quantum/encrypt', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ session_name: session, plaintext })
+        });
+        const result = await res.json();
+        lastCiphertext = result;
+        document.getElementById('cryptoResult').classList.remove('hidden');
+        document.getElementById('cryptoOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function decryptData() {
+        if (!lastCiphertext) {
+            alert('Encrypt something first!');
+            return;
+        }
+        const session = document.getElementById('sessionSelect').value;
+        
+        const res = await fetch('/quantum/decrypt', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                session_name: session, 
+                ciphertext: lastCiphertext.ciphertext,
+                encrypted_data: lastCiphertext.encrypted_data,
+                pq_ciphertext: lastCiphertext.pq_ciphertext,
+                nonce: lastCiphertext.nonce,
+                tag: lastCiphertext.tag
+            })
+        });
+        const result = await res.json();
+        document.getElementById('cryptoResult').classList.remove('hidden');
+        document.getElementById('cryptoOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function signMessage() {
+        const session = document.getElementById('signSessionSelect').value;
+        const message = document.querySelector('#signForm [name="message"]').value;
+        
+        const res = await fetch('/quantum/sign', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ session_name: session, message })
+        });
+        const result = await res.json();
+        lastSignature = result;
+        document.getElementById('signResult').classList.remove('hidden');
+        document.getElementById('signOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function verifySignature() {
+        if (!lastSignature) {
+            alert('Sign something first!');
+            return;
+        }
+        const session = document.getElementById('signSessionSelect').value;
+        const message = document.querySelector('#signForm [name="message"]').value;
+        
+        const res = await fetch('/quantum/verify', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                session_name: session, 
+                message,
+                signature: lastSignature.signature
+            })
+        });
+        const result = await res.json();
+        document.getElementById('signResult').classList.remove('hidden');
+        document.getElementById('signOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function analyzeRisk() {
+        const form = document.getElementById('riskForm');
+        const crypto = Array.from(form.querySelectorAll('[name="crypto"]:checked')).map(c => c.value);
+        const sensitivity = form.sensitivity.value;
+        const time_horizon = parseInt(form.time_horizon.value);
+        
+        const res = await fetch('/quantum/risk-analysis', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ current_crypto: crypto, data_sensitivity: sensitivity, time_horizon })
+        });
+        const result = await res.json();
+        document.getElementById('riskResult').classList.remove('hidden');
+        document.getElementById('riskOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function runBenchmark() {
+        const iterations = parseInt(document.getElementById('benchIterations').value);
+        
+        const res = await fetch('/quantum/benchmark', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ iterations })
+        });
+        const result = await res.json();
+        document.getElementById('benchResult').classList.remove('hidden');
+        
+        let html = '';
+        for (const [alg, data] of Object.entries(result.benchmark_results || {})) {
+            html += `
+                <div class="bg-white/5 rounded-xl p-4">
+                    <h4 class="text-emerald-400 font-bold mb-2">${alg.toUpperCase()}</h4>
+                    <div class="space-y-1 text-sm">
+                        ${data.keygen_ms ? `<p class="text-gray-300">Keygen: <span class="text-white">${data.keygen_ms.toFixed(2)}ms</span></p>` : ''}
+                        ${data.encapsulate_ms ? `<p class="text-gray-300">Encap: <span class="text-white">${data.encapsulate_ms.toFixed(2)}ms</span></p>` : ''}
+                        ${data.decapsulate_ms ? `<p class="text-gray-300">Decap: <span class="text-white">${data.decapsulate_ms.toFixed(2)}ms</span></p>` : ''}
+                        ${data.sign_ms ? `<p class="text-gray-300">Sign: <span class="text-white">${data.sign_ms.toFixed(2)}ms</span></p>` : ''}
+                        ${data.verify_ms ? `<p class="text-gray-300">Verify: <span class="text-white">${data.verify_ms.toFixed(2)}ms</span></p>` : ''}
+                        ${data.public_key_bytes ? `<p class="text-gray-300">PubKey: <span class="text-white">${data.public_key_bytes}B</span></p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        document.getElementById('benchOutput').innerHTML = html;
+    }
+
+    async function deleteSession(name) {
+        if (!confirm('Delete session ' + name + '?')) return;
+        await fetch('/quantum/sessions/' + name, { method: 'DELETE' });
+        location.reload();
+    }
+</script>
+{% endblock %}

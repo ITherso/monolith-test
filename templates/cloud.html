@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}Cloud Pivot Suite - CyberGhost{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-[#0a0a12] text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center">
+                    <i class="fas fa-cloud text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-sky-400 to-indigo-400 text-transparent bg-clip-text">
+                        Cloud Pivot Suite
+                    </h1>
+                    <p class="text-gray-400 mt-1">Multi-Cloud Lateral Movement • AWS • Azure • GCP • Kubernetes • Container Escape</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Provider Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div class="glass rounded-xl p-4 border border-orange-500/20 text-center cursor-pointer hover:bg-orange-500/10 transition-all" onclick="selectProvider('aws')">
+                <div class="w-12 h-12 mx-auto rounded-xl bg-orange-500/10 flex items-center justify-center mb-2">
+                    <i class="fab fa-aws text-orange-500 text-2xl"></i>
+                </div>
+                <p class="font-bold text-orange-400">AWS</p>
+                <p class="text-xs text-gray-500">Amazon Web Services</p>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-blue-500/20 text-center cursor-pointer hover:bg-blue-500/10 transition-all" onclick="selectProvider('azure')">
+                <div class="w-12 h-12 mx-auto rounded-xl bg-blue-500/10 flex items-center justify-center mb-2">
+                    <i class="fab fa-microsoft text-blue-500 text-2xl"></i>
+                </div>
+                <p class="font-bold text-blue-400">Azure</p>
+                <p class="text-xs text-gray-500">Microsoft Azure</p>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-red-500/20 text-center cursor-pointer hover:bg-red-500/10 transition-all" onclick="selectProvider('gcp')">
+                <div class="w-12 h-12 mx-auto rounded-xl bg-red-500/10 flex items-center justify-center mb-2">
+                    <i class="fab fa-google text-red-500 text-2xl"></i>
+                </div>
+                <p class="font-bold text-red-400">GCP</p>
+                <p class="text-xs text-gray-500">Google Cloud Platform</p>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-cyan-500/20 text-center cursor-pointer hover:bg-cyan-500/10 transition-all" onclick="selectProvider('kubernetes')">
+                <div class="w-12 h-12 mx-auto rounded-xl bg-cyan-500/10 flex items-center justify-center mb-2">
+                    <i class="fas fa-dharmachakra text-cyan-500 text-2xl"></i>
+                </div>
+                <p class="font-bold text-cyan-400">K8s</p>
+                <p class="text-xs text-gray-500">Kubernetes</p>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-purple-500/20 text-center cursor-pointer hover:bg-purple-500/10 transition-all" onclick="selectProvider('container')">
+                <div class="w-12 h-12 mx-auto rounded-xl bg-purple-500/10 flex items-center justify-center mb-2">
+                    <i class="fab fa-docker text-purple-500 text-2xl"></i>
+                </div>
+                <p class="font-bold text-purple-400">Container</p>
+                <p class="text-xs text-gray-500">Escape Techniques</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Environment Detection -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-sky-500/20 bg-sky-500/5">
+                    <h3 class="text-lg font-semibold text-sky-400 flex items-center gap-2">
+                        <i class="fas fa-search-location"></i>
+                        Environment Detection
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-400 text-sm mb-4">Automatically detect cloud environment and available pivot vectors.</p>
+                    
+                    <button onclick="detectEnvironment()" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-radar"></i>
+                        Detect Cloud Environment
+                    </button>
+                    
+                    <div id="detectResult" class="mt-4 hidden">
+                        <div class="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="detectOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IMDS Exploiter -->
+            <div class="glass rounded-2xl overflow-hidden neon-border">
+                <div class="px-6 py-4 border-b border-orange-500/20 bg-orange-500/5">
+                    <h3 class="text-lg font-semibold text-orange-400 flex items-center gap-2">
+                        <i class="fas fa-server"></i>
+                        IMDS Exploiter
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-400 text-sm mb-4">Probe and extract credentials from Instance Metadata Service.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Target IMDS</label>
+                            <input type="text" id="imdsTarget" value="169.254.169.254" 
+                                   class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="probeIMDS()" class="py-3 rounded-xl bg-orange-500/20 border border-orange-500/30 text-orange-400 font-bold hover:bg-orange-500/30 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-crosshairs"></i>
+                                Probe
+                            </button>
+                            <button onclick="extractIMDS()" class="py-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/30 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-download"></i>
+                                Extract Creds
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="imdsResult" class="mt-4 hidden">
+                        <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="imdsOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AWS Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border" id="awsPanel">
+                <div class="px-6 py-4 border-b border-orange-500/20 bg-orange-500/5">
+                    <h3 class="text-lg font-semibold text-orange-400 flex items-center gap-2">
+                        <i class="fab fa-aws"></i>
+                        AWS Pivot
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="awsForm" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Access Key</label>
+                                <input type="text" name="access_key" placeholder="AKIA..."
+                                       class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Secret Key</label>
+                                <input type="password" name="secret_key" placeholder="Secret..."
+                                       class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono text-sm">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Region</label>
+                            <select name="region" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                                <option value="us-east-1">us-east-1</option>
+                                <option value="us-west-2">us-west-2</option>
+                                <option value="eu-west-1">eu-west-1</option>
+                                <option value="ap-northeast-1">ap-northeast-1</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="awsEnum()" class="py-2 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-400 font-bold hover:bg-orange-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-list"></i>
+                                Enumerate
+                            </button>
+                            <button type="button" onclick="awsPrivesc()" class="py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-arrow-up"></i>
+                                PrivEsc
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="awsResult" class="mt-4 hidden">
+                        <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="awsOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Azure Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border" id="azurePanel">
+                <div class="px-6 py-4 border-b border-blue-500/20 bg-blue-500/5">
+                    <h3 class="text-lg font-semibold text-blue-400 flex items-center gap-2">
+                        <i class="fab fa-microsoft"></i>
+                        Azure Pivot
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="azureForm" class="space-y-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <input type="checkbox" id="azureManagedIdentity" checked class="rounded border-white/20 bg-white/5 text-blue-500">
+                            <label for="azureManagedIdentity" class="text-gray-300 text-sm">Use Managed Identity</label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Tenant ID</label>
+                            <input type="text" name="tenant_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                   class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Key Vault Name (for secrets dump)</label>
+                            <input type="text" name="vault_name" placeholder="my-keyvault"
+                                   class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono text-sm">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="azureEnum()" class="py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold hover:bg-blue-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-list"></i>
+                                Enumerate
+                            </button>
+                            <button type="button" onclick="azureKeyVault()" class="py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 font-bold hover:bg-purple-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-key"></i>
+                                Dump KeyVault
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="azureResult" class="mt-4 hidden">
+                        <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="azureOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kubernetes Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border" id="k8sPanel">
+                <div class="px-6 py-4 border-b border-cyan-500/20 bg-cyan-500/5">
+                    <h3 class="text-lg font-semibold text-cyan-400 flex items-center gap-2">
+                        <i class="fas fa-dharmachakra"></i>
+                        Kubernetes Pivot
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form id="k8sForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">API Server</label>
+                            <input type="text" name="api_server" placeholder="https://kubernetes.default.svc"
+                                   class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Token (optional)</label>
+                            <input type="password" name="token" placeholder="Service Account Token..."
+                                   class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Namespace</label>
+                            <input type="text" name="namespace" value="default"
+                                   class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono text-sm">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="k8sEnum()" class="py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-bold hover:bg-cyan-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-list"></i>
+                                Enumerate
+                            </button>
+                            <button type="button" onclick="k8sSecrets()" class="py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold hover:bg-amber-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-user-secret"></i>
+                                Dump Secrets
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="k8sResult" class="mt-4 hidden">
+                        <div class="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="k8sOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container Escape Panel -->
+            <div class="glass rounded-2xl overflow-hidden neon-border" id="containerPanel">
+                <div class="px-6 py-4 border-b border-purple-500/20 bg-purple-500/5">
+                    <h3 class="text-lg font-semibold text-purple-400 flex items-center gap-2">
+                        <i class="fab fa-docker"></i>
+                        Container Escape
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-400 text-sm mb-4">Detect container environment and execute escape techniques.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Escape Technique</label>
+                            <select id="escapeTechnique" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white">
+                                <option value="auto">Auto-Detect Best</option>
+                                <option value="privileged">Privileged Container</option>
+                                <option value="mount">Mount Escape</option>
+                                <option value="cgroup">CGroup Escape</option>
+                                <option value="docker_sock">Docker Socket</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="containerDetect()" class="py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 font-bold hover:bg-purple-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-search"></i>
+                                Detect
+                            </button>
+                            <button onclick="containerEscape()" class="py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/30 transition-all flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Escape!
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="containerResult" class="mt-4 hidden">
+                        <div class="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                            <pre class="text-sm text-gray-300 overflow-x-auto" id="containerOutput"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Credential Harvester -->
+        <div class="glass rounded-2xl overflow-hidden neon-border mt-6">
+            <div class="px-6 py-4 border-b border-amber-500/20 bg-amber-500/5">
+                <h3 class="text-lg font-semibold text-amber-400 flex items-center gap-2">
+                    <i class="fas fa-harvest"></i>
+                    Cloud Credential Harvester
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="source" value="env" checked class="rounded border-white/20 bg-white/5 text-amber-500">
+                        <span class="text-gray-300 text-sm">Environment Variables</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="source" value="files" checked class="rounded border-white/20 bg-white/5 text-amber-500">
+                        <span class="text-gray-300 text-sm">Config Files</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="source" value="imds" checked class="rounded border-white/20 bg-white/5 text-amber-500">
+                        <span class="text-gray-300 text-sm">IMDS</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="source" value="process" class="rounded border-white/20 bg-white/5 text-amber-500">
+                        <span class="text-gray-300 text-sm">Process Memory</span>
+                    </label>
+                </div>
+                
+                <button onclick="harvestCredentials()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-magnet"></i>
+                    Harvest Cloud Credentials
+                </button>
+                
+                <div id="harvestResult" class="mt-4 hidden">
+                    <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                        <pre class="text-sm text-gray-300 overflow-x-auto" id="harvestOutput"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pivot Chain -->
+        <div class="glass rounded-2xl overflow-hidden neon-border mt-6">
+            <div class="px-6 py-4 border-b border-emerald-500/20 bg-emerald-500/5">
+                <h3 class="text-lg font-semibold text-emerald-400 flex items-center gap-2">
+                    <i class="fas fa-project-diagram"></i>
+                    Cloud Pivot Chain
+                </h3>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-400 text-sm mb-4">Execute automated pivot chain across cloud environments.</p>
+                
+                <button onclick="executePivotChain()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-play"></i>
+                    Execute Auto Pivot Chain
+                </button>
+                
+                <div id="chainResult" class="mt-4 hidden">
+                    <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+                        <pre class="text-sm text-gray-300 overflow-x-auto" id="chainOutput"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function selectProvider(provider) {
+        document.querySelectorAll('[id$="Panel"]').forEach(p => p.classList.remove('ring-2', 'ring-white/30'));
+        const panel = document.getElementById(provider + 'Panel') || document.getElementById(provider === 'kubernetes' ? 'k8sPanel' : provider + 'Panel');
+        if (panel) {
+            panel.classList.add('ring-2', 'ring-white/30');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    async function detectEnvironment() {
+        const res = await fetch('/cloud/detect', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
+        const result = await res.json();
+        document.getElementById('detectResult').classList.remove('hidden');
+        document.getElementById('detectOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function probeIMDS() {
+        const target = document.getElementById('imdsTarget').value;
+        const res = await fetch('/cloud/imds/probe', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target }) });
+        const result = await res.json();
+        document.getElementById('imdsResult').classList.remove('hidden');
+        document.getElementById('imdsOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function extractIMDS() {
+        const res = await fetch('/cloud/imds/extract', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ provider: 'aws' }) });
+        const result = await res.json();
+        document.getElementById('imdsResult').classList.remove('hidden');
+        document.getElementById('imdsOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function awsEnum() {
+        const form = document.getElementById('awsForm');
+        const data = { access_key: form.access_key.value, secret_key: form.secret_key.value, region: form.region.value };
+        const res = await fetch('/cloud/aws/enum', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await res.json();
+        document.getElementById('awsResult').classList.remove('hidden');
+        document.getElementById('awsOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function awsPrivesc() {
+        const form = document.getElementById('awsForm');
+        const data = { access_key: form.access_key.value, secret_key: form.secret_key.value, region: form.region.value, technique: 'auto' };
+        const res = await fetch('/cloud/aws/privesc', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await res.json();
+        document.getElementById('awsResult').classList.remove('hidden');
+        document.getElementById('awsOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function azureEnum() {
+        const form = document.getElementById('azureForm');
+        const data = { tenant_id: form.tenant_id.value, use_managed_identity: document.getElementById('azureManagedIdentity').checked };
+        const res = await fetch('/cloud/azure/enum', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await res.json();
+        document.getElementById('azureResult').classList.remove('hidden');
+        document.getElementById('azureOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function azureKeyVault() {
+        const form = document.getElementById('azureForm');
+        const data = { vault_name: form.vault_name.value, use_managed_identity: document.getElementById('azureManagedIdentity').checked };
+        const res = await fetch('/cloud/azure/keyvault', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await res.json();
+        document.getElementById('azureResult').classList.remove('hidden');
+        document.getElementById('azureOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function k8sEnum() {
+        const form = document.getElementById('k8sForm');
+        const data = { api_server: form.api_server.value, token: form.token.value };
+        const res = await fetch('/cloud/kubernetes/enum', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await res.json();
+        document.getElementById('k8sResult').classList.remove('hidden');
+        document.getElementById('k8sOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function k8sSecrets() {
+        const form = document.getElementById('k8sForm');
+        const data = { api_server: form.api_server.value, token: form.token.value, namespace: form.namespace.value };
+        const res = await fetch('/cloud/kubernetes/secrets', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const result = await res.json();
+        document.getElementById('k8sResult').classList.remove('hidden');
+        document.getElementById('k8sOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function containerDetect() {
+        const res = await fetch('/cloud/container/detect', { method: 'GET' });
+        const result = await res.json();
+        document.getElementById('containerResult').classList.remove('hidden');
+        document.getElementById('containerOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function containerEscape() {
+        const technique = document.getElementById('escapeTechnique').value;
+        const res = await fetch('/cloud/container/escape', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ technique }) });
+        const result = await res.json();
+        document.getElementById('containerResult').classList.remove('hidden');
+        document.getElementById('containerOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function harvestCredentials() {
+        const sources = Array.from(document.querySelectorAll('[name="source"]:checked')).map(c => c.value);
+        const res = await fetch('/cloud/credentials/harvest', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sources }) });
+        const result = await res.json();
+        document.getElementById('harvestResult').classList.remove('hidden');
+        document.getElementById('harvestOutput').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function executePivotChain() {
+        const res = await fetch('/cloud/pivot/chain', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
+        const result = await res.json();
+        document.getElementById('chainResult').classList.remove('hidden');
+        document.getElementById('chainOutput').textContent = JSON.stringify(result, null, 2);
+    }
+</script>
+{% endblock %}
