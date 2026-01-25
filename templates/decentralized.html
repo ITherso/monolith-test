@@ -1,1165 +1,708 @@
 {% extends "base.html" %}
-{% block head %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary: #00ff88;
-            --primary-dim: #00ff8840;
-            --danger: #ff3366;
-            --danger-dim: #ff336640;
-            --warning: #ffaa00;
-            --warning-dim: #ffaa0040;
-            --info: #00aaff;
-            --info-dim: #00aaff40;
-            --gold: #ffd700;
-            --gold-dim: #ffd70040;
-            --purple: #9933ff;
-            --purple-dim: #9933ff40;
-            --bg-dark: #0a0a12;
-            --bg-card: rgba(15, 15, 25, 0.95);
-            --text-primary: #e0e0e0;
-            --text-muted: #888;
-        }
-        
-        * {
-            scrollbar-width: thin;
-            scrollbar-color: var(--primary) var(--bg-dark);
-        }
-        
-        *::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        *::-webkit-scrollbar-track {
-            background: var(--bg-dark);
-        }
-        
-        *::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 4px;
-        }
-        
-        body {
-            background: linear-gradient(135deg, var(--bg-dark) 0%, #0d0d1a 50%, #1a1a2e 100%);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-        
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: -1;
-            overflow: hidden;
-        }
-        
-        .bg-animation::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(153, 51, 255, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(0, 170, 255, 0.02) 0%, transparent 50%);
-            animation: bgPulse 15s ease-in-out infinite;
-        }
-        
-        @keyframes bgPulse {
-            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-            50% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
-        }
-        
-        .cyber-navbar {
-            background: linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 10, 20, 0.95) 50%, rgba(0, 0, 0, 0.9) 100%);
-            border-bottom: 2px solid var(--primary);
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
-        }
-        
-        .navbar-brand {
-            font-weight: 900;
-            letter-spacing: 2px;
-            font-size: 1.3em;
-        }
-        
-        .nav-link {
-            color: var(--text-primary) !important;
-            font-weight: 500;
-            padding: 8px 12px !important;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .nav-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
-            transition: left 0.5s ease;
-        }
-        
-        .nav-link:hover::before {
-            left: 100%;
-        }
-        
-        .nav-link:hover {
-            color: var(--primary) !important;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-        }
-        
-        .nav-link.active {
-            color: var(--primary) !important;
-            background: rgba(0, 255, 136, 0.15);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-        }
-        
-        .cyber-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(153, 51, 255, 0.2);
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .cyber-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--purple), transparent);
-        }
-        
-        .cyber-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(153, 51, 255, 0.1);
-        }
-        
-        .card-header-cyber {
-            background: linear-gradient(90deg, rgba(153, 51, 255, 0.1) 0%, transparent 100%);
-            border-bottom: 1px solid rgba(153, 51, 255, 0.2);
-            padding: 15px 20px;
-        }
-        
-        .card-title-cyber {
-            color: var(--purple);
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .card-title-gold {
-            color: var(--gold);
-        }
-        
-        .card-title-primary {
-            color: var(--primary);
-        }
-        
-        .card-title-info {
-            color: var(--info);
-        }
-        
-        .stat-card {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(153, 51, 255, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            background: rgba(153, 51, 255, 0.1);
-            transform: translateY(-5px);
-        }
-        
-        .stat-value {
-            font-size: 2.5em;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--purple), var(--info));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .stat-label {
-            color: var(--text-muted);
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .node-card {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(153, 51, 255, 0.2);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .node-card:hover {
-            background: rgba(153, 51, 255, 0.1);
-            border-color: var(--purple);
-        }
-        
-        .node-card.online {
-            border-left: 4px solid var(--primary);
-        }
-        
-        .node-card.offline {
-            border-left: 4px solid var(--danger);
-            opacity: 0.6;
-        }
-        
-        .node-card.busy {
-            border-left: 4px solid var(--warning);
-        }
-        
-        .node-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .node-name {
-            font-weight: 600;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .node-status {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-online {
-            background: rgba(0, 255, 136, 0.2);
-            border: 1px solid var(--primary);
-            color: var(--primary);
-        }
-        
-        .status-offline {
-            background: rgba(255, 51, 102, 0.2);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-        }
-        
-        .status-busy {
-            background: rgba(255, 170, 0, 0.2);
-            border: 1px solid var(--warning);
-            color: var(--warning);
-        }
-        
-        .node-details {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            font-size: 0.85em;
-        }
-        
-        .node-detail {
-            text-align: center;
-        }
-        
-        .node-detail-value {
-            color: var(--info);
-            font-weight: 600;
-        }
-        
-        .node-detail-label {
-            color: var(--text-muted);
-            font-size: 0.8em;
-        }
-        
-        .progress-cyber {
-            height: 6px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .progress-bar-cyber {
-            height: 100%;
-            background: linear-gradient(90deg, var(--purple), var(--info));
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-        
-        .task-card {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(153, 51, 255, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .task-card:hover {
-            background: rgba(153, 51, 255, 0.05);
-        }
-        
-        .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .task-id {
-            font-family: monospace;
-            color: var(--gold);
-            font-size: 0.9em;
-        }
-        
-        .task-priority {
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.7em;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-        
-        .priority-high {
-            background: rgba(255, 51, 102, 0.2);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-        }
-        
-        .priority-medium {
-            background: rgba(255, 170, 0, 0.2);
-            border: 1px solid var(--warning);
-            color: var(--warning);
-        }
-        
-        .priority-low {
-            background: rgba(0, 255, 136, 0.2);
-            border: 1px solid var(--primary);
-            color: var(--primary);
-        }
-        
-        .task-info {
-            display: flex;
-            gap: 20px;
-            font-size: 0.85em;
-            color: var(--text-muted);
-        }
-        
-        .task-info span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .btn-cyber {
-            border: none;
-            color: #000;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-radius: 10px;
-            padding: 10px 20px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-cyber-purple {
-            background: linear-gradient(135deg, var(--purple) 0%, #7a00cc 100%);
-            box-shadow: 0 5px 20px rgba(153, 51, 255, 0.4);
-        }
-        
-        .btn-cyber-purple:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 40px rgba(153, 51, 255, 0.6);
-        }
-        
-        .btn-cyber-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%);
-            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
-        }
-        
-        .btn-cyber-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.6);
-        }
-        
-        .btn-cyber-info {
-            background: linear-gradient(135deg, var(--info) 0%, #0077cc 100%);
-            box-shadow: 0 5px 20px rgba(0, 170, 255, 0.4);
-        }
-        
-        .btn-cyber-info:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 40px rgba(0, 170, 255, 0.6);
-        }
-        
-        .btn-outline-cyber {
-            background: transparent;
-            border: 2px solid var(--purple);
-            color: var(--purple);
-        }
-        
-        .btn-outline-cyber:hover {
-            background: var(--purple);
-            color: #fff;
-        }
-        
-        .form-control-cyber {
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(153, 51, 255, 0.3);
-            color: var(--text-primary);
-            border-radius: 10px;
-            padding: 12px 15px;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control-cyber:focus {
-            border-color: var(--purple);
-            box-shadow: 0 0 20px rgba(153, 51, 255, 0.3), inset 0 2px 10px rgba(0, 0, 0, 0.3);
-            background: rgba(0, 0, 0, 0.7);
-        }
-        
-        .form-control-cyber::placeholder {
-            color: rgba(255, 255, 255, 0.3);
-        }
-        
-        .form-label-cyber {
-            color: var(--purple);
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .discovery-progress {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .discovery-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(153, 51, 255, 0.2);
-            border-top: 3px solid var(--purple);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .discovery-info {
-            flex: 1;
-        }
-        
-        .discovery-status {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-        
-        .discovery-detail {
-            color: var(--text-muted);
-            font-size: 0.85em;
-        }
-        
-        .capability-tag {
-            display: inline-block;
-            padding: 3px 8px;
-            background: rgba(153, 51, 255, 0.2);
-            border: 1px solid rgba(153, 51, 255, 0.4);
-            border-radius: 4px;
-            font-size: 0.75em;
-            color: var(--purple);
-            margin: 2px;
-        }
-        
-        .network-graph {
-            height: 200px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .pulse-dot {
-            width: 10px;
-            height: 10px;
-            background: var(--primary);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @media (max-width: 992px) {
-            .cyber-card {
-                margin-bottom: 20px;
-            }
-        }
-    </style>
-{% endblock %}
-{% block body %}
-    <!-- Background Animation -->
-    <div class="bg-animation"></div>
+
+{% block title %}Decentralized Pentest Network - MONOLITH{% endblock %}
+
+{% block content %}
+<style>
+    .neon-purple::before { background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), transparent, rgba(167, 139, 250, 0.4)) !important; }
+    .neon-emerald::before { background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), transparent, rgba(52, 211, 153, 0.4)) !important; }
+    .neon-amber::before { background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), transparent, rgba(251, 191, 36, 0.4)) !important; }
+    .neon-cyan::before { background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), transparent, rgba(45, 212, 191, 0.4)) !important; }
+    .neon-red::before { background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), transparent, rgba(248, 113, 113, 0.4)) !important; }
+    .neon-blue::before { background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), transparent, rgba(96, 165, 250, 0.4)) !important; }
+    .neon-fuchsia::before { background: linear-gradient(135deg, rgba(217, 70, 239, 0.4), transparent, rgba(232, 121, 249, 0.4)) !important; }
     
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg sticky-top cyber-navbar py-3">
-        <div class="container-fluid">
-            <a class="navbar-brand fs-4" href="/">
-                <i class="fas fa-skull-crossbones me-2" style="color: #ff3366;"></i><span style="background: linear-gradient(90deg, #ff3366, #9933ff, #00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SHADOW ARSENAL</span>
-            </a>
-            
-            <button class="navbar-toggler bg-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">
-                            <i class="fas fa-home me-2"></i>Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/scans">
-                            <i class="fas fa-radar me-2"></i>Scans
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/kerberos">
-                            <i class="fas fa-key me-2"></i>Kerberos
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/infra">
-                            <i class="fas fa-server me-2"></i>Infrastructure
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/exploits">
-                            <i class="fas fa-bug me-2"></i>Exploits
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/phishing">
-                            <i class="fas fa-envelope me-2"></i>Phishing
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link golden-link" href="/golden">
-                            <i class="fas fa-gem me-2"></i>Golden Ticket
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link attack-link" href="/attack-graph">
-                            <i class="fas fa-project-diagram me-2"></i>Attack Graph
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active c2-link" href="/decentralized">
-                            <i class="fas fa-project-diagram me-2"></i>DeFi Pentest
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/c2">
-                            <i class="fas fa-microchip me-2"></i>C2 Implant
-                        </a>
-                    </li>
-                </ul>
-                
-                <div class="d-flex align-items-center gap-3">
-                    <span class="navbar-text text-white">
-                        <i class="fas fa-user-shield me-2" style="color: var(--primary);"></i>
-                        {{ user }}
-                    </span>
-                    <a href="/logout" class="btn btn-outline-light btn-sm">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    .pulse-dot { animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+    
+    .node-glow { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+    .task-hover:hover { transform: translateX(5px); border-left-color: #a78bfa !important; }
+</style>
 
-    <div class="container-fluid py-4 px-4">
+<div class="min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="cyber-card p-4 fade-in">
-                    <div class="d-flex justify-content-between align-items-center">
+        <div class="mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <i class="fas fa-network-wired text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 text-transparent bg-clip-text">
+                        Decentralized Pentest Network
+                    </h1>
+                    <p class="text-gray-400 mt-1">Distributed Node Marketplace • P2P Task Distribution • Collaborative Security Operations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div class="glass rounded-xl p-4 border border-purple-500/20 neon-border neon-purple">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <i class="fas fa-server text-xl text-purple-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Nodes</p>
+                        <p class="text-2xl font-bold text-purple-400" id="totalNodes">12</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-emerald-500/20 neon-border neon-emerald">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <i class="fas fa-check-circle text-xl text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Online</p>
+                        <p class="text-2xl font-bold text-emerald-400" id="onlineNodes">8</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-amber-500/20 neon-border neon-amber">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <i class="fas fa-spinner text-xl text-amber-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Busy</p>
+                        <p class="text-2xl font-bold text-amber-400" id="busyNodes">3</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-cyan-500/20 neon-border neon-cyan">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                        <i class="fas fa-tasks text-xl text-cyan-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Active Tasks</p>
+                        <p class="text-2xl font-bold text-cyan-400" id="activeTasks">47</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 border border-fuchsia-500/20 neon-border neon-fuchsia">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-fuchsia-500/20 flex items-center justify-center">
+                        <i class="fas fa-tachometer-alt text-xl text-fuchsia-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Avg Load</p>
+                        <p class="text-2xl font-bold text-fuchsia-400" id="avgLoad">34%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Discovery & Topology -->
+            <div class="space-y-6">
+                <!-- Node Discovery -->
+                <div class="glass rounded-2xl neon-border neon-purple overflow-hidden">
+                    <div class="bg-gradient-to-r from-purple-500/20 to-violet-500/20 px-6 py-4 border-b border-purple-500/20">
+                        <h3 class="text-lg font-bold text-purple-400 flex items-center gap-2">
+                            <i class="fas fa-radar"></i>
+                            Node Discovery
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-4">
                         <div>
-                            <h2 class="mb-2" style="display: flex; align-items: center; gap: 15px;">
-                                <i class="fas fa-project-diagram" style="color: var(--purple); font-size: 1.5em;"></i>
-                                <span style="background: linear-gradient(90deg, var(--purple), var(--info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">DECENTRALIZED PENTEST NETWORK</span>
-                            </h2>
-                            <p class="text-muted mb-0">
-                                <i class="fas fa-network-wired me-2"></i>Distributed node marketplace for collaborative security operations
-                            </p>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">
+                                <i class="fas fa-broadcast-tower text-purple-400 mr-2"></i>Discovery Range
+                            </label>
+                            <select id="discoveryRange" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50">
+                                <option value="local">Local Network (192.168.x.x)</option>
+                                <option value="vpn">VPN Subnet (10.x.x.x)</option>
+                                <option value="tor">Tor Hidden Services</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
                         </div>
-                        <div class="d-flex gap-3">
-                            <button class="btn btn-outline-cyber" onclick="toggleDiscovery()">
-                                <i class="fas fa-radar me-2"></i>Node Discovery
-                            </button>
-                            <button class="btn-cyber btn-cyber-purple" onclick="openTaskModal()">
-                                <i class="fas fa-plus me-2"></i>New Task
-                            </button>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">
+                                <i class="fas fa-filter text-violet-400 mr-2"></i>Node Type Filter
+                            </label>
+                            <select id="nodeTypeFilter" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50">
+                                <option value="all">All Nodes</option>
+                                <option value="scanner">🔍 Scanners Only</option>
+                                <option value="exploit">💥 Exploit Engines</option>
+                                <option value="enum">📋 Enumerators</option>
+                                <option value="c2">🎯 C2 Nodes</option>
+                            </select>
                         </div>
+                        
+                        <div id="discoveryStatus" class="hidden p-4 rounded-xl bg-purple-500/10 border border-purple-500/30">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full bg-purple-400 pulse-dot"></div>
+                                <span class="text-purple-300 text-sm">Scanning network... Found <span id="foundNodes">0</span> nodes</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="startDiscovery()" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-violet-500/20 border border-purple-500/30 text-purple-400 font-semibold hover:from-purple-500/30 hover:to-violet-500/30 transition-all">
+                            <i class="fas fa-play mr-2"></i>Start Discovery
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Network Statistics -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="stat-card fade-in">
-                    <div class="stat-value" id="totalNodes">12</div>
-                    <div class="stat-label">Total Nodes</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card fade-in">
-                    <div class="stat-value" id="activeNodes" style="background: linear-gradient(135deg, var(--primary), #00cc6a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">8</div>
-                    <div class="stat-label">Active Nodes</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card fade-in">
-                    <div class="stat-value" id="totalTasks">47</div>
-                    <div class="stat-label">Tasks Run</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card fade-in">
-                    <div class="stat-value" id="avgLoad" style="background: linear-gradient(135deg, var(--warning), #ff7700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">34%</div>
-                    <div class="stat-label">Avg Load</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <!-- Node Discovery Panel -->
-            <div class="col-lg-4">
-                <div class="cyber-card mb-4 fade-in">
-                    <div class="card-header-cyber">
-                        <h5 class="card-title-cyber mb-0">
-                            <i class="fas fa-radar"></i> NODE DISCOVERY
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="discoveryArea">
-                            <div class="discovery-progress" id="discoveryProgress" style="display: none;">
-                                <div class="discovery-spinner"></div>
-                                <div class="discovery-info">
-                                    <div class="discovery-status">Scanning network...</div>
-                                    <div class="discovery-detail" id="discoveryDetail">Found 3 potential nodes</div>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label-cyber">
-                                    <i class="fas fa-broadcast-tower"></i> Discovery Range
-                                </label>
-                                <select class="form-control-cyber" id="discoveryRange">
-                                    <option value="local">Local Network (192.168.x.x)</option>
-                                    <option value="vpn">VPN Subnet (10.x.x.x)</option>
-                                    <option value="custom">Custom Range</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label-cyber">
-                                    <i class="fas fa-filter"></i> Node Type
-                                </label>
-                                <select class="form-control-cyber" id="nodeType">
-                                    <option value="all">All Nodes</option>
-                                    <option value="scanner">Scanners Only</option>
-                                    <option value="exploit">Exploit Engines</option>
-                                    <option value="enum">Enumerators</option>
-                                </select>
-                            </div>
-                            
-                            <button class="btn-cyber btn-cyber-purple w-100" onclick="startDiscovery()">
-                                <i class="fas fa-play me-2"></i>START DISCOVERY
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
+                
                 <!-- Network Topology -->
-                <div class="cyber-card fade-in">
-                    <div class="card-header-cyber">
-                        <h5 class="card-title-cyber mb-0">
-                            <i class="fas fa-share-alt"></i> NETWORK TOPOLOGY
-                        </h5>
+                <div class="glass rounded-2xl neon-border neon-cyan overflow-hidden">
+                    <div class="bg-gradient-to-r from-cyan-500/20 to-teal-500/20 px-6 py-4 border-b border-cyan-500/20">
+                        <h3 class="text-lg font-bold text-cyan-400 flex items-center gap-2">
+                            <i class="fas fa-share-alt"></i>
+                            Network Topology
+                        </h3>
                     </div>
-                    <div class="card-body">
-                        <div class="network-graph" id="networkGraph">
+                    <div class="p-6">
+                        <div class="h-48 flex items-center justify-center">
                             <canvas id="topologyChart"></canvas>
                         </div>
-                        <div class="mt-3 text-center">
-                            <span class="me-3"><i class="fas fa-circle me-1" style="color: var(--primary);"></i> Online</span>
-                            <span class="me-3"><i class="fas fa-circle me-1" style="color: var(--warning);"></i> Busy</span>
-                            <span><i class="fas fa-circle me-1" style="color: var(--danger);"></i> Offline</span>
+                        <div class="flex justify-center gap-6 mt-4 text-sm">
+                            <span class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                                <span class="text-gray-400">Online</span>
+                            </span>
+                            <span class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                                <span class="text-gray-400">Busy</span>
+                            </span>
+                            <span class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                                <span class="text-gray-400">Offline</span>
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Available Nodes -->
-            <div class="col-lg-8">
-                <div class="cyber-card mb-4 fade-in">
-                    <div class="card-header-cyber">
-                        <h5 class="card-title-cyber mb-0">
-                            <i class="fas fa-server"></i> AVAILABLE NODES
-                        </h5>
+            
+            <!-- Center Column - Available Nodes -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Available Nodes -->
+                <div class="glass rounded-2xl neon-border neon-emerald overflow-hidden">
+                    <div class="bg-gradient-to-r from-emerald-500/20 to-green-500/20 px-6 py-4 border-b border-emerald-500/20 flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                            <i class="fas fa-server"></i>
+                            Available Nodes
+                        </h3>
+                        <button onclick="refreshNodes()" class="text-emerald-400 hover:text-emerald-300 transition-colors">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
-                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        <!-- Node 1 -->
-                        <div class="node-card online">
-                            <div class="node-header">
-                                <div class="node-name">
-                                    <i class="fas fa-desktop"></i> SHADOW-SCANNER-01
-                                    <span class="capability-tag">SCANNER</span>
-                                    <span class="capability-tag">NMAP</span>
+                    <div class="p-4 max-h-96 overflow-y-auto space-y-3" id="nodesList">
+                        <!-- Node 1 - Online Scanner -->
+                        <div class="p-4 rounded-xl bg-white/5 border border-emerald-500/30 hover:border-emerald-500/50 transition-all node-glow">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                        <i class="fas fa-desktop text-emerald-400"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-white">SHADOW-SCANNER-01</h4>
+                                        <p class="text-xs text-gray-400">192.168.1.101</p>
+                                    </div>
                                 </div>
-                                <span class="node-status status-online">
-                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ONLINE
-                                </span>
-                            </div>
-                            <div class="node-details">
-                                <div class="node-detail">
-                                    <div class="node-detail-value">192.168.1.101</div>
-                                    <div class="node-detail-label">IP Address</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">4 / 8</div>
-                                    <div class="node-detail-label">Slots Used</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">45%</div>
-                                    <div class="node-detail-label">Load</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 rounded text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30">SCANNER</span>
+                                    <span class="px-2 py-1 rounded text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">NMAP</span>
+                                    <span class="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>ONLINE
+                                    </span>
                                 </div>
                             </div>
-                            <div class="progress-cyber mt-2">
-                                <div class="progress-bar-cyber" style="width: 45%;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Node 2 -->
-                        <div class="node-card online">
-                            <div class="node-header">
-                                <div class="node-name">
-                                    <i class="fas fa-server"></i> SHADOW-EXPLOIT-01
-                                    <span class="capability-tag">EXPLOIT</span>
-                                    <span class="capability-tag">MSF</span>
+                            <div class="grid grid-cols-3 gap-4 text-center mb-3">
+                                <div>
+                                    <p class="text-lg font-bold text-cyan-400">4/8</p>
+                                    <p class="text-xs text-gray-500">Slots</p>
                                 </div>
-                                <span class="node-status status-busy">
-                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> BUSY
-                                </span>
-                            </div>
-                            <div class="node-details">
-                                <div class="node-detail">
-                                    <div class="node-detail-value">192.168.1.102</div>
-                                    <div class="node-detail-label">IP Address</div>
+                                <div>
+                                    <p class="text-lg font-bold text-amber-400">45%</p>
+                                    <p class="text-xs text-gray-500">Load</p>
                                 </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">6 / 8</div>
-                                    <div class="node-detail-label">Slots Used</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">78%</div>
-                                    <div class="node-detail-label">Load</div>
+                                <div>
+                                    <p class="text-lg font-bold text-purple-400">12ms</p>
+                                    <p class="text-xs text-gray-500">Latency</p>
                                 </div>
                             </div>
-                            <div class="progress-cyber mt-2">
-                                <div class="progress-bar-cyber" style="width: 78%; background: linear-gradient(90deg, var(--warning), var(--danger));"></div>
+                            <div class="h-2 rounded-full bg-white/5 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500" style="width: 45%"></div>
                             </div>
                         </div>
-
-                        <!-- Node 3 -->
-                        <div class="node-card online">
-                            <div class="node-header">
-                                <div class="node-name">
-                                    <i class="fas fa-laptop"></i> SHADOW-ENUM-02
-                                    <span class="capability-tag">ENUM</span>
-                                    <span class="capability-tag">BLOODHOUND</span>
+                        
+                        <!-- Node 2 - Busy Exploit -->
+                        <div class="p-4 rounded-xl bg-white/5 border border-amber-500/30 hover:border-amber-500/50 transition-all">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                        <i class="fas fa-server text-amber-400"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-white">SHADOW-EXPLOIT-01</h4>
+                                        <p class="text-xs text-gray-400">192.168.1.102</p>
+                                    </div>
                                 </div>
-                                <span class="node-status status-online">
-                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ONLINE
-                                </span>
-                            </div>
-                            <div class="node-details">
-                                <div class="node-detail">
-                                    <div class="node-detail-value">10.0.0.45</div>
-                                    <div class="node-detail-label">IP Address</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">2 / 8</div>
-                                    <div class="node-detail-label">Slots Used</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">22%</div>
-                                    <div class="node-detail-label">Load</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">EXPLOIT</span>
+                                    <span class="px-2 py-1 rounded text-xs bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30">MSF</span>
+                                    <span class="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                        <span class="w-2 h-2 rounded-full bg-amber-400 pulse-dot"></span>BUSY
+                                    </span>
                                 </div>
                             </div>
-                            <div class="progress-cyber mt-2">
-                                <div class="progress-bar-cyber" style="width: 22%;"></div>
+                            <div class="grid grid-cols-3 gap-4 text-center mb-3">
+                                <div>
+                                    <p class="text-lg font-bold text-cyan-400">6/8</p>
+                                    <p class="text-xs text-gray-500">Slots</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-red-400">78%</p>
+                                    <p class="text-xs text-gray-500">Load</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-purple-400">8ms</p>
+                                    <p class="text-xs text-gray-500">Latency</p>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Node 4 -->
-                        <div class="node-card offline">
-                            <div class="node-header">
-                                <div class="node-name">
-                                    <i class="fas fa-desktop"></i> SHADOW-SCANNER-02
-                                    <span class="capability-tag">SCANNER</span>
-                                    <span class="capability-tag">NUCLEI</span>
-                                </div>
-                                <span class="node-status status-offline">
-                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> OFFLINE
-                                </span>
-                            </div>
-                            <div class="node-details">
-                                <div class="node-detail">
-                                    <div class="node-detail-value">192.168.1.105</div>
-                                    <div class="node-detail-label">IP Address</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">0 / 8</div>
-                                    <div class="node-detail-label">Slots Used</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">--</div>
-                                    <div class="node-detail-label">Load</div>
-                                </div>
+                            <div class="h-2 rounded-full bg-white/5 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-amber-500 to-red-500" style="width: 78%"></div>
                             </div>
                         </div>
-
-                        <!-- Node 5 -->
-                        <div class="node-card online">
-                            <div class="node-header">
-                                <div class="node-name">
-                                    <i class="fas fa-server"></i> SHADOW-WEB-01
-                                    <span class="capability-tag">WEB</span>
-                                    <span class="capability-tag">BURP</span>
+                        
+                        <!-- Node 3 - BloodHound -->
+                        <div class="p-4 rounded-xl bg-white/5 border border-emerald-500/30 hover:border-emerald-500/50 transition-all">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                        <i class="fas fa-laptop text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-white">SHADOW-ENUM-02</h4>
+                                        <p class="text-xs text-gray-400">10.0.0.45</p>
+                                    </div>
                                 </div>
-                                <span class="node-status status-online">
-                                    <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ONLINE
-                                </span>
-                            </div>
-                            <div class="node-details">
-                                <div class="node-detail">
-                                    <div class="node-detail-value">10.0.0.50</div>
-                                    <div class="node-detail-label">IP Address</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">3 / 8</div>
-                                    <div class="node-detail-label">Slots Used</div>
-                                </div>
-                                <div class="node-detail">
-                                    <div class="node-detail-value">38%</div>
-                                    <div class="node-detail-label">Load</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30">ENUM</span>
+                                    <span class="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">BLOODHOUND</span>
+                                    <span class="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>ONLINE
+                                    </span>
                                 </div>
                             </div>
-                            <div class="progress-cyber mt-2">
-                                <div class="progress-bar-cyber" style="width: 38%;"></div>
+                            <div class="grid grid-cols-3 gap-4 text-center mb-3">
+                                <div>
+                                    <p class="text-lg font-bold text-cyan-400">2/8</p>
+                                    <p class="text-xs text-gray-500">Slots</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-emerald-400">22%</p>
+                                    <p class="text-xs text-gray-500">Load</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-purple-400">45ms</p>
+                                    <p class="text-xs text-gray-500">Latency</p>
+                                </div>
+                            </div>
+                            <div class="h-2 rounded-full bg-white/5 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500" style="width: 22%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Node 4 - C2 Node -->
+                        <div class="p-4 rounded-xl bg-white/5 border border-emerald-500/30 hover:border-emerald-500/50 transition-all">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-fuchsia-500/20 flex items-center justify-center">
+                                        <i class="fas fa-satellite-dish text-fuchsia-400"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-white">SHADOW-C2-MASTER</h4>
+                                        <p class="text-xs text-gray-400">10.0.0.1</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 rounded text-xs bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30">C2</span>
+                                    <span class="px-2 py-1 rounded text-xs bg-violet-500/20 text-violet-400 border border-violet-500/30">COBALT</span>
+                                    <span class="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>ONLINE
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-center mb-3">
+                                <div>
+                                    <p class="text-lg font-bold text-cyan-400">1/16</p>
+                                    <p class="text-xs text-gray-500">Slots</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-emerald-400">12%</p>
+                                    <p class="text-xs text-gray-500">Load</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-purple-400">3ms</p>
+                                    <p class="text-xs text-gray-500">Latency</p>
+                                </div>
+                            </div>
+                            <div class="h-2 rounded-full bg-white/5 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500" style="width: 12%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Node 5 - Offline -->
+                        <div class="p-4 rounded-xl bg-white/5 border border-red-500/30 opacity-60">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                                        <i class="fas fa-server text-red-400"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-white">SHADOW-RECON-03</h4>
+                                        <p class="text-xs text-gray-400">192.168.1.150</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 rounded text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">RECON</span>
+                                    <span class="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-400 border border-red-500/30">
+                                        <span class="w-2 h-2 rounded-full bg-red-400"></span>OFFLINE
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-center text-gray-500 text-sm py-2">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>Last seen: 2 hours ago
                             </div>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Task Distribution -->
-                <div class="cyber-card fade-in">
-                    <div class="card-header-cyber">
-                        <h5 class="card-title-cyber mb-0">
-                            <i class="fas fa-tasks"></i> ACTIVE TASKS
-                        </h5>
+                <div class="glass rounded-2xl neon-border neon-amber overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-6 py-4 border-b border-amber-500/20 flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-amber-400 flex items-center gap-2">
+                            <i class="fas fa-tasks"></i>
+                            Task Distribution Queue
+                        </h3>
+                        <button onclick="openTaskModal()" class="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-all text-sm">
+                            <i class="fas fa-plus mr-2"></i>New Task
+                        </button>
                     </div>
-                    <div class="card-body" style="max-height: 350px; overflow-y: auto;">
+                    <div class="p-4 space-y-3 max-h-64 overflow-y-auto">
                         <!-- Task 1 -->
-                        <div class="task-card">
-                            <div class="task-header">
-                                <span class="task-id">TASK-8F2A</span>
-                                <span class="task-priority priority-high">HIGH</span>
+                        <div class="p-3 rounded-xl bg-white/5 border-l-4 border-red-500 task-hover transition-all cursor-pointer">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">HIGH</span>
+                                    <span class="font-mono text-xs text-gray-500">TASK-0x7A3F</span>
+                                </div>
+                                <span class="text-xs text-cyan-400">SHADOW-SCANNER-01</span>
                             </div>
-                            <div class="mb-2" style="color: var(--text-primary);">
-                                Full port scan on 192.168.1.0/24
+                            <p class="text-sm text-white mb-2">Full port scan on 10.0.0.0/24</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span><i class="fas fa-clock mr-1"></i>Running: 12m</span>
+                                <span class="text-emerald-400">Progress: 67%</span>
                             </div>
-                            <div class="task-info">
-                                <span><i class="fas fa-server"></i> 3 nodes assigned</span>
-                                <span><i class="fas fa-clock"></i> Running 5m 23s</span>
-                                <span><i class="fas fa-percent"></i> 67%</span>
-                            </div>
-                            <div class="progress-cyber mt-2">
-                                <div class="progress-bar-cyber" style="width: 67%;"></div>
+                            <div class="h-1.5 rounded-full bg-white/5 overflow-hidden mt-2">
+                                <div class="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500" style="width: 67%"></div>
                             </div>
                         </div>
-
+                        
                         <!-- Task 2 -->
-                        <div class="task-card">
-                            <div class="task-header">
-                                <span class="task-id">TASK-9B3C</span>
-                                <span class="task-priority priority-medium">MEDIUM</span>
+                        <div class="p-3 rounded-xl bg-white/5 border-l-4 border-amber-500 task-hover transition-all cursor-pointer">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-400">MEDIUM</span>
+                                    <span class="font-mono text-xs text-gray-500">TASK-0x8B2E</span>
+                                </div>
+                                <span class="text-xs text-cyan-400">SHADOW-EXPLOIT-01</span>
                             </div>
-                            <div class="mb-2" style="color: var(--text-primary);">
-                                Vulnerability assessment on web targets
+                            <p class="text-sm text-white mb-2">EternalBlue exploitation attempt</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span><i class="fas fa-clock mr-1"></i>Running: 5m</span>
+                                <span class="text-amber-400">Progress: 34%</span>
                             </div>
-                            <div class="task-info">
-                                <span><i class="fas fa-server"></i> 1 node assigned</span>
-                                <span><i class="fas fa-clock"></i> Running 12m 45s</span>
-                                <span><i class="fas fa-percent"></i> 89%</span>
-                            </div>
-                            <div class="progress-cyber mt-2">
-                                <div class="progress-bar-cyber" style="width: 89%;"></div>
+                            <div class="h-1.5 rounded-full bg-white/5 overflow-hidden mt-2">
+                                <div class="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-500" style="width: 34%"></div>
                             </div>
                         </div>
-
+                        
                         <!-- Task 3 -->
-                        <div class="task-card">
-                            <div class="task-header">
-                                <span class="task-id">TASK-7D1E</span>
-                                <span class="task-priority priority-low">LOW</span>
+                        <div class="p-3 rounded-xl bg-white/5 border-l-4 border-emerald-500 task-hover transition-all cursor-pointer">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400">LOW</span>
+                                    <span class="font-mono text-xs text-gray-500">TASK-0x9C1D</span>
+                                </div>
+                                <span class="text-xs text-cyan-400">SHADOW-ENUM-02</span>
                             </div>
-                            <div class="mb-2" style="color: var(--text-primary);">
-                                DNS enumeration on target domain
+                            <p class="text-sm text-white mb-2">BloodHound AD enumeration</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span><i class="fas fa-clock mr-1"></i>Running: 23m</span>
+                                <span class="text-emerald-400">Progress: 89%</span>
                             </div>
-                            <div class="task-info">
-                                <span><i class="fas fa-server"></i> 2 nodes assigned</span>
-                                <span><i class="fas fa-clock"></i> Queued</span>
-                                <span><i class="fas fa-percent"></i> 0%</span>
+                            <div class="h-1.5 rounded-full bg-white/5 overflow-hidden mt-2">
+                                <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500" style="width: 89%"></div>
                             </div>
-                            <div class="progress-cyber mt-2">
-                                <div class="progress-bar-cyber" style="width: 0%;"></div>
+                        </div>
+                        
+                        <!-- Task 4 - Queued -->
+                        <div class="p-3 rounded-xl bg-white/5 border-l-4 border-purple-500 task-hover transition-all cursor-pointer">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400">QUEUED</span>
+                                    <span class="font-mono text-xs text-gray-500">TASK-0xAD4F</span>
+                                </div>
+                                <span class="text-xs text-gray-500">Waiting...</span>
+                            </div>
+                            <p class="text-sm text-white mb-2">Kerberoasting attack on DC</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span><i class="fas fa-hourglass-half mr-1"></i>Queued: 3m ago</span>
+                                <span class="text-purple-400">Pending assignment</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Task Modal -->
-    <div class="modal fade" id="taskModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--purple);">
-                <div class="modal-header" style="border-bottom: 1px solid rgba(153, 51, 255, 0.3);">
-                    <h5 class="modal-title" style="color: var(--purple);">
-                        <i class="fas fa-plus-circle me-2"></i>Create New Task
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        
+        <!-- Bottom Section - Activity & Quick Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <!-- Recent Activity -->
+            <div class="glass rounded-2xl neon-border neon-blue overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500/20 to-indigo-500/20 px-6 py-4 border-b border-blue-500/20">
+                    <h3 class="text-lg font-bold text-blue-400 flex items-center gap-2">
+                        <i class="fas fa-history"></i>
+                        Recent Activity
+                    </h3>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label-cyber">Task Name</label>
-                        <input type="text" class="form-control-cyber" placeholder="e.g., Network scan Phase 1" id="taskName">
+                <div class="p-4 space-y-2 max-h-64 overflow-y-auto font-mono text-sm">
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <span class="text-emerald-400">[✓]</span>
+                        <span class="text-gray-500">14:32:15</span>
+                        <span class="text-white">TASK-0x7A3F completed on SHADOW-SCANNER-01</span>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label-cyber">Target Range</label>
-                        <input type="text" class="form-control-cyber" placeholder="e.g., 192.168.1.0/24 or target.com" id="taskTarget">
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <span class="text-cyan-400">[→]</span>
+                        <span class="text-gray-500">14:31:42</span>
+                        <span class="text-white">New node discovered: 192.168.1.155</span>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label-cyber">Task Type</label>
-                            <select class="form-control-cyber" id="taskType">
-                                <option value="scan">Port Scan</option>
-                                <option value="vuln">Vulnerability Scan</option>
-                                <option value="enum">Enumeration</option>
-                                <option value="exploit">Exploitation</option>
-                                <option value="recon">Reconnaissance</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label-cyber">Priority</label>
-                            <select class="form-control-cyber" id="taskPriority">
-                                <option value="low">Low</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="high">High</option>
-                            </select>
-                        </div>
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <span class="text-amber-400">[!]</span>
+                        <span class="text-gray-500">14:30:18</span>
+                        <span class="text-white">SHADOW-EXPLOIT-01 load threshold exceeded</span>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label-cyber">Node Requirements</label>
-                        <input type="text" class="form-control-cyber" placeholder="e.g., scanner, exploit, 4+ slots available" id="taskRequirements">
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <span class="text-purple-400">[+]</span>
+                        <span class="text-gray-500">14:29:55</span>
+                        <span class="text-white">TASK-0x8B2E assigned to SHADOW-EXPLOIT-01</span>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label-cyber">Description</label>
-                        <textarea class="form-control-cyber" rows="3" placeholder="Task description and objectives..." id="taskDescription"></textarea>
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <span class="text-red-400">[✗]</span>
+                        <span class="text-gray-500">14:28:33</span>
+                        <span class="text-white">SHADOW-RECON-03 went offline</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <span class="text-emerald-400">[✓]</span>
+                        <span class="text-gray-500">14:27:11</span>
+                        <span class="text-white">BloodHound data collected: 2,847 objects</span>
                     </div>
                 </div>
-                <div class="modal-footer" style="border-top: 1px solid rgba(153, 51, 255, 0.3);">
-                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn-cyber btn-cyber-purple" onclick="createTask()">
-                        <i class="fas fa-rocket me-2"></i>Launch Task
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="glass rounded-2xl neon-border neon-fuchsia overflow-hidden">
+                <div class="bg-gradient-to-r from-fuchsia-500/20 to-pink-500/20 px-6 py-4 border-b border-fuchsia-500/20">
+                    <h3 class="text-lg font-bold text-fuchsia-400 flex items-center gap-2">
+                        <i class="fas fa-bolt"></i>
+                        Quick Actions
+                    </h3>
+                </div>
+                <div class="p-6 grid grid-cols-2 gap-4">
+                    <button onclick="massTask('scan')" class="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-all text-left group">
+                        <i class="fas fa-search text-2xl text-purple-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                        <h4 class="font-semibold text-white">Mass Scan</h4>
+                        <p class="text-xs text-gray-500">Distribute scan across all nodes</p>
+                    </button>
+                    
+                    <button onclick="massTask('exploit')" class="p-4 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all text-left group">
+                        <i class="fas fa-crosshairs text-2xl text-red-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                        <h4 class="font-semibold text-white">Auto Exploit</h4>
+                        <p class="text-xs text-gray-500">Run exploits on discovered vulns</p>
+                    </button>
+                    
+                    <button onclick="massTask('enum')" class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition-all text-left group">
+                        <i class="fas fa-sitemap text-2xl text-blue-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                        <h4 class="font-semibold text-white">AD Enum</h4>
+                        <p class="text-xs text-gray-500">Full Active Directory enumeration</p>
+                    </button>
+                    
+                    <button onclick="massTask('exfil')" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all text-left group">
+                        <i class="fas fa-cloud-download-alt text-2xl text-amber-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                        <h4 class="font-semibold text-white">Collect Loot</h4>
+                        <p class="text-xs text-gray-500">Gather results from all nodes</p>
                     </button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // Initialize topology chart
-        document.addEventListener('DOMContentLoaded', function() {
-            initTopologyChart();
-        });
-
-        function initTopologyChart() {
-            const ctx = document.getElementById('topologyChart');
-            if (!ctx) return;
+<!-- New Task Modal -->
+<div id="taskModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="glass rounded-2xl neon-border neon-purple w-full max-w-lg">
+        <div class="bg-gradient-to-r from-purple-500/20 to-violet-500/20 px-6 py-4 border-b border-purple-500/20 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-purple-400 flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i>
+                Create New Task
+            </h3>
+            <button onclick="closeTaskModal()" class="text-gray-400 hover:text-white transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Task Name</label>
+                <input type="text" id="taskName" placeholder="e.g., Network Reconnaissance Phase 1" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50">
+            </div>
             
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Online', 'Busy', 'Offline'],
-                    datasets: [{
-                        data: [8, 2, 2],
-                        backgroundColor: [
-                            '#00ff88',
-                            '#ffaa00',
-                            '#ff3366'
-                        ],
-                        borderColor: 'transparent',
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Task Type</label>
+                <select id="taskType" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50">
+                    <option value="scan">🔍 Network Scan</option>
+                    <option value="exploit">💥 Exploitation</option>
+                    <option value="enum">📋 Enumeration</option>
+                    <option value="c2">🎯 C2 Operation</option>
+                    <option value="custom">⚙️ Custom Script</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Priority</label>
+                <div class="flex gap-3">
+                    <label class="flex-1">
+                        <input type="radio" name="priority" value="high" class="hidden peer">
+                        <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center cursor-pointer peer-checked:border-red-500/50 peer-checked:bg-red-500/10 transition-all">
+                            <span class="text-red-400 font-semibold">High</span>
+                        </div>
+                    </label>
+                    <label class="flex-1">
+                        <input type="radio" name="priority" value="medium" class="hidden peer" checked>
+                        <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center cursor-pointer peer-checked:border-amber-500/50 peer-checked:bg-amber-500/10 transition-all">
+                            <span class="text-amber-400 font-semibold">Medium</span>
+                        </div>
+                    </label>
+                    <label class="flex-1">
+                        <input type="radio" name="priority" value="low" class="hidden peer">
+                        <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center cursor-pointer peer-checked:border-emerald-500/50 peer-checked:bg-emerald-500/10 transition-all">
+                            <span class="text-emerald-400 font-semibold">Low</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Target Node</label>
+                <select id="targetNode" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50">
+                    <option value="auto">🤖 Auto-assign (Best Available)</option>
+                    <option value="shadow-scanner-01">SHADOW-SCANNER-01</option>
+                    <option value="shadow-exploit-01">SHADOW-EXPLOIT-01</option>
+                    <option value="shadow-enum-02">SHADOW-ENUM-02</option>
+                    <option value="shadow-c2-master">SHADOW-C2-MASTER</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                <textarea id="taskDesc" rows="3" placeholder="Task details and objectives..." class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50 resize-none"></textarea>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeTaskModal()" class="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 font-semibold hover:bg-white/10 transition-all">
+                    Cancel
+                </button>
+                <button onclick="createTask()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-violet-500/20 border border-purple-500/30 text-purple-400 font-semibold hover:from-purple-500/30 hover:to-violet-500/30 transition-all">
+                    <i class="fas fa-rocket mr-2"></i>Launch Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Topology Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('topologyChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Online', 'Busy', 'Offline'],
+                datasets: [{
+                    data: [8, 3, 1],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderColor: 'transparent',
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false }
                 }
-            });
-        }
-
-        function startDiscovery() {
-            const progress = document.getElementById('discoveryProgress');
-            const detail = document.getElementById('discoveryDetail');
-            progress.style.display = 'flex';
-            
-            let count = 0;
-            const interval = setInterval(() => {
-                count++;
-                if (count === 1) {
-                    detail.textContent = 'Scanning 192.168.1.x range...';
-                } else if (count === 2) {
-                    detail.textContent = 'Found 3 potential nodes...';
-                } else if (count === 3) {
-                    detail.textContent = 'Verifying node capabilities...';
-                } else if (count === 4) {
-                    detail.textContent = 'Finalizing discovery...';
-                } else {
-                    clearInterval(interval);
-                    progress.style.display = 'none';
-                    updateNodeCount();
-                }
-            }, 1000);
-        }
-
-        function toggleDiscovery() {
-            startDiscovery();
-        }
-
-        function updateNodeCount() {
-            const current = parseInt(document.getElementById('totalNodes').textContent);
-            const newCount = current + 1;
-            document.getElementById('totalNodes').textContent = newCount;
-            
-            const active = parseInt(document.getElementById('activeNodes').textContent);
-            document.getElementById('activeNodes').textContent = active + 1;
-        }
-
-        function openTaskModal() {
-            const modal = new bootstrap.Modal(document.getElementById('taskModal'));
-            modal.show();
-        }
-
-        function createTask() {
-            const taskName = document.getElementById('taskName').value;
-            const taskTarget = document.getElementById('taskTarget').value;
-            const taskType = document.getElementById('taskType').value;
-            const taskPriority = document.getElementById('taskPriority').value;
-            
-            if (!taskName || !taskTarget) {
-                alert('Please fill in task name and target');
-                return;
             }
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('taskModal'));
-            modal.hide();
-            
-            // Add new task to the list
-            const taskList = document.querySelector('.card-body:last-of-type');
-            const newTask = document.createElement('div');
-            newTask.className = 'task-card';
-            newTask.innerHTML = `
-                <div class="task-header">
-                    <span class="task-id">TASK-${Math.random().toString(36).substr(2, 4).toUpperCase()}</span>
-                    <span class="task-priority priority-${taskPriority}">${taskPriority.toUpperCase()}</span>
-                </div>
-                <div class="mb-2" style="color: var(--text-primary);">${taskName}</div>
-                <div class="task-info">
-                    <span><i class="fas fa-server"></i> Assigning nodes...</span>
-                    <span><i class="fas fa-clock"></i> Just now</span>
-                    <span><i class="fas fa-percent"></i> 0%</span>
-                </div>
-                <div class="progress-cyber mt-2">
-                    <div class="progress-bar-cyber" style="width: 0%;"></div>
-                </div>
-            `;
-            taskList.insertBefore(newTask, taskList.firstChild);
-            
-            // Clear form
-            document.getElementById('taskName').value = '';
-            document.getElementById('taskTarget').value = '';
-            document.getElementById('taskDescription').value = '';
+        });
+    }
+});
+
+// Discovery
+function startDiscovery() {
+    const status = document.getElementById('discoveryStatus');
+    const foundNodes = document.getElementById('foundNodes');
+    status.classList.remove('hidden');
+    
+    let count = 0;
+    const interval = setInterval(() => {
+        count += Math.floor(Math.random() * 3);
+        foundNodes.textContent = count;
+        if (count > 8) {
+            clearInterval(interval);
+            showNotification('Discovery Complete', `Found ${count} nodes on the network`, 'success');
         }
-    </script>
+    }, 500);
+}
+
+function refreshNodes() {
+    showNotification('Refreshing', 'Updating node status...', 'info');
+}
+
+// Task Modal
+function openTaskModal() {
+    document.getElementById('taskModal').classList.remove('hidden');
+}
+
+function closeTaskModal() {
+    document.getElementById('taskModal').classList.add('hidden');
+}
+
+function createTask() {
+    const name = document.getElementById('taskName').value || 'Unnamed Task';
+    closeTaskModal();
+    showNotification('Task Created', `"${name}" added to queue`, 'success');
+}
+
+// Quick Actions
+function massTask(type) {
+    const types = {
+        scan: 'Mass network scan initiated',
+        exploit: 'Auto-exploit sequence started',
+        enum: 'AD enumeration distributed',
+        exfil: 'Loot collection started'
+    };
+    showNotification('Task Distributed', types[type], 'success');
+}
+</script>
 {% endblock %}
