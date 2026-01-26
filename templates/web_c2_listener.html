@@ -1,0 +1,847 @@
+{% extends "base.html" %}
+
+{% block title %}Web C2 Listener - Monolith{% endblock %}
+
+{% block extra_css %}
+<style>
+    .c2-container {
+        padding: 20px;
+    }
+    
+    .c2-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+    
+    .listener-status {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #444;
+    }
+    
+    .status-indicator.active {
+        background: #00ff00;
+        box-shadow: 0 0 10px #00ff00;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .stat-card .value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .stat-card .label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .sessions-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 25px;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .section-header h3 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .session-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+    
+    .session-item {
+        display: grid;
+        grid-template-columns: 40px 1fr 150px 120px 100px;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .session-item:hover {
+        background: rgba(255, 107, 53, 0.05);
+    }
+    
+    .session-item.selected {
+        background: rgba(255, 107, 53, 0.1);
+        border-left: 3px solid var(--primary-color);
+    }
+    
+    .session-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .session-icon.php { background: #777BB3; }
+    .session-icon.python { background: #3776AB; }
+    .session-icon.asp { background: #512BD4; }
+    
+    .session-info h4 {
+        margin: 0 0 5px 0;
+        font-size: 1rem;
+    }
+    
+    .session-info p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+    
+    .session-state {
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .state-active { background: #00ff0033; color: #00ff00; }
+    .state-idle { background: #ffcc0033; color: #ffcc00; }
+    .state-lost { background: #ff880033; color: #ff8800; }
+    .state-dead { background: #ff444433; color: #ff4444; }
+    
+    .terminal-section {
+        background: #0d0d0d;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .terminal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #1a1a1a;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .terminal-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #00ff00;
+    }
+    
+    .terminal-output {
+        height: 350px;
+        overflow-y: auto;
+        padding: 15px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .terminal-output .line {
+        margin-bottom: 5px;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    
+    .terminal-output .prompt {
+        color: #00ff00;
+    }
+    
+    .terminal-output .command {
+        color: #ffffff;
+    }
+    
+    .terminal-output .output {
+        color: #aaaaaa;
+    }
+    
+    .terminal-output .error {
+        color: #ff4444;
+    }
+    
+    .terminal-input-area {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background: #1a1a1a;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .terminal-input-area .prompt {
+        color: #00ff00;
+        margin-right: 10px;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .terminal-input-area input {
+        flex: 1;
+        background: none;
+        border: none;
+        color: white;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        outline: none;
+    }
+    
+    .register-form {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+    }
+    
+    .form-group input,
+    .form-group select {
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary:hover {
+        opacity: 0.9;
+    }
+    
+    .beacon-payload {
+        background: #0d0d0d;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .beacon-payload pre {
+        margin: 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: #00ff00;
+        white-space: pre-wrap;
+    }
+    
+    .action-btns {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .btn-icon.danger:hover {
+        background: #ff4444;
+        border-color: #ff4444;
+    }
+    
+    .history-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 25px;
+    }
+    
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .history-table th,
+    .history-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .history-table th {
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+    
+    .cmd-type {
+        padding: 3px 10px;
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+    
+    .cmd-status {
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+    
+    .cmd-status.completed { background: #00ff0033; color: #00ff00; }
+    .cmd-status.pending { background: #ffcc0033; color: #ffcc00; }
+    .cmd-status.failed { background: #ff444433; color: #ff4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="c2-container">
+    <div class="c2-header">
+        <div>
+            <h1><i class="fas fa-satellite-dish"></i> Web C2 Listener</h1>
+            <p>Command & Control through web shell sessions</p>
+        </div>
+        <div class="listener-status">
+            <span class="status-indicator" id="listenerStatus"></span>
+            <span id="listenerStatusText">Checking...</span>
+            <button class="btn-primary" onclick="toggleListener()">
+                <i class="fas fa-power-off"></i>
+                <span id="toggleBtnText">Start</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+        <div class="stat-card">
+            <div class="value" id="statActiveSessions">0</div>
+            <div class="label">Active Sessions</div>
+        </div>
+        <div class="stat-card">
+            <div class="value" id="statTotalSessions">0</div>
+            <div class="label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+            <div class="value" id="statCommandsExecuted">0</div>
+            <div class="label">Commands Executed</div>
+        </div>
+        <div class="stat-card">
+            <div class="value" id="statDataTransferred">0</div>
+            <div class="label">Data Transferred</div>
+        </div>
+    </div>
+    
+    <!-- Register Shell -->
+    <div class="register-form">
+        <h3><i class="fas fa-plus-circle"></i> Register Web Shell</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Shell URL</label>
+                <input type="url" id="shellUrl" placeholder="https://target.com/shell.php">
+            </div>
+            <div class="form-group">
+                <label>Shell Type</label>
+                <select id="shellType">
+                    <option value="php">PHP</option>
+                    <option value="asp">ASP.NET</option>
+                    <option value="python">Python</option>
+                    <option value="jsp">JSP</option>
+                </select>
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+                <button class="btn-primary" onclick="registerShell()">
+                    <i class="fas fa-link"></i> Register Shell
+                </button>
+            </div>
+        </div>
+        
+        <div class="beacon-payload" id="beaconPayload" style="display: none;">
+            <h4 style="margin-top: 0; color: var(--primary-color);">Generated Beacon Payload</h4>
+            <pre id="payloadCode"></pre>
+            <button class="btn-primary" style="margin-top: 10px;" onclick="copyBeaconPayload()">
+                <i class="fas fa-copy"></i> Copy Payload
+            </button>
+        </div>
+    </div>
+    
+    <!-- Sessions -->
+    <div class="sessions-section">
+        <div class="section-header">
+            <h3><i class="fas fa-desktop"></i> Active Sessions</h3>
+            <button class="btn-icon" onclick="refreshSessions()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        <ul class="session-list" id="sessionList">
+            <li style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                No active sessions. Register a web shell to begin.
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Terminal -->
+    <div class="terminal-section">
+        <div class="terminal-header">
+            <div class="terminal-title">
+                <i class="fas fa-terminal"></i>
+                <span id="terminalTitle">Select a session</span>
+            </div>
+            <div class="action-btns">
+                <button class="btn-icon" onclick="clearTerminal()">
+                    <i class="fas fa-eraser"></i>
+                </button>
+            </div>
+        </div>
+        <div class="terminal-output" id="terminalOutput">
+            <div class="line output">
+[*] Web C2 Terminal Ready
+[*] Select a session from the list above to interact
+            </div>
+        </div>
+        <div class="terminal-input-area">
+            <span class="prompt">$</span>
+            <input type="text" id="cmdInput" placeholder="Enter command..." 
+                   onkeypress="if(event.key==='Enter')sendCommand()" disabled>
+        </div>
+    </div>
+    
+    <!-- Command History -->
+    <div class="history-section">
+        <h3><i class="fas fa-history"></i> Command History</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Session</th>
+                    <th>Type</th>
+                    <th>Command</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-secondary);">
+                        No commands executed yet
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentSession = null;
+    let listenerRunning = false;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStats();
+        loadSessions();
+        setInterval(refreshSessions, 10000); // Refresh every 10s
+    });
+    
+    async function loadStats() {
+        try {
+            const response = await fetch('/api/c2/web-c2/stats');
+            const stats = await response.json();
+            
+            listenerRunning = stats.running;
+            updateListenerStatus(stats.running);
+            
+            document.getElementById('statActiveSessions').textContent = stats.sessions_active;
+            document.getElementById('statTotalSessions').textContent = stats.sessions_total;
+            document.getElementById('statCommandsExecuted').textContent = stats.commands_executed;
+            document.getElementById('statDataTransferred').textContent = formatBytes(stats.data_transferred);
+        } catch (err) {
+            console.error('Failed to load stats:', err);
+        }
+    }
+    
+    function updateListenerStatus(running) {
+        const indicator = document.getElementById('listenerStatus');
+        const statusText = document.getElementById('listenerStatusText');
+        const btnText = document.getElementById('toggleBtnText');
+        
+        if (running) {
+            indicator.classList.add('active');
+            statusText.textContent = 'Running';
+            btnText.textContent = 'Stop';
+        } else {
+            indicator.classList.remove('active');
+            statusText.textContent = 'Stopped';
+            btnText.textContent = 'Start';
+        }
+    }
+    
+    async function toggleListener() {
+        const action = listenerRunning ? 'stop' : 'start';
+        
+        try {
+            const response = await fetch(`/api/c2/web-c2/${action}`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+            
+            listenerRunning = !listenerRunning;
+            updateListenerStatus(listenerRunning);
+            
+            showToast(`Listener ${action}ed successfully`, 'success');
+        } catch (err) {
+            showToast('Failed to toggle listener', 'error');
+        }
+    }
+    
+    async function loadSessions() {
+        try {
+            const response = await fetch('/api/c2/web-c2/sessions');
+            const sessions = await response.json();
+            
+            const list = document.getElementById('sessionList');
+            
+            if (sessions.length === 0) {
+                list.innerHTML = `
+                    <li style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                        No active sessions. Register a web shell to begin.
+                    </li>
+                `;
+                return;
+            }
+            
+            list.innerHTML = sessions.map(session => `
+                <li class="session-item ${currentSession === session.session_id ? 'selected' : ''}" 
+                    onclick="selectSession('${session.session_id}')">
+                    <div class="session-icon ${session.shell_type}">
+                        <i class="fas fa-${session.shell_type === 'php' ? 'php' : session.shell_type === 'python' ? 'python' : 'code'}"></i>
+                    </div>
+                    <div class="session-info">
+                        <h4>${session.hostname || 'Unknown'}</h4>
+                        <p>${session.username || 'unknown'}@${session.shell_url.substring(0, 40)}...</p>
+                    </div>
+                    <div>
+                        <span class="session-state state-${session.state}">${session.state}</span>
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">
+                        ${formatLastSeen(session.last_seen)}
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn-icon" onclick="event.stopPropagation(); interactSession('${session.session_id}')">
+                            <i class="fas fa-terminal"></i>
+                        </button>
+                        <button class="btn-icon danger" onclick="event.stopPropagation(); removeSession('${session.session_id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </li>
+            `).join('');
+            
+        } catch (err) {
+            console.error('Failed to load sessions:', err);
+        }
+    }
+    
+    function refreshSessions() {
+        loadSessions();
+        loadStats();
+    }
+    
+    async function registerShell() {
+        const url = document.getElementById('shellUrl').value;
+        const type = document.getElementById('shellType').value;
+        
+        if (!url) {
+            showToast('Please enter a shell URL', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/c2/web-c2/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shell_url: url, shell_type: type })
+            });
+            
+            const result = await response.json();
+            
+            // Show beacon payload
+            document.getElementById('beaconPayload').style.display = 'block';
+            document.getElementById('payloadCode').textContent = result.beacon_payload;
+            
+            showToast('Shell registered successfully!', 'success');
+            loadSessions();
+            
+        } catch (err) {
+            showToast('Failed to register shell', 'error');
+        }
+    }
+    
+    function copyBeaconPayload() {
+        const payload = document.getElementById('payloadCode').textContent;
+        navigator.clipboard.writeText(payload);
+        showToast('Beacon payload copied!', 'success');
+    }
+    
+    function selectSession(sessionId) {
+        currentSession = sessionId;
+        document.querySelectorAll('.session-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+        
+        document.getElementById('cmdInput').disabled = false;
+        document.getElementById('terminalTitle').textContent = `Session: ${sessionId}`;
+        
+        loadCommandHistory(sessionId);
+    }
+    
+    function interactSession(sessionId) {
+        selectSession(sessionId);
+        document.getElementById('cmdInput').focus();
+    }
+    
+    async function sendCommand() {
+        if (!currentSession) {
+            showToast('Select a session first', 'error');
+            return;
+        }
+        
+        const input = document.getElementById('cmdInput');
+        const command = input.value.trim();
+        
+        if (!command) return;
+        
+        // Add to terminal
+        appendToTerminal(`$ ${command}`, 'prompt');
+        input.value = '';
+        
+        try {
+            const response = await fetch('/api/c2/web-c2/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: currentSession,
+                    cmd_type: 'exec',
+                    payload: command
+                })
+            });
+            
+            const result = await response.json();
+            
+            appendToTerminal(`[*] Command queued: ${result.cmd_id}`, 'output');
+            
+            // Poll for result
+            setTimeout(() => pollCommandResult(result.cmd_id), 2000);
+            
+        } catch (err) {
+            appendToTerminal(`[!] Error: ${err.message}`, 'error');
+        }
+    }
+    
+    async function pollCommandResult(cmdId) {
+        try {
+            const response = await fetch(`/api/c2/web-c2/command/${cmdId}`);
+            const result = await response.json();
+            
+            if (result.status === 'completed') {
+                appendToTerminal(result.result || '[No output]', 'output');
+            } else if (result.status === 'pending') {
+                appendToTerminal('[*] Waiting for beacon...', 'output');
+            }
+            
+            loadCommandHistory(currentSession);
+            
+        } catch (err) {
+            appendToTerminal(`[!] Error getting result: ${err.message}`, 'error');
+        }
+    }
+    
+    async function loadCommandHistory(sessionId) {
+        try {
+            const response = await fetch(`/api/c2/web-c2/history?session_id=${sessionId}`);
+            const history = await response.json();
+            
+            const tbody = document.getElementById('historyBody');
+            
+            if (history.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary);">
+                            No commands executed yet
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = history.slice(-20).reverse().map(cmd => `
+                <tr>
+                    <td>${formatTime(cmd.created_at)}</td>
+                    <td>${cmd.session_id}</td>
+                    <td><span class="cmd-type">${cmd.cmd_type}</span></td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                        <code>${cmd.payload}</code>
+                    </td>
+                    <td><span class="cmd-status ${cmd.status}">${cmd.status}</span></td>
+                </tr>
+            `).join('');
+            
+        } catch (err) {
+            console.error('Failed to load history:', err);
+        }
+    }
+    
+    async function removeSession(sessionId) {
+        if (!confirm('Remove this session?')) return;
+        
+        try {
+            await fetch(`/api/c2/web-c2/session/${sessionId}`, {
+                method: 'DELETE'
+            });
+            
+            if (currentSession === sessionId) {
+                currentSession = null;
+                document.getElementById('cmdInput').disabled = true;
+            }
+            
+            showToast('Session removed', 'success');
+            loadSessions();
+            
+        } catch (err) {
+            showToast('Failed to remove session', 'error');
+        }
+    }
+    
+    function appendToTerminal(text, type) {
+        const output = document.getElementById('terminalOutput');
+        const line = document.createElement('div');
+        line.className = `line ${type}`;
+        line.textContent = text;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+    }
+    
+    function clearTerminal() {
+        document.getElementById('terminalOutput').innerHTML = '';
+    }
+    
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+    
+    function formatLastSeen(isoString) {
+        if (!isoString) return 'Never';
+        const date = new Date(isoString);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+        
+        if (diff < 60) return `${diff}s ago`;
+        if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+        return `${Math.floor(diff/86400)}d ago`;
+    }
+    
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        return new Date(isoString).toLocaleTimeString();
+    }
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: ${type === 'error' ? '#ff4444' : '#00cc44'};
+            color: white;
+            border-radius: 8px;
+            z-index: 10000;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+</script>
+{% endblock %}

@@ -40,6 +40,8 @@ zeroday_bp = _try_import('zeroday_bp', lambda: __import__('cyberapp.routes.zerod
 vr_bp = _try_import('vr_bp', lambda: __import__('cyberapp.routes.vr', fromlist=['vr_bp']).vr_bp)
 webshell_bp = _try_import('webshell_bp', lambda: __import__('cyberapp.routes.webshell', fromlist=['webshell_bp']).webshell_bp)
 waf_bp = _try_import('waf_bp', lambda: __import__('cyberapp.routes.waf', fromlist=['waf_bp']).waf_bp)
+tools_bp = _try_import('tools_bp', lambda: __import__('cyberapp.routes.tools', fromlist=['tools_bp']).tools_bp)
+c2_standard_bp = _try_import('c2_standard_bp', lambda: __import__('cyberapp.routes.c2', fromlist=['c2_bp']).c2_bp)
 
 
 def create_app(run_migrations_on_start=True):
@@ -77,6 +79,8 @@ def create_app(run_migrations_on_start=True):
     if vr_bp: app.register_blueprint(vr_bp)
     if webshell_bp: app.register_blueprint(webshell_bp)
     if waf_bp: app.register_blueprint(waf_bp)
+    if tools_bp: app.register_blueprint(tools_bp)
+    if c2_standard_bp: app.register_blueprint(c2_standard_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

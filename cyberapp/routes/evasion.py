@@ -2309,3 +2309,120 @@ def webshell_test_connection():
     }
     
     return jsonify({'success': True, 'result': result})
+
+
+# ============================================================
+# WEB SHELL OBFUSCATOR
+# ============================================================
+
+# Lazy import for web obfuscator
+_web_obfuscator = None
+
+def _get_web_obfuscator():
+    """Get or create web obfuscator instance"""
+    global _web_obfuscator
+    if _web_obfuscator is None:
+        try:
+            from evasion.web_obfuscator import get_web_obfuscator
+            _web_obfuscator = get_web_obfuscator()
+        except Exception as e:
+            logger.warning(f"Web obfuscator import failed: {e}")
+            return None
+    return _web_obfuscator
+
+
+@evasion_bp.route('/web-obfuscator')
+def web_obfuscator_page():
+    """Web Shell Obfuscator page"""
+    return render_template('web_obfuscator.html')
+
+
+@evasion_bp.route('/api/obfuscator/techniques')
+def obfuscator_techniques():
+    """Get available obfuscation techniques"""
+    obfuscator = _get_web_obfuscator()
+    if not obfuscator:
+        return jsonify([])
+    return jsonify(obfuscator.get_techniques())
+
+
+@evasion_bp.route('/api/obfuscator/anti-forensic')
+def obfuscator_anti_forensic():
+    """Get anti-forensic techniques"""
+    obfuscator = _get_web_obfuscator()
+    if not obfuscator:
+        return jsonify([])
+    return jsonify(obfuscator.get_anti_forensic_techniques())
+
+
+@evasion_bp.route('/api/obfuscator/languages')
+def obfuscator_languages():
+    """Get supported languages"""
+    obfuscator = _get_web_obfuscator()
+    if not obfuscator:
+        return jsonify([])
+    return jsonify(obfuscator.get_languages())
+
+
+@evasion_bp.route('/api/obfuscator/obfuscate', methods=['POST'])
+def obfuscator_obfuscate():
+    """Obfuscate code"""
+    obfuscator = _get_web_obfuscator()
+    if not obfuscator:
+        return jsonify({'error': 'Module not available'}), 503
+    
+    data = request.get_json() or {}
+    code = data.get('code', '')
+    config_data = data.get('config', {})
+    
+    if not code:
+        return jsonify({'error': 'No code provided'}), 400
+    
+    try:
+        from evasion.web_obfuscator import (
+            ObfuscationConfig, ShellLanguage, ObfuscationLevel,
+            ObfuscationTechnique, AntiForensicTechnique
+        )
+        
+        # Build config
+        config = ObfuscationConfig(
+            language=ShellLanguage(config_data.get('language', 'php')),
+            level=ObfuscationLevel(config_data.get('level', 2))
+        )
+        
+        # Add techniques
+        if config_data.get('techniques'):
+            config.techniques = [
+                ObfuscationTechnique(t) for t in config_data['techniques']
+                if t in [e.value for e in ObfuscationTechnique]
+            ]
+        
+        # Add anti-forensic
+        if config_data.get('anti_forensic'):
+            config.anti_forensic = [
+                AntiForensicTechnique(t) for t in config_data['anti_forensic']
+                if t in [e.value for e in AntiForensicTechnique]
+            ]
+        
+        result = obfuscator.obfuscate(code, config)
+        
+        return jsonify({
+            'obfuscated_code': result.obfuscated_code,
+            'original_size': result.original_size,
+            'obfuscated_size': result.obfuscated_size,
+            'techniques_applied': result.techniques_applied,
+            'checksum': result.checksum
+        })
+        
+    except Exception as e:
+        logger.exception("Obfuscation error")
+        return jsonify({'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/obfuscator/stats')
+def obfuscator_stats():
+    """Get obfuscator statistics"""
+    obfuscator = _get_web_obfuscator()
+    if not obfuscator:
+        return jsonify({})
+    return jsonify(obfuscator.get_stats())
