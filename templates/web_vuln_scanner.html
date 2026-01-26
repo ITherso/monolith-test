@@ -464,7 +464,7 @@
     });
     
     function loadCategories() {
-        fetch('/api/tools/vuln-scanner/categories')
+        fetch('/tools/api/vuln-scanner/categories')
             .then(r => r.json())
             .then(data => {
                 const grid = document.getElementById('categoryGrid');
@@ -532,7 +532,7 @@
                     JSON.parse(document.getElementById('customHeaders').value) : {}
             };
             
-            const response = await fetch('/api/tools/vuln-scanner/scan', {
+            const response = await fetch('/tools/api/vuln-scanner/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(config)

@@ -5,7 +5,7 @@ from cybermodules.c2_implant import C2ImplantGenerator, ImplantConfig, generate_
 
 logger = logging.getLogger("c2_routes")
 
-c2_bp = Blueprint("c2", __name__)
+c2_bp = Blueprint("c2_implant", __name__)
 
 
 # ============================================================
@@ -171,8 +171,6 @@ def get_templates():
 @c2_bp.route("/web-c2")
 def web_c2_page():
     """Web C2 Listener page"""
-    if not session.get("logged_in"):
-        return redirect("/login")
     return render_template("web_c2_listener.html")
 
 

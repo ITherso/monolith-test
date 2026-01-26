@@ -492,7 +492,7 @@
     });
     
     function loadMethods() {
-        fetch('/api/tools/exfil/methods')
+        fetch('/tools/api/exfil/methods')
             .then(r => r.json())
             .then(methods => {
                 const grid = document.getElementById('methodGrid');
@@ -526,7 +526,7 @@
     
     async function loadStats() {
         try {
-            const response = await fetch('/api/tools/exfil/stats');
+            const response = await fetch('/tools/api/exfil/stats');
             const stats = await response.json();
             
             document.getElementById('statJobsCompleted').textContent = stats.jobs_completed;
@@ -540,7 +540,7 @@
     
     async function loadJobs() {
         try {
-            const response = await fetch('/api/tools/exfil/jobs');
+            const response = await fetch('/tools/api/exfil/jobs');
             const jobs = await response.json();
             
             const list = document.getElementById('jobList');
@@ -657,7 +657,7 @@
             formData.append('config', JSON.stringify(config));
             
             try {
-                const response = await fetch('/api/tools/exfil/start', {
+                const response = await fetch('/tools/api/exfil/start', {
                     method: 'POST',
                     body: formData
                 });

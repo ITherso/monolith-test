@@ -521,7 +521,7 @@
     
     async function loadStats() {
         try {
-            const response = await fetch('/api/c2/web-c2/stats');
+            const response = await fetch('/api/web-c2/stats');
             const stats = await response.json();
             
             listenerRunning = stats.running;
@@ -556,7 +556,7 @@
         const action = listenerRunning ? 'stop' : 'start';
         
         try {
-            const response = await fetch(`/api/c2/web-c2/${action}`, {
+            const response = await fetch(`/api/web-c2/${action}`, {
                 method: 'POST'
             });
             const result = await response.json();
@@ -572,7 +572,7 @@
     
     async function loadSessions() {
         try {
-            const response = await fetch('/api/c2/web-c2/sessions');
+            const response = await fetch('/api/web-c2/sessions');
             const sessions = await response.json();
             
             const list = document.getElementById('sessionList');
@@ -633,7 +633,7 @@
         }
         
         try {
-            const response = await fetch('/api/c2/web-c2/register', {
+            const response = await fetch('/api/web-c2/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ shell_url: url, shell_type: type })
@@ -693,7 +693,7 @@
         input.value = '';
         
         try {
-            const response = await fetch('/api/c2/web-c2/command', {
+            const response = await fetch('/api/web-c2/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -717,7 +717,7 @@
     
     async function pollCommandResult(cmdId) {
         try {
-            const response = await fetch(`/api/c2/web-c2/command/${cmdId}`);
+            const response = await fetch(`/api/web-c2/command/${cmdId}`);
             const result = await response.json();
             
             if (result.status === 'completed') {
@@ -735,7 +735,7 @@
     
     async function loadCommandHistory(sessionId) {
         try {
-            const response = await fetch(`/api/c2/web-c2/history?session_id=${sessionId}`);
+            const response = await fetch(`/api/web-c2/history?session_id=${sessionId}`);
             const history = await response.json();
             
             const tbody = document.getElementById('historyBody');
@@ -772,7 +772,7 @@
         if (!confirm('Remove this session?')) return;
         
         try {
-            await fetch(`/api/c2/web-c2/session/${sessionId}`, {
+            await fetch(`/api/web-c2/session/${sessionId}`, {
                 method: 'DELETE'
             });
             

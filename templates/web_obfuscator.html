@@ -575,7 +575,7 @@ End If
     });
     
     function loadTechniques() {
-        fetch('/api/evasion/obfuscator/techniques')
+        fetch('/evasion/api/obfuscator/techniques')
             .then(r => r.json())
             .then(techniques => {
                 const grid = document.getElementById('techniqueGrid');
@@ -589,7 +589,7 @@ End If
     }
     
     function loadAntiForensic() {
-        fetch('/api/evasion/obfuscator/anti-forensic')
+        fetch('/evasion/api/obfuscator/anti-forensic')
             .then(r => r.json())
             .then(items => {
                 const grid = document.getElementById('antiForensicGrid');
@@ -662,7 +662,7 @@ End If
         };
         
         try {
-            const response = await fetch('/api/evasion/obfuscator/obfuscate', {
+            const response = await fetch('/evasion/api/obfuscator/obfuscate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code: inputCode, config })
