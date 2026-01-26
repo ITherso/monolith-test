@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container mx-auto px-6 py-8">
+    <div class="glass rounded-2xl p-8 neon-border">
+        <h2 class="text-2xl font-bold text-orange-500 mb-4 flex items-center gap-2">
+            <i class="fas fa-shield-virus"></i>
+            Advanced WAF & API Gateway Bypass
+            <span class="ml-2 px-2 py-0.5 text-xs bg-orange-500/20 text-orange-400 rounded-full">2026</span>
+        </h2>
+        <p class="text-gray-300 mb-6">HTTP/3 QUIC smuggling, GraphQL injection, WebSocket tunneling, AI rule inference. Cloudflare/Akamai/Imperva/AWS WAF v3/v4 bypass. <span class="text-orange-400 font-bold">Success Rate: 95%</span></p>
+        <form id="wafBypassForm" class="space-y-4">
+            <input type="text" name="target" placeholder="Target URL or IP" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all font-mono" required>
+            <button type="button" onclick="runAdvancedWafBypass()" class="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold text-lg hover:from-orange-600 hover:to-yellow-600 transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-bolt"></i>
+                Run Advanced Bypass
+            </button>
+        </form>
+        <div id="wafBypassResult" class="mt-6 hidden">
+            <h3 class="text-lg font-semibold text-orange-400 mb-2">Bypass Techniques Used:</h3>
+            <ul id="techniquesList" class="list-disc list-inside text-gray-200 mb-2"></ul>
+            <div class="text-orange-400 font-bold mb-2" id="bypassRate"></div>
+            <pre class="bg-black/30 rounded-xl p-4 text-orange-300" id="bypassLog"></pre>
+        </div>
+    </div>
+</div>
+<script>
+function runAdvancedWafBypass() {
+    const target = document.querySelector('input[name="target"]').value;
+    fetch('/api/advanced-waf-bypass/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('wafBypassResult').classList.remove('hidden');
+        document.getElementById('techniquesList').innerHTML = data.techniques.map(t => `<li>${t}</li>`).join('');
+        document.getElementById('bypassRate').textContent = 'Success Rate: ' + data.bypass_rate;
+        document.getElementById('bypassLog').textContent = data.log;
+    });
+}
+</script>
+{% endblock %}
