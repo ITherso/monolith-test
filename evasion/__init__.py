@@ -232,4 +232,54 @@ __all__ = [
     'quick_persist',
     'get_ai_persist_recommendation',
     'detect_edr_for_persist',
+    
+    # Web Shell & Post-Web Exploitation (NEW)
+    'WebShellManager',
+    'WebShellGenerator',
+    'WebShellConfig',
+    'ShellType',
+    'ObfuscationLevel',
+    'EvasionTechnique',
+    'PostExploitEngine',
+    'CredentialDumper',
+    'MemoryShell',
+    'BeaconTransition',
+    'AIObfuscator',
+    'WAFBypass',
+    'ShellPayload',
 ]
+
+# Lazy import for web_shell to avoid circular imports
+def _import_webshell():
+    from .web_shell import (
+        WebShellManager, WebShellGenerator, WebShellConfig,
+        ShellType, ObfuscationLevel, EvasionTechnique,
+        PostExploitEngine, CredentialDumper, MemoryShell,
+        BeaconTransition, AIObfuscator, WAFBypass, ShellPayload
+    )
+    return {
+        'WebShellManager': WebShellManager,
+        'WebShellGenerator': WebShellGenerator,
+        'WebShellConfig': WebShellConfig,
+        'ShellType': ShellType,
+        'ObfuscationLevel': ObfuscationLevel,
+        'EvasionTechnique': EvasionTechnique,
+        'PostExploitEngine': PostExploitEngine,
+        'CredentialDumper': CredentialDumper,
+        'MemoryShell': MemoryShell,
+        'BeaconTransition': BeaconTransition,
+        'AIObfuscator': AIObfuscator,
+        'WAFBypass': WAFBypass,
+        'ShellPayload': ShellPayload,
+    }
+
+# Make web_shell components available when accessed
+try:
+    from .web_shell import (
+        WebShellManager, WebShellGenerator, WebShellConfig,
+        ShellType, ObfuscationLevel, EvasionTechnique,
+        PostExploitEngine, CredentialDumper, MemoryShell,
+        BeaconTransition, AIObfuscator, WAFBypass, ShellPayload
+    )
+except ImportError:
+    pass  # Module may not be available in all environments

