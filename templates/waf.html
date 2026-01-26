@@ -1612,6 +1612,10 @@
             });
         }
         
+        // Load techniques
+        async function loadTechniques() {
+            try {
+                const response = await fetch('/api/waf/techniques');
                 const data = await response.json();
                 
                 if (data.success) {
