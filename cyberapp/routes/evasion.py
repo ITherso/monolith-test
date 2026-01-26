@@ -1624,3 +1624,199 @@ def generate_bypass_loader():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================
+# EDR TELEMETRY POISONING
+# ============================================================
+
+# Try to import EDR Poison module
+EDR_POISON_AVAILABLE = False
+_edr_poison_api = None
+
+def _get_edr_poison_api():
+    """Get or create EDR Poison API instance"""
+    global EDR_POISON_AVAILABLE, _edr_poison_api
+    if _edr_poison_api is None:
+        try:
+            import sys
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'evasion'))
+            from edr_poison import get_edr_poison_api
+            _edr_poison_api = get_edr_poison_api()
+            EDR_POISON_AVAILABLE = True
+        except Exception as e:
+            logger.warning(f"EDR Poison import failed: {e}")
+            EDR_POISON_AVAILABLE = False
+    return _edr_poison_api
+
+
+@evasion_bp.route('/edr-poison')
+def edr_poison_page():
+    """EDR Telemetry Poisoning page"""
+    return render_template('edr_poison.html')
+
+
+@evasion_bp.route('/api/edr-poison/status')
+def edr_poison_status():
+    """Get EDR Poison module status"""
+    api = _get_edr_poison_api()
+    return jsonify({
+        'success': True,
+        'available': api is not None,
+        'module': 'edr_poison',
+        'features': {
+            'noise_generator': True,
+            'campaigns': True,
+            'edr_patterns': True,
+            'script_generator': True
+        }
+    })
+
+
+@evasion_bp.route('/api/edr-poison/generate', methods=['POST'])
+def edr_poison_generate():
+    """Generate instant noise burst"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'EDR Poison module not available'}), 503
+    
+    data = request.get_json() or {}
+    
+    try:
+        result = api.generate_instant_noise(
+            categories=data.get('categories', ['discovery', 'credential_access']),
+            intensity=data.get('intensity', 'medium'),
+            target_edr=data.get('target_edr', 'generic')
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/campaign/create', methods=['POST'])
+def edr_poison_create_campaign():
+    """Create a new poisoning campaign"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'EDR Poison module not available'}), 503
+    
+    data = request.get_json() or {}
+    
+    try:
+        result = api.create_campaign(
+            name=data.get('name', 'Untitled Campaign'),
+            target_edr=data.get('target_edr', 'generic'),
+            intensity=data.get('intensity', 'medium'),
+            categories=data.get('categories'),
+            duration_minutes=data.get('duration_minutes', 30)
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/campaign/<campaign_id>/start', methods=['POST'])
+def edr_poison_start_campaign(campaign_id):
+    """Start a poisoning campaign"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        result = api.start_campaign(campaign_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/campaign/<campaign_id>/stop', methods=['POST'])
+def edr_poison_stop_campaign(campaign_id):
+    """Stop a poisoning campaign"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        result = api.stop_campaign(campaign_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/campaigns')
+def edr_poison_list_campaigns():
+    """List all campaigns"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        result = api.list_campaigns()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/stats')
+def edr_poison_stats():
+    """Get poisoning statistics"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({
+            'success': True,
+            'total_events': 0,
+            'by_category': {},
+            'by_severity': {},
+            'active_campaigns': 0,
+            'total_campaigns': 0
+        })
+    
+    try:
+        result = api.get_statistics()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/patterns/<edr>/<category>')
+def edr_poison_patterns(edr, category):
+    """Get EDR-specific patterns"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        result = api.get_edr_specific_payload(edr, category)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/export')
+def edr_poison_export():
+    """Export generated events"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    format = request.args.get('format', 'json')
+    
+    try:
+        data = api.export_events(format=format)
+        return data, 200, {'Content-Type': 'application/json' if format == 'json' else 'text/csv'}
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/edr-poison/clear', methods=['POST'])
+def edr_poison_clear():
+    """Clear all generated events"""
+    api = _get_edr_poison_api()
+    if not api:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        result = api.clear_events()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
