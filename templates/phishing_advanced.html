@@ -10,21 +10,26 @@
         :root {
             --primary: #00ff88;
             --primary-dim: #00ff8840;
+            --primary-glow: #00ff8880;
             --danger: #ff3366;
             --danger-dim: #ff336640;
             --warning: #ffaa00;
             --warning-dim: #ffaa0040;
-            --info: #00aaff;
-            --info-dim: #00aaff40;
+            --info: #00d4ff;
+            --info-dim: #00d4ff40;
             --gold: #ffd700;
             --gold-dim: #ffd70040;
-            --purple: #9933ff;
-            --purple-dim: #9933ff40;
+            --gold-bright: #ffeb3b;
+            --purple: #b366ff;
+            --purple-dim: #b366ff40;
+            --cyan: #00ffff;
+            --pink: #ff66b2;
             --bg-dark: #0a0a12;
             --bg-sidebar: rgba(15, 15, 25, 0.98);
-            --bg-card: rgba(15, 15, 25, 0.95);
-            --text-primary: #e0e0e0;
-            --text-muted: #888;
+            --bg-card: rgba(18, 18, 30, 0.95);
+            --text-primary: #f0f0f0;
+            --text-muted: #b0b0c0;
+            --text-bright: #ffffff;
             --sidebar-width: 260px;
         }
         
@@ -360,9 +365,11 @@
         
         .stat-label {
             color: var(--text-muted);
-            font-size: 0.9em;
+            font-size: 0.95em;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
         }
         
         .form-control-cyber {
@@ -391,6 +398,50 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        
+        .cyber-label {
+            color: var(--gold-bright) !important;
+            font-weight: 700;
+            font-size: 0.95em;
+            margin-bottom: 10px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        
+        .cyber-label i {
+            color: var(--gold);
+            margin-right: 8px;
+        }
+        
+        .cyber-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 215, 0, 0.4);
+            color: var(--text-bright) !important;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .cyber-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.4), inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.8);
+            outline: none;
+        }
+        
+        .cyber-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .cyber-input option {
+            background: #1a1a2e;
+            color: #fff;
         }
         
         .btn-cyber {
@@ -545,7 +596,9 @@
         
         .template-description {
             color: var(--text-muted);
-            font-size: 0.9em;
+            font-size: 0.92em;
+            line-height: 1.5;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
         
         .campaign-card {
@@ -623,9 +676,11 @@
         }
         
         .campaign-stat-label {
-            font-size: 0.75em;
+            font-size: 0.8em;
             color: var(--text-muted);
             text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
         
         .progress-cyber {
@@ -717,8 +772,9 @@
         }
         
         .cyber-switch .switch-label {
-            color: var(--text-muted);
-            font-size: 0.9em;
+            color: var(--text-primary);
+            font-size: 0.95em;
+            font-weight: 500;
         }
         
         /* Notification animation */
@@ -933,8 +989,8 @@
                                     <i class="fas fa-envelope-open-text" style="color: var(--gold); font-size: 1.5em;"></i>
                                     <span style="background: linear-gradient(90deg, var(--gold), #ffaa00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">PHISHING CAMPAIGNS</span>
                                 </h2>
-                                <p class="text-muted mb-0">
-                                    <i class="fas fa-robot me-2"></i>AI-powered social engineering and credential harvesting
+                                <p class="mb-0" style="color: var(--text-primary); font-size: 1em;">
+                                    <i class="fas fa-robot me-2" style="color: var(--purple);"></i>AI-powered social engineering and credential harvesting
                                 </p>
                             </div>
                             <div class="d-flex gap-3 mt-3 mt-md-0">
@@ -1261,23 +1317,23 @@
                             </div>
                             <div class="card-body">
                                 <div class="mb-4">
-                                    <h6 style="color: var(--gold); margin-bottom: 10px;">
+                                    <h6 style="color: var(--gold-bright); margin-bottom: 12px; text-shadow: 0 0 10px rgba(255,215,0,0.4);">
                                         <i class="fas fa-robot me-2"></i>AI Personalization
                                     </h6>
-                                    <p style="color: var(--text-muted); font-size: 0.9em;">
-                                        Our AI analyzes target's LinkedIn profile and company data to create highly personalized phishing emails that bypass security filters.
+                                    <p style="color: var(--text-primary); font-size: 0.92em; line-height: 1.7;">
+                                        Our AI analyzes target's LinkedIn profile and company data to create <strong style="color: var(--primary);">highly personalized</strong> phishing emails that bypass security filters.
                                     </p>
                                 </div>
                                 
                                 <div class="mb-4">
-                                    <h6 style="color: var(--gold); margin-bottom: 10px;">
+                                    <h6 style="color: var(--gold-bright); margin-bottom: 12px; text-shadow: 0 0 10px rgba(255,215,0,0.4);">
                                         <i class="fas fa-shield-alt me-2"></i>Template Features
                                     </h6>
-                                    <ul style="color: var(--text-muted); font-size: 0.9em; list-style: none; padding: 0;">
-                                        <li style="margin: 8px 0;"><i class="fas fa-check me-2" style="color: var(--primary);"></i>Dynamic content injection</li>
-                                        <li style="margin: 8px 0;"><i class="fas fa-check me-2" style="color: var(--primary);"></i>SPF/DKIM simulation</li>
-                                        <li style="margin: 8px 0;"><i class="fas fa-check me-2" style="color: var(--primary);"></i>Real-time credential harvesting</li>
-                                        <li style="margin: 8px 0;"><i class="fas fa-check me-2" style="color: var(--primary);"></i>Multi-factor bypass ready</li>
+                                    <ul style="color: var(--text-primary); font-size: 0.92em; list-style: none; padding: 0; line-height: 1.8;">
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>Dynamic content injection</li>
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>SPF/DKIM simulation</li>
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>Real-time credential harvesting</li>
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>Multi-factor bypass ready</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1361,7 +1417,7 @@
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div id="landingCodeOutput" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px; font-family: monospace; font-size: 12px; color: var(--primary); max-height: 400px; overflow: auto; white-space: pre-wrap;">
+                                <div id="landingCodeOutput" style="background: rgba(0,0,0,0.7); border: 1px solid rgba(0,255,136,0.3); border-radius: 10px; padding: 18px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px; color: #00ff88; max-height: 400px; overflow: auto; white-space: pre-wrap; text-shadow: 0 0 10px rgba(0,255,136,0.3);">
 Click "Generate Page" to create your phishing landing page...
                                 </div>
                                 <div class="mt-3 d-flex gap-2">
@@ -1374,20 +1430,20 @@ Click "Generate Page" to create your phishing landing page...
                                 </div>
                                 
                                 <div class="mt-4">
-                                    <h6 style="color: var(--gold);"><i class="fas fa-info-circle me-2"></i>Features Included</h6>
-                                    <div class="row mt-2">
+                                    <h6 style="color: var(--gold-bright); text-shadow: 0 0 10px rgba(255,215,0,0.4);"><i class="fas fa-info-circle me-2"></i>Features Included</h6>
+                                    <div class="row mt-3">
                                         <div class="col-6">
-                                            <div style="color: var(--text-muted); font-size: 0.85em;">
-                                                <p><i class="fas fa-check text-success me-2"></i>Credential Harvester</p>
-                                                <p><i class="fas fa-check text-success me-2"></i>Fingerprinting</p>
-                                                <p><i class="fas fa-check text-success me-2"></i>Anti-Detection</p>
+                                            <div style="color: var(--text-primary); font-size: 0.9em; line-height: 2;">
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Credential Harvester</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Fingerprinting</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Anti-Detection</p>
                                             </div>
                                         </div>
                                         <div class="col-6">
-                                            <div style="color: var(--text-muted); font-size: 0.85em;">
-                                                <p><i class="fas fa-check text-success me-2"></i>JS Obfuscation</p>
-                                                <p><i class="fas fa-check text-success me-2"></i>Auto Redirect</p>
-                                                <p><i class="fas fa-check text-success me-2"></i>Beacon Exfil</p>
+                                            <div style="color: var(--text-primary); font-size: 0.9em; line-height: 2;">
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>JS Obfuscation</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Auto Redirect</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Beacon Exfil</p>
                                             </div>
                                         </div>
                                     </div>
@@ -1409,9 +1465,9 @@ Click "Generate Page" to create your phishing landing page...
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div class="alert" style="background: rgba(255,170,0,0.15); border: 1px solid var(--warning); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                                    <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning);"></i>
-                                    <span style="color: var(--warning);">AiTM attacks capture session tokens in real-time, bypassing all forms of MFA including FIDO2.</span>
+                                <div class="alert" style="background: rgba(255,170,0,0.2); border: 2px solid var(--warning); border-radius: 10px; padding: 18px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,170,0,0.2);">
+                                    <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning); font-size: 1.2em;"></i>
+                                    <span style="color: #ffd966; font-weight: 500;">AiTM attacks capture session tokens in real-time, bypassing all forms of MFA including FIDO2.</span>
                                 </div>
                                 
                                 <form id="mfaBypassForm">
@@ -1459,7 +1515,7 @@ Click "Generate Page" to create your phishing landing page...
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div id="mfaConfigOutput" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px; font-family: monospace; font-size: 11px; color: var(--info); max-height: 350px; overflow: auto; white-space: pre-wrap;">
+                                <div id="mfaConfigOutput" style="background: rgba(0,0,0,0.7); border: 1px solid rgba(0,212,255,0.3); border-radius: 10px; padding: 18px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 11px; color: #00d4ff; max-height: 350px; overflow: auto; white-space: pre-wrap; text-shadow: 0 0 8px rgba(0,212,255,0.3);">
 Select a platform and generate config...
                                 </div>
                                 <div class="mt-3 d-flex gap-2">
@@ -1472,13 +1528,13 @@ Select a platform and generate config...
                                 </div>
                                 
                                 <div class="mt-4">
-                                    <h6 style="color: var(--gold);"><i class="fas fa-lightbulb me-2"></i>How AiTM Works</h6>
-                                    <div style="color: var(--text-muted); font-size: 0.85em; margin-top: 10px;">
-                                        <p>1. Victim visits phishing domain</p>
-                                        <p>2. Proxy forwards to legitimate login</p>
-                                        <p>3. Victim enters credentials + MFA</p>
-                                        <p>4. Session cookies captured in real-time</p>
-                                        <p>5. Attacker replays session = Full Access</p>
+                                    <h6 style="color: var(--gold-bright); text-shadow: 0 0 10px rgba(255,215,0,0.4);"><i class="fas fa-lightbulb me-2"></i>How AiTM Works</h6>
+                                    <div style="color: var(--text-primary); font-size: 0.9em; margin-top: 12px; line-height: 1.8;">
+                                        <p><span style="color: var(--gold);">1.</span> Victim visits phishing domain</p>
+                                        <p><span style="color: var(--gold);">2.</span> Proxy forwards to legitimate login</p>
+                                        <p><span style="color: var(--gold);">3.</span> Victim enters credentials + MFA</p>
+                                        <p><span style="color: var(--gold);">4.</span> Session cookies captured in real-time</p>
+                                        <p><span style="color: var(--primary);">5.</span> Attacker replays session = <strong style="color: var(--primary);">Full Access</strong></p>
                                     </div>
                                 </div>
                             </div>
@@ -1498,9 +1554,9 @@ Select a platform and generate config...
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div class="alert" style="background: rgba(153,51,255,0.15); border: 1px solid var(--purple); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                                    <i class="fas fa-info-circle me-2" style="color: var(--purple);"></i>
-                                    <span style="color: var(--purple);">BitB creates a fake browser popup that appears to be a legitimate OAuth window.</span>
+                                <div class="alert" style="background: rgba(153,51,255,0.2); border: 2px solid var(--purple); border-radius: 10px; padding: 18px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(153,51,255,0.2);">
+                                    <i class="fas fa-info-circle me-2" style="color: var(--purple); font-size: 1.2em;"></i>
+                                    <span style="color: #d9a3ff; font-weight: 500;">BitB creates a fake browser popup that appears to be a legitimate OAuth window.</span>
                                 </div>
                                 
                                 <form id="bitbForm">
@@ -1601,8 +1657,9 @@ Select a platform and generate config...
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <p style="color: var(--text-muted); font-size: 0.85em; margin-bottom: 15px;">
-                                    Embed payloads in HTML that auto-download on page load, bypassing email filters.
+                                <p style="color: var(--text-primary); font-size: 0.9em; margin-bottom: 18px; line-height: 1.6;">
+                                    <i class="fas fa-magic me-2" style="color: var(--danger);"></i>
+                                    Embed payloads in HTML that <strong style="color: var(--danger);">auto-download</strong> on page load, bypassing email filters.
                                 </p>
                                 <div class="mb-3">
                                     <label class="cyber-label">Payload File</label>
