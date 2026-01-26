@@ -1,0 +1,1182 @@
+{% extends "base.html" %}
+
+{% block title %}Web Shell Enhancer - Post-Exploitation{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --shell-primary: #ff6b35;
+        --shell-secondary: #f7931e;
+        --shell-dark: #1a1a2e;
+        --shell-darker: #0f0f1a;
+        --shell-success: #00ff88;
+        --shell-danger: #ff3366;
+        --shell-warning: #ffcc00;
+        --shell-info: #00d4ff;
+    }
+    
+    .shell-container {
+        background: linear-gradient(135deg, var(--shell-darker) 0%, var(--shell-dark) 100%);
+        min-height: 100vh;
+        padding: 2rem;
+    }
+    
+    .shell-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 2rem;
+        background: rgba(255, 107, 53, 0.1);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 107, 53, 0.3);
+    }
+    
+    .shell-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--shell-primary), var(--shell-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    
+    .shell-header .subtitle {
+        color: #888;
+        font-size: 1.1rem;
+    }
+    
+    .feature-badge {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin: 0.2rem;
+        text-transform: uppercase;
+    }
+    
+    .badge-memory {
+        background: linear-gradient(135deg, #9c27b0, #e91e63);
+        color: white;
+    }
+    
+    .badge-upgrade {
+        background: linear-gradient(135deg, #00bcd4, #009688);
+        color: white;
+    }
+    
+    .badge-stealth {
+        background: linear-gradient(135deg, #4caf50, #8bc34a);
+        color: white;
+    }
+    
+    .badge-harvest {
+        background: linear-gradient(135deg, #ff9800, #ff5722);
+        color: white;
+    }
+    
+    .shell-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .shell-tab {
+        padding: 0.8rem 1.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: #aaa;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+    
+    .shell-tab:hover {
+        background: rgba(255, 107, 53, 0.2);
+        border-color: var(--shell-primary);
+        color: white;
+    }
+    
+    .shell-tab.active {
+        background: linear-gradient(135deg, var(--shell-primary), var(--shell-secondary));
+        border-color: var(--shell-primary);
+        color: white;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .shell-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .shell-card:hover {
+        border-color: var(--shell-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 40px rgba(255, 107, 53, 0.2);
+    }
+    
+    .shell-card h3 {
+        color: var(--shell-primary);
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.2rem;
+    }
+    
+    .form-group label {
+        display: block;
+        color: #ccc;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--shell-primary);
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+    }
+    
+    .form-control::placeholder {
+        color: #666;
+    }
+    
+    select.form-control {
+        cursor: pointer;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .checkbox-item:hover {
+        background: rgba(255, 107, 53, 0.2);
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--shell-primary);
+    }
+    
+    .checkbox-item label {
+        color: #ccc;
+        cursor: pointer;
+        margin: 0;
+    }
+    
+    .btn-shell {
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .btn-shell-primary {
+        background: linear-gradient(135deg, var(--shell-primary), var(--shell-secondary));
+        color: white;
+    }
+    
+    .btn-shell-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
+    }
+    
+    .btn-shell-success {
+        background: linear-gradient(135deg, #00c853, #00e676);
+        color: white;
+    }
+    
+    .btn-shell-danger {
+        background: linear-gradient(135deg, #ff1744, #f50057);
+        color: white;
+    }
+    
+    .btn-shell-info {
+        background: linear-gradient(135deg, #00b0ff, #00e5ff);
+        color: white;
+    }
+    
+    .shell-type-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .shell-type-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .shell-type-card:hover {
+        border-color: var(--shell-primary);
+        transform: translateY(-5px);
+    }
+    
+    .shell-type-card.selected {
+        border-color: var(--shell-success);
+        background: rgba(0, 255, 136, 0.1);
+    }
+    
+    .shell-type-card.selected::after {
+        content: '✓';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        background: var(--shell-success);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: black;
+        font-weight: bold;
+    }
+    
+    .shell-type-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .shell-type-name {
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .shell-type-desc {
+        color: #888;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .code-output {
+        background: #0d0d0d;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 1rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.85rem;
+        color: #00ff88;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .code-output .comment {
+        color: #666;
+    }
+    
+    .code-output .keyword {
+        color: #ff79c6;
+    }
+    
+    .code-output .string {
+        color: #f1fa8c;
+    }
+    
+    .code-output .function {
+        color: #8be9fd;
+    }
+    
+    .workflow-diagram {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .workflow-step {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .workflow-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin: 0 auto 0.5rem;
+        border: 3px solid;
+    }
+    
+    .workflow-icon.step1 {
+        background: rgba(156, 39, 176, 0.2);
+        border-color: #9c27b0;
+    }
+    
+    .workflow-icon.step2 {
+        background: rgba(0, 188, 212, 0.2);
+        border-color: #00bcd4;
+    }
+    
+    .workflow-icon.step3 {
+        background: rgba(255, 152, 0, 0.2);
+        border-color: #ff9800;
+    }
+    
+    .workflow-icon.step4 {
+        background: rgba(76, 175, 80, 0.2);
+        border-color: #4caf50;
+    }
+    
+    .workflow-icon.step5 {
+        background: rgba(255, 107, 53, 0.2);
+        border-color: var(--shell-primary);
+    }
+    
+    .workflow-arrow {
+        font-size: 1.5rem;
+        color: #444;
+    }
+    
+    .workflow-label {
+        color: #ccc;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1));
+        border: 1px solid rgba(255, 107, 53, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--shell-primary);
+    }
+    
+    .stat-label {
+        color: #888;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .exfil-method-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+    
+    .exfil-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .exfil-card:hover {
+        border-color: var(--shell-info);
+    }
+    
+    .exfil-card.selected {
+        border-color: var(--shell-success);
+        background: rgba(0, 255, 136, 0.1);
+    }
+    
+    .exfil-name {
+        color: white;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+    
+    .exfil-desc {
+        color: #888;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stealth-indicator {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .stealth-high {
+        background: rgba(76, 175, 80, 0.3);
+        color: #4caf50;
+    }
+    
+    .stealth-medium {
+        background: rgba(255, 152, 0, 0.3);
+        color: #ff9800;
+    }
+    
+    .stealth-very_high {
+        background: rgba(0, 188, 212, 0.3);
+        color: #00bcd4;
+    }
+    
+    .result-panel {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .result-title {
+        color: var(--shell-success);
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    
+    .copy-btn {
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .copy-btn:hover {
+        background: var(--shell-primary);
+    }
+    
+    .output-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .output-tab {
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        color: #888;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+    
+    .output-tab:hover, .output-tab.active {
+        background: rgba(255, 107, 53, 0.2);
+        border-color: var(--shell-primary);
+        color: white;
+    }
+    
+    .simulation-result {
+        background: rgba(0, 255, 136, 0.1);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .simulation-result h4 {
+        color: var(--shell-success);
+        margin-bottom: 0.5rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .info-box {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .info-box h4 {
+        color: var(--shell-info);
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-box p {
+        color: #aaa;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+    
+    .warning-box {
+        background: rgba(255, 204, 0, 0.1);
+        border: 1px solid rgba(255, 204, 0, 0.3);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .warning-box h4 {
+        color: var(--shell-warning);
+        margin-bottom: 0.5rem;
+    }
+    
+    .impact-chart {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 1.5rem;
+    }
+    
+    .impact-bar {
+        margin-bottom: 1rem;
+    }
+    
+    .impact-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.3rem;
+    }
+    
+    .impact-label span:first-child {
+        color: #ccc;
+    }
+    
+    .impact-label span:last-child {
+        color: var(--shell-success);
+        font-weight: 700;
+    }
+    
+    .impact-track {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .impact-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 1s ease;
+    }
+    
+    .impact-fill.success {
+        background: linear-gradient(90deg, #00c853, #00e676);
+    }
+    
+    .impact-fill.stealth {
+        background: linear-gradient(90deg, #00b0ff, #00e5ff);
+    }
+    
+    .impact-fill.persistence {
+        background: linear-gradient(90deg, #ff9800, #ffb300);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="shell-container">
+    <div class="shell-header">
+        <h1>🐚 Web Shell Enhancer</h1>
+        <p class="subtitle">Post-Web Exploitation • Memory-Only • Auto-Upgrade to Beacon</p>
+        <div style="margin-top: 1rem;">
+            <span class="feature-badge badge-memory">💾 Diskless</span>
+            <span class="feature-badge badge-upgrade">🚀 Auto-Upgrade</span>
+            <span class="feature-badge badge-stealth">🥷 Stealth Exfil</span>
+            <span class="feature-badge badge-harvest">🔑 Cred Harvest</span>
+        </div>
+    </div>
+    
+    <!-- Workflow Diagram -->
+    <div class="shell-card">
+        <h3>📊 Attack Workflow</h3>
+        <div class="workflow-diagram">
+            <div class="workflow-step">
+                <div class="workflow-icon step1">🐚</div>
+                <div class="workflow-label">Memory Shell</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="workflow-icon step2">🔍</div>
+                <div class="workflow-label">Internal Recon</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="workflow-icon step3">🔑</div>
+                <div class="workflow-label">Cred Harvest</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="workflow-icon step4">📤</div>
+                <div class="workflow-label">Encrypted Exfil</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="workflow-icon step5">📡</div>
+                <div class="workflow-label">Beacon Upgrade</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="shell-tabs">
+        <div class="shell-tab active" data-tab="generator">🔧 Generator</div>
+        <div class="shell-tab" data-tab="types">📋 Shell Types</div>
+        <div class="shell-tab" data-tab="exfil">📤 Exfiltration</div>
+        <div class="shell-tab" data-tab="simulate">▶️ Simulate</div>
+        <div class="shell-tab" data-tab="output">📄 Output</div>
+    </div>
+    
+    <!-- Generator Tab -->
+    <div id="tab-generator" class="tab-content active">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="shell-card">
+                    <h3>⚙️ Shell Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label>Shell Type</label>
+                        <select id="shellType" class="form-control">
+                            <option value="php">PHP Memory Shell</option>
+                            <option value="asp">ASP/VBScript Shell</option>
+                            <option value="aspx">ASPX/.NET Shell</option>
+                            <option value="jsp">JSP Java Shell</option>
+                            <option value="python">Python Shell</option>
+                            <option value="node">Node.js Shell</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Callback URL</label>
+                        <input type="text" id="callbackUrl" class="form-control" 
+                               placeholder="https://your-c2.com/callback">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Encryption Key (leave blank for auto)</label>
+                        <input type="text" id="encryptionKey" class="form-control" 
+                               placeholder="Auto-generated 32-char hex key">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Features</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="memoryOnly" checked>
+                                <label for="memoryOnly">Memory-Only (No Disk)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="autoUpgrade" checked>
+                                <label for="autoUpgrade">Auto-Upgrade to Beacon</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="credHarvest" checked>
+                                <label for="credHarvest">Credential Harvesting</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="internalRecon" checked>
+                                <label for="internalRecon">Internal Recon</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Exfiltration Method</label>
+                        <select id="exfilMethod" class="form-control">
+                            <option value="http_chunked">HTTP Chunked (Medium Stealth)</option>
+                            <option value="dns_tunnel">DNS Tunnel (High Stealth)</option>
+                            <option value="websocket">WebSocket (Real-time)</option>
+                            <option value="icmp_covert">ICMP Covert (High Stealth)</option>
+                            <option value="steganography">Steganography (Very High Stealth)</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn-shell btn-shell-primary" onclick="generateShell()">
+                        🚀 Generate Enhanced Shell
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="shell-card">
+                    <h3>📈 Impact Analysis</h3>
+                    
+                    <div class="impact-chart">
+                        <div class="impact-bar">
+                            <div class="impact-label">
+                                <span>Success Rate (Unprotected Sites)</span>
+                                <span>99.9%</span>
+                            </div>
+                            <div class="impact-track">
+                                <div class="impact-fill success" style="width: 99.9%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="impact-bar">
+                            <div class="impact-label">
+                                <span>Stealth Level</span>
+                                <span>95%</span>
+                            </div>
+                            <div class="impact-track">
+                                <div class="impact-fill stealth" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="impact-bar">
+                            <div class="impact-label">
+                                <span>Persistence (Memory)</span>
+                                <span>100%</span>
+                            </div>
+                            <div class="impact-track">
+                                <div class="impact-fill persistence" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box" style="margin-top: 1rem;">
+                        <h4>💡 Key Features</h4>
+                        <p>• <strong>Diskless:</strong> No files written to disk<br>
+                           • <strong>Auto-upgrade:</strong> Seamless transition to full beacon<br>
+                           • <strong>Encrypted exfil:</strong> AES-encrypted chunked transfer<br>
+                           • <strong>Cred harvest:</strong> Config files, env vars, sessions</p>
+                    </div>
+                </div>
+                
+                <div class="shell-card">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statShells">0</div>
+                            <div class="stat-label">Shells Generated</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statTypes">6</div>
+                            <div class="stat-label">Shell Types</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statExfil">5</div>
+                            <div class="stat-label">Exfil Methods</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Shell Types Tab -->
+    <div id="tab-types" class="tab-content">
+        <div class="shell-card">
+            <h3>📋 Available Shell Types</h3>
+            <div class="shell-type-grid" id="shellTypeGrid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Exfiltration Tab -->
+    <div id="tab-exfil" class="tab-content">
+        <div class="shell-card">
+            <h3>📤 Exfiltration Methods</h3>
+            <div class="exfil-method-grid" id="exfilMethodGrid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        
+        <div class="shell-card">
+            <h3>⚙️ Exfiltration Settings</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Chunk Size (bytes)</label>
+                        <input type="number" id="chunkSize" class="form-control" value="4096">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Jitter Min (seconds)</label>
+                        <input type="number" id="jitterMin" class="form-control" value="1">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Jitter Max (seconds)</label>
+                        <input type="number" id="jitterMax" class="form-control" value="5">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Simulate Tab -->
+    <div id="tab-simulate" class="tab-content">
+        <div class="shell-card">
+            <h3>▶️ Simulate Shell Actions</h3>
+            
+            <div class="warning-box">
+                <h4>⚠️ Simulation Mode</h4>
+                <p>All actions are simulated and do not execute real commands. This is for demonstration purposes only.</p>
+            </div>
+            
+            <div class="form-group">
+                <label>Select Action</label>
+                <select id="simAction" class="form-control">
+                    <option value="exec">Execute Command</option>
+                    <option value="recon">Internal Recon</option>
+                    <option value="harvest">Credential Harvest</option>
+                    <option value="exfil">Data Exfiltration</option>
+                    <option value="upgrade">Upgrade to Beacon</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="cmdGroup">
+                <label>Command (for exec)</label>
+                <input type="text" id="simCmd" class="form-control" placeholder="whoami">
+            </div>
+            
+            <button class="btn-shell btn-shell-success" onclick="simulateAction()">
+                ▶️ Run Simulation
+            </button>
+            
+            <div id="simResult" class="simulation-result" style="display: none;">
+                <h4>📊 Simulation Result</h4>
+                <pre id="simResultContent"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Output Tab -->
+    <div id="tab-output" class="tab-content">
+        <div class="result-panel" id="outputPanel" style="display: none;">
+            <div class="result-header">
+                <span class="result-title">🐚 Generated Shell</span>
+                <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
+            </div>
+            
+            <div class="output-tabs">
+                <div class="output-tab active" data-output="loader">Loader</div>
+                <div class="output-tab" data-output="payload">Full Payload</div>
+                <div class="output-tab" data-output="recon">Recon Payload</div>
+                <div class="output-tab" data-output="harvester">Harvester</div>
+                <div class="output-tab" data-output="beacon">Beacon Upgrade</div>
+            </div>
+            
+            <div class="code-output" id="codeOutput">
+                // Shell code will appear here
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-shell btn-shell-info" onclick="downloadShell()">
+                    💾 Download Shell
+                </button>
+                <button class="btn-shell btn-shell-success" onclick="testShell()">
+                    🧪 Test Locally
+                </button>
+            </div>
+        </div>
+        
+        <div id="noOutput" class="shell-card" style="text-align: center; padding: 3rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🐚</div>
+            <h3 style="color: #888;">No Shell Generated Yet</h3>
+            <p style="color: #666;">Go to the Generator tab and create an enhanced shell</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentShell = null;
+let currentOutput = 'loader';
+
+// Tab switching
+document.querySelectorAll('.shell-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.shell-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+});
+
+// Output tab switching
+document.querySelectorAll('.output-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentOutput = tab.dataset.output;
+        updateOutputDisplay();
+    });
+});
+
+// Shell types
+const shellTypes = [
+    {type: 'php', icon: '🐘', name: 'PHP Memory Shell', desc: 'Memory-only PHP shell with eval stream', features: ['eval()', 'No disk writes', 'Session hijack']},
+    {type: 'asp', icon: '🪟', name: 'ASP/VBScript Shell', desc: 'Classic ASP for legacy IIS servers', features: ['WScript.Shell', 'Registry access', 'COM objects']},
+    {type: 'aspx', icon: '🔷', name: 'ASPX/.NET Shell', desc: '.NET shell with dynamic compilation', features: ['In-memory compile', 'Reflection', 'Full .NET']},
+    {type: 'jsp', icon: '☕', name: 'JSP Java Shell', desc: 'Java shell with Nashorn/GraalJS', features: ['Script engine', 'Cross-platform', 'JVM access']},
+    {type: 'python', icon: '🐍', name: 'Python Shell', desc: 'Python shell for Flask/Django', features: ['exec() based', 'subprocess', 'OS integration']},
+    {type: 'node', icon: '💚', name: 'Node.js Shell', desc: 'Node shell with VM isolation', features: ['vm context', 'child_process', 'async']}
+];
+
+// Exfil methods
+const exfilMethods = [
+    {method: 'http_chunked', name: 'HTTP Chunked', desc: 'Encrypted chunked POST', stealth: 'medium'},
+    {method: 'dns_tunnel', name: 'DNS Tunnel', desc: 'Data via DNS queries', stealth: 'high'},
+    {method: 'websocket', name: 'WebSocket', desc: 'Real-time bidirectional', stealth: 'medium'},
+    {method: 'icmp_covert', name: 'ICMP Covert', desc: 'ICMP echo tunneling', stealth: 'high'},
+    {method: 'steganography', name: 'Steganography', desc: 'Hide in images', stealth: 'very_high'}
+];
+
+// Populate grids
+function populateGrids() {
+    const typeGrid = document.getElementById('shellTypeGrid');
+    typeGrid.innerHTML = shellTypes.map(s => `
+        <div class="shell-type-card" data-type="${s.type}" onclick="selectShellType('${s.type}')">
+            <div class="shell-type-icon">${s.icon}</div>
+            <div class="shell-type-name">${s.name}</div>
+            <div class="shell-type-desc">${s.desc}</div>
+            <div>
+                ${s.features.map(f => `<span class="feature-badge badge-memory" style="font-size: 0.65rem;">${f}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
+    
+    const exfilGrid = document.getElementById('exfilMethodGrid');
+    exfilGrid.innerHTML = exfilMethods.map(e => `
+        <div class="exfil-card" data-method="${e.method}" onclick="selectExfilMethod('${e.method}')">
+            <div class="exfil-name">${e.name}</div>
+            <div class="exfil-desc">${e.desc}</div>
+            <span class="stealth-indicator stealth-${e.stealth}">${e.stealth} stealth</span>
+        </div>
+    `).join('');
+}
+
+function selectShellType(type) {
+    document.querySelectorAll('.shell-type-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector(`.shell-type-card[data-type="${type}"]`).classList.add('selected');
+    document.getElementById('shellType').value = type;
+}
+
+function selectExfilMethod(method) {
+    document.querySelectorAll('.exfil-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector(`.exfil-card[data-method="${method}"]`).classList.add('selected');
+    document.getElementById('exfilMethod').value = method;
+}
+
+// Generate shell
+async function generateShell() {
+    const config = {
+        shell_type: document.getElementById('shellType').value,
+        callback_url: document.getElementById('callbackUrl').value || 'https://c2.example.com',
+        encryption_key: document.getElementById('encryptionKey').value,
+        memory_only: document.getElementById('memoryOnly').checked,
+        auto_upgrade: document.getElementById('autoUpgrade').checked,
+        exfil_method: document.getElementById('exfilMethod').value
+    };
+    
+    try {
+        const response = await fetch('/api/webshell-enhancer/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        if(data.success) {
+            currentShell = data.shell;
+            updateStats();
+            showOutput();
+            
+            // Switch to output tab
+            document.querySelectorAll('.shell-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('.shell-tab[data-tab="output"]').classList.add('active');
+            document.getElementById('tab-output').classList.add('active');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch(e) {
+        alert('Error generating shell: ' + e.message);
+    }
+}
+
+function showOutput() {
+    document.getElementById('noOutput').style.display = 'none';
+    document.getElementById('outputPanel').style.display = 'block';
+    updateOutputDisplay();
+}
+
+function updateOutputDisplay() {
+    if(!currentShell) return;
+    
+    let code = '';
+    switch(currentOutput) {
+        case 'loader':
+            code = currentShell.loader || '// Loader code';
+            break;
+        case 'payload':
+            code = currentShell.payload || '// Full payload code';
+            break;
+        case 'recon':
+            code = currentShell.recon_payload || '// Recon payload code';
+            break;
+        case 'harvester':
+            code = currentShell.harvester_payload || '// Harvester payload code';
+            break;
+        case 'beacon':
+            code = currentShell.beacon_upgrade?.upgrader || '// Beacon upgrade code';
+            break;
+    }
+    
+    document.getElementById('codeOutput').textContent = code;
+}
+
+function copyOutput() {
+    const code = document.getElementById('codeOutput').textContent;
+    navigator.clipboard.writeText(code);
+    alert('Copied to clipboard!');
+}
+
+function downloadShell() {
+    if(!currentShell) return;
+    
+    const extensions = {php: 'php', asp: 'asp', aspx: 'aspx', jsp: 'jsp', python: 'py', node: 'js'};
+    const ext = extensions[currentShell.type] || 'txt';
+    
+    const blob = new Blob([currentShell.loader], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shell_${currentShell.id}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Simulate action
+async function simulateAction() {
+    if(!currentShell) {
+        alert('Generate a shell first!');
+        return;
+    }
+    
+    const action = document.getElementById('simAction').value;
+    const cmd = document.getElementById('simCmd').value;
+    
+    try {
+        const response = await fetch('/api/webshell-enhancer/simulate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                shell_id: currentShell.id,
+                action: action,
+                params: {cmd: cmd}
+            })
+        });
+        
+        const data = await response.json();
+        document.getElementById('simResult').style.display = 'block';
+        document.getElementById('simResultContent').textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+        alert('Simulation error: ' + e.message);
+    }
+}
+
+// Show/hide cmd input
+document.getElementById('simAction').addEventListener('change', function() {
+    document.getElementById('cmdGroup').style.display = this.value === 'exec' ? 'block' : 'none';
+});
+
+async function updateStats() {
+    try {
+        const response = await fetch('/api/webshell-enhancer/stats');
+        const data = await response.json();
+        if(data.success) {
+            document.getElementById('statShells').textContent = data.stats.total_shells;
+        }
+    } catch(e) {}
+}
+
+// Initialize
+populateGrids();
+updateStats();
+</script>
+{% endblock %}

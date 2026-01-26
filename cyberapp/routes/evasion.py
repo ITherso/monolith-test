@@ -2066,3 +2066,246 @@ def purple_team_export():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================
+# WEB SHELL ENHANCER - POST-WEB EXPLOITATION
+# ============================================================
+
+# Lazy import for Web Shell Enhancer
+WEBSHELL_ENHANCER_AVAILABLE = False
+WebShellEnhancer = None
+WebShellConfig = None
+WebShellType = None
+ExfilMethod = None
+
+def _lazy_import_webshell_enhancer():
+    """Lazy import Web Shell Enhancer module"""
+    global WEBSHELL_ENHANCER_AVAILABLE, WebShellEnhancer, WebShellConfig, WebShellType, ExfilMethod
+    if WebShellEnhancer is None:
+        try:
+            from evasion.web_shell_enhancer import (
+                WebShellEnhancer as _WebShellEnhancer,
+                WebShellConfig as _WebShellConfig,
+                WebShellType as _WebShellType,
+                ExfilMethod as _ExfilMethod,
+            )
+            WebShellEnhancer = _WebShellEnhancer
+            WebShellConfig = _WebShellConfig
+            WebShellType = _WebShellType
+            ExfilMethod = _ExfilMethod
+            WEBSHELL_ENHANCER_AVAILABLE = True
+        except Exception as e:
+            logger.warning(f"Web Shell Enhancer import failed: {e}")
+            WEBSHELL_ENHANCER_AVAILABLE = False
+    return WEBSHELL_ENHANCER_AVAILABLE
+
+# Global Web Shell Enhancer instance
+_webshell_enhancer = None
+
+def _get_webshell_enhancer():
+    """Get or create Web Shell Enhancer instance"""
+    global _webshell_enhancer
+    if not _lazy_import_webshell_enhancer():
+        return None
+    if _webshell_enhancer is None and WebShellEnhancer is not None:
+        _webshell_enhancer = WebShellEnhancer()
+    return _webshell_enhancer
+
+
+@evasion_bp.route('/webshell-enhancer')
+def webshell_enhancer_page():
+    """Web Shell Enhancer - Post-Web Exploitation page"""
+    _lazy_import_webshell_enhancer()
+    return render_template('webshell_enhancer.html',
+        available=WEBSHELL_ENHANCER_AVAILABLE,
+        now=datetime.now().strftime('%H:%M:%S')
+    )
+
+
+@evasion_bp.route('/api/webshell-enhancer/types')
+def webshell_types():
+    """Get available shell types"""
+    if not _lazy_import_webshell_enhancer():
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    enhancer = _get_webshell_enhancer()
+    if not enhancer:
+        return jsonify({'success': False, 'error': 'Failed to initialize'}), 500
+    
+    types = enhancer.get_shell_types()
+    return jsonify({'success': True, 'types': types})
+
+
+@evasion_bp.route('/api/webshell-enhancer/exfil-methods')
+def webshell_exfil_methods():
+    """Get available exfiltration methods"""
+    if not _lazy_import_webshell_enhancer():
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    enhancer = _get_webshell_enhancer()
+    if not enhancer:
+        return jsonify({'success': False, 'error': 'Failed to initialize'}), 500
+    
+    methods = enhancer.get_exfil_methods()
+    return jsonify({'success': True, 'methods': methods})
+
+
+@evasion_bp.route('/api/webshell-enhancer/generate', methods=['POST'])
+def webshell_generate():
+    """
+    Generate enhanced web shell
+    
+    Request (JSON):
+        shell_type: php, asp, aspx, jsp, python, node
+        callback_url: C2 callback URL
+        encryption_key: Optional encryption key (auto-generated if not provided)
+        memory_only: Boolean - diskless shell
+        auto_upgrade: Boolean - auto-upgrade to beacon
+        exfil_method: http_chunked, dns_tunnel, websocket, icmp_covert, steganography
+    """
+    if not _lazy_import_webshell_enhancer():
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    enhancer = _get_webshell_enhancer()
+    if not enhancer:
+        return jsonify({'success': False, 'error': 'Failed to initialize'}), 500
+    
+    data = request.get_json() or {}
+    
+    # Parse shell type
+    shell_type_str = data.get('shell_type', 'php').upper()
+    try:
+        shell_type = WebShellType[shell_type_str]
+    except KeyError:
+        shell_type = WebShellType.PHP
+    
+    # Parse exfil method
+    exfil_method_str = data.get('exfil_method', 'http_chunked').upper()
+    try:
+        exfil_method = ExfilMethod[exfil_method_str]
+    except KeyError:
+        exfil_method = ExfilMethod.HTTP_CHUNKED
+    
+    # Build config
+    config = WebShellConfig(
+        shell_type=shell_type,
+        callback_url=data.get('callback_url', 'https://c2.example.com'),
+        encryption_key=data.get('encryption_key') or None,
+        memory_only=data.get('memory_only', True),
+        auto_upgrade=data.get('auto_upgrade', True),
+        exfil_method=exfil_method
+    )
+    
+    try:
+        shell = enhancer.create_enhanced_shell(config)
+        
+        return jsonify({
+            'success': True,
+            'shell': {
+                'id': shell.get('id'),
+                'type': shell.get('type'),
+                'loader': shell.get('loader'),
+                'payload': shell.get('payload'),
+                'recon_payload': shell.get('recon_payload'),
+                'harvester_payload': shell.get('harvester_payload'),
+                'beacon_upgrade': shell.get('beacon_upgrade'),
+                'config': {
+                    'callback_url': config.callback_url,
+                    'memory_only': config.memory_only,
+                    'auto_upgrade': config.auto_upgrade,
+                    'exfil_method': config.exfil_method.name
+                }
+            }
+        })
+    except Exception as e:
+        logger.exception("Web shell generation error")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/webshell-enhancer/simulate', methods=['POST'])
+def webshell_simulate():
+    """
+    Simulate web shell execution
+    
+    Request (JSON):
+        shell_id: ID of generated shell
+        action: exec, recon, harvest, exfil, upgrade
+        params: Optional parameters (e.g., cmd for exec)
+    """
+    if not _lazy_import_webshell_enhancer():
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    enhancer = _get_webshell_enhancer()
+    if not enhancer:
+        return jsonify({'success': False, 'error': 'Failed to initialize'}), 500
+    
+    data = request.get_json() or {}
+    shell_id = data.get('shell_id')
+    action = data.get('action', 'exec')
+    params = data.get('params', {})
+    
+    try:
+        result = enhancer.simulate_shell_execution(
+            shell_id=shell_id,
+            action=action,
+            params=params
+        )
+        
+        return jsonify({
+            'success': True,
+            'simulation': result
+        })
+    except Exception as e:
+        logger.exception("Web shell simulation error")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/webshell-enhancer/stats')
+def webshell_stats():
+    """Get Web Shell Enhancer statistics"""
+    if not _lazy_import_webshell_enhancer():
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    enhancer = _get_webshell_enhancer()
+    if not enhancer:
+        return jsonify({'success': False, 'error': 'Failed to initialize'}), 500
+    
+    stats = enhancer.get_stats()
+    return jsonify({'success': True, 'stats': stats})
+
+
+@evasion_bp.route('/api/webshell-enhancer/test-connection', methods=['POST'])
+def webshell_test_connection():
+    """
+    Test shell connection (simulation)
+    
+    Request (JSON):
+        target_url: URL where shell is deployed
+        shell_type: Type of shell
+    """
+    data = request.get_json() or {}
+    target_url = data.get('target_url', '')
+    shell_type = data.get('shell_type', 'php')
+    
+    # Simulated connection test
+    import random
+    
+    result = {
+        'target_url': target_url,
+        'shell_type': shell_type,
+        'connection_test': {
+            'status': 'simulated',
+            'latency_ms': random.randint(50, 200),
+            'response_code': 200,
+            'server_info': 'Apache/2.4.41 (Ubuntu)',
+            'php_version': '7.4.3' if shell_type == 'php' else None
+        },
+        'security_check': {
+            'waf_detected': random.choice([True, False]),
+            'av_detected': False,
+            'sandbox_detected': False
+        }
+    }
+    
+    return jsonify({'success': True, 'result': result})
