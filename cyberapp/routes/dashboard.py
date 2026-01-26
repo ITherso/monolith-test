@@ -46,6 +46,7 @@ def _save_evasion_stats(stats):
 
 
 @dashboard_bp.route("/")
+@dashboard_bp.route("/dashboard")
 def index():
     if not session.get("logged_in"):
         return redirect("/login")

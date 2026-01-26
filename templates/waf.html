@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAF Bypass Engine - Monolith</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0f0f23 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ff6600;
+        }
+        
+        .header h1 {
+            color: #ff6600;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .back-btn {
+            background: rgba(255, 102, 0, 0.2);
+            color: #ff6600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 102, 0, 0.4);
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .sidebar {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #333;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            color: #ff6600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 1em;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ff6600;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6600, #ff3300);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 102, 0, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ff6600;
+            border: 1px solid #ff6600;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 102, 0, 0.2);
+        }
+        
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px 15px 0 0;
+            overflow: hidden;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background: rgba(255, 102, 0, 0.1);
+        }
+        
+        .tab.active {
+            background: rgba(255, 102, 0, 0.2);
+            border-bottom-color: #ff6600;
+            color: #ff6600;
+        }
+        
+        .panel {
+            display: none;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 0 0 15px 15px;
+            padding: 25px;
+            border: 1px solid #333;
+            border-top: none;
+        }
+        
+        .panel.active {
+            display: block;
+        }
+        
+        .panel h2 {
+            color: #ff6600;
+            margin-bottom: 20px;
+        }
+        
+        /* WAF Cards */
+        .waf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .waf-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .waf-card:hover {
+            border-color: #ff6600;
+            transform: translateY(-3px);
+        }
+        
+        .waf-card.selected {
+            border-color: #ff6600;
+            background: rgba(255, 102, 0, 0.1);
+        }
+        
+        .waf-card .logo {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .waf-card h4 {
+            color: #ff6600;
+            margin-bottom: 5px;
+        }
+        
+        .waf-card .features {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .feature-badge {
+            font-size: 0.7em;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: rgba(255, 102, 0, 0.2);
+            color: #ff6600;
+        }
+        
+        /* Results */
+        .results-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .bypass-item {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        .bypass-item:hover {
+            border-color: #ff6600;
+        }
+        
+        .bypass-item .technique {
+            display: inline-block;
+            background: rgba(255, 102, 0, 0.2);
+            color: #ff6600;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+        
+        .bypass-item .probability {
+            float: right;
+            color: #00cc66;
+            font-weight: bold;
+        }
+        
+        .bypass-item .payload {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            color: #00ff00;
+            margin-top: 10px;
+            position: relative;
+        }
+        
+        .bypass-item .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 102, 0, 0.3);
+            border: none;
+            color: #ff6600;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .bypass-item .copy-btn:hover {
+            background: rgba(255, 102, 0, 0.5);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            color: #ff6600;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card span {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        /* Technique Selector */
+        .technique-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .technique-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .technique-checkbox:hover {
+            border-color: #ff6600;
+        }
+        
+        .technique-checkbox input {
+            width: auto;
+        }
+        
+        /* Smuggling Visualizer */
+        .smuggle-visualizer {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            color: #00ff00;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .smuggle-visualizer .header-line {
+            color: #ff6600;
+        }
+        
+        .smuggle-visualizer .smuggled {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+        
+        /* Fingerprint Result */
+        .fingerprint-result {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+        
+        .fingerprint-result h4 {
+            color: #ff6600;
+            margin-bottom: 15px;
+        }
+        
+        .confidence-bar {
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff3300, #ff6600);
+            transition: width 0.5s;
+        }
+        
+        .evidence-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+        
+        .evidence-list li {
+            padding: 5px 10px;
+            background: rgba(255, 102, 0, 0.1);
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        /* Alert */
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-warning {
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid #ffaa00;
+            color: #ffaa00;
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #333;
+            border-top-color: #ff6600;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Encoding Section */
+        .encoding-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .encoding-btn {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .encoding-btn:hover {
+            border-color: #ff6600;
+            background: rgba(255, 102, 0, 0.1);
+        }
+        
+        .encoding-btn.active {
+            border-color: #ff6600;
+            background: rgba(255, 102, 0, 0.2);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .waf-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ WAF Bypass Engine</h1>
+        <a href="/dashboard" class="back-btn">← Dashboard</a>
+    </div>
+    
+    <div class="container">
+        <!-- Sidebar - Payload Input -->
+        <div class="sidebar">
+            <h3>🎯 Attack Configuration</h3>
+            
+            <div class="form-group">
+                <label>Attack Payload</label>
+                <textarea id="payload" rows="4" placeholder="' OR 1=1--">' OR 1=1--</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Attack Type</label>
+                <select id="attackType">
+                    <option value="sqli">SQL Injection</option>
+                    <option value="xss">Cross-Site Scripting (XSS)</option>
+                    <option value="rce">Remote Code Execution</option>
+                    <option value="lfi">Local File Inclusion</option>
+                    <option value="ssrf">Server-Side Request Forgery</option>
+                    <option value="xxe">XML External Entity</option>
+                    <option value="ssti">Server-Side Template Injection</option>
+                    <option value="cmd">Command Injection</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Target WAF</label>
+                <select id="targetWaf">
+                    <option value="">Auto-detect</option>
+                    <option value="cloudflare">Cloudflare</option>
+                    <option value="akamai">Akamai</option>
+                    <option value="imperva">Imperva</option>
+                    <option value="aws_waf">AWS WAF</option>
+                    <option value="azure_waf">Azure WAF</option>
+                    <option value="gcp_armor">GCP Armor</option>
+                    <option value="f5_bigip">F5 BIG-IP</option>
+                    <option value="modsecurity">ModSecurity</option>
+                    <option value="sucuri">Sucuri</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Max Results</label>
+                <input type="number" id="maxResults" value="15" min="1" max="50">
+            </div>
+            
+            <button class="btn btn-primary" onclick="generateBypass()">
+                ⚡ Generate Bypass Payloads
+            </button>
+            
+            <button class="btn btn-secondary" onclick="loadDemo()">
+                📋 Load Demo
+            </button>
+            
+            <hr style="margin: 20px 0; border-color: #333;">
+            
+            <h3>📊 Quick Stats</h3>
+            <div id="quickStats" style="margin-top: 10px;">
+                <p>Total Attempts: <span id="totalAttempts">0</span></p>
+                <p>Success Rate: <span id="successRate">0%</span></p>
+                <p>Current WAF: <span id="currentWaf">-</span></p>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="alert alert-warning">
+                ⚠️ <strong>Warning:</strong> This tool is for AUTHORIZED SECURITY TESTING ONLY. 
+                WAF bypass techniques should only be used on systems you have permission to test.
+            </div>
+            
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="generator">⚡ Generator</div>
+                <div class="tab" data-tab="fingerprint">🔍 Fingerprint</div>
+                <div class="tab" data-tab="smuggle">🚀 Smuggling</div>
+                <div class="tab" data-tab="encoding">🔤 Encoding</div>
+                <div class="tab" data-tab="techniques">🛠️ Techniques</div>
+            </div>
+            
+            <!-- Generator Panel -->
+            <div class="panel active" id="generator">
+                <h2>⚡ Bypass Payload Generator</h2>
+                
+                <!-- WAF Selection -->
+                <h3 style="color: #ff6600; margin-bottom: 15px;">Select Target WAF</h3>
+                <div class="waf-grid" id="wafGrid">
+                    <div class="waf-card" data-waf="cloudflare">
+                        <div class="logo">☁️</div>
+                        <h4>Cloudflare</h4>
+                        <div class="features">
+                            <span class="feature-badge">Bot</span>
+                            <span class="feature-badge">ML</span>
+                        </div>
+                    </div>
+                    <div class="waf-card" data-waf="akamai">
+                        <div class="logo">🔵</div>
+                        <h4>Akamai</h4>
+                        <div class="features">
+                            <span class="feature-badge">Bot</span>
+                            <span class="feature-badge">ML</span>
+                        </div>
+                    </div>
+                    <div class="waf-card" data-waf="imperva">
+                        <div class="logo">🟣</div>
+                        <h4>Imperva</h4>
+                        <div class="features">
+                            <span class="feature-badge">JS</span>
+                            <span class="feature-badge">CAPTCHA</span>
+                        </div>
+                    </div>
+                    <div class="waf-card" data-waf="aws_waf">
+                        <div class="logo">🟠</div>
+                        <h4>AWS WAF</h4>
+                        <div class="features">
+                            <span class="feature-badge">ML</span>
+                        </div>
+                    </div>
+                    <div class="waf-card" data-waf="modsecurity">
+                        <div class="logo">🟢</div>
+                        <h4>ModSecurity</h4>
+                        <div class="features">
+                            <span class="feature-badge">CRS</span>
+                        </div>
+                    </div>
+                    <div class="waf-card" data-waf="f5_bigip">
+                        <div class="logo">🔴</div>
+                        <h4>F5 BIG-IP</h4>
+                        <div class="features">
+                            <span class="feature-badge">Bot</span>
+                            <span class="feature-badge">ML</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="loading" id="generateLoading">
+                    <div class="spinner"></div>
+                    <span>Generating bypass payloads...</span>
+                </div>
+                
+                <div id="bypassResults" class="results-container" style="display: none;">
+                    <!-- Results will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Fingerprint Panel -->
+            <div class="panel" id="fingerprint">
+                <h2>🔍 WAF Fingerprinting</h2>
+                <p style="color: #888; margin-bottom: 20px;">
+                    Paste HTTP response headers and body to identify the WAF vendor.
+                </p>
+                
+                <div class="form-group">
+                    <label>Response Headers (JSON format)</label>
+                    <textarea id="fpHeaders" rows="5" placeholder='{"cf-ray": "abc123", "server": "cloudflare"}'></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Response Body</label>
+                    <textarea id="fpBody" rows="5" placeholder="Paste the response body here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Status Code</label>
+                    <input type="number" id="fpStatus" value="403">
+                </div>
+                
+                <button class="btn btn-primary" onclick="fingerprintWaf()">
+                    🔍 Identify WAF
+                </button>
+                
+                <div id="fingerprintResult" class="fingerprint-result" style="display: none;">
+                    <!-- Fingerprint results -->
+                </div>
+            </div>
+            
+            <!-- Smuggling Panel -->
+            <div class="panel" id="smuggle">
+                <h2>🚀 HTTP Request Smuggling</h2>
+                <p style="color: #888; margin-bottom: 20px;">
+                    Generate HTTP smuggling requests to bypass WAF inspection.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <div class="form-group">
+                            <label>Smuggled Path</label>
+                            <input type="text" id="smugglePath" value="/admin">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Target Host</label>
+                            <input type="text" id="smuggleHost" value="target.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Smuggling Technique</label>
+                            <select id="smuggleTechnique">
+                                <option value="cl_te_desync">CL.TE Desync</option>
+                                <option value="te_cl_desync">TE.CL Desync</option>
+                                <option value="te_te_desync">TE.TE Obfuscation</option>
+                                <option value="h2c">HTTP/2 Cleartext (H2C)</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="generateSmuggle()">
+                            🚀 Generate Smuggling Request
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <div class="form-group">
+                            <label>Technique Info</label>
+                            <div id="techniqueInfo" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; color: #888;">
+                                <strong style="color: #ff6600;">CL.TE Desync:</strong><br>
+                                Front-end uses Content-Length, back-end uses Transfer-Encoding.
+                                The smuggled request is hidden after the chunked terminator.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="smuggleResult" style="margin-top: 20px; display: none;">
+                    <h3 style="color: #ff6600; margin-bottom: 15px;">Generated Request</h3>
+                    <div class="smuggle-visualizer" id="smuggleVisualizer">
+                        <!-- Request will be shown here -->
+                    </div>
+                    <button class="btn btn-secondary" style="width: auto; margin-top: 10px;" onclick="copySmuggle()">
+                        📋 Copy Request
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Encoding Panel -->
+            <div class="panel" id="encoding">
+                <h2>🔤 Payload Encoding</h2>
+                <p style="color: #888; margin-bottom: 20px;">
+                    Apply various encoding techniques to bypass signature-based detection.
+                </p>
+                
+                <div class="form-group">
+                    <label>Input Payload</label>
+                    <textarea id="encodeInput" rows="3" placeholder="<script>alert(1)</script>"><script>alert(1)</script></textarea>
+                </div>
+                
+                <h4 style="color: #ff6600; margin-bottom: 10px;">Select Encoding</h4>
+                <div class="encoding-grid">
+                    <button class="encoding-btn active" data-encoding="unicode">Unicode</button>
+                    <button class="encoding-btn" data-encoding="double_url">Double URL</button>
+                    <button class="encoding-btn" data-encoding="triple_url">Triple URL</button>
+                    <button class="encoding-btn" data-encoding="mixed">Mixed</button>
+                    <button class="encoding-btn" data-encoding="html_entity">HTML Entity</button>
+                    <button class="encoding-btn" data-encoding="utf7">UTF-7</button>
+                    <button class="encoding-btn" data-encoding="utf16">UTF-16</button>
+                    <button class="encoding-btn" data-encoding="hex">Hex</button>
+                    <button class="encoding-btn" data-encoding="octal">Octal</button>
+                    <button class="encoding-btn" data-encoding="base64">Base64</button>
+                </div>
+                
+                <button class="btn btn-primary" onclick="encodePayload()">
+                    🔤 Encode Payload
+                </button>
+                
+                <div id="encodeResult" style="margin-top: 20px; display: none;">
+                    <div class="form-group">
+                        <label>Encoded Output</label>
+                        <div style="background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; position: relative;">
+                            <button class="bypass-item copy-btn" onclick="copyEncoded()" style="position: absolute; top: 10px; right: 10px;">📋 Copy</button>
+                            <pre id="encodedOutput" style="color: #00ff00; word-break: break-all; margin: 0; padding-right: 60px;"></pre>
+                        </div>
+                    </div>
+                    <p style="color: #888; font-size: 0.9em;">
+                        Original: <span id="encodeOrigLen">0</span> bytes → Encoded: <span id="encodeNewLen">0</span> bytes
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Techniques Panel -->
+            <div class="panel" id="techniques">
+                <h2>🛠️ Bypass Techniques</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="techCount">0</h3>
+                        <span>Total Techniques</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="vendorCount">0</h3>
+                        <span>WAF Vendors</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="attackCount">0</h3>
+                        <span>Attack Types</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="aiEnabled">Yes</h3>
+                        <span>AI Mutation</span>
+                    </div>
+                </div>
+                
+                <h3 style="color: #ff6600; margin: 20px 0 15px;">Available Techniques</h3>
+                <div class="technique-selector" id="techniqueList">
+                    <!-- Techniques will be loaded here -->
+                </div>
+                
+                <h3 style="color: #ff6600; margin: 20px 0 15px;">Technique Categories</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                    <div class="stat-card" style="text-align: left;">
+                        <h4 style="color: #ff6600; margin-bottom: 10px;">🔀 HTTP Smuggling</h4>
+                        <ul style="color: #888; padding-left: 20px;">
+                            <li>CL.TE Desync</li>
+                            <li>TE.CL Desync</li>
+                            <li>TE.TE Obfuscation</li>
+                            <li>HTTP/2 Smuggling</li>
+                            <li>H2C Upgrade</li>
+                        </ul>
+                    </div>
+                    <div class="stat-card" style="text-align: left;">
+                        <h4 style="color: #ff6600; margin-bottom: 10px;">🔤 Encoding</h4>
+                        <ul style="color: #888; padding-left: 20px;">
+                            <li>Unicode Normalization</li>
+                            <li>Double/Triple URL</li>
+                            <li>Overlong UTF-8</li>
+                            <li>HTML Entities</li>
+                            <li>Mixed Encoding</li>
+                        </ul>
+                    </div>
+                    <div class="stat-card" style="text-align: left;">
+                        <h4 style="color: #ff6600; margin-bottom: 10px;">📊 Parameter Pollution</h4>
+                        <ul style="color: #888; padding-left: 20px;">
+                            <li>HPP Duplicate</li>
+                            <li>HPP Array</li>
+                            <li>JSON Pollution</li>
+                            <li>XML Pollution</li>
+                        </ul>
+                    </div>
+                    <div class="stat-card" style="text-align: left;">
+                        <h4 style="color: #ff6600; margin-bottom: 10px;">🤖 AI Mutation</h4>
+                        <ul style="color: #888; padding-left: 20px;">
+                            <li>LLM-based mutation</li>
+                            <li>Pattern learning</li>
+                            <li>Success tracking</li>
+                            <li>Adaptive bypass</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // WAF card selection
+        document.querySelectorAll('.waf-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.waf-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                document.getElementById('targetWaf').value = card.dataset.waf;
+            });
+        });
+        
+        // Encoding button selection
+        document.querySelectorAll('.encoding-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.encoding-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+        
+        // Smuggle technique info
+        document.getElementById('smuggleTechnique').addEventListener('change', (e) => {
+            const infos = {
+                'cl_te_desync': '<strong style="color: #ff6600;">CL.TE Desync:</strong><br>Front-end uses Content-Length, back-end uses Transfer-Encoding. The smuggled request is hidden after the chunked terminator.',
+                'te_cl_desync': '<strong style="color: #ff6600;">TE.CL Desync:</strong><br>Front-end uses Transfer-Encoding, back-end uses Content-Length. The smuggled request is in the chunk data.',
+                'te_te_desync': '<strong style="color: #ff6600;">TE.TE Obfuscation:</strong><br>Both use Transfer-Encoding but one fails to parse obfuscated header. Exploits parser differences.',
+                'h2c': '<strong style="color: #ff6600;">H2C Upgrade:</strong><br>HTTP/2 cleartext upgrade smuggling. Downgrades HTTP/2 to HTTP/1.1 to bypass WAF inspection.'
+            };
+            document.getElementById('techniqueInfo').innerHTML = infos[e.target.value] || '';
+        });
+        
+        // Generate bypass payloads
+        async function generateBypass() {
+            const loading = document.getElementById('generateLoading');
+            const results = document.getElementById('bypassResults');
+            
+            loading.classList.add('active');
+            results.style.display = 'none';
+            
+            const payload = document.getElementById('payload').value;
+            const attackType = document.getElementById('attackType').value;
+            const waf = document.getElementById('targetWaf').value;
+            const maxResults = parseInt(document.getElementById('maxResults').value);
+            
+            try {
+                const response = await fetch('/api/waf/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payload: payload,
+                        attack_type: attackType,
+                        waf: waf || null,
+                        max_payloads: maxResults
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayBypasses(data);
+                    updateStats();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            loading.classList.remove('active');
+        }
+        
+        function displayBypasses(data) {
+            const results = document.getElementById('bypassResults');
+            results.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #ff6600;">Original:</strong> 
+                    <code style="color: #00ff00;">${escapeHtml(data.original)}</code>
+                    <br>
+                    <strong style="color: #ff6600;">Target WAF:</strong> ${data.target_waf}
+                    <span style="margin-left: 20px;">
+                        <strong style="color: #ff6600;">Generated:</strong> ${data.count} payloads
+                    </span>
+                </div>
+            `;
+            
+            data.bypasses.forEach((bypass, i) => {
+                const prob = Math.round(bypass.success_probability * 100);
+                const probColor = prob >= 70 ? '#00cc66' : prob >= 40 ? '#ffaa00' : '#ff4444';
+                
+                results.innerHTML += `
+                    <div class="bypass-item">
+                        <span class="technique">${bypass.technique}</span>
+                        <span class="probability" style="color: ${probColor}">${prob}% success</span>
+                        <div class="payload">
+                            <button class="copy-btn" onclick="copyPayload(${i})">📋</button>
+                            <code id="payload-${i}">${escapeHtml(bypass.payload)}</code>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            results.style.display = 'block';
+            
+            // Store for copying
+            window.generatedBypasses = data.bypasses;
+        }
+        
+        function copyPayload(index) {
+            const payload = window.generatedBypasses[index].payload;
+            navigator.clipboard.writeText(payload).then(() => {
+                alert('Payload copied!');
+            });
+        }
+        
+        // Fingerprint WAF
+        async function fingerprintWaf() {
+            const headersStr = document.getElementById('fpHeaders').value;
+            const body = document.getElementById('fpBody').value;
+            const status = parseInt(document.getElementById('fpStatus').value);
+            
+            let headers = {};
+            try {
+                if (headersStr) {
+                    headers = JSON.parse(headersStr);
+                }
+            } catch (e) {
+                alert('Invalid JSON for headers');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/waf/fingerprint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        headers: headers,
+                        body: body,
+                        status_code: status
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayFingerprint(data.fingerprint, data.profile);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function displayFingerprint(fp, profile) {
+            const result = document.getElementById('fingerprintResult');
+            const confidence = Math.round(fp.confidence * 100);
+            
+            result.innerHTML = `
+                <h4>🎯 Detected WAF: ${fp.vendor.toUpperCase()}</h4>
+                
+                <p style="margin: 10px 0;">Confidence Level:</p>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${confidence}%"></div>
+                </div>
+                <p style="text-align: center; color: #ff6600; font-weight: bold;">${confidence}%</p>
+                
+                ${fp.evidence.length > 0 ? `
+                    <p style="margin-top: 15px; color: #aaa;">Evidence Found:</p>
+                    <ul class="evidence-list">
+                        ${fp.evidence.map(e => `<li>${escapeHtml(e)}</li>`).join('')}
+                    </ul>
+                ` : ''}
+                
+                <p style="margin-top: 15px; color: #aaa;">Features Detected:</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                    ${fp.features.bot_detection ? '<span class="feature-badge">Bot Detection</span>' : ''}
+                    ${fp.features.js_challenge ? '<span class="feature-badge">JS Challenge</span>' : ''}
+                    ${fp.features.captcha ? '<span class="feature-badge">CAPTCHA</span>' : ''}
+                    ${fp.features.ml_detection ? '<span class="feature-badge">ML Detection</span>' : ''}
+                </div>
+                
+                ${profile ? `
+                    <p style="margin-top: 15px; color: #aaa;">Recommended Techniques:</p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                        ${profile.effective_techniques.map(t => `<span class="feature-badge" style="background: rgba(0, 204, 102, 0.2); color: #00cc66;">${t}</span>`).join('')}
+                    </div>
+                ` : ''}
+            `;
+            
+            result.style.display = 'block';
+        }
+        
+        // Generate smuggling request
+        async function generateSmuggle() {
+            const path = document.getElementById('smugglePath').value;
+            const host = document.getElementById('smuggleHost').value;
+            const technique = document.getElementById('smuggleTechnique').value;
+            
+            try {
+                const response = await fetch('/api/waf/smuggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: path,
+                        host: host,
+                        technique: technique
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySmuggle(data);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function displaySmuggle(data) {
+            const visualizer = document.getElementById('smuggleVisualizer');
+            
+            // Format the raw request with syntax highlighting
+            let formatted = data.raw_request
+                .replace(/^(POST|GET|PUT|DELETE|HEAD|OPTIONS)/m, '<span class="header-line">$1</span>')
+                .replace(/^([A-Za-z-]+):/gm, '<span class="header-line">$1:</span>');
+            
+            if (data.smuggled_request) {
+                formatted = formatted.replace(data.smuggled_request, 
+                    `<span class="smuggled">${escapeHtml(data.smuggled_request)}</span>`);
+            }
+            
+            visualizer.innerHTML = formatted;
+            
+            // Store for copying
+            window.currentSmuggle = data.raw_request;
+            
+            document.getElementById('smuggleResult').style.display = 'block';
+        }
+        
+        function copySmuggle() {
+            navigator.clipboard.writeText(window.currentSmuggle).then(() => {
+                alert('Smuggling request copied!');
+            });
+        }
+        
+        // Encode payload
+        async function encodePayload() {
+            const input = document.getElementById('encodeInput').value;
+            const encoding = document.querySelector('.encoding-btn.active').dataset.encoding;
+            
+            try {
+                const response = await fetch('/api/waf/encode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payload: input,
+                        encoding: encoding
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('encodedOutput').textContent = data.encoded;
+                    document.getElementById('encodeOrigLen').textContent = data.original_length;
+                    document.getElementById('encodeNewLen').textContent = data.encoded_length;
+                    document.getElementById('encodeResult').style.display = 'block';
+                    
+                    window.currentEncoded = data.encoded;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function copyEncoded() {
+            navigator.clipboard.writeText(window.currentEncoded).then(() => {
+                alert('Encoded payload copied!');
+            });
+        }
+        
+        // Load demo
+        async function loadDemo() {
+            try {
+                const response = await fetch('/api/waf/demo');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display first demo
+                    const demo = data.demos[0];
+                    document.getElementById('payload').value = demo.original;
+                    document.getElementById('targetWaf').value = demo.waf;
+                    
+                    // Display all demo results
+                    const results = document.getElementById('bypassResults');
+                    results.innerHTML = '<h3 style="color: #ff6600; margin-bottom: 15px;">Demo Results</h3>';
+                    
+                    data.demos.forEach(demo => {
+                        results.innerHTML += `
+                            <div style="margin-bottom: 20px;">
+                                <strong style="color: #ff6600;">${demo.name}</strong>
+                                <br>
+                                <code style="color: #888;">Original: ${escapeHtml(demo.original)}</code>
+                                ${demo.bypasses.map(b => `
+                                    <div class="bypass-item" style="margin-top: 10px;">
+                                        <span class="technique">${b.technique}</span>
+                                        <span class="probability">${Math.round(b.success_probability * 100)}%</span>
+                                        <div class="payload">
+                                            <code>${escapeHtml(b.bypass)}</code>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    });
+                    
+                    results.style.display = 'block';
+                }
+            } catch (error) {
+                alert('Error loading demo: ' + error.message);
+            }
+        }
+        
+        // Update stats
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/waf/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalAttempts').textContent = data.stats.total_attempts;
+                    document.getElementById('successRate').textContent = Math.round(data.stats.success_rate * 100) + '%';
+                    document.getElementById('currentWaf').textContent = data.stats.current_waf || '-';
+                }
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+        
+        // Load techniques
+        async function loadTechniques() {
+            try {
+                const response = await fetch('/api/waf/techniques');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('techCount').textContent = data.count;
+                    
+                    const list = document.getElementById('techniqueList');
+                    list.innerHTML = '';
+                    
+                    data.techniques.forEach(tech => {
+                        list.innerHTML += `
+                            <label class="technique-checkbox">
+                                <input type="checkbox" value="${tech.name}" checked>
+                                <span>${tech.name.replace(/_/g, ' ')}</span>
+                            </label>
+                        `;
+                    });
+                }
+                
+                // Also get status
+                const statusResponse = await fetch('/api/waf/status');
+                const statusData = await statusResponse.json();
+                
+                if (statusData.available) {
+                    document.getElementById('vendorCount').textContent = statusData.supported_wafs.length;
+                    document.getElementById('attackCount').textContent = statusData.supported_attacks.length;
+                    document.getElementById('aiEnabled').textContent = statusData.features.ai_mutation ? 'Yes' : 'No';
+                }
+            } catch (error) {
+                console.error('Error loading techniques:', error);
+            }
+        }
+        
+        // Utility
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Load on page load
+        loadTechniques();
+        updateStats();
+    </script>
+</body>
+</html>

