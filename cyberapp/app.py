@@ -36,6 +36,7 @@ relay_bp = _try_import('relay_bp', lambda: __import__('cyberapp.routes.relay', f
 evasion_bp = _try_import('evasion_bp', lambda: __import__('cyberapp.routes.evasion', fromlist=['evasion_bp']).evasion_bp)
 quantum_bp = _try_import('quantum_bp', lambda: __import__('cyberapp.routes.quantum', fromlist=['quantum_bp']).quantum_bp)
 cloud_bp = _try_import('cloud_bp', lambda: __import__('cyberapp.routes.cloud', fromlist=['cloud_bp']).cloud_bp)
+zeroday_bp = _try_import('zeroday_bp', lambda: __import__('cyberapp.routes.zeroday', fromlist=['zeroday_bp']).zeroday_bp)
 
 
 def create_app(run_migrations_on_start=True):
@@ -69,6 +70,7 @@ def create_app(run_migrations_on_start=True):
     if evasion_bp: app.register_blueprint(evasion_bp)
     if quantum_bp: app.register_blueprint(quantum_bp)
     if cloud_bp: app.register_blueprint(cloud_bp)
+    if zeroday_bp: app.register_blueprint(zeroday_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

