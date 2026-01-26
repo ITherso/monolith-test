@@ -1,0 +1,1376 @@
+{% extends "base.html" %}
+
+{% block title %}Purple Team Validator - Automated Security Validation{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --purple-primary: #7b2cbf;
+        --purple-secondary: #9d4edd;
+        --purple-glow: rgba(123, 44, 191, 0.5);
+        --cyan-accent: #00d4ff;
+        --green-detected: #00ff88;
+        --yellow-partial: #ffaa00;
+        --red-evaded: #ff4444;
+        --bg-dark: #0d0d1a;
+        --bg-card: rgba(20, 20, 40, 0.9);
+    }
+    
+    .purple-team-container {
+        padding: 20px;
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+    
+    /* Header */
+    .purple-header {
+        background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 50px var(--purple-glow);
+    }
+    
+    .purple-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+        animation: headerShine 10s linear infinite;
+    }
+    
+    @keyframes headerShine {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .purple-header h1 {
+        font-size: 2.5em;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .purple-header .subtitle {
+        color: rgba(255,255,255,0.85);
+        font-size: 1.1em;
+        margin-top: 10px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Tabs */
+    .purple-tabs {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 20px;
+        background: var(--bg-card);
+        padding: 10px;
+        border-radius: 15px;
+        border: 1px solid rgba(123, 44, 191, 0.3);
+    }
+    
+    .purple-tab {
+        padding: 12px 25px;
+        background: transparent;
+        border: none;
+        color: #888;
+        cursor: pointer;
+        border-radius: 10px;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .purple-tab:hover {
+        color: var(--cyan-accent);
+        background: rgba(0, 212, 255, 0.1);
+    }
+    
+    .purple-tab.active {
+        background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
+        color: white;
+        box-shadow: 0 5px 20px var(--purple-glow);
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Cards */
+    .purple-card {
+        background: var(--bg-card);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(123, 44, 191, 0.3);
+        transition: all 0.3s;
+    }
+    
+    .purple-card:hover {
+        border-color: var(--purple-primary);
+        box-shadow: 0 5px 30px rgba(123, 44, 191, 0.2);
+    }
+    
+    .purple-card h3 {
+        color: var(--cyan-accent);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    /* Metrics Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .metric-card {
+        background: var(--bg-card);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        border: 1px solid rgba(123, 44, 191, 0.3);
+        transition: all 0.3s;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px var(--purple-glow);
+    }
+    
+    .metric-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        background: linear-gradient(90deg, var(--cyan-accent), var(--purple-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .metric-label {
+        color: #888;
+        margin-top: 5px;
+        font-size: 0.9em;
+    }
+    
+    .metric-trend {
+        margin-top: 10px;
+        font-size: 0.85em;
+    }
+    
+    .trend-up { color: var(--green-detected); }
+    .trend-down { color: var(--red-evaded); }
+    
+    /* Campaign Form */
+    .campaign-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        color: var(--cyan-accent);
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(123, 44, 191, 0.3);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 1em;
+        transition: all 0.3s;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--cyan-accent);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+    
+    /* Button styles */
+    .btn-purple {
+        padding: 12px 30px;
+        background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .btn-purple:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px var(--purple-glow);
+    }
+    
+    .btn-purple:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .btn-cyan {
+        padding: 10px 20px;
+        background: transparent;
+        border: 2px solid var(--cyan-accent);
+        border-radius: 10px;
+        color: var(--cyan-accent);
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-cyan:hover {
+        background: var(--cyan-accent);
+        color: #000;
+    }
+    
+    /* MITRE Heatmap */
+    .mitre-heatmap {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+    
+    .tactic-box {
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .tactic-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .tactic-box:hover::before {
+        opacity: 1;
+    }
+    
+    .tactic-box:hover {
+        transform: scale(1.05);
+    }
+    
+    .tactic-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 0.9em;
+    }
+    
+    .tactic-stats {
+        font-size: 0.8em;
+        opacity: 0.8;
+    }
+    
+    .coverage-good { 
+        background: rgba(0, 255, 136, 0.2); 
+        border: 1px solid var(--green-detected);
+        color: var(--green-detected);
+    }
+    .coverage-partial { 
+        background: rgba(255, 170, 0, 0.2); 
+        border: 1px solid var(--yellow-partial);
+        color: var(--yellow-partial);
+    }
+    .coverage-poor { 
+        background: rgba(255, 68, 68, 0.2); 
+        border: 1px solid var(--red-evaded);
+        color: var(--red-evaded);
+    }
+    .coverage-none {
+        background: rgba(100, 100, 100, 0.2);
+        border: 1px solid #666;
+        color: #888;
+    }
+    
+    /* Technique Selector */
+    .technique-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 15px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 10px;
+    }
+    
+    .technique-item {
+        padding: 15px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(123, 44, 191, 0.3);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .technique-item:hover {
+        border-color: var(--cyan-accent);
+        background: rgba(0, 212, 255, 0.1);
+    }
+    
+    .technique-item.selected {
+        border-color: var(--purple-primary);
+        background: rgba(123, 44, 191, 0.2);
+    }
+    
+    .technique-id {
+        font-family: monospace;
+        color: var(--cyan-accent);
+        font-size: 0.9em;
+    }
+    
+    .technique-name {
+        color: #fff;
+        margin-top: 5px;
+        font-weight: 500;
+    }
+    
+    /* Results Table */
+    .results-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .results-table th,
+    .results-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid rgba(123, 44, 191, 0.2);
+    }
+    
+    .results-table th {
+        background: rgba(123, 44, 191, 0.2);
+        color: var(--cyan-accent);
+        font-weight: 600;
+    }
+    
+    .results-table tr:hover {
+        background: rgba(0, 212, 255, 0.05);
+    }
+    
+    .status-detected {
+        color: var(--green-detected);
+        font-weight: bold;
+    }
+    
+    .status-partial {
+        color: var(--yellow-partial);
+        font-weight: bold;
+    }
+    
+    .status-evaded {
+        color: var(--red-evaded);
+        font-weight: bold;
+    }
+    
+    /* Detection Gauge */
+    .detection-gauge {
+        width: 200px;
+        height: 200px;
+        margin: 20px auto;
+        position: relative;
+    }
+    
+    .gauge-bg {
+        fill: none;
+        stroke: rgba(255,255,255,0.1);
+        stroke-width: 20;
+    }
+    
+    .gauge-fill {
+        fill: none;
+        stroke: url(#gaugeGradient);
+        stroke-width: 20;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: center;
+        transition: stroke-dasharray 1s ease;
+    }
+    
+    .gauge-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+    
+    .gauge-value {
+        font-size: 3em;
+        font-weight: bold;
+        color: var(--cyan-accent);
+    }
+    
+    .gauge-label {
+        color: #888;
+        font-size: 0.9em;
+    }
+    
+    /* Timeline */
+    .timeline {
+        position: relative;
+        padding: 20px 0 20px 40px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, var(--purple-primary), var(--cyan-accent));
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+        padding: 15px 20px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 10px;
+        border-left: 3px solid var(--purple-primary);
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -33px;
+        top: 20px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: var(--purple-primary);
+        border: 3px solid var(--cyan-accent);
+    }
+    
+    .timeline-time {
+        color: var(--cyan-accent);
+        font-size: 0.85em;
+        margin-bottom: 5px;
+    }
+    
+    .timeline-title {
+        font-weight: bold;
+        color: #fff;
+    }
+    
+    .timeline-detail {
+        color: #aaa;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    
+    /* Recommendations */
+    .recommendation-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .recommendation-item {
+        padding: 15px 20px;
+        margin: 10px 0;
+        background: rgba(0, 212, 255, 0.1);
+        border-left: 4px solid var(--cyan-accent);
+        border-radius: 0 10px 10px 0;
+        transition: all 0.3s;
+    }
+    
+    .recommendation-item:hover {
+        background: rgba(0, 212, 255, 0.15);
+        transform: translateX(5px);
+    }
+    
+    .recommendation-number {
+        display: inline-block;
+        width: 25px;
+        height: 25px;
+        background: var(--purple-primary);
+        border-radius: 50%;
+        text-align: center;
+        line-height: 25px;
+        margin-right: 10px;
+        font-weight: bold;
+        font-size: 0.85em;
+    }
+    
+    /* Gaps Table */
+    .severity-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+    
+    .severity-critical {
+        background: var(--red-evaded);
+        color: white;
+    }
+    
+    .severity-high {
+        background: #ff6b00;
+        color: white;
+    }
+    
+    .severity-medium {
+        background: var(--yellow-partial);
+        color: #000;
+    }
+    
+    .severity-low {
+        background: var(--cyan-accent);
+        color: #000;
+    }
+    
+    /* Progress Bar */
+    .progress-bar {
+        height: 10px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--purple-primary), var(--cyan-accent));
+        border-radius: 5px;
+        transition: width 0.5s ease;
+    }
+    
+    /* Loading Animation */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        display: none;
+    }
+    
+    .loading-overlay.active {
+        display: flex;
+    }
+    
+    .loading-spinner {
+        width: 80px;
+        height: 80px;
+        border: 4px solid rgba(123, 44, 191, 0.3);
+        border-top: 4px solid var(--cyan-accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+        color: var(--cyan-accent);
+        margin-top: 20px;
+        font-size: 1.1em;
+    }
+    
+    /* Report Preview */
+    .report-preview {
+        background: rgba(0,0,0,0.5);
+        border-radius: 15px;
+        padding: 20px;
+        max-height: 500px;
+        overflow-y: auto;
+        font-family: monospace;
+        white-space: pre-wrap;
+        color: #ccc;
+        font-size: 0.9em;
+    }
+    
+    /* Export Options */
+    .export-options {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .export-option {
+        padding: 20px 30px;
+        background: rgba(0,0,0,0.3);
+        border: 2px solid rgba(123, 44, 191, 0.3);
+        border-radius: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+    }
+    
+    .export-option:hover {
+        border-color: var(--cyan-accent);
+        transform: translateY(-3px);
+    }
+    
+    .export-icon {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+    
+    .export-label {
+        font-weight: bold;
+        color: #fff;
+    }
+    
+    .export-desc {
+        color: #888;
+        font-size: 0.85em;
+        margin-top: 5px;
+    }
+    
+    /* Toast Notifications */
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: var(--bg-card);
+        border: 1px solid var(--purple-primary);
+        border-radius: 10px;
+        color: #fff;
+        z-index: 1001;
+        animation: slideIn 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .toast.success { border-color: var(--green-detected); }
+    .toast.error { border-color: var(--red-evaded); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="purple-team-container">
+    <!-- Header -->
+    <div class="purple-header">
+        <h1>🛡️ Purple Team Validator</h1>
+        <div class="subtitle">Automated Red Team Validation & Blue Team Detection Analysis | Executive & Technical Reporting</div>
+    </div>
+    
+    <!-- Tabs Navigation -->
+    <div class="purple-tabs">
+        <button class="purple-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+        <button class="purple-tab" onclick="switchTab('campaign')">🎯 New Campaign</button>
+        <button class="purple-tab" onclick="switchTab('tests')">🧪 Test Library</button>
+        <button class="purple-tab" onclick="switchTab('results')">📋 Results</button>
+        <button class="purple-tab" onclick="switchTab('gaps')">⚠️ Detection Gaps</button>
+        <button class="purple-tab" onclick="switchTab('recommendations')">💡 AI Recommendations</button>
+        <button class="purple-tab" onclick="switchTab('reports')">📄 Reports</button>
+    </div>
+    
+    <!-- Dashboard Tab -->
+    <div id="tab-dashboard" class="tab-content active">
+        <!-- Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value" id="metric-detection-rate">--</div>
+                <div class="metric-label">Detection Rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-tests-run">0</div>
+                <div class="metric-label">Tests Executed</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-detected">0</div>
+                <div class="metric-label">Attacks Detected</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-evaded">0</div>
+                <div class="metric-label">Attacks Evaded</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-gaps">0</div>
+                <div class="metric-label">Detection Gaps</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metric-campaigns">0</div>
+                <div class="metric-label">Campaigns Run</div>
+            </div>
+        </div>
+        
+        <!-- MITRE Coverage Heatmap -->
+        <div class="purple-card">
+            <h3>🗺️ MITRE ATT&CK Coverage</h3>
+            <div class="mitre-heatmap" id="mitre-heatmap">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="purple-card">
+            <h3>📜 Recent Activity Timeline</h3>
+            <div class="timeline" id="activity-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-time">--</div>
+                    <div class="timeline-title">No recent activity</div>
+                    <div class="timeline-detail">Start a new campaign to see activity here</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Campaign Tab -->
+    <div id="tab-campaign" class="tab-content">
+        <div class="purple-card">
+            <h3>🎯 Create New Validation Campaign</h3>
+            <div class="campaign-form">
+                <div>
+                    <div class="form-group">
+                        <label>Campaign Name</label>
+                        <input type="text" id="campaign-name" placeholder="Enter campaign name..." value="Purple Team Validation">
+                    </div>
+                    <div class="form-group">
+                        <label>Target Environment</label>
+                        <select id="campaign-environment">
+                            <option value="Production">Production</option>
+                            <option value="Staging">Staging</option>
+                            <option value="Development">Development</option>
+                            <option value="Lab">Lab Environment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>EDR/SIEM Vendors</label>
+                        <select id="campaign-edr" multiple>
+                            <option value="Microsoft Defender" selected>Microsoft Defender</option>
+                            <option value="CrowdStrike Falcon">CrowdStrike Falcon</option>
+                            <option value="SentinelOne">SentinelOne</option>
+                            <option value="Carbon Black">VMware Carbon Black</option>
+                            <option value="Cortex XDR">Palo Alto Cortex XDR</option>
+                            <option value="Elastic Security">Elastic Security</option>
+                            <option value="Splunk">Splunk Enterprise Security</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label>Select Tactics to Test</label>
+                        <div id="tactic-checkboxes" style="max-height: 200px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Execution Mode</label>
+                        <select id="campaign-mode">
+                            <option value="simulate">Simulate Only (Safe)</option>
+                            <option value="execute">Execute Tests (Use with Caution)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px;">
+                <button class="btn-purple" onclick="startCampaign()">
+                    <span>🚀</span> Start Campaign
+                </button>
+                <button class="btn-cyan" onclick="runQuickAssessment()">
+                    ⚡ Quick Assessment
+                </button>
+            </div>
+        </div>
+        
+        <!-- Selected Tests Preview -->
+        <div class="purple-card">
+            <h3>🧪 Selected Tests Preview</h3>
+            <div id="selected-tests-preview" class="technique-grid">
+                <p style="color: #888; grid-column: 1/-1;">Select tactics above to preview tests</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Test Library Tab -->
+    <div id="tab-tests" class="tab-content">
+        <div class="purple-card">
+            <h3>📚 Atomic Test Library</h3>
+            <div class="form-group" style="max-width: 400px;">
+                <input type="text" id="test-search" placeholder="🔍 Search tests..." oninput="filterTests()">
+            </div>
+            <div id="test-library" class="technique-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results Tab -->
+    <div id="tab-results" class="tab-content">
+        <div class="purple-card">
+            <h3>📋 Campaign Results</h3>
+            <div id="results-summary" style="margin-bottom: 20px;">
+                <p style="color: #888;">Run a campaign to see results</p>
+            </div>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Technique</th>
+                        <th>Test Name</th>
+                        <th>Tactic</th>
+                        <th>Detection</th>
+                        <th>Duration</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="results-tbody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #888;">No results yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Detection Gaps Tab -->
+    <div id="tab-gaps" class="tab-content">
+        <div class="purple-card">
+            <h3>⚠️ Detection Gaps Analysis</h3>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Technique</th>
+                        <th>Description</th>
+                        <th>Severity</th>
+                        <th>Recommendation</th>
+                    </tr>
+                </thead>
+                <tbody id="gaps-tbody">
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #888;">Run a campaign to identify gaps</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- AI Recommendations Tab -->
+    <div id="tab-recommendations" class="tab-content">
+        <div class="purple-card">
+            <h3>💡 AI-Powered Blue Team Recommendations</h3>
+            <ul class="recommendation-list" id="recommendations-list">
+                <li class="recommendation-item">
+                    <span class="recommendation-number">-</span>
+                    Run a campaign to generate AI recommendations
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Reports Tab -->
+    <div id="tab-reports" class="tab-content">
+        <div class="purple-card">
+            <h3>📄 Generate Reports</h3>
+            <div class="export-options">
+                <div class="export-option" onclick="generateReport('html')">
+                    <div class="export-icon">🌐</div>
+                    <div class="export-label">Interactive HTML</div>
+                    <div class="export-desc">Full interactive report with charts</div>
+                </div>
+                <div class="export-option" onclick="generateReport('json')">
+                    <div class="export-icon">📊</div>
+                    <div class="export-label">JSON Export</div>
+                    <div class="export-desc">Machine-readable data format</div>
+                </div>
+                <div class="export-option" onclick="generateReport('markdown')">
+                    <div class="export-icon">📝</div>
+                    <div class="export-label">Markdown</div>
+                    <div class="export-desc">Technical documentation format</div>
+                </div>
+                <div class="export-option" onclick="generateReport('executive')">
+                    <div class="export-icon">👔</div>
+                    <div class="export-label">Executive Summary</div>
+                    <div class="export-desc">High-level overview for management</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="purple-card">
+            <h3>📜 Executive Summary Preview</h3>
+            <div class="report-preview" id="executive-preview">
+No campaign data available. Run a validation campaign first.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div style="text-align: center;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loading-text">Running validation tests...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global state
+let currentCampaign = null;
+let availableTests = {};
+let mitreTactics = {
+    'TA0001': { name: 'Initial Access', color: '#e74c3c' },
+    'TA0002': { name: 'Execution', color: '#e67e22' },
+    'TA0003': { name: 'Persistence', color: '#f39c12' },
+    'TA0004': { name: 'Privilege Escalation', color: '#27ae60' },
+    'TA0005': { name: 'Defense Evasion', color: '#2980b9' },
+    'TA0006': { name: 'Credential Access', color: '#8e44ad' },
+    'TA0007': { name: 'Discovery', color: '#2c3e50' },
+    'TA0008': { name: 'Lateral Movement', color: '#16a085' },
+    'TA0009': { name: 'Collection', color: '#d35400' },
+    'TA0010': { name: 'Exfiltration', color: '#c0392b' },
+    'TA0011': { name: 'Command and Control', color: '#7f8c8d' },
+    'TA0040': { name: 'Impact', color: '#34495e' }
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadStatus();
+    loadAvailableTests();
+    renderTacticCheckboxes();
+    renderMitreHeatmap();
+});
+
+// Tab switching
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.purple-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// Load status
+async function loadStatus() {
+    try {
+        const response = await fetch('/api/purple-team/status');
+        const data = await response.json();
+        
+        if (data.campaign_id) {
+            currentCampaign = data;
+            updateDashboard(data);
+        }
+    } catch (error) {
+        console.error('Error loading status:', error);
+    }
+}
+
+// Load available tests
+async function loadAvailableTests() {
+    try {
+        const response = await fetch('/api/purple-team/tests');
+        const data = await response.json();
+        
+        if (data.success) {
+            availableTests = data.tests;
+            renderTestLibrary();
+        }
+    } catch (error) {
+        console.error('Error loading tests:', error);
+    }
+}
+
+// Render tactic checkboxes
+function renderTacticCheckboxes() {
+    const container = document.getElementById('tactic-checkboxes');
+    container.innerHTML = '';
+    
+    Object.entries(mitreTactics).forEach(([id, info]) => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer;';
+        label.innerHTML = `
+            <input type="checkbox" value="${id}" checked onchange="updateSelectedTests()">
+            <span style="color: ${info.color};">●</span>
+            <span>${info.name}</span>
+        `;
+        container.appendChild(label);
+    });
+}
+
+// Render MITRE heatmap
+function renderMitreHeatmap() {
+    const container = document.getElementById('mitre-heatmap');
+    container.innerHTML = '';
+    
+    Object.entries(mitreTactics).forEach(([id, info]) => {
+        const coverage = currentCampaign?.mitre_coverage?.[id] || { detection_rate: 0, tests: 0 };
+        const rate = coverage.detection_rate || 0;
+        
+        let coverageClass = 'coverage-none';
+        if (coverage.tests > 0) {
+            coverageClass = rate > 0.7 ? 'coverage-good' : rate > 0.4 ? 'coverage-partial' : 'coverage-poor';
+        }
+        
+        const box = document.createElement('div');
+        box.className = `tactic-box ${coverageClass}`;
+        box.innerHTML = `
+            <div class="tactic-name">${info.name}</div>
+            <div class="tactic-stats">${coverage.tests > 0 ? `${(rate * 100).toFixed(0)}% detected` : 'No tests'}</div>
+            <div class="tactic-stats">${coverage.tests || 0} tests</div>
+        `;
+        container.appendChild(box);
+    });
+}
+
+// Render test library
+function renderTestLibrary() {
+    const container = document.getElementById('test-library');
+    container.innerHTML = '';
+    
+    Object.entries(availableTests).forEach(([tacticId, data]) => {
+        data.tests.forEach(test => {
+            const item = document.createElement('div');
+            item.className = 'technique-item';
+            item.innerHTML = `
+                <div class="technique-id">${test.technique_id}</div>
+                <div class="technique-name">${test.name}</div>
+                <div style="color: #888; font-size: 0.8em; margin-top: 5px;">${mitreTactics[tacticId]?.name || tacticId}</div>
+            `;
+            container.appendChild(item);
+        });
+    });
+}
+
+// Filter tests
+function filterTests() {
+    const query = document.getElementById('test-search').value.toLowerCase();
+    document.querySelectorAll('#test-library .technique-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(query) ? 'block' : 'none';
+    });
+}
+
+// Update selected tests preview
+function updateSelectedTests() {
+    const container = document.getElementById('selected-tests-preview');
+    const checkedTactics = Array.from(document.querySelectorAll('#tactic-checkboxes input:checked')).map(cb => cb.value);
+    
+    container.innerHTML = '';
+    let count = 0;
+    
+    checkedTactics.forEach(tacticId => {
+        const tacticTests = availableTests[tacticId]?.tests || [];
+        tacticTests.forEach(test => {
+            if (count < 20) {  // Limit preview
+                const item = document.createElement('div');
+                item.className = 'technique-item';
+                item.innerHTML = `
+                    <div class="technique-id">${test.technique_id}</div>
+                    <div class="technique-name">${test.name}</div>
+                `;
+                container.appendChild(item);
+                count++;
+            }
+        });
+    });
+    
+    if (count === 0) {
+        container.innerHTML = '<p style="color: #888; grid-column: 1/-1;">No tactics selected</p>';
+    } else if (count >= 20) {
+        const more = document.createElement('p');
+        more.style.cssText = 'color: #888; grid-column: 1/-1;';
+        more.textContent = `...and more tests`;
+        container.appendChild(more);
+    }
+}
+
+// Start campaign
+async function startCampaign() {
+    const name = document.getElementById('campaign-name').value;
+    const environment = document.getElementById('campaign-environment').value;
+    const edrSelect = document.getElementById('campaign-edr');
+    const edrs = Array.from(edrSelect.selectedOptions).map(o => o.value);
+    const tactics = Array.from(document.querySelectorAll('#tactic-checkboxes input:checked')).map(cb => cb.value);
+    const mode = document.getElementById('campaign-mode').value;
+    
+    showLoading('Creating campaign...');
+    
+    try {
+        // Create campaign
+        const createResponse = await fetch('/api/purple-team/campaign/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                target_environment: environment,
+                edr_vendors: edrs,
+                tactics: tactics
+            })
+        });
+        
+        const createData = await createResponse.json();
+        if (!createData.success) throw new Error(createData.error || 'Failed to create campaign');
+        
+        document.getElementById('loading-text').textContent = 'Running validation tests...';
+        
+        // Run campaign
+        const runResponse = await fetch(`/api/purple-team/campaign/${createData.campaign_id}/run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ simulate: mode === 'simulate' })
+        });
+        
+        const runData = await runResponse.json();
+        if (!runData.success) throw new Error(runData.error || 'Failed to run campaign');
+        
+        currentCampaign = runData.report;
+        updateDashboard(runData.report);
+        updateResults(runData.report);
+        updateGaps(runData.report);
+        updateRecommendations(runData.report);
+        updateExecutivePreview(runData.report);
+        renderMitreHeatmap();
+        
+        hideLoading();
+        showToast('Campaign completed successfully!', 'success');
+        switchTab('results');
+        
+    } catch (error) {
+        hideLoading();
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+// Quick assessment
+async function runQuickAssessment() {
+    showLoading('Running quick assessment...');
+    
+    try {
+        const response = await fetch('/api/purple-team/quick-assessment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Failed to run assessment');
+        
+        // Update metrics
+        document.getElementById('metric-detection-rate').textContent = `${(data.result.detection_rate * 100).toFixed(0)}%`;
+        document.getElementById('metric-tests-run').textContent = data.result.tests_executed;
+        document.getElementById('metric-gaps').textContent = data.result.gaps_found;
+        
+        hideLoading();
+        showToast('Quick assessment complete!', 'success');
+        
+        // Show recommendations
+        if (data.result.top_recommendations) {
+            updateQuickRecommendations(data.result.top_recommendations);
+            switchTab('recommendations');
+        }
+        
+    } catch (error) {
+        hideLoading();
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+// Update dashboard
+function updateDashboard(data) {
+    document.getElementById('metric-detection-rate').textContent = `${(data.detection_rate * 100).toFixed(0)}%`;
+    document.getElementById('metric-tests-run').textContent = data.tests_executed || 0;
+    document.getElementById('metric-detected').textContent = data.tests_passed || 0;
+    document.getElementById('metric-evaded').textContent = data.tests_failed || 0;
+    document.getElementById('metric-gaps').textContent = data.detection_gaps?.length || 0;
+}
+
+// Update results table
+function updateResults(data) {
+    const tbody = document.getElementById('results-tbody');
+    tbody.innerHTML = '';
+    
+    const results = data.test_results || [];
+    results.forEach(r => {
+        const statusClass = `status-${r.detection_result}`;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${r.technique_id}</strong></td>
+            <td>${r.test_name}</td>
+            <td>${mitreTactics[r.tactic]?.name || r.tactic}</td>
+            <td class="${statusClass}">${r.detection_result.toUpperCase()}</td>
+            <td>${r.duration_ms}ms</td>
+            <td><button class="btn-cyan" style="padding: 5px 10px; font-size: 0.8em;">Details</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    if (results.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No results</td></tr>';
+    }
+}
+
+// Update gaps table
+function updateGaps(data) {
+    const tbody = document.getElementById('gaps-tbody');
+    tbody.innerHTML = '';
+    
+    const gaps = data.detection_gaps || [];
+    gaps.forEach(g => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${g.technique_id}</strong><br><small style="color: #888;">${g.technique_name}</small></td>
+            <td>${g.description}</td>
+            <td><span class="severity-badge severity-${g.severity}">${g.severity.toUpperCase()}</span></td>
+            <td>${g.recommendation}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    if (gaps.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">No gaps identified - excellent coverage!</td></tr>';
+    }
+}
+
+// Update recommendations
+function updateRecommendations(data) {
+    const list = document.getElementById('recommendations-list');
+    list.innerHTML = '';
+    
+    const recs = data.ai_recommendations || [];
+    recs.forEach((rec, i) => {
+        const item = document.createElement('li');
+        item.className = 'recommendation-item';
+        item.innerHTML = `
+            <span class="recommendation-number">${i + 1}</span>
+            ${rec}
+        `;
+        list.appendChild(item);
+    });
+    
+    if (recs.length === 0) {
+        list.innerHTML = '<li class="recommendation-item"><span class="recommendation-number">-</span>No recommendations at this time</li>';
+    }
+}
+
+function updateQuickRecommendations(recs) {
+    const list = document.getElementById('recommendations-list');
+    list.innerHTML = '';
+    
+    recs.forEach((rec, i) => {
+        const item = document.createElement('li');
+        item.className = 'recommendation-item';
+        item.innerHTML = `
+            <span class="recommendation-number">${i + 1}</span>
+            ${rec}
+        `;
+        list.appendChild(item);
+    });
+}
+
+// Update executive preview
+function updateExecutivePreview(data) {
+    const preview = document.getElementById('executive-preview');
+    preview.textContent = data.executive_summary || 'No summary available';
+}
+
+// Generate report
+async function generateReport(format) {
+    if (!currentCampaign) {
+        showToast('No campaign data available', 'error');
+        return;
+    }
+    
+    showLoading(`Generating ${format.toUpperCase()} report...`);
+    
+    try {
+        const response = await fetch('/api/purple-team/report/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                campaign_id: currentCampaign.report_id,
+                formats: [format]
+            })
+        });
+        
+        const data = await response.json();
+        hideLoading();
+        
+        if (data.success && data.files) {
+            const path = data.files[format];
+            showToast(`Report saved: ${path}`, 'success');
+            
+            // If HTML, offer to open
+            if (format === 'html' && data.files.html) {
+                window.open(`/api/purple-team/report/view?path=${encodeURIComponent(data.files.html)}`, '_blank');
+            }
+        } else {
+            showToast('Error generating report', 'error');
+        }
+        
+    } catch (error) {
+        hideLoading();
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+// Loading helpers
+function showLoading(text) {
+    document.getElementById('loading-text').textContent = text;
+    document.getElementById('loading-overlay').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').classList.remove('active');
+}
+
+// Toast notification
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 4000);
+}
+
+// Initial test preview
+setTimeout(updateSelectedTests, 500);
+</script>
+{% endblock %}

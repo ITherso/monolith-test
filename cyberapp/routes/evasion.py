@@ -1820,3 +1820,249 @@ def edr_poison_clear():
         return jsonify(result)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================
+# PURPLE TEAM VALIDATOR
+# ============================================================
+
+PURPLE_TEAM_AVAILABLE = False
+_purple_team_validator = None
+
+def _get_purple_team_validator():
+    """Get or create Purple Team Validator instance"""
+    global PURPLE_TEAM_AVAILABLE, _purple_team_validator
+    if _purple_team_validator is None:
+        try:
+            from tools.purple_team_validator import PurpleTeamValidator
+            _purple_team_validator = PurpleTeamValidator()
+            PURPLE_TEAM_AVAILABLE = True
+        except Exception as e:
+            logger.warning(f"Purple Team Validator import failed: {e}")
+            PURPLE_TEAM_AVAILABLE = False
+    return _purple_team_validator
+
+
+@evasion_bp.route('/purple-team')
+def purple_team_page():
+    """Purple Team Validator page"""
+    return render_template('purple_team.html')
+
+
+@evasion_bp.route('/api/purple-team/status')
+def purple_team_status():
+    """Get Purple Team Validator status"""
+    validator = _get_purple_team_validator()
+    if not validator:
+        return jsonify({
+            'success': False,
+            'available': False,
+            'error': 'Purple Team module not available'
+        })
+    
+    try:
+        status = validator.get_campaign_status()
+        return jsonify({
+            'success': True,
+            'available': True,
+            **status
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/purple-team/tests')
+def purple_team_tests():
+    """Get available test library"""
+    validator = _get_purple_team_validator()
+    if not validator:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        tests = validator.get_available_tests()
+        coverage = validator.get_technique_coverage()
+        return jsonify({
+            'success': True,
+            'tests': tests,
+            'coverage': coverage
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/purple-team/campaign/create', methods=['POST'])
+def purple_team_create_campaign():
+    """Create a new validation campaign"""
+    validator = _get_purple_team_validator()
+    if not validator:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        data = request.get_json() or {}
+        
+        campaign_id = validator.create_campaign(
+            name=data.get('name', 'Purple Team Validation'),
+            target_environment=data.get('target_environment', 'Production'),
+            edr_vendors=data.get('edr_vendors'),
+            tactics=data.get('tactics'),
+            techniques=data.get('techniques')
+        )
+        
+        return jsonify({
+            'success': True,
+            'campaign_id': campaign_id,
+            'message': 'Campaign created successfully'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/purple-team/campaign/<campaign_id>/run', methods=['POST'])
+def purple_team_run_campaign(campaign_id):
+    """Run a validation campaign"""
+    validator = _get_purple_team_validator()
+    if not validator:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        data = request.get_json() or {}
+        simulate = data.get('simulate', True)
+        
+        report = validator.run_campaign(
+            campaign_id=campaign_id,
+            simulate=simulate
+        )
+        
+        # Convert report to dict for JSON serialization
+        report_dict = {
+            'report_id': report.report_id,
+            'campaign_name': report.campaign_name,
+            'start_time': report.start_time.isoformat(),
+            'end_time': report.end_time.isoformat() if report.end_time else None,
+            'target_environment': report.target_environment,
+            'edr_vendors': report.edr_vendors,
+            'total_tests': report.total_tests,
+            'tests_executed': report.tests_executed,
+            'tests_passed': report.tests_passed,
+            'tests_failed': report.tests_failed,
+            'detection_rate': report.detection_rate,
+            'evasion_rate': report.evasion_rate,
+            'mitre_coverage': report.mitre_coverage,
+            'ai_recommendations': report.ai_recommendations,
+            'executive_summary': report.executive_summary,
+            'test_results': [
+                {
+                    'test_id': r.test_id,
+                    'test_name': r.test_name,
+                    'technique_id': r.technique_id,
+                    'technique_name': r.technique_name,
+                    'tactic': r.tactic,
+                    'detection_result': r.detection_result.value,
+                    'duration_ms': r.duration_ms,
+                }
+                for r in report.test_results
+            ],
+            'detection_gaps': [
+                {
+                    'gap_id': g.gap_id,
+                    'technique_id': g.technique_id,
+                    'technique_name': g.technique_name,
+                    'severity': g.severity.value,
+                    'description': g.description,
+                    'recommendation': g.recommendation,
+                    'remediation_steps': g.remediation_steps,
+                }
+                for g in report.detection_gaps
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'report': report_dict
+        })
+    except Exception as e:
+        logger.error(f"Error running campaign: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/purple-team/quick-assessment', methods=['POST'])
+def purple_team_quick_assessment():
+    """Run a quick assessment"""
+    validator = _get_purple_team_validator()
+    if not validator:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        data = request.get_json() or {}
+        techniques = data.get('techniques')
+        
+        result = validator.run_quick_assessment(techniques=techniques)
+        
+        return jsonify({
+            'success': True,
+            'result': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/purple-team/report/generate', methods=['POST'])
+def purple_team_generate_report():
+    """Generate reports for a campaign"""
+    validator = _get_purple_team_validator()
+    if not validator:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        data = request.get_json() or {}
+        campaign_id = data.get('campaign_id')
+        formats = data.get('formats', ['html', 'json'])
+        
+        files = validator.generate_reports(campaign_id=campaign_id, formats=formats)
+        
+        return jsonify({
+            'success': True,
+            'files': files
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@evasion_bp.route('/api/purple-team/report/view')
+def purple_team_view_report():
+    """View a generated HTML report"""
+    path = request.args.get('path')
+    if not path:
+        return "No path specified", 400
+    
+    # Security check - only allow files from purple reports directory
+    if not path.startswith('/tmp/purple_reports/'):
+        return "Access denied", 403
+    
+    try:
+        with open(path, 'r') as f:
+            content = f.read()
+        return content, 200, {'Content-Type': 'text/html'}
+    except FileNotFoundError:
+        return "Report not found", 404
+    except Exception as e:
+        return str(e), 500
+
+
+@evasion_bp.route('/api/purple-team/export')
+def purple_team_export():
+    """Export campaign data"""
+    validator = _get_purple_team_validator()
+    if not validator:
+        return jsonify({'success': False, 'error': 'Module not available'}), 503
+    
+    try:
+        campaign_id = request.args.get('campaign_id')
+        data = validator.export_campaign_data(campaign_id=campaign_id)
+        
+        return jsonify({
+            'success': True,
+            'data': data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
