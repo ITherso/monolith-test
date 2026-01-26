@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Forensic Cleanup - Monolith{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --card-bg: rgba(15, 23, 42, 0.8);
+        --bg-secondary: rgba(30, 41, 59, 0.8);
+        --border-color: rgba(148, 163, 184, 0.2);
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --primary-color: #ef4444;
+        --primary-dark: #dc2626;
+    }
+    
+    .cleanup-container { padding: 20px; }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #ef4444, #f97316);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+    }
+    
+    .os-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+        justify-content: center;
+    }
+    
+    .os-tab {
+        padding: 12px 30px;
+        background: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    
+    .os-tab:hover { border-color: var(--primary-color); }
+    .os-tab.active {
+        border-color: var(--primary-color);
+        background: rgba(239, 68, 68, 0.1);
+    }
+    
+    .artifacts-panel {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    
+    .category-section {
+        margin-bottom: 25px;
+    }
+    
+    .category-title {
+        font-size: 1.1rem;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .artifact-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 12px;
+    }
+    
+    .artifact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .artifact-item:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .artifact-item.selected {
+        border-color: var(--primary-color);
+        background: rgba(239, 68, 68, 0.1);
+    }
+    
+    .artifact-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--primary-color);
+    }
+    
+    .artifact-info {
+        flex: 1;
+    }
+    
+    .artifact-name {
+        font-weight: 600;
+        margin-bottom: 3px;
+    }
+    
+    .artifact-path {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-family: monospace;
+    }
+    
+    .risk-indicator {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .risk-indicator.critical { background: #dc2626; }
+    .risk-indicator.high { background: #f97316; }
+    .risk-indicator.medium { background: #eab308; }
+    .risk-indicator.low { background: #22c55e; }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .btn-action {
+        flex: 1;
+        padding: 15px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-generate {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+    }
+    
+    .btn-select-all {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+    }
+    
+    .output-panel {
+        background: #0d0d0d;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .output-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .script-output {
+        padding: 20px;
+        font-family: 'JetBrains Mono', monospace;
+        color: #00ff00;
+        white-space: pre-wrap;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .warning-banner {
+        padding: 20px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 12px;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .warning-banner i {
+        font-size: 2rem;
+        color: #ef4444;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cleanup-container">
+    <div class="page-header">
+        <h1>🧹 Forensic Cleanup</h1>
+        <p class="text-gray-400">Remove traces and artifacts from compromised systems</p>
+    </div>
+    
+    <div class="warning-banner">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>
+            <strong>⚠️ Warning:</strong> Forensic cleanup should only be performed on authorized systems during legitimate penetration testing engagements. Improper use may be illegal.
+        </div>
+    </div>
+    
+    <div class="os-tabs">
+        <button class="os-tab active" onclick="selectOS('windows', this)">
+            <i class="fab fa-windows"></i> Windows
+        </button>
+        <button class="os-tab" onclick="selectOS('linux', this)">
+            <i class="fab fa-linux"></i> Linux
+        </button>
+    </div>
+    
+    <div class="artifacts-panel">
+        <div id="artifactsContainer">
+            <!-- Loaded dynamically -->
+        </div>
+    </div>
+    
+    <div class="action-buttons">
+        <button class="btn-action btn-select-all" onclick="selectAll()">
+            <i class="fas fa-check-double"></i> Select All
+        </button>
+        <button class="btn-action btn-generate" onclick="generateScript()">
+            <i class="fas fa-code"></i> Generate Cleanup Script
+        </button>
+    </div>
+    
+    <div class="output-panel">
+        <div class="output-header">
+            <h3><i class="fas fa-terminal"></i> Generated Script</h3>
+            <button onclick="copyScript()" style="padding: 8px 15px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: white; cursor: pointer;">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+        </div>
+        <div class="script-output" id="scriptOutput">
+# Select artifacts and click "Generate Cleanup Script"
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedOS = 'windows';
+    let artifacts = [];
+    let selectedArtifacts = new Set();
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        loadArtifacts();
+    });
+    
+    function loadArtifacts() {
+        fetch('/evasion/api/cleanup/artifacts')
+            .then(r => r.json())
+            .then(data => {
+                artifacts = data;
+                renderArtifacts();
+            });
+    }
+    
+    function selectOS(os, element) {
+        selectedOS = os;
+        document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+        element.classList.add('active');
+        selectedArtifacts.clear();
+        renderArtifacts();
+    }
+    
+    function renderArtifacts() {
+        const container = document.getElementById('artifactsContainer');
+        const filtered = artifacts.filter(a => {
+            if (selectedOS === 'windows') {
+                return a.path.includes('\\') || a.path.includes('HK') || a.path.includes('%');
+            } else {
+                return a.path.startsWith('/') || a.path.startsWith('~');
+            }
+        });
+        
+        // Group by category
+        const grouped = {};
+        filtered.forEach(a => {
+            if (!grouped[a.category]) grouped[a.category] = [];
+            grouped[a.category].push(a);
+        });
+        
+        container.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+            <div class="category-section">
+                <h3 class="category-title"><i class="fas fa-folder"></i> ${cat.toUpperCase()}</h3>
+                <div class="artifact-grid">
+                    ${items.map(a => `
+                        <div class="artifact-item ${selectedArtifacts.has(a.name) ? 'selected' : ''}" 
+                             onclick="toggleArtifact('${a.name}', '${a.category}', this)">
+                            <input type="checkbox" ${selectedArtifacts.has(a.name) ? 'checked' : ''}>
+                            <div class="artifact-info">
+                                <div class="artifact-name">${a.name}</div>
+                                <div class="artifact-path">${a.path}</div>
+                            </div>
+                            <span class="risk-indicator ${a.risk}">${a.risk}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function toggleArtifact(name, category, element) {
+        const checkbox = element.querySelector('input');
+        checkbox.checked = !checkbox.checked;
+        element.classList.toggle('selected');
+        
+        if (checkbox.checked) {
+            selectedArtifacts.add(name);
+        } else {
+            selectedArtifacts.delete(name);
+        }
+    }
+    
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.artifact-item input');
+        const allSelected = Array.from(checkboxes).every(c => c.checked);
+        
+        checkboxes.forEach(cb => {
+            cb.checked = !allSelected;
+            cb.closest('.artifact-item').classList.toggle('selected', !allSelected);
+        });
+        
+        if (!allSelected) {
+            artifacts.forEach(a => selectedArtifacts.add(a.name));
+        } else {
+            selectedArtifacts.clear();
+        }
+    }
+    
+    async function generateScript() {
+        // Map artifact names to target types
+        const targetMap = {
+            'Windows Event Logs': 'event_logs',
+            'PowerShell History': 'powershell_history',
+            'Windows Prefetch': 'prefetch',
+            'Windows Temp': 'temp',
+            'User Temp': 'temp',
+            'RecentDocs': 'recent',
+            'Linux Auth Log': 'auth_log',
+            'Linux Syslog': 'syslog',
+            'Bash History': 'bash_history'
+        };
+        
+        const targets = Array.from(selectedArtifacts)
+            .map(name => targetMap[name])
+            .filter(t => t);
+        
+        const response = await fetch('/evasion/api/cleanup/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                targets: targets,
+                os: selectedOS
+            })
+        });
+        
+        const result = await response.json();
+        document.getElementById('scriptOutput').textContent = result.script;
+    }
+    
+    function copyScript() {
+        const script = document.getElementById('scriptOutput').textContent;
+        navigator.clipboard.writeText(script);
+        alert('Script copied to clipboard!');
+    }
+</script>
+{% endblock %}

