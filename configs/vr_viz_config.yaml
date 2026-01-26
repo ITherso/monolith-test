@@ -1,0 +1,471 @@
+# =============================================================================
+# VR/AR Red Team Visualization Configuration
+# =============================================================================
+# Immersive 3D attack graph visualization with Unity integration
+# BlackHat Demo Ready! 🎮🥽
+# =============================================================================
+
+# General Settings
+general:
+  enabled: true
+  output_dir: "./vr_output"
+  unity_cli_path: "unity-cli"
+  default_export_format: "webxr"  # unity, webxr, threejs, json, gltf
+  auto_generate: false  # Auto-generate VR on report completion
+  cache_scenes: true
+  max_cached_scenes: 10
+
+# Layout Configuration
+layout:
+  algorithm: "hierarchical"  # force_directed, hierarchical, network
+  force_directed:
+    iterations: 100
+    spring_constant: 2.0
+    repulsion_strength: 500
+    damping: 0.85
+    max_displacement: 1.0
+  hierarchical:
+    layer_spacing: 5.0
+    node_spacing: 3.0
+    arrange_in_circles: true
+  network:
+    group_by_type: true
+    subnet_clustering: true
+
+# Node Visualization
+nodes:
+  scale: 1.0
+  enable_labels: true
+  label_font_size: 14
+  label_color: "#ffffff"
+  enable_glow: true
+  glow_intensity: 0.5
+  enable_particles: true
+  particle_system: "spark"
+  
+  # Node type specific settings
+  types:
+    attacker:
+      model: "models/hacker_terminal.fbx"
+      color: "#ff4444"
+      glow: true
+      particle_effect: "fire"
+    target:
+      model: "models/target_crown.fbx"
+      color: "#ffd700"
+      glow: true
+      particle_effect: "sparkle"
+    domain_controller:
+      model: "models/domain_controller.fbx"
+      color: "#8b5cf6"
+      glow: true
+    host:
+      model: "models/server_rack.fbx"
+      color: "#60a5fa"
+    vulnerability:
+      model: "models/vulnerability_warning.fbx"
+      color: "#f97316"
+      glow: true
+    exploit:
+      model: "models/exploit_skull.fbx"
+      color: "#dc2626"
+      particle_effect: "explosion"
+    credential:
+      model: "models/key_gold.fbx"
+      color: "#fbbf24"
+      glow: true
+    c2_channel:
+      model: "models/antenna_signal.fbx"
+      color: "#a855f7"
+      particle_effect: "signal"
+    database:
+      model: "models/database_cylinder.fbx"
+      color: "#22c55e"
+    web_server:
+      model: "models/web_server.fbx"
+      color: "#06b6d4"
+    firewall:
+      model: "models/firewall_shield.fbx"
+      color: "#f43f5e"
+    cloud_instance:
+      model: "models/cloud_server.fbx"
+      color: "#3b82f6"
+
+# Edge Visualization
+edges:
+  width: 0.1
+  enable_animation: true
+  animation_speed: 1.0
+  enable_particle_flow: true
+  particle_density: 10
+  
+  # Edge type colors and styles
+  types:
+    network:
+      color: "#4a90a4"
+      opacity: 0.6
+      style: "solid"
+    attack_path:
+      color: "#ff4444"
+      opacity: 0.8
+      style: "dashed"
+      particle_flow: true
+    credential_reuse:
+      color: "#ffd700"
+      opacity: 0.7
+      style: "dotted"
+    lateral_movement:
+      color: "#a855f7"
+      opacity: 0.8
+      particle_flow: true
+    data_flow:
+      color: "#22c55e"
+      opacity: 0.6
+    c2_communication:
+      color: "#8b5cf6"
+      opacity: 0.8
+      style: "pulse"
+      particle_flow: true
+    privilege_escalation:
+      color: "#f97316"
+      opacity: 0.8
+    trust_relationship:
+      color: "#38bdf8"
+      opacity: 0.5
+      style: "dashed"
+
+# MITRE ATT&CK Integration
+mitre:
+  enabled: true
+  show_tactic_headers: true
+  show_technique_badges: true
+  color_by_tactic: true
+  link_to_attack_navigator: true
+  
+  # Tactic colors (official MITRE colors)
+  tactics:
+    reconnaissance:
+      color: "#6699ff"
+      layer: 0
+    resource_development:
+      color: "#7788ff"
+      layer: 1
+    initial_access:
+      color: "#ff6666"
+      layer: 2
+    execution:
+      color: "#ff8844"
+      layer: 3
+    persistence:
+      color: "#ffaa22"
+      layer: 4
+    privilege_escalation:
+      color: "#ffcc11"
+      layer: 5
+    defense_evasion:
+      color: "#cccc22"
+      layer: 6
+    credential_access:
+      color: "#99ff33"
+      layer: 7
+    discovery:
+      color: "#44ff66"
+      layer: 8
+    lateral_movement:
+      color: "#22ffaa"
+      layer: 9
+    collection:
+      color: "#22ccff"
+      layer: 10
+    command_and_control:
+      color: "#6699ff"
+      layer: 11
+    exfiltration:
+      color: "#9966ff"
+      layer: 12
+    impact:
+      color: "#cc44ff"
+      layer: 13
+
+# Severity Colors
+severity:
+  critical:
+    color: "#dc2626"
+    glow: true
+    particle_effect: "danger"
+    sound: "alert_critical.wav"
+  high:
+    color: "#ea580c"
+    glow: true
+    particle_effect: "warning"
+  medium:
+    color: "#ca8a04"
+    glow: false
+  low:
+    color: "#16a34a"
+    glow: false
+  info:
+    color: "#3b82f6"
+    glow: false
+
+# Attack Replay/Animation
+attack_replay:
+  enabled: true
+  auto_play: false
+  loop: false
+  speed: 1.0
+  step_duration: 1.5
+  highlight_active_node: true
+  show_progress_bar: true
+  pause_on_critical: true
+  sound_effects: true
+  
+  # Animation effects
+  effects:
+    node_compromise:
+      animation: "pulse_red"
+      duration: 0.5
+      particle_burst: true
+    lateral_move:
+      animation: "travel_particle"
+      trail_effect: true
+    data_exfil:
+      animation: "data_stream"
+      color: "#22c55e"
+
+# Environment Settings
+environment:
+  skybox: "cyber_grid"  # cyber_grid, space, dark, matrix
+  ambient_color: "#1a1a2e"
+  fog:
+    enabled: true
+    density: 0.02
+    color: "#0a0a1a"
+  grid:
+    enabled: true
+    size: 100
+    divisions: 50
+    color_primary: "#7c3aed"
+    color_secondary: "#3b2f5e"
+  lighting:
+    ambient_intensity: 0.5
+    directional_intensity: 0.8
+    directional_position: [10, 20, 10]
+
+# Camera Settings
+camera:
+  initial_distance: 30.0
+  initial_height: 15.0
+  fov: 75
+  near_clip: 0.1
+  far_clip: 1000
+  orbit_speed: 0.5
+  zoom_speed: 1.0
+  enable_auto_rotate: false
+  auto_rotate_speed: 0.2
+
+# VR/AR Mode Settings
+vr_mode:
+  enabled: true
+  mode: "room_scale"  # room_scale, seated, standing
+  supported_headsets:
+    - "oculus_quest"
+    - "oculus_rift"
+    - "htc_vive"
+    - "valve_index"
+    - "pico"
+    - "windows_mr"
+  
+  controls:
+    left_controller:
+      grip: "grab_node"
+      trigger: "select"
+      thumbstick: "teleport"
+    right_controller:
+      grip: "scale_scene"
+      trigger: "info_panel"
+      thumbstick: "rotate_view"
+  
+  haptic_feedback:
+    enabled: true
+    node_hover: 0.1
+    node_select: 0.3
+    attack_step: 0.5
+    critical_event: 1.0
+
+ar_mode:
+  enabled: true
+  mode: "marker_based"  # marker_based, markerless, plane_detection
+  marker_image: "monolith_marker.png"
+  scale_factor: 0.1
+  enable_occlusion: true
+  show_grid_plane: true
+
+# WebXR Settings
+webxr:
+  enabled: true
+  framework: "aframe"  # aframe, babylonjs, threejs
+  enable_hand_tracking: true
+  enable_gaze_selection: true
+  fallback_to_3d: true
+  
+  # A-Frame specific
+  aframe:
+    version: "1.4.0"
+    extras_version: "6.1.1"
+    enable_inspector: true
+
+# Unity Export Settings
+unity:
+  version: "2022.3"
+  render_pipeline: "urp"  # urp, hdrp, builtin
+  target_platform: "standalone"  # standalone, android, ios, webgl
+  
+  packages:
+    - "com.unity.xr.interaction.toolkit"
+    - "com.unity.xr.oculus"
+    - "com.unity.xr.openxr"
+    - "com.unity.render-pipelines.universal"
+  
+  prefab_settings:
+    include_materials: true
+    include_animations: true
+    include_scripts: true
+    compress_textures: true
+  
+  build_settings:
+    development_build: false
+    il2cpp: true
+    compress_meshes: true
+
+# Audio Settings
+audio:
+  enabled: true
+  ambient_music: "cyber_ambient.mp3"
+  ambient_volume: 0.3
+  
+  sound_effects:
+    node_hover: "hover.wav"
+    node_select: "select.wav"
+    attack_step: "attack.wav"
+    compromise: "compromise.wav"
+    critical_alert: "alert.wav"
+    success: "success.wav"
+  
+  spatial_audio: true
+  reverb: true
+
+# Interaction Settings
+interaction:
+  node_clickable: true
+  show_info_panel: true
+  info_panel_position: "right"
+  enable_search: true
+  enable_filter: true
+  enable_zoom_to_node: true
+  
+  # Node info panel content
+  info_panel:
+    show_label: true
+    show_type: true
+    show_description: true
+    show_mitre_id: true
+    show_severity: true
+    show_metadata: true
+    show_connections: true
+    max_description_length: 500
+
+# Export Formats
+export:
+  json:
+    pretty_print: true
+    include_metadata: true
+  
+  gltf:
+    include_materials: true
+    include_animations: true
+    draco_compression: true
+  
+  threejs:
+    minify: false
+    include_controls: true
+    include_vr_support: true
+  
+  pdf3d:
+    enabled: false  # Requires special library
+    page_size: "A4"
+    include_annotations: true
+
+# Integration Settings
+integration:
+  # AI Lateral Guide integration
+  ai_lateral_guide:
+    enabled: true
+    auto_generate_on_chain: true
+    export_format: "webxr"
+  
+  # Report Generator integration
+  report_generator:
+    enabled: true
+    embed_3d_viewer: true
+    export_screenshots: true
+  
+  # Dashboard integration
+  dashboard:
+    show_preview: true
+    enable_fullscreen: true
+    lazy_load: true
+
+# Performance Settings
+performance:
+  max_nodes: 500
+  max_edges: 1000
+  lod_enabled: true  # Level of Detail
+  lod_distances: [10, 25, 50]
+  culling_enabled: true
+  batch_rendering: true
+  instanced_rendering: true
+
+# Logging
+logging:
+  level: "INFO"
+  log_file: "vr_viz.log"
+  log_exports: true
+  log_interactions: false
+
+# Demo Mode
+demo:
+  enabled: true
+  sample_chain_log:
+    - target: "192.168.1.10"
+      action: "Phishing Email Campaign"
+      result: "success"
+      severity: "medium"
+    - target: "192.168.1.10"
+      action: "Payload Executed via Macro"
+      result: "success"
+      severity: "high"
+    - target: "192.168.1.10"
+      action: "Credential Dumping with Mimikatz"
+      result: "success"
+      severity: "critical"
+    - target: "192.168.1.20"
+      action: "Lateral Movement via PSExec"
+      result: "success"
+      severity: "high"
+    - target: "192.168.1.30"
+      action: "Database Access with Stolen Creds"
+      result: "success"
+      severity: "high"
+    - target: "192.168.1.100"
+      action: "Domain Controller Compromised"
+      result: "success"
+      severity: "critical"
+    - target: "192.168.1.100"
+      action: "DCSync Attack - All Hashes Dumped"
+      result: "success"
+      severity: "critical"
+    - target: "192.168.1.100"
+      action: "Golden Ticket Forged"
+      result: "success"
+      severity: "critical"

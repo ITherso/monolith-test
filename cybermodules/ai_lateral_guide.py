@@ -142,6 +142,21 @@ try:
 except ImportError:
     HAS_LLM = False
 
+# NEW: VR/AR Visualization entegrasyonu
+try:
+    from tools.vr_viz import (
+        VRViz,
+        ExportFormat as VRExportFormat,
+        MITREAttackMapper,
+        VRScene,
+        generate_vr_from_log
+    )
+    HAS_VR_VIZ = True
+except ImportError:
+    HAS_VR_VIZ = False
+    VRViz = None
+    VRExportFormat = None
+
 
 @dataclass
 class HostIntel:
@@ -1520,6 +1535,64 @@ Return as JSON array.
         """Log to intel table"""
         log_to_intel(self.scan_id, "AI_LATERAL_GUIDE", message)
         print(f"[AI_LATERAL] {message}")
+    
+    def export_to_vr(self, export_format: str = "webxr", output_dir: str = None) -> Optional[str]:
+        """
+        Export movement history to VR/AR visualization
+        
+        Args:
+            export_format: webxr, unity, threejs, json, gltf
+            output_dir: Output directory for VR files
+            
+        Returns:
+            Path to exported VR scene or None if VR module not available
+        """
+        if not HAS_VR_VIZ:
+            self._log("VR Viz module not available")
+            return None
+        
+        try:
+            # Convert movement history to chain log format
+            chain_log = []
+            for move in self.movement_history:
+                chain_log.append({
+                    "target": move.get("target", "unknown"),
+                    "action": f"{move.get('method', 'Unknown')} via {move.get('credential', 'N/A')}",
+                    "result": "success" if move.get("success") else "failed",
+                    "severity": "critical" if "admin" in move.get("credential", "").lower() else "high",
+                    "source": move.get("source", "attacker"),
+                    "timestamp": move.get("timestamp")
+                })
+            
+            if not chain_log:
+                self._log("No movement history to export")
+                return None
+            
+            # Create VR viz instance
+            config = {"output_dir": output_dir or "./vr_output"}
+            vr = VRViz(config)
+            
+            # Generate scene
+            vr.generate_from_chain_log(chain_log)
+            
+            # Export
+            format_map = {
+                "webxr": VRExportFormat.WEBXR,
+                "unity": VRExportFormat.UNITY_SCENE,
+                "threejs": VRExportFormat.THREE_JS,
+                "json": VRExportFormat.JSON_SCENE,
+                "gltf": VRExportFormat.GLTF
+            }
+            
+            export_fmt = format_map.get(export_format.lower(), VRExportFormat.WEBXR)
+            output_path = vr.export_scene(export_fmt)
+            
+            self._log(f"Exported VR scene to: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            self._log(f"VR export error: {e}")
+            return None
     
     def get_summary(self) -> Dict:
         """Get summary of current state"""

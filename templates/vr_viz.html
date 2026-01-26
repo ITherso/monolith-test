@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>VR/AR Red Team Visualization - MONOLITH</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --vr-primary: #8b5cf6;
+            --vr-secondary: #06b6d4;
+            --vr-critical: #dc2626;
+            --vr-high: #ea580c;
+            --vr-medium: #ca8a04;
+            --vr-low: #16a34a;
+            --vr-bg: #0a0a1a;
+            --vr-surface: #1a1a2e;
+            --vr-glow: rgba(139, 92, 246, 0.5);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%);
+            min-height: 100vh;
+            color: #e5e7eb;
+            overflow-x: hidden;
+        }
+        .vr-container { display: flex; height: 100vh; }
+        .sidebar {
+            width: 380px;
+            background: rgba(26, 26, 46, 0.95);
+            border-right: 1px solid rgba(139, 92, 246, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--vr-surface), #16213e);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .logo i { font-size: 2rem; color: var(--vr-primary); }
+        .logo h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
+        .logo span { font-size: 0.8rem; color: var(--vr-secondary); }
+        .sidebar-content { flex: 1; padding: 15px; overflow-y: auto; }
+        .panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .panel-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-title i { color: var(--vr-primary); }
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+            width: 100%;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--vr-primary), #7c3aed);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .btn-vr {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: #fff;
+        }
+        .btn-vr:hover {
+            box-shadow: 0 5px 20px rgba(6, 182, 212, 0.4);
+        }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-group .btn { flex: 1; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-bottom: 5px;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--vr-primary);
+        }
+        .form-select option { background: var(--vr-surface); }
+        .form-textarea { min-height: 120px; resize: vertical; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--vr-primary); }
+        .stat-label { font-size: 0.7rem; color: #9ca3af; margin-top: 2px; }
+        .format-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .format-btn {
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .format-btn:hover { border-color: var(--vr-primary); background: rgba(139, 92, 246, 0.2); }
+        .format-btn.active { border-color: var(--vr-primary); background: rgba(139, 92, 246, 0.3); }
+        .format-btn i { display: block; font-size: 1.2rem; margin-bottom: 5px; color: var(--vr-primary); }
+        .format-btn span { font-size: 0.75rem; }
+        .mitre-legend { display: flex; flex-wrap: wrap; gap: 8px; }
+        .mitre-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+        .mitre-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .viewer-container {
+            flex: 1;
+            position: relative;
+            background: var(--vr-bg);
+            overflow: hidden;
+        }
+        #vr-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .viewer-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        .viewer-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+        .control-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            background: rgba(26, 26, 46, 0.9);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .control-btn:hover {
+            background: var(--vr-primary);
+            transform: scale(1.1);
+        }
+        .viewer-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            max-width: 350px;
+            pointer-events: auto;
+            display: none;
+        }
+        .info-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .info-title { font-weight: 600; color: var(--vr-primary); }
+        .info-close { background: none; border: none; color: #9ca3af; cursor: pointer; }
+        .info-content { font-size: 0.85rem; color: #d1d5db; }
+        .info-meta { margin-top: 10px; display: flex; gap: 15px; font-size: 0.75rem; color: #9ca3af; }
+        .vr-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, var(--vr-primary), #7c3aed);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+        .vr-badge i { font-size: 1rem; }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 26, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .loading-overlay.hidden { display: none; }
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(139, 92, 246, 0.2);
+            border-top-color: var(--vr-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 15px; color: #9ca3af; }
+        .timeline {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 25px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            pointer-events: auto;
+            display: none;
+        }
+        .timeline-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: color 0.3s;
+        }
+        .timeline-btn:hover { color: var(--vr-primary); }
+        .timeline-progress {
+            width: 200px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .timeline-fill {
+            height: 100%;
+            background: var(--vr-primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .timeline-step { font-size: 0.8rem; color: #9ca3af; min-width: 60px; text-align: center; }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: linear-gradient(145deg, var(--vr-surface), #252540);
+            border: 1px solid var(--vr-primary);
+            border-radius: 10px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-color: var(--vr-low); }
+        .toast.error { border-color: var(--vr-critical); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        ::-webkit-scrollbar-thumb { background: var(--vr-primary); border-radius: 3px; }
+        .placeholder-3d {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #6b7280;
+        }
+        .placeholder-3d i { font-size: 4rem; color: var(--vr-primary); margin-bottom: 20px; }
+        .placeholder-3d h3 { font-size: 1.5rem; color: #fff; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div class="vr-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-vr-cardboard"></i>
+                <div>
+                    <h1>VR/AR Viz</h1>
+                    <span>Red Team 3D Attack Graphs</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Quick Actions -->
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-bolt"></i> Quick Actions</div>
+                <button class="btn btn-primary" onclick="generateDemo()"><i class="fas fa-play"></i> Generate Demo Scene</button>
+                <div class="btn-group">
+                    <button class="btn btn-vr" onclick="enterVRMode()"><i class="fas fa-vr-cardboard"></i> Enter VR</button>
+                    <button class="btn btn-secondary" onclick="toggleFullscreen()"><i class="fas fa-expand"></i> Fullscreen</button>
+                </div>
+            </div>
+            
+            <!-- Chain Log Input -->
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-code"></i> Attack Chain Log</div>
+                <div class="form-group">
+                    <label>Paste JSON Chain Log</label>
+                    <textarea class="form-textarea" id="chainLogInput" placeholder='[
+  {"target": "192.168.1.10", "action": "Phishing", "result": "success"},
+  {"target": "192.168.1.20", "action": "Lateral Movement", "result": "success"}
+]'></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Layout Algorithm</label>
+                    <select class="form-select" id="layoutSelect">
+                        <option value="hierarchical">Hierarchical (MITRE Phases)</option>
+                        <option value="force_directed">Force-Directed (Physics)</option>
+                        <option value="network">Network Topology</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="generateScene()"><i class="fas fa-cube"></i> Generate 3D Scene</button>
+            </div>
+            
+            <!-- Scene Stats -->
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-chart-pie"></i> Scene Statistics</div>
+                <div class="stats-grid">
+                    <div class="stat-item"><div class="stat-value" id="nodeCount">0</div><div class="stat-label">Nodes</div></div>
+                    <div class="stat-item"><div class="stat-value" id="edgeCount">0</div><div class="stat-label">Edges</div></div>
+                    <div class="stat-item"><div class="stat-value" id="compromisedCount">0</div><div class="stat-label">Compromised</div></div>
+                    <div class="stat-item"><div class="stat-value" id="mitreCount">0</div><div class="stat-label">MITRE Techniques</div></div>
+                </div>
+            </div>
+            
+            <!-- Export Options -->
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-download"></i> Export Format</div>
+                <div class="format-grid">
+                    <button class="format-btn active" data-format="webxr" onclick="selectFormat('webxr')">
+                        <i class="fab fa-firefox-browser"></i><span>WebXR</span>
+                    </button>
+                    <button class="format-btn" data-format="unity" onclick="selectFormat('unity')">
+                        <i class="fab fa-unity"></i><span>Unity</span>
+                    </button>
+                    <button class="format-btn" data-format="threejs" onclick="selectFormat('threejs')">
+                        <i class="fas fa-cube"></i><span>Three.js</span>
+                    </button>
+                    <button class="format-btn" data-format="gltf" onclick="selectFormat('gltf')">
+                        <i class="fas fa-file-export"></i><span>GLTF</span>
+                    </button>
+                </div>
+                <button class="btn btn-secondary" style="margin-top: 10px;" onclick="exportScene()"><i class="fas fa-file-download"></i> Export Scene</button>
+            </div>
+            
+            <!-- MITRE Legend -->
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-shield-alt"></i> MITRE ATT&CK Legend</div>
+                <div class="mitre-legend">
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #ff6666;"></span> Initial Access</div>
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #ff8844;"></span> Execution</div>
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #ffaa22;"></span> Persistence</div>
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #ffcc11;"></span> Priv Esc</div>
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #99ff33;"></span> Cred Access</div>
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #22ffaa;"></span> Lateral Move</div>
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #9966ff;"></span> Exfiltration</div>
+                    <div class="mitre-item"><span class="mitre-dot" style="background: #cc44ff;"></span> Impact</div>
+                </div>
+            </div>
+            
+            <!-- VR Settings -->
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-cog"></i> VR Settings</div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="enableGlow" checked> Enable Glow Effects</label>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="enableParticles" checked> Enable Particles</label>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="showLabels" checked> Show Node Labels</label>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="autoRotate"> Auto-Rotate Camera</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 3D Viewer -->
+    <div class="viewer-container">
+        <canvas id="vr-canvas"></canvas>
+        
+        <div class="viewer-overlay">
+            <!-- VR Badge -->
+            <div class="vr-badge"><i class="fas fa-vr-cardboard"></i> VR Ready</div>
+            
+            <!-- Controls -->
+            <div class="viewer-controls">
+                <button class="control-btn" onclick="resetCamera()" title="Reset Camera"><i class="fas fa-home"></i></button>
+                <button class="control-btn" onclick="toggleGrid()" title="Toggle Grid"><i class="fas fa-th"></i></button>
+                <button class="control-btn" onclick="toggleLabels()" title="Toggle Labels"><i class="fas fa-tags"></i></button>
+                <button class="control-btn" onclick="takeScreenshot()" title="Screenshot"><i class="fas fa-camera"></i></button>
+                <button class="control-btn" onclick="playAttackSequence()" title="Play Attack"><i class="fas fa-play"></i></button>
+            </div>
+            
+            <!-- Node Info Panel -->
+            <div class="viewer-info" id="nodeInfo">
+                <div class="info-header">
+                    <span class="info-title" id="infoTitle">Node Info</span>
+                    <button class="info-close" onclick="hideNodeInfo()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="info-content" id="infoContent">Select a node to view details</div>
+                <div class="info-meta">
+                    <span id="infoType"><i class="fas fa-cube"></i> Type</span>
+                    <span id="infoMitre"><i class="fas fa-shield-alt"></i> MITRE</span>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="timeline" id="timeline">
+                <button class="timeline-btn" onclick="prevStep()"><i class="fas fa-step-backward"></i></button>
+                <button class="timeline-btn" onclick="togglePlayback()"><i class="fas fa-play" id="playIcon"></i></button>
+                <button class="timeline-btn" onclick="nextStep()"><i class="fas fa-step-forward"></i></button>
+                <div class="timeline-progress"><div class="timeline-fill" id="timelineFill"></div></div>
+                <div class="timeline-step" id="timelineStep">0 / 0</div>
+            </div>
+        </div>
+        
+        <!-- Loading Overlay -->
+        <div class="loading-overlay hidden" id="loadingOverlay">
+            <div class="loader"></div>
+            <div class="loading-text">Generating 3D Scene...</div>
+        </div>
+        
+        <!-- Placeholder -->
+        <div class="placeholder-3d" id="placeholder">
+            <i class="fas fa-cube"></i>
+            <h3>3D Attack Graph Viewer</h3>
+            <p>Generate a demo or paste chain log to visualize</p>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMessage">Action completed</span></div>
+
+<script>
+let scene, camera, renderer, controls;
+let nodes = [], edges = [], labels = [];
+let sceneData = null;
+let selectedFormat = 'webxr';
+let isPlaying = false;
+let currentStep = 0;
+let animationId = null;
+
+// Initialize Three.js
+function initThreeJS() {
+    const canvas = document.getElementById('vr-canvas');
+    const container = canvas.parentElement;
+    
+    // Scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a1a);
+    scene.fog = new THREE.FogExp2(0x0a0a1a, 0.02);
+    
+    // Camera
+    camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 15, 30);
+    
+    // Renderer
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    
+    // Controls
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 20, 10);
+    scene.add(directionalLight);
+    
+    // Grid
+    const gridHelper = new THREE.GridHelper(100, 50, 0x7c3aed, 0x3b2f5e);
+    gridHelper.name = 'grid';
+    scene.add(gridHelper);
+    
+    // Raycaster for interaction
+    window.raycaster = new THREE.Raycaster();
+    window.mouse = new THREE.Vector2();
+    
+    canvas.addEventListener('click', onCanvasClick);
+    window.addEventListener('resize', onWindowResize);
+    
+    animate();
+}
+
+function animate() {
+    animationId = requestAnimationFrame(animate);
+    
+    // Rotate glowing nodes
+    nodes.forEach(node => {
+        if (node.userData.glow_effect) {
+            node.rotation.y += 0.01;
+        }
+    });
+    
+    // Auto-rotate if enabled
+    if (document.getElementById('autoRotate').checked) {
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+    } else {
+        controls.autoRotate = false;
+    }
+    
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+function onWindowResize() {
+    const container = document.getElementById('vr-canvas').parentElement;
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+}
+
+function onCanvasClick(event) {
+    const canvas = document.getElementById('vr-canvas');
+    const rect = canvas.getBoundingClientRect();
+    
+    window.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    window.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    window.raycaster.setFromCamera(window.mouse, camera);
+    const intersects = window.raycaster.intersectObjects(nodes);
+    
+    if (intersects.length > 0) {
+        const node = intersects[0].object;
+        showNodeInfo(node.userData);
+    }
+}
+
+function buildScene(data) {
+    sceneData = data;
+    
+    // Clear existing objects
+    nodes.forEach(n => scene.remove(n));
+    edges.forEach(e => scene.remove(e));
+    labels.forEach(l => scene.remove(l));
+    nodes = [];
+    edges = [];
+    labels = [];
+    
+    // Hide placeholder
+    document.getElementById('placeholder').style.display = 'none';
+    
+    // Build nodes
+    data.nodes.forEach(nodeData => {
+        const geometry = getGeometryForType(nodeData.type);
+        const material = new THREE.MeshPhongMaterial({
+            color: new THREE.Color(nodeData.color.r, nodeData.color.g, nodeData.color.b),
+            emissive: nodeData.glow_effect ? new THREE.Color(nodeData.color.r * 0.3, nodeData.color.g * 0.3, nodeData.color.b * 0.3) : 0x000000,
+            shininess: 100
+        });
+        
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(nodeData.position.x, nodeData.position.y, nodeData.position.z);
+        mesh.scale.setScalar(nodeData.size || 1);
+        mesh.userData = nodeData;
+        
+        scene.add(mesh);
+        nodes.push(mesh);
+        
+        // Add label
+        if (document.getElementById('showLabels').checked) {
+            addLabel(nodeData.label, nodeData.position, nodeData.size || 1);
+        }
+    });
+    
+    // Build edges
+    data.edges.forEach(edgeData => {
+        const sourceNode = data.nodes.find(n => n.id === edgeData.source);
+        const targetNode = data.nodes.find(n => n.id === edgeData.target);
+        
+        if (sourceNode && targetNode) {
+            const points = [
+                new THREE.Vector3(sourceNode.position.x, sourceNode.position.y, sourceNode.position.z),
+                new THREE.Vector3(targetNode.position.x, targetNode.position.y, targetNode.position.z)
+            ];
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({
+                color: new THREE.Color(edgeData.color.r, edgeData.color.g, edgeData.color.b),
+                transparent: true,
+                opacity: edgeData.color.a || 0.7
+            });
+            
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+            edges.push(line);
+        }
+    });
+    
+    // Update stats
+    updateStats(data);
+    
+    // Show timeline if sequences exist
+    if (data.sequences && data.sequences.length > 0) {
+        document.getElementById('timeline').style.display = 'flex';
+    }
+}
+
+function getGeometryForType(type) {
+    const geometries = {
+        'attacker': new THREE.ConeGeometry(0.5, 1, 8),
+        'target': new THREE.DodecahedronGeometry(0.5),
+        'domain_controller': new THREE.OctahedronGeometry(0.5),
+        'host': new THREE.BoxGeometry(0.8, 0.8, 0.8),
+        'vulnerability': new THREE.SphereGeometry(0.4, 16, 16),
+        'exploit': new THREE.IcosahedronGeometry(0.4),
+        'credential': new THREE.TorusGeometry(0.3, 0.1, 8, 16),
+        'c2_channel': new THREE.CylinderGeometry(0.2, 0.4, 0.8, 8),
+        'database': new THREE.CylinderGeometry(0.4, 0.4, 0.8, 16),
+        'web_server': new THREE.BoxGeometry(0.6, 1, 0.6),
+        'firewall': new THREE.TetrahedronGeometry(0.5),
+        'lateral_move': new THREE.SphereGeometry(0.35, 12, 12),
+        'persistence': new THREE.BoxGeometry(0.5, 0.5, 0.5),
+        'exfiltration': new THREE.SphereGeometry(0.4, 16, 16),
+        'service': new THREE.CylinderGeometry(0.3, 0.3, 0.6, 8)
+    };
+    return geometries[type] || new THREE.SphereGeometry(0.4, 16, 16);
+}
+
+function addLabel(text, position, size) {
+    // Create sprite for label
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 256;
+    canvas.height = 64;
+    
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Space Grotesk';
+    ctx.textAlign = 'center';
+    ctx.fillText(text.substring(0, 25), 128, 40);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    
+    sprite.position.set(position.x, position.y + size + 0.8, position.z);
+    sprite.scale.set(4, 1, 1);
+    
+    scene.add(sprite);
+    labels.push(sprite);
+}
+
+function updateStats(data) {
+    document.getElementById('nodeCount').textContent = data.nodes.length;
+    document.getElementById('edgeCount').textContent = data.edges.length;
+    document.getElementById('compromisedCount').textContent = data.nodes.filter(n => n.is_compromised).length;
+    document.getElementById('mitreCount').textContent = data.nodes.filter(n => n.mitre_id).length;
+}
+
+function showNodeInfo(data) {
+    const panel = document.getElementById('nodeInfo');
+    document.getElementById('infoTitle').textContent = data.label;
+    document.getElementById('infoContent').textContent = data.description || 'No description available';
+    document.getElementById('infoType').innerHTML = `<i class="fas fa-cube"></i> ${data.type}`;
+    document.getElementById('infoMitre').innerHTML = `<i class="fas fa-shield-alt"></i> ${data.mitre_id || 'N/A'}`;
+    panel.style.display = 'block';
+}
+
+function hideNodeInfo() {
+    document.getElementById('nodeInfo').style.display = 'none';
+}
+
+// API Functions
+async function generateDemo() {
+    showLoading(true);
+    try {
+        const response = await fetch('/api/vr/demo');
+        const data = await response.json();
+        if (data.scene) {
+            buildScene(data.scene);
+            showToast('Demo scene generated!', 'success');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to generate demo', 'error');
+    }
+    showLoading(false);
+}
+
+async function generateScene() {
+    const input = document.getElementById('chainLogInput').value.trim();
+    if (!input) {
+        showToast('Please enter chain log JSON', 'error');
+        return;
+    }
+    
+    let chainLog;
+    try {
+        chainLog = JSON.parse(input);
+    } catch (e) {
+        showToast('Invalid JSON format', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    try {
+        const response = await fetch('/api/vr/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chain_log: chainLog,
+                layout: document.getElementById('layoutSelect').value
+            })
+        });
+        const data = await response.json();
+        if (data.scene) {
+            buildScene(data.scene);
+            showToast('Scene generated successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to generate scene', 'error');
+    }
+    showLoading(false);
+}
+
+async function exportScene() {
+    if (!sceneData) {
+        showToast('Generate a scene first', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/vr/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                format: selectedFormat,
+                chain_log: sceneData.chain_log || []
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast(`Exported as ${selectedFormat.toUpperCase()}`, 'success');
+        }
+    } catch (error) {
+        showToast('Export failed', 'error');
+    }
+}
+
+// UI Functions
+function selectFormat(format) {
+    selectedFormat = format;
+    document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-format="${format}"]`).classList.add('active');
+}
+
+function showLoading(show) {
+    document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMessage').textContent = message;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function resetCamera() {
+    camera.position.set(0, 15, 30);
+    camera.lookAt(0, 0, 0);
+    controls.reset();
+}
+
+function toggleGrid() {
+    const grid = scene.getObjectByName('grid');
+    if (grid) grid.visible = !grid.visible;
+}
+
+function toggleLabels() {
+    labels.forEach(label => label.visible = !label.visible);
+}
+
+function takeScreenshot() {
+    renderer.render(scene, camera);
+    const dataURL = renderer.domElement.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'vr_attack_graph.png';
+    link.href = dataURL;
+    link.click();
+    showToast('Screenshot saved!', 'success');
+}
+
+function toggleFullscreen() {
+    const container = document.querySelector('.viewer-container');
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        container.requestFullscreen();
+    }
+}
+
+function enterVRMode() {
+    if (navigator.xr) {
+        showToast('Launching VR mode...', 'info');
+        // In a full implementation, this would start WebXR session
+    } else {
+        showToast('WebXR not supported in this browser', 'error');
+    }
+}
+
+// Timeline controls
+function playAttackSequence() {
+    if (!sceneData || !sceneData.sequences || sceneData.sequences.length === 0) {
+        showToast('No attack sequence available', 'error');
+        return;
+    }
+    togglePlayback();
+}
+
+function togglePlayback() {
+    isPlaying = !isPlaying;
+    document.getElementById('playIcon').className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+    if (isPlaying) animateSequence();
+}
+
+function animateSequence() {
+    if (!isPlaying || !sceneData.sequences) return;
+    
+    const sequence = sceneData.sequences[0];
+    const totalSteps = sequence.steps.length;
+    
+    document.getElementById('timelineStep').textContent = `${currentStep + 1} / ${totalSteps}`;
+    document.getElementById('timelineFill').style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+    
+    // Highlight current node
+    if (sequence.steps[currentStep]) {
+        const nodeId = sequence.steps[currentStep].node_id;
+        highlightNode(nodeId);
+    }
+    
+    currentStep = (currentStep + 1) % totalSteps;
+    
+    setTimeout(() => {
+        if (isPlaying) animateSequence();
+    }, 1500);
+}
+
+function highlightNode(nodeId) {
+    nodes.forEach(node => {
+        if (node.userData.id === nodeId) {
+            node.material.emissive.setHex(0xff0000);
+            setTimeout(() => {
+                node.material.emissive.setHex(node.userData.glow_effect ? 0x330000 : 0x000000);
+            }, 1000);
+        }
+    });
+}
+
+function prevStep() {
+    if (sceneData && sceneData.sequences) {
+        currentStep = Math.max(0, currentStep - 1);
+        updateTimelineUI();
+    }
+}
+
+function nextStep() {
+    if (sceneData && sceneData.sequences) {
+        const totalSteps = sceneData.sequences[0].steps.length;
+        currentStep = Math.min(totalSteps - 1, currentStep + 1);
+        updateTimelineUI();
+    }
+}
+
+function updateTimelineUI() {
+    if (!sceneData || !sceneData.sequences) return;
+    const totalSteps = sceneData.sequences[0].steps.length;
+    document.getElementById('timelineStep').textContent = `${currentStep + 1} / ${totalSteps}`;
+    document.getElementById('timelineFill').style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    initThreeJS();
+});
+</script>
+</body>
+</html>
