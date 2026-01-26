@@ -430,10 +430,6 @@
                                             <span class="text-gray-300 group-hover:text-white transition-colors">Active Directory Enum</span>
                                         </label>
                                         <label class="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" name="tools" value="waf_bypass" class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-danger focus:ring-cyber-danger/50">
-                                            <span class="text-gray-300 group-hover:text-white transition-colors">WAF Bypass Engine</span>
-                                        </label>
-                                        <label class="flex items-center gap-3 cursor-pointer group">
                                             <input type="checkbox" name="tools" value="llm_analysis" class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-danger focus:ring-cyber-danger/50">
                                             <span class="text-gray-300 group-hover:text-white transition-colors">LLM Vuln Analysis</span>
                                         </label>
@@ -457,6 +453,80 @@
                                             <input type="checkbox" name="tools" value="gamification" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-danger focus:ring-cyber-danger/50">
                                             <span class="text-gray-300 group-hover:text-white transition-colors">Gamification & XP</span>
                                         </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- WAF Bypass Options -->
+                            <div class="glass-light rounded-xl p-4 border border-orange-500/30">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="text-orange-500 font-semibold flex items-center gap-2">
+                                        <i class="fas fa-shield-alt"></i>
+                                        WAF BYPASS ENGINE
+                                        <span class="ml-2 px-2 py-0.5 text-xs bg-orange-500/20 text-orange-400 rounded-full">PRO</span>
+                                    </h4>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="waf_bypass_enabled" id="wafBypassToggle" class="sr-only peer" onchange="toggleWafOptions()">
+                                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                                    </label>
+                                </div>
+                                
+                                <div id="wafOptionsPanel" class="hidden space-y-4">
+                                    <p class="text-gray-400 text-sm">
+                                        🛡️ Otomatik WAF tespit ve bypass. Cloudflare, Akamai, Imperva, AWS WAF destekler.
+                                    </p>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs text-gray-400 mb-1">Bypass Mode</label>
+                                            <select name="waf_bypass_mode" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-orange-500/50">
+                                                <option value="auto">🤖 Auto (AI-Powered)</option>
+                                                <option value="aggressive">⚡ Aggressive</option>
+                                                <option value="stealth">🥷 Stealth</option>
+                                                <option value="evasive">👻 Evasive</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-400 mb-1">Target WAF (Optional)</label>
+                                            <select name="waf_target" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-orange-500/50">
+                                                <option value="auto">🔍 Auto-Detect</option>
+                                                <option value="cloudflare">☁️ Cloudflare</option>
+                                                <option value="akamai">🔵 Akamai</option>
+                                                <option value="imperva">🟣 Imperva</option>
+                                                <option value="aws_waf">🟠 AWS WAF</option>
+                                                <option value="modsecurity">🟢 ModSecurity</option>
+                                                <option value="f5_bigip">🔴 F5 BIG-IP</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-2">
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="waf_http_smuggling" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors text-sm">HTTP Request Smuggling (CL.TE, TE.CL)</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="waf_unicode" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors text-sm">Unicode Normalization Attacks</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="waf_encoding" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors text-sm">Double/Triple URL Encoding</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="waf_hpp" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors text-sm">HTTP Parameter Pollution</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="waf_chunked" class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors text-sm">Chunked Transfer Mutation</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 mt-3">
+                                        <p class="text-orange-400 text-xs">
+                                            💡 <strong>Pro Tip:</strong> WAF bypass aktifken tüm payload'lar otomatik olarak bypass teknikleriyle sarılır. Success rate %30 → %80'e çıkar!
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -792,6 +862,17 @@
             document.getElementById('wafScanResults').classList.remove('hidden');
             document.getElementById('wafDetectedName').innerHTML = 
                 `<i class="fas fa-times-circle text-red-400 mr-2"></i>Error: ${error.message}`;
+        }
+    }
+    
+    // Toggle WAF Options Panel
+    function toggleWafOptions() {
+        const toggle = document.getElementById('wafBypassToggle');
+        const panel = document.getElementById('wafOptionsPanel');
+        if (toggle.checked) {
+            panel.classList.remove('hidden');
+        } else {
+            panel.classList.add('hidden');
         }
     }
     
