@@ -593,14 +593,142 @@
             
             <!-- Tabs -->
             <div class="tabs">
-                <div class="tab active" data-tab="generator">⚡ Generator</div>
+                <div class="tab active" data-tab="attack">🎯 Live Attack</div>
+                <div class="tab" data-tab="generator">⚡ Generator</div>
                 <div class="tab" data-tab="fingerprint">🔍 Fingerprint</div>
                 <div class="tab" data-tab="smuggle">🚀 Smuggling</div>
                 <div class="tab" data-tab="encoding">🔤 Encoding</div>
                 <div class="tab" data-tab="techniques">🛠️ Techniques</div>
             </div>
             
+            <!-- Live Attack Panel -->
+            <div class="panel active" id="attack">
+                <h2>🎯 Live Target Attack</h2>
+                <p style="color: #888; margin-bottom: 20px;">
+                    Enter target URL and payload to test WAF bypass techniques in real-time.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <div class="form-group">
+                            <label>🌐 Target URL</label>
+                            <input type="text" id="targetUrl" placeholder="https://example.com/search?q=test">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>📝 Parameter Name</label>
+                            <input type="text" id="targetParam" value="q" placeholder="id, q, search, query...">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>💉 Payload to Inject</label>
+                            <textarea id="attackPayload" rows="3" placeholder="' OR 1=1--">' OR 1=1--</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🔫 Attack Type</label>
+                            <select id="liveAttackType">
+                                <option value="sqli">SQL Injection</option>
+                                <option value="xss">Cross-Site Scripting (XSS)</option>
+                                <option value="rce">Remote Code Execution</option>
+                                <option value="lfi">Local File Inclusion</option>
+                                <option value="ssrf">Server-Side Request Forgery</option>
+                                <option value="cmd">Command Injection</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="form-group">
+                            <label>📡 HTTP Method</label>
+                            <select id="httpMethod">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>⏱️ Timeout (seconds)</label>
+                            <input type="number" id="attackTimeout" value="10" min="5" max="30">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🔒 Options</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="testAllBypass" checked>
+                                    <span>Test all bypass techniques</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="followRedirects" checked>
+                                    <span>Follow redirects</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="verifySSL">
+                                    <span>Verify SSL certificate</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="launchAttack()" style="flex: 1;">
+                        🚀 Launch WAF Bypass Attack
+                    </button>
+                    <button class="btn btn-secondary" onclick="quickScan()" style="flex: 1;">
+                        🔍 Quick WAF Scan
+                    </button>
+                </div>
+                
+                <div class="loading" id="attackLoading">
+                    <div class="spinner"></div>
+                    <span>Testing WAF bypasses... This may take a moment.</span>
+                </div>
+                
+                <div id="attackResults" style="display: none; margin-top: 20px;">
+                    <!-- WAF Detection -->
+                    <div id="wafDetectionBox" style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+                        <h3 style="color: #ff6600; margin-bottom: 15px;">🛡️ WAF Detection</h3>
+                        <div id="wafDetectionResult"></div>
+                    </div>
+                    
+                    <!-- Summary Stats -->
+                    <div class="stats-grid" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalAttemptsLive">0</div>
+                            <div class="stat-label">Total Attempts</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="successfulBypasses" style="color: #00cc66;">0</div>
+                            <div class="stat-label">Successful Bypasses</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="blockedAttempts" style="color: #ff4444;">0</div>
+                            <div class="stat-label">Blocked</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="bypassRate">0%</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Successful Bypasses -->
+                    <div id="successfulBypassList" style="display: none;">
+                        <h3 style="color: #00cc66; margin-bottom: 15px;">✅ Successful Bypasses</h3>
+                        <div class="results-container" id="successList"></div>
+                    </div>
+                    
+                    <!-- Blocked Attempts -->
+                    <div id="blockedAttemptsList" style="margin-top: 20px;">
+                        <h3 style="color: #ff4444; margin-bottom: 15px;">❌ Blocked Attempts</h3>
+                        <div class="results-container" id="blockedList" style="max-height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Generator Panel -->
+            <div class="panel" id="generator">
             <div class="panel active" id="generator">
                 <h2>⚡ Bypass Payload Generator</h2>
                 
@@ -1223,10 +1351,268 @@
             }
         }
         
-        // Load techniques
-        async function loadTechniques() {
+        // ==============================================
+        // LIVE ATTACK FUNCTIONS
+        // ==============================================
+        
+        async function launchAttack() {
+            const loading = document.getElementById('attackLoading');
+            const results = document.getElementById('attackResults');
+            
+            const targetUrl = document.getElementById('targetUrl').value.trim();
+            if (!targetUrl) {
+                alert('Please enter a target URL');
+                return;
+            }
+            
+            loading.classList.add('active');
+            results.style.display = 'none';
+            
+            const payload = document.getElementById('attackPayload').value;
+            const param = document.getElementById('targetParam').value || 'id';
+            const attackType = document.getElementById('liveAttackType').value;
+            const method = document.getElementById('httpMethod').value;
+            const timeout = parseInt(document.getElementById('attackTimeout').value);
+            const testAll = document.getElementById('testAllBypass').checked;
+            const followRedirects = document.getElementById('followRedirects').checked;
+            const verifySSL = document.getElementById('verifySSL').checked;
+            
             try {
-                const response = await fetch('/api/waf/techniques');
+                const response = await fetch('/api/waf/attack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_url: targetUrl,
+                        param: param,
+                        payload: payload,
+                        attack_type: attackType,
+                        method: method,
+                        timeout: timeout,
+                        test_all_bypasses: testAll,
+                        follow_redirects: followRedirects,
+                        verify_ssl: verifySSL
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAttackResults(data);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            loading.classList.remove('active');
+        }
+        
+        function displayAttackResults(data) {
+            const results = document.getElementById('attackResults');
+            results.style.display = 'block';
+            
+            // WAF Detection
+            const wafBox = document.getElementById('wafDetectionResult');
+            if (data.waf_detected) {
+                const confidence = Math.round((data.waf_confidence || 0) * 100);
+                wafBox.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 3em;">🛡️</div>
+                        <div>
+                            <h4 style="color: #ff4444; margin: 0;">WAF DETECTED!</h4>
+                            <p style="color: #fff; font-size: 1.2em; margin: 5px 0;">${(data.waf_vendor || 'Unknown').toUpperCase()}</p>
+                            <p style="color: #888;">Confidence: ${confidence}%</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                wafBox.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 3em;">✅</div>
+                        <div>
+                            <h4 style="color: #00cc66; margin: 0;">No WAF Detected</h4>
+                            <p style="color: #888;">Target may not have a WAF or it couldn't be fingerprinted.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Stats
+            const summary = data.summary || {};
+            document.getElementById('totalAttemptsLive').textContent = summary.total_attempts || 0;
+            document.getElementById('successfulBypasses').textContent = summary.successful || 0;
+            document.getElementById('blockedAttempts').textContent = summary.blocked || 0;
+            document.getElementById('bypassRate').textContent = (summary.success_rate || 0) + '%';
+            
+            // Successful bypasses
+            const successList = document.getElementById('successList');
+            const successDiv = document.getElementById('successfulBypassList');
+            
+            if (data.successful_bypasses && data.successful_bypasses.length > 0) {
+                successDiv.style.display = 'block';
+                successList.innerHTML = '';
+                
+                data.successful_bypasses.forEach((bypass, i) => {
+                    successList.innerHTML += `
+                        <div class="bypass-item" style="border-color: #00cc66;">
+                            <span class="technique">${bypass.technique}</span>
+                            <span class="probability" style="color: #00cc66;">✅ BYPASSED</span>
+                            <p style="color: #888; margin: 10px 0;">
+                                Status: ${bypass.status_code} | 
+                                Response: ${bypass.content_length} bytes | 
+                                Time: ${bypass.response_time?.toFixed(2) || '-'}s
+                            </p>
+                            <div class="payload">
+                                <button class="copy-btn" onclick="copyText('${encodeURIComponent(bypass.payload)}')">📋</button>
+                                <code>${escapeHtml(bypass.payload.substring(0, 200))}${bypass.payload.length > 200 ? '...' : ''}</code>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                successDiv.style.display = 'none';
+            }
+            
+            // Blocked attempts
+            const blockedList = document.getElementById('blockedList');
+            blockedList.innerHTML = '';
+            
+            if (data.blocked_attempts && data.blocked_attempts.length > 0) {
+                data.blocked_attempts.forEach(attempt => {
+                    blockedList.innerHTML += `
+                        <div class="bypass-item" style="border-color: #ff4444; opacity: 0.7;">
+                            <span class="technique">${attempt.technique}</span>
+                            <span style="float: right; color: #ff4444;">❌ BLOCKED</span>
+                            <p style="color: #888; margin: 5px 0; font-size: 0.9em;">
+                                Status: ${attempt.status_code}
+                            </p>
+                        </div>
+                    `;
+                });
+            } else {
+                blockedList.innerHTML = '<p style="color: #888;">No blocked attempts recorded.</p>';
+            }
+        }
+        
+        async function quickScan() {
+            const loading = document.getElementById('attackLoading');
+            const results = document.getElementById('attackResults');
+            
+            const targetUrl = document.getElementById('targetUrl').value.trim();
+            if (!targetUrl) {
+                alert('Please enter a target URL');
+                return;
+            }
+            
+            loading.classList.add('active');
+            results.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/waf/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_url: targetUrl,
+                        scan_type: 'quick',
+                        attack_types: ['sqli', 'xss'],
+                        timeout: 10
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayScanResults(data);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            loading.classList.remove('active');
+        }
+        
+        function displayScanResults(data) {
+            const results = document.getElementById('attackResults');
+            results.style.display = 'block';
+            
+            // WAF Detection
+            const wafBox = document.getElementById('wafDetectionResult');
+            if (data.waf_detection) {
+                const confidence = Math.round((data.waf_detection.confidence || 0) * 100);
+                wafBox.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 3em;">🛡️</div>
+                        <div>
+                            <h4 style="color: #ff4444; margin: 0;">WAF DETECTED!</h4>
+                            <p style="color: #fff; font-size: 1.2em; margin: 5px 0;">${(data.waf_detection.vendor || 'Unknown').toUpperCase()}</p>
+                            <p style="color: #888;">Confidence: ${confidence}%</p>
+                            ${data.recommendations ? `
+                                <div style="margin-top: 10px;">
+                                    ${data.recommendations.map(r => `<p style="color: #ffaa00; font-size: 0.9em;">💡 ${r}</p>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } else {
+                wafBox.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 3em;">✅</div>
+                        <div>
+                            <h4 style="color: #00cc66; margin: 0;">No WAF Detected</h4>
+                            <p style="color: #888;">Target may not have a WAF or it couldn't be fingerprinted.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Stats from scan summary
+            const summary = data.summary || {};
+            document.getElementById('totalAttemptsLive').textContent = summary.total_tests || 0;
+            document.getElementById('successfulBypasses').textContent = summary.potentially_successful || 0;
+            document.getElementById('blockedAttempts').textContent = (summary.total_tests || 0) - (summary.potentially_successful || 0);
+            const rate = summary.total_tests > 0 ? Math.round((summary.potentially_successful / summary.total_tests) * 100) : 0;
+            document.getElementById('bypassRate').textContent = rate + '%';
+            
+            // Vulnerability tests
+            const successList = document.getElementById('successList');
+            const successDiv = document.getElementById('successfulBypassList');
+            
+            successDiv.style.display = 'block';
+            successList.innerHTML = '<h4 style="color: #ff6600; margin-bottom: 15px;">Vulnerability Test Results</h4>';
+            
+            if (data.vulnerability_tests && data.vulnerability_tests.length > 0) {
+                data.vulnerability_tests.forEach(test => {
+                    successList.innerHTML += `
+                        <div class="bypass-item">
+                            <span class="technique">${test.attack_type.toUpperCase()} - ${test.probe}</span>
+                            <div style="margin-top: 10px;">
+                                ${test.bypass_attempts.map(a => `
+                                    <div style="display: flex; justify-content: space-between; padding: 5px; background: rgba(0,0,0,0.3); margin: 5px 0; border-radius: 5px;">
+                                        <span style="color: #888;">${a.technique}</span>
+                                        <span style="color: ${a.blocked ? '#ff4444' : '#00cc66'};">${a.blocked ? '❌ Blocked' : '✅ Passed'}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Hide blocked list for scan mode
+            document.getElementById('blockedAttemptsList').style.display = 'none';
+        }
+        
+        function copyText(encodedText) {
+            const text = decodeURIComponent(encodedText);
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Payload copied!');
+            });
+        }
+        
                 const data = await response.json();
                 
                 if (data.success) {
