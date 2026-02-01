@@ -53,6 +53,13 @@ cloud_assets_bp = _try_import('cloud_assets_bp', lambda: __import__('cyberapp.ro
 privesc_bp = _try_import('privesc_bp', lambda: __import__('cyberapp.routes.privesc_toolkit', fromlist=['privesc_bp']).privesc_bp)
 privesc_ui_bp = _try_import('privesc_ui_bp', lambda: __import__('cyberapp.routes.privesc_toolkit', fromlist=['privesc_ui_bp']).privesc_ui_bp)
 
+# Pro Advanced Features
+cicd_bp = _try_import('cicd_bp', lambda: __import__('cyberapp.routes.cicd_jacker', fromlist=['cicd_bp']).cicd_bp)
+byovd_bp = _try_import('byovd_bp', lambda: __import__('cyberapp.routes.byovd', fromlist=['byovd_bp']).byovd_bp)
+stego_bp = _try_import('stego_bp', lambda: __import__('cyberapp.routes.stego_c2', fromlist=['stego_bp']).stego_bp)
+bitb_bp = _try_import('bitb_bp', lambda: __import__('cyberapp.routes.bitb_phishing', fromlist=['bitb_bp']).bitb_bp)
+spray_bp = _try_import('spray_bp', lambda: __import__('cyberapp.routes.smart_spray', fromlist=['spray_bp']).spray_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -101,6 +108,13 @@ def create_app(run_migrations_on_start=True):
     if cloud_assets_bp: app.register_blueprint(cloud_assets_bp)
     if privesc_bp: app.register_blueprint(privesc_bp)
     if privesc_ui_bp: app.register_blueprint(privesc_ui_bp)
+    
+    # Pro Advanced Features
+    if cicd_bp: app.register_blueprint(cicd_bp)
+    if byovd_bp: app.register_blueprint(byovd_bp)
+    if stego_bp: app.register_blueprint(stego_bp)
+    if bitb_bp: app.register_blueprint(bitb_bp)
+    if spray_bp: app.register_blueprint(spray_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

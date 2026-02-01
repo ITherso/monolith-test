@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+
+{% block title %}CI/CD Pipeline Jacker - CyberPulse Pro{% endblock %}
+
+{% block head %}
+<style>
+    .platform-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 1px solid rgba(255, 107, 53, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    .platform-card:hover {
+        border-color: #ff6b35;
+        box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+    }
+    .platform-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+    .backdoor-type {
+        background: rgba(255, 107, 53, 0.1);
+        border: 1px solid rgba(255, 107, 53, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .backdoor-type:hover, .backdoor-type.selected {
+        background: rgba(255, 107, 53, 0.2);
+        border-color: #ff6b35;
+    }
+    .scan-result {
+        background: rgba(0, 255, 136, 0.1);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+    .payload-output {
+        background: #0d0d0d;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    .danger-zone {
+        background: rgba(255, 0, 0, 0.1);
+        border: 2px dashed rgba(255, 0, 0, 0.5);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+    .step {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #333;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 10px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .step.active {
+        background: #ff6b35;
+        box-shadow: 0 0 15px rgba(255, 107, 53, 0.5);
+    }
+    .step.completed {
+        background: #00ff88;
+        color: #000;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-gradient mb-2">
+                        <i class="fas fa-code-branch me-3"></i>CI/CD Pipeline Jacker
+                    </h1>
+                    <p class="text-muted mb-0">Supply chain attack via CI/CD pipeline poisoning • Persistence level: God Mode 🔥</p>
+                </div>
+                <span class="badge bg-danger px-3 py-2">
+                    <i class="fas fa-skull-crossbones me-2"></i>CRITICAL
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+        <div class="step active" id="step1">1</div>
+        <div class="step" id="step2">2</div>
+        <div class="step" id="step3">3</div>
+        <div class="step" id="step4">4</div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Configuration -->
+        <div class="col-lg-5">
+            <!-- Target Configuration -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-crosshairs me-2"></i>Target Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Target URL</label>
+                        <input type="url" class="form-control bg-dark text-white" id="targetUrl" 
+                               placeholder="https://jenkins.target.com or https://gitlab.target.com">
+                    </div>
+                    <button class="btn btn-outline-warning w-100" onclick="scanTarget()">
+                        <i class="fas fa-search me-2"></i>Scan for CI/CD Systems
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detected Platforms -->
+            <div class="card bg-dark border-secondary mb-4" id="detectedPlatforms" style="display: none;">
+                <div class="card-header bg-success bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Detected Platforms</h5>
+                </div>
+                <div class="card-body" id="platformsContainer">
+                    <!-- Platforms will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Platform Selection -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-server me-2"></i>Select Platform</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="platformGrid">
+                        <!-- Platform cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Credentials -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-key me-2"></i>Credentials (Optional)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username / Token</label>
+                        <input type="text" class="form-control bg-dark text-white" id="credUsername" 
+                               placeholder="admin or API token">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password / Secret</label>
+                        <input type="password" class="form-control bg-dark text-white" id="credPassword">
+                    </div>
+                    <button class="btn btn-outline-info w-100" onclick="testCredentials()">
+                        <i class="fas fa-vial me-2"></i>Test Credentials
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Backdoor Configuration & Output -->
+        <div class="col-lg-7">
+            <!-- Backdoor Type Selection -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-danger bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-virus me-2"></i>Backdoor Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="backdoor-type" data-type="reverse_shell" onclick="selectBackdoor(this)">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-2 me-3">🐚</span>
+                                    <div>
+                                        <strong>Reverse Shell</strong>
+                                        <p class="text-muted mb-0 small">Inject reverse shell into build</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="backdoor-type" data-type="credential_stealer" onclick="selectBackdoor(this)">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-2 me-3">🔐</span>
+                                    <div>
+                                        <strong>Credential Stealer</strong>
+                                        <p class="text-muted mb-0 small">Exfiltrate secrets and tokens</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="backdoor-type" data-type="persistence" onclick="selectBackdoor(this)">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-2 me-3">👻</span>
+                                    <div>
+                                        <strong>Persistence</strong>
+                                        <p class="text-muted mb-0 small">Add persistent backdoor access</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="backdoor-type" data-type="supply_chain" onclick="selectBackdoor(this)">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-2 me-3">📦</span>
+                                    <div>
+                                        <strong>Supply Chain</strong>
+                                        <p class="text-muted mb-0 small">Poison built artifacts</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="backdoor-type" data-type="dependency_confusion" onclick="selectBackdoor(this)">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-2 me-3">🎭</span>
+                                    <div>
+                                        <strong>Dependency Confusion</strong>
+                                        <p class="text-muted mb-0 small">Inject malicious packages</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">Callback URL</label>
+                        <input type="url" class="form-control bg-dark text-white" id="callbackUrl" 
+                               placeholder="https://your-c2.com/callback">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate & Inject -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-warning bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-magic me-2"></i>Generate & Deploy</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button class="btn btn-warning w-100 mb-2" onclick="generatePayload()">
+                                <i class="fas fa-code me-2"></i>Generate Payload
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-danger w-100 mb-2" onclick="injectBackdoor()">
+                                <i class="fas fa-syringe me-2"></i>Inject Backdoor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-secondary bg-opacity-25 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-terminal me-2"></i>Output</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="copyOutput()">
+                        <i class="fas fa-copy me-1"></i>Copy
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="payload-output" id="outputArea">
+# CI/CD Pipeline Jacker Ready
+# Select target, platform, and backdoor type to begin
+
+# Supported Platforms:
+# - Jenkins (Groovy pipelines)
+# - GitLab CI (.gitlab-ci.yml)
+# - GitHub Actions (workflows)
+# - Azure DevOps (azure-pipelines.yml)
+# - CircleCI, Travis CI, Bamboo, TeamCity
+
+# Attack Vectors:
+# 1. Pipeline poisoning
+# 2. Credential exfiltration
+# 3. Supply chain compromise
+# 4. Dependency confusion
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="danger-zone mt-4">
+        <h5 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone</h5>
+        <p class="text-muted mb-3">These actions can cause significant damage. Use with extreme caution.</p>
+        <button class="btn btn-outline-danger" onclick="enumeratePipelines()">
+            <i class="fas fa-list me-2"></i>Enumerate All Pipelines
+        </button>
+        <button class="btn btn-outline-danger" onclick="massInject()">
+            <i class="fas fa-bomb me-2"></i>Mass Inject (All Pipelines)
+        </button>
+    </div>
+</div>
+
+<script>
+let selectedPlatform = null;
+let selectedBackdoor = null;
+
+// Load platforms on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadPlatforms();
+});
+
+function loadPlatforms() {
+    fetch('/cicd/api/platforms')
+        .then(r => r.json())
+        .then(data => {
+            const grid = document.getElementById('platformGrid');
+            grid.innerHTML = data.platforms.map(p => `
+                <div class="col-md-6 mb-3">
+                    <div class="platform-card" onclick="selectPlatform('${p.id}', this)">
+                        <div class="text-center">
+                            <div class="platform-icon">${p.icon}</div>
+                            <h6 class="mb-0">${p.name}</h6>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+function selectPlatform(platform, element) {
+    document.querySelectorAll('.platform-card').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedPlatform = platform;
+    updateStep(2);
+}
+
+function selectBackdoor(element) {
+    document.querySelectorAll('.backdoor-type').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedBackdoor = element.dataset.type;
+    updateStep(3);
+}
+
+function updateStep(step) {
+    for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('step' + i);
+        el.classList.remove('active', 'completed');
+        if (i < step) el.classList.add('completed');
+        if (i === step) el.classList.add('active');
+    }
+}
+
+function scanTarget() {
+    const target = document.getElementById('targetUrl').value;
+    if (!target) {
+        alert('Please enter a target URL');
+        return;
+    }
+
+    appendOutput('\n[*] Scanning ' + target + ' for CI/CD systems...');
+    
+    fetch('/cicd/api/scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({target: target})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.detected) {
+            appendOutput('[+] Detected: ' + data.platform);
+            document.getElementById('detectedPlatforms').style.display = 'block';
+            document.getElementById('platformsContainer').innerHTML = `
+                <div class="scan-result">
+                    <strong>${data.platform}</strong>
+                    <p class="mb-0 text-muted">Version: ${data.version || 'Unknown'}</p>
+                </div>
+            `;
+        } else {
+            appendOutput('[-] No CI/CD system detected');
+        }
+    });
+}
+
+function testCredentials() {
+    const target = document.getElementById('targetUrl').value;
+    const username = document.getElementById('credUsername').value;
+    const password = document.getElementById('credPassword').value;
+
+    if (!target || !selectedPlatform) {
+        alert('Please select target and platform first');
+        return;
+    }
+
+    appendOutput('\n[*] Testing credentials...');
+    
+    fetch('/cicd/api/test-creds', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target: target,
+            platform: selectedPlatform,
+            credentials: {username: username, password: password}
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.valid) {
+            appendOutput('[+] Credentials VALID! ✓');
+        } else {
+            appendOutput('[-] Credentials invalid');
+        }
+    });
+}
+
+function generatePayload() {
+    if (!selectedPlatform || !selectedBackdoor) {
+        alert('Please select platform and backdoor type');
+        return;
+    }
+
+    const callbackUrl = document.getElementById('callbackUrl').value;
+    
+    appendOutput('\n[*] Generating payload for ' + selectedPlatform + '...');
+    
+    fetch('/cicd/api/generate-backdoor', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            platform: selectedPlatform,
+            backdoor_type: selectedBackdoor,
+            callback_url: callbackUrl
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.payload) {
+            appendOutput('[+] Payload generated:\n\n' + data.payload);
+            updateStep(4);
+        } else {
+            appendOutput('[-] Error: ' + data.error);
+        }
+    });
+}
+
+function injectBackdoor() {
+    if (!confirm('⚠️ This will inject a backdoor into the target CI/CD system. Continue?')) {
+        return;
+    }
+
+    const target = document.getElementById('targetUrl').value;
+    const callbackUrl = document.getElementById('callbackUrl').value;
+    const username = document.getElementById('credUsername').value;
+    const password = document.getElementById('credPassword').value;
+
+    appendOutput('\n[*] Injecting backdoor into ' + target + '...');
+    
+    fetch('/cicd/api/inject', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target: target,
+            platform: selectedPlatform,
+            backdoor_type: selectedBackdoor,
+            credentials: {username: username, password: password},
+            callback_url: callbackUrl
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            appendOutput('[+] Backdoor injected successfully! 🔥');
+            appendOutput('[+] Persistence level: GOD MODE');
+        } else {
+            appendOutput('[-] Injection failed: ' + data.error);
+        }
+    });
+}
+
+function enumeratePipelines() {
+    const target = document.getElementById('targetUrl').value;
+    appendOutput('\n[*] Enumerating all pipelines...');
+    
+    fetch('/cicd/api/enumerate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target: target,
+            platform: selectedPlatform,
+            credentials: {
+                username: document.getElementById('credUsername').value,
+                password: document.getElementById('credPassword').value
+            }
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.pipelines) {
+            appendOutput('[+] Found ' + data.pipelines.length + ' pipelines');
+            data.pipelines.forEach(p => appendOutput('    - ' + p.name));
+        }
+    });
+}
+
+function massInject() {
+    if (!confirm('⚠️ EXTREME DANGER: This will inject backdoors into ALL discovered pipelines. Are you absolutely sure?')) {
+        return;
+    }
+    appendOutput('\n[!] Mass injection initiated...');
+    appendOutput('[!] This feature requires manual review. Contact support.');
+}
+
+function appendOutput(text) {
+    const output = document.getElementById('outputArea');
+    output.textContent += '\n' + text;
+    output.scrollTop = output.scrollHeight;
+}
+
+function copyOutput() {
+    const output = document.getElementById('outputArea').textContent;
+    navigator.clipboard.writeText(output);
+    alert('Copied to clipboard');
+}
+</script>
+{% endblock %}
