@@ -1301,6 +1301,168 @@ http://localhost:8080
 
 ---
 
+## � NEW: Advanced Scanning & Reconnaissance Modules
+
+### 1. 🔍 Service Fingerprinting Pro
+
+Professional-grade service fingerprinting with Nmap NSE integration, CVE matching, and automated exploit recommendation.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    🔍 SERVICE FINGERPRINTING PRO WORKFLOW                                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                                    [Target Input]
+                                          │
+                                          ▼
+                            ┌─────────────────────────┐
+                            │   Nmap Service Scan     │
+                            │  (NSE Scripts + -sV)    │
+                            └─────────────────────────┘
+                                          │
+                      ┌───────────────────┼───────────────────┐
+                      ▼                   ▼                   ▼
+            ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+            │ Version Detection│ │ Banner Grabbing  │ │ SSL/TLS Analysis │
+            │  (5000+ sigs)    │ │  (HTTP/SSH/FTP)  │ │  (Certificate)   │
+            └──────────────────┘ └──────────────────┘ └──────────────────┘
+                      │                   │                   │
+                      └───────────────────┼───────────────────┘
+                                          ▼
+                            ┌─────────────────────────┐
+                            │  Tech Stack Detection   │
+                            │  (Apache, PHP, Django)  │
+                            └─────────────────────────┘
+                                          │
+                      ┌───────────────────┼───────────────────┐
+                      ▼                   ▼                   ▼
+            ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+            │  CVE Matching    │ │ Exploit Database │ │ Priority Scoring │
+            │  (NVD/CVSS)      │ │ (Metasploit/EDB) │ │  (AI-powered)    │
+            └──────────────────┘ └──────────────────┘ └──────────────────┘
+                                          │
+                                          ▼
+                            ┌─────────────────────────┐
+                            │   Results Dashboard     │
+                            │  Services • CVEs • PoCs │
+                            └─────────────────────────┘
+
+FEATURES:
+✅ Nmap NSE integration (1000+ scripts)        ✅ Service version detection
+✅ Technology stack identification             ✅ CVE database matching
+✅ Automated exploit recommendations           ✅ SSL/TLS certificate analysis
+✅ HTTP header analysis                        ✅ Real-time progress tracking
+```
+
+**Usage:**
+```python
+from tools.service_fingerprinter_pro import get_service_fingerprinter
+
+fp = get_service_fingerprinter()
+job_id = fp.start_fingerprint("192.168.1.1", scan_type="full")
+
+# Or via CLI
+python tools/service_fingerprinter_pro.py 192.168.1.1
+```
+
+**API Endpoints:**
+- `POST /tools/api/service-fingerprinter/scan` - Start scan
+- `GET /tools/api/service-fingerprinter/status/<job_id>` - Check progress
+- `GET /tools/api/service-fingerprinter/results/<job_id>` - Get results
+- `GET /tools/api/service-fingerprinter/fingerprints/<job_id>` - Service list
+- `GET /tools/api/service-fingerprinter/cves/<job_id>` - CVE matches
+- `GET /tools/api/service-fingerprinter/exploits/<job_id>` - Exploits
+
+---
+
+### 2. 🕷️ Web Application Scanner Pro
+
+OWASP Top 10:2021 complete coverage with automated vulnerability detection and exploit generation.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    🕷️ WEB APPLICATION SCANNER ARCHITECTURE                               │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                                [Target URL Input]
+                                        │
+                                        ▼
+                        ┌───────────────────────────┐
+                        │   Web Crawler Engine      │
+                        │  (Configurable Depth)     │
+                        └───────────────────────────┘
+                                        │
+        ┌───────────────────────────────┼───────────────────────────────┐
+        │                               │                               │
+        ▼                               ▼                               ▼
+┌──────────────────┐          ┌──────────────────┐          ┌──────────────────┐
+│  SQL Injection   │          │    XSS Testing   │          │   CSRF Testing   │
+│ • Boolean-based  │          │ • Reflected      │          │ • Token Validate │
+│ • Error-based    │          │ • Stored         │          │ • Anti-CSRF      │
+│ • Union-based    │          │ • DOM-based      │          └──────────────────┘
+│ • Time-based     │          └──────────────────┘
+└──────────────────┘                   │
+        │                               │
+        │               ┌───────────────┼───────────────┐
+        │               │               │               │
+        ▼               ▼               ▼               ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│  IDOR Testing    │ │  SSTI Testing    │ │  XXE Testing     │ │  CORS Testing    │
+│ • ID Tampering   │ │ • Jinja2         │ │ • File Disclosure│ │ • Origin Check   │
+│ • Enumeration    │ │ • Twig           │ │ • SSRF           │ │ • Credentials    │
+└──────────────────┘ │ • Freemarker     │ └──────────────────┘ └──────────────────┘
+                     │ • ERB/Velocity   │
+                     └──────────────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  Vulnerability Report │
+                    │  OWASP • CVSS • CWE   │
+                    └───────────────────────┘
+
+OWASP TOP 10:2021 COVERAGE:
+✅ A01:2021 - Broken Access Control (IDOR, CSRF)
+✅ A03:2021 - Injection (SQLi, XSS, SSTI, Command, XXE)
+✅ A05:2021 - Security Misconfiguration (CORS, XXE, Directory Listing)
+✅ A06:2021 - Vulnerable Components (Version Detection)
+✅ A07:2021 - Authentication Failures (Session Fixation, Weak Passwords)
+
+PAYLOAD CATEGORIES:
+✅ SQL Injection: Boolean, Error, Union, Time-based (30+ payloads)
+✅ XSS: Basic, Evasion, DOM-based (25+ payloads)
+✅ SSTI: Jinja2, Twig, Freemarker, ERB, Velocity (20+ payloads)
+✅ XXE: File disclosure, Cloud metadata, External DTD
+✅ Command Injection: 10+ bypass techniques
+```
+
+**Usage:**
+```python
+from tools.web_app_scanner import get_web_app_scanner
+
+scanner = get_web_app_scanner()
+job_id = scanner.start_scan(
+    target_url="https://example.com",
+    scan_mode="black_box",  # or gray_box, white_box
+    scan_depth=2,
+    max_requests=1000
+)
+
+# Or via CLI
+python tools/web_app_scanner.py https://example.com
+```
+
+**API Endpoints:**
+- `POST /tools/api/web-app-scanner/scan` - Start scan
+- `GET /tools/api/web-app-scanner/status/<job_id>` - Check progress
+- `GET /tools/api/web-app-scanner/results/<job_id>` - Get vulnerabilities
+
+**Scan Modes:**
+- **Black Box**: No source code access (parameter fuzzing)
+- **Gray Box**: Partial access (authenticated testing)
+- **White Box**: Full source code analysis
+
+---
+
 ## 📊 Statistics
 
 ```
@@ -1308,10 +1470,10 @@ http://localhost:8080
 │                              📊 PROJECT STATISTICS                                       │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 
-  Total Lines of Code:        ~50,000+
-  Python Modules:             60+
-  HTML Templates:             50+
-  API Endpoints:              100+
+  Total Lines of Code:        ~53,000+
+  Python Modules:             62+
+  HTML Templates:             52+
+  API Endpoints:              120+
   Attack Techniques:          200+
   Evasion Methods:            50+
   MITRE ATT&CK Coverage:      12 Tactics, 100+ Techniques
@@ -1319,9 +1481,15 @@ http://localhost:8080
   Core Components:
   ├── cybermodules/           ~20,000 lines
   ├── evasion/                ~8,000 lines
-  ├── cyberapp/routes/        ~5,000 lines
-  ├── templates/              ~15,000 lines
-  └── tools/                  ~3,000 lines
+  ├── cyberapp/routes/        ~5,500 lines
+  ├── templates/              ~16,000 lines
+  └── tools/                  ~3,500 lines
+  
+  NEW Modules (v2.1):
+  ├── Service Fingerprinting Pro:  1,003 lines
+  ├── Web Application Scanner:     1,076 lines
+  ├── Flask Routes:                243 lines
+  └── Templates:                   880 lines
 ```
 
 ---
