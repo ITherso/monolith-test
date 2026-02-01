@@ -49,6 +49,9 @@ from tools.pentest_orchestrator import pentest_orchestrator_bp
 vuln_scanner_bp = _try_import('vuln_scanner_bp', lambda: __import__('cyberapp.routes.vuln_scanner', fromlist=['vuln_scanner_bp']).vuln_scanner_bp)
 service_fingerprinter_bp = _try_import('service_fingerprinter_bp', lambda: __import__('cyberapp.routes.service_fingerprinter', fromlist=['service_fingerprinter_bp']).service_fingerprinter_bp)
 web_app_scanner_bp = _try_import('web_app_scanner_bp', lambda: __import__('cyberapp.routes.web_app_scanner', fromlist=['web_app_scanner_bp']).web_app_scanner_bp)
+cloud_assets_bp = _try_import('cloud_assets_bp', lambda: __import__('cyberapp.routes.cloud_assets', fromlist=['cloud_assets_bp']).cloud_assets_bp)
+privesc_bp = _try_import('privesc_bp', lambda: __import__('cyberapp.routes.privesc_toolkit', fromlist=['privesc_bp']).privesc_bp)
+privesc_ui_bp = _try_import('privesc_ui_bp', lambda: __import__('cyberapp.routes.privesc_toolkit', fromlist=['privesc_ui_bp']).privesc_ui_bp)
 
 
 def create_app(run_migrations_on_start=True):
@@ -95,6 +98,9 @@ def create_app(run_migrations_on_start=True):
     if vuln_scanner_bp: app.register_blueprint(vuln_scanner_bp)
     if service_fingerprinter_bp: app.register_blueprint(service_fingerprinter_bp)
     if web_app_scanner_bp: app.register_blueprint(web_app_scanner_bp)
+    if cloud_assets_bp: app.register_blueprint(cloud_assets_bp)
+    if privesc_bp: app.register_blueprint(privesc_bp)
+    if privesc_ui_bp: app.register_blueprint(privesc_ui_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

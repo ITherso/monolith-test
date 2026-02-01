@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Web Application Scanner - Monolith{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+    <div style="margin-bottom: 30px;">
+        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 10px;">🕷️ Web Application Scanner Pro</h1>
+        <p style="color: #94a3b8;">OWASP Top 10 complete coverage with automated exploit detection</p>
+    </div>
+    
+    <!-- Scan Form -->
+    <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 0.9rem;">Target URL</label>
+                <input type="text" id="targetUrl" placeholder="https://example.com" style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 0.9rem;">Scan Mode</label>
+                <select id="scanMode" style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0;">
+                    <option value="black_box">Black Box</option>
+                    <option value="gray_box">Gray Box</option>
+                    <option value="white_box">White Box</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 0.9rem;">Scan Depth</label>
+                <input type="number" id="scanDepth" value="2" min="1" max="5" style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 0.9rem;">Max Requests</label>
+                <input type="number" id="maxRequests" value="1000" min="100" max="10000" step="100" style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0;">
+            </div>
+        </div>
+        <button onclick="startScan()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: 600;">🚀 Start Scan</button>
+    </div>
+    
+    <!-- Scan Status -->
+    <div id="scanStatus" style="display: none; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 15px;">Scan Progress</h3>
+        <p><strong>Job ID:</strong> <span id="jobId">-</span></p>
+        <p><strong>Target:</strong> <span id="statusTarget">-</span></p>
+        <p><strong>Pages Scanned:</strong> <span id="pagesScanned">0</span> | <strong>Requests:</strong> <span id="requestsSent">0</span> | <strong>Vulns:</strong> <span id="vulnCount">0</span></p>
+        <div style="height: 8px; background: rgba(15, 23, 42, 0.6); border-radius: 4px; overflow: hidden; margin: 15px 0;">
+            <div id="progressBar" style="height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b); transition: width 0.3s ease; width: 0%"></div>
+        </div>
+        <p style="text-align: center; color: #94a3b8;" id="progressText">0%</p>
+    </div>
+    
+    <!-- Results Summary -->
+    <div id="resultsSummary" style="display: none; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 30px;">
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #ef4444; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Critical</div>
+            <div id="criticalCount" style="font-size: 2.5rem; font-weight: 700; color: #ef4444; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #f59e0b; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">High</div>
+            <div id="highCount" style="font-size: 2.5rem; font-weight: 700; color: #f59e0b; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #eab308; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Medium</div>
+            <div id="mediumCount" style="font-size: 2.5rem; font-weight: 700; color: #eab308; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #3b82f6; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Low</div>
+            <div id="lowCount" style="font-size: 2.5rem; font-weight: 700; color: #3b82f6; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #8b5cf6; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Total</div>
+            <div id="totalCount" style="font-size: 2.5rem; font-weight: 700; color: #8b5cf6; margin: 10px 0;">0</div>
+        </div>
+    </div>
+    
+    <!-- Vulnerabilities List -->
+    <div id="vulnerabilitiesList" style="display: none;"></div>
+</div>
+
+<script>
+let currentJobId = null;
+let pollInterval = null;
+
+function startScan() {
+    const targetUrl = document.getElementById('targetUrl').value.trim();
+    const scanMode = document.getElementById('scanMode').value;
+    const scanDepth = parseInt(document.getElementById('scanDepth').value);
+    const maxRequests = parseInt(document.getElementById('maxRequests').value);
+    
+    if (!targetUrl) {
+        alert('Please enter a target URL');
+        return;
+    }
+    
+    fetch('/tools/api/web-app-scanner/scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target_url: targetUrl,
+            scan_mode: scanMode,
+            scan_depth: scanDepth,
+            max_requests: maxRequests
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentJobId = data.job_id;
+            document.getElementById('jobId').textContent = data.job_id;
+            document.getElementById('statusTarget').textContent = data.target_url;
+            document.getElementById('scanStatus').style.display = 'block';
+            document.getElementById('resultsSummary').style.display = 'none';
+            document.getElementById('vulnerabilitiesList').style.display = 'none';
+            
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(checkStatus, 3000);
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => alert('Error starting scan: ' + error));
+}
+
+function checkStatus() {
+    if (!currentJobId) return;
+    
+    fetch(`/tools/api/web-app-scanner/status/${currentJobId}`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('progressBar').style.width = data.progress + '%';
+        document.getElementById('progressText').textContent = data.progress + '%';
+        document.getElementById('pagesScanned').textContent = data.pages_scanned;
+        document.getElementById('requestsSent').textContent = data.requests_sent;
+        document.getElementById('vulnCount').textContent = data.vuln_count;
+        
+        if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            loadResults();
+        } else if (data.status === 'failed') {
+            clearInterval(pollInterval);
+            alert('Scan failed: ' + data.error_message);
+        }
+    })
+    .catch(error => console.error('Error checking status:', error));
+}
+
+function loadResults() {
+    fetch(`/tools/api/web-app-scanner/results/${currentJobId}`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('criticalCount').textContent = data.summary.critical;
+        document.getElementById('highCount').textContent = data.summary.high;
+        document.getElementById('mediumCount').textContent = data.summary.medium;
+        document.getElementById('lowCount').textContent = data.summary.low;
+        document.getElementById('totalCount').textContent = data.summary.total;
+        
+        document.getElementById('resultsSummary').style.display = 'grid';
+        
+        const container = document.getElementById('vulnerabilitiesList');
+        container.innerHTML = '';
+        container.style.display = 'block';
+        
+        data.vulnerabilities.forEach(vuln => {
+            const severityColors = {
+                critical: '#ef4444',
+                high: '#f59e0b',
+                medium: '#eab308',
+                low: '#3b82f6'
+            };
+            
+            const card = document.createElement('div');
+            card.style.cssText = 'background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid ' + severityColors[vuln.severity] + '; border-radius: 12px; padding: 20px; margin-bottom: 15px;';
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="font-size: 1.1rem; color: #e2e8f0;">${vuln.vuln_type}</strong>
+                    <span style="padding: 4px 12px; background: rgba(${vuln.severity === 'critical' ? '239, 68, 68' : vuln.severity === 'high' ? '245, 158, 11' : vuln.severity === 'medium' ? '234, 179, 8' : '59, 130, 246'}, 0.2); color: ${severityColors[vuln.severity]}; border-radius: 12px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">${vuln.severity}</span>
+                </div>
+                <p style="color: #cbd5e1; margin: 10px 0;">${vuln.description}</p>
+                <div style="margin: 10px 0; padding: 10px; background: rgba(15, 23, 42, 0.6); border-radius: 6px;">
+                    <strong style="color: #94a3b8;">URL:</strong> <span style="color: #e2e8f0; font-family: monospace; font-size: 0.85rem;">${vuln.url}</span>
+                </div>
+                ${vuln.parameter ? `<div style="margin: 10px 0;"><strong style="color: #94a3b8;">Parameter:</strong> <code style="color: #10b981;">${vuln.parameter}</code></div>` : ''}
+                ${vuln.payload ? `<div style="margin: 10px 0; padding: 10px; background: rgba(15, 23, 42, 0.8); border-radius: 6px; font-family: monospace; font-size: 0.85rem; color: #f59e0b; overflow-x: auto;">${vuln.payload}</div>` : ''}
+                <div style="margin-top: 15px; display: flex; gap: 15px; color: #94a3b8; font-size: 0.9rem;">
+                    <span><strong>OWASP:</strong> ${vuln.owasp_category}</span>
+                    <span><strong>CVSS:</strong> ${vuln.cvss_score}</span>
+                    <span><strong>Confidence:</strong> ${vuln.confidence}%</span>
+                </div>
+            `;
+            
+            container.appendChild(card);
+        });
+    })
+    .catch(error => console.error('Error loading results:', error));
+}
+</script>
+{% endblock %}

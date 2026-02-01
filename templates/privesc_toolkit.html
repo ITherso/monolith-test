@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privilege Escalation Toolkit - Monolith</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a2e;
+            --accent-red: #ff0033;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --border: #2a2a3e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-purple));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 0, 51, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-purple));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .results-container {
+            display: none;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .summary-card.critical { border-left: 4px solid var(--accent-red); }
+        .summary-card.high { border-left: 4px solid var(--accent-yellow); }
+        .summary-card.medium { border-left: 4px solid var(--accent-blue); }
+        .summary-card.low { border-left: 4px solid var(--accent-green); }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .summary-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .vectors-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .vector-item {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--border);
+        }
+
+        .vector-item.critical { border-left-color: var(--accent-red); }
+        .vector-item.high { border-left-color: var(--accent-yellow); }
+        .vector-item.medium { border-left-color: var(--accent-blue); }
+        .vector-item.low { border-left-color: var(--accent-green); }
+
+        .vector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .vector-technique {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-critical { background: rgba(255, 0, 51, 0.2); color: var(--accent-red); }
+        .badge-high { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); }
+        .badge-medium { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+        .badge-low { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+
+        .vector-vulnerability {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .vector-description {
+            margin-bottom: 0.75rem;
+        }
+
+        .exploit-command {
+            background: var(--bg-primary);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: 'Consolas', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-bottom: 0.75rem;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--bg-tertiary);
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .vector-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .gtfobins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .gtfobin-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .gtfobin-name {
+            font-weight: 600;
+            color: var(--accent-purple);
+            margin-bottom: 0.5rem;
+        }
+
+        .gtfobin-desc {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .gtfobin-cmd {
+            background: var(--bg-primary);
+            border-radius: 4px;
+            padding: 0.5rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--accent-green);
+        }
+
+        .kernel-exploits-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .kernel-exploit-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .kernel-exploit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .kernel-exploit-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .kernel-exploit-cve {
+            color: var(--accent-red);
+            font-family: monospace;
+        }
+
+        .success-rate {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .success-rate-bar {
+            width: 100px;
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .success-rate-fill {
+            height: 100%;
+            background: var(--accent-green);
+            border-radius: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔓 Privilege Escalation Toolkit</h1>
+            <p>Windows/Linux/macOS Automated Privilege Escalation</p>
+        </div>
+
+        <div class="grid">
+            <div class="sidebar">
+                <div class="card">
+                    <h2 class="card-title">⚡ Scan Configuration</h2>
+                    
+                    <div class="form-group">
+                        <label>Target Operating System</label>
+                        <select id="targetOs">
+                            <option value="auto">Auto-Detect</option>
+                            <option value="linux">Linux</option>
+                            <option value="windows">Windows</option>
+                            <option value="macos">macOS</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Scan Type</label>
+                        <select id="scanType">
+                            <option value="full">Full Scan</option>
+                            <option value="quick">Quick Scan</option>
+                            <option value="comprehensive">Comprehensive</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" id="startScan" onclick="startScan()">
+                        🚀 Start Scan
+                    </button>
+
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="progressStatus">Initializing...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1rem;">
+                    <h2 class="card-title">📊 System Info</h2>
+                    <div id="systemInfo">
+                        <p style="color: var(--text-secondary);">Run a scan to see system information</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="card">
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('results')">📋 Results</button>
+                        <button class="tab" onclick="switchTab('gtfobins')">🔧 GTFOBins</button>
+                        <button class="tab" onclick="switchTab('kernelexploits')">💀 Kernel Exploits</button>
+                        <button class="tab" onclick="switchTab('windows')">🪟 Windows</button>
+                    </div>
+
+                    <div class="tab-content active" id="resultsTab">
+                        <div class="results-container" id="resultsContainer">
+                            <div class="summary-grid" id="summaryGrid">
+                                <!-- Summary cards will be inserted here -->
+                            </div>
+                            <div class="vectors-list" id="vectorsList">
+                                <!-- Vectors will be inserted here -->
+                            </div>
+                        </div>
+                        <div id="noResults">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 3rem;">
+                                No scan results yet. Start a scan to find privilege escalation vectors.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="gtfobinsTab">
+                        <div class="gtfobins-grid" id="gtfobinsGrid">
+                            <!-- GTFOBins will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="kernelexploitsTab">
+                        <div class="kernel-exploits-list" id="kernelExploitsList">
+                            <!-- Kernel exploits will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="windowsTab">
+                        <div id="windowsTechniques">
+                            <!-- Windows techniques will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentJobId = null;
+        let pollInterval = null;
+
+        // Load reference data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGTFOBins();
+            loadKernelExploits();
+            loadWindowsTechniques();
+        });
+
+        async function startScan() {
+            const targetOs = document.getElementById('targetOs').value;
+            const scanType = document.getElementById('scanType').value;
+
+            const btn = document.getElementById('startScan');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Starting...';
+
+            try {
+                const response = await fetch('/api/privesc/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_os: targetOs,
+                        scan_type: scanType
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentJobId = data.job_id;
+                    document.getElementById('progressContainer').style.display = 'block';
+                    document.getElementById('noResults').style.display = 'none';
+                    
+                    pollInterval = setInterval(pollStatus, 2000);
+                } else {
+                    alert('Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Start Scan';
+                }
+            } catch (error) {
+                alert('Error starting scan: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Start Scan';
+            }
+        }
+
+        async function pollStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`/api/privesc/status/${currentJobId}`);
+                const data = await response.json();
+
+                document.getElementById('progressFill').style.width = `${data.progress}%`;
+                document.getElementById('progressPercent').textContent = `${data.progress}%`;
+                document.getElementById('progressStatus').textContent = `${data.status} - ${data.vector_count} vectors found`;
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(pollInterval);
+                    document.getElementById('startScan').disabled = false;
+                    document.getElementById('startScan').innerHTML = '🚀 Start Scan';
+                    
+                    if (data.status === 'completed') {
+                        loadResults();
+                    } else {
+                        alert('Scan failed: ' + data.error_message);
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling status:', error);
+            }
+        }
+
+        async function loadResults() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`/api/privesc/results/${currentJobId}`);
+                const data = await response.json();
+
+                // Update system info
+                const sysInfo = data.system_info;
+                document.getElementById('systemInfo').innerHTML = `
+                    <p><strong>OS:</strong> ${sysInfo.os} ${sysInfo.os_release}</p>
+                    <p><strong>Kernel:</strong> ${sysInfo.kernel || 'N/A'}</p>
+                    <p><strong>Hostname:</strong> ${sysInfo.hostname}</p>
+                    <p><strong>Arch:</strong> ${sysInfo.architecture}</p>
+                `;
+
+                // Update summary
+                const summary = data.summary;
+                document.getElementById('summaryGrid').innerHTML = `
+                    <div class="summary-card critical">
+                        <div class="summary-value">${summary.critical}</div>
+                        <div class="summary-label">Critical</div>
+                    </div>
+                    <div class="summary-card high">
+                        <div class="summary-value">${summary.high}</div>
+                        <div class="summary-label">High</div>
+                    </div>
+                    <div class="summary-card medium">
+                        <div class="summary-value">${summary.medium}</div>
+                        <div class="summary-label">Medium</div>
+                    </div>
+                    <div class="summary-card low">
+                        <div class="summary-value">${summary.low}</div>
+                        <div class="summary-label">Low</div>
+                    </div>
+                `;
+
+                // Update vectors list
+                const vectorsList = document.getElementById('vectorsList');
+                vectorsList.innerHTML = data.vectors.map(v => `
+                    <div class="vector-item ${v.severity}">
+                        <div class="vector-header">
+                            <span class="vector-technique">${v.technique}</span>
+                            <span class="badge badge-${v.severity}">${v.severity}</span>
+                        </div>
+                        <div class="vector-vulnerability">${v.vulnerability}</div>
+                        <div class="vector-description">${v.description}</div>
+                        ${v.exploit_command ? `
+                            <div class="exploit-command">
+                                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                                ${escapeHtml(v.exploit_command)}
+                            </div>
+                        ` : ''}
+                        <div class="vector-meta">
+                            <span>Exploitability: ${v.exploitability}</span>
+                            <span>Confidence: ${v.confidence}%</span>
+                            ${v.cve_id ? `<span>CVE: ${v.cve_id}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('resultsContainer').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading results:', error);
+            }
+        }
+
+        async function loadGTFOBins() {
+            try {
+                const response = await fetch('/api/privesc/gtfobins');
+                const data = await response.json();
+
+                const grid = document.getElementById('gtfobinsGrid');
+                grid.innerHTML = Object.entries(data).map(([name, info]) => `
+                    <div class="gtfobin-card">
+                        <div class="gtfobin-name">${name}</div>
+                        <div class="gtfobin-desc">${info.description}</div>
+                        <div class="gtfobin-cmd">${escapeHtml(info.suid)}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading GTFOBins:', error);
+            }
+        }
+
+        async function loadKernelExploits() {
+            try {
+                const response = await fetch('/api/privesc/kernel-exploits');
+                const data = await response.json();
+
+                const list = document.getElementById('kernelExploitsList');
+                let html = '';
+
+                for (const [os, exploits] of Object.entries(data)) {
+                    html += `<h3 style="margin-bottom: 1rem; color: var(--accent-purple);">${os.toUpperCase()}</h3>`;
+                    html += exploits.map(exp => `
+                        <div class="kernel-exploit-card">
+                            <div class="kernel-exploit-header">
+                                <span class="kernel-exploit-name">${exp.name}</span>
+                                <span class="kernel-exploit-cve">${exp.cve_id}</span>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">${exp.description}</p>
+                            <p style="font-size: 0.875rem;">Affected: ${exp.affected_versions.join(', ')}</p>
+                            <div class="success-rate">
+                                <span>Success Rate:</span>
+                                <div class="success-rate-bar">
+                                    <div class="success-rate-fill" style="width: ${exp.success_rate}%"></div>
+                                </div>
+                                <span>${exp.success_rate}%</span>
+                            </div>
+                            <a href="${exp.exploit_url}" target="_blank" style="color: var(--accent-blue); font-size: 0.875rem;">Exploit →</a>
+                        </div>
+                    `).join('');
+                }
+
+                list.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading kernel exploits:', error);
+            }
+        }
+
+        async function loadWindowsTechniques() {
+            try {
+                const response = await fetch('/api/privesc/windows-techniques');
+                const data = await response.json();
+
+                const container = document.getElementById('windowsTechniques');
+                let html = '';
+
+                for (const [category, techniques] of Object.entries(data)) {
+                    html += `<h3 style="margin-bottom: 1rem; color: var(--accent-purple);">${category.replace(/_/g, ' ').toUpperCase()}</h3>`;
+                    html += '<div class="kernel-exploits-list" style="margin-bottom: 2rem;">';
+                    
+                    for (const [name, info] of Object.entries(techniques)) {
+                        html += `
+                            <div class="kernel-exploit-card">
+                                <div class="kernel-exploit-header">
+                                    <span class="kernel-exploit-name">${name}</span>
+                                </div>
+                                <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">${info.description}</p>
+                                <p style="font-size: 0.875rem;"><strong>Requirements:</strong> ${info.requirements.join(', ')}</p>
+                                <div class="exploit-command" style="margin-top: 0.5rem;">
+                                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                                    ${escapeHtml(info.command)}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += '</div>';
+                }
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading Windows techniques:', error);
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+        }
+
+        function copyToClipboard(btn) {
+            const text = btn.parentElement.textContent.replace('Copy', '').trim();
+            navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 2000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
