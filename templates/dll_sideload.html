@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}DLL Sideload Factory - COM Hijacking & DLL Sideloading{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">🏭</span>
+                DLL Sideload Factory
+                <span class="px-2 py-1 text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full animate-pulse">PRO</span>
+            </h1>
+            <p class="text-gray-400 mt-1">COM Hijacking & DLL Sideloading for Advanced Persistence</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="scanOpportunities()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all">
+                🔍 Scan Opportunities
+            </button>
+            <button onclick="scanCOMTargets()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all">
+                🎯 Scan COM Objects
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-purple-500/30">
+            <div class="text-3xl font-bold text-purple-400">{{ stats.dll_targets }}</div>
+            <div class="text-gray-400 text-sm">DLL Targets</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-blue-500/30">
+            <div class="text-3xl font-bold text-blue-400">{{ stats.com_targets }}</div>
+            <div class="text-gray-400 text-sm">COM Targets</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-green-500/30">
+            <div class="text-3xl font-bold text-green-400">{{ stats.generated_dlls }}</div>
+            <div class="text-gray-400 text-sm">Generated DLLs</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-yellow-500/30">
+            <div class="text-3xl font-bold text-yellow-400">{{ stats.known_apps }}</div>
+            <div class="text-gray-400 text-sm">Known Apps</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-red-500/30">
+            <div class="text-3xl font-bold text-red-400">{{ stats.known_com_objects }}</div>
+            <div class="text-gray-400 text-sm">COM Objects</div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Generate Proxy DLL -->
+        <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🔧</span> Generate Proxy DLL
+            </h2>
+            <form id="generateForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Target Application</label>
+                    <select id="targetSelect" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none">
+                        <option value="">-- Scan first to see targets --</option>
+                        {% for target in targets %}
+                        <option value="{{ target.target_id }}">{{ target.application }} → {{ target.dll_name }} ({{ target.hijack_type }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Payload Type</label>
+                    <select id="payloadType" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                        {% for pt in payload_types %}
+                        <option value="{{ pt }}">{{ pt | title | replace('_', ' ') }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Callback URL (for reverse shell/beacon)</label>
+                    <input type="text" id="callbackUrl" placeholder="tcp://192.168.1.100:4444" 
+                           class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Custom Shellcode (Base64, optional)</label>
+                    <textarea id="customShellcode" rows="2" placeholder="Leave empty for built-in payloads"
+                              class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none font-mono text-sm"></textarea>
+                </div>
+                <button type="submit" class="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-semibold">
+                    🏭 Generate Proxy DLL
+                </button>
+            </form>
+        </div>
+
+        <!-- COM Hijacking -->
+        <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🎯</span> COM Hijacking Registry
+            </h2>
+            <form id="comForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">CLSID</label>
+                    <input type="text" id="clsid" placeholder="{BCDE0395-E52F-467C-8E3D-C4579291692E}" 
+                           class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none font-mono">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">ProgID (optional)</label>
+                    <input type="text" id="progid" placeholder="MMDeviceEnumerator" 
+                           class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Malicious DLL Path</label>
+                    <input type="text" id="dllPath" placeholder="C:\Users\Public\evil.dll" 
+                           class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 font-semibold">
+                    📝 Generate Registry Script
+                </button>
+            </form>
+            <div id="regScriptOutput" class="mt-4 hidden">
+                <label class="block text-gray-300 text-sm mb-1">Generated .reg Script</label>
+                <pre class="bg-gray-900 p-3 rounded-lg text-xs text-green-400 overflow-x-auto max-h-48"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targets Table -->
+    <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>📋</span> DLL Hijacking Targets
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="text-gray-400 text-sm border-b border-gray-700">
+                    <tr>
+                        <th class="pb-3">Application</th>
+                        <th class="pb-3">DLL Name</th>
+                        <th class="pb-3">Hijack Type</th>
+                        <th class="pb-3">Risk</th>
+                        <th class="pb-3">Exports</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="targetsTable" class="text-gray-300">
+                    {% for target in targets %}
+                    <tr class="border-b border-gray-700/50 hover:bg-gray-700/30">
+                        <td class="py-3">{{ target.application }}</td>
+                        <td class="py-3 font-mono text-purple-400">{{ target.dll_name }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 rounded text-xs 
+                                {% if target.hijack_type == 'side_loading' %}bg-red-500/20 text-red-400
+                                {% elif target.hijack_type == 'search_order' %}bg-yellow-500/20 text-yellow-400
+                                {% else %}bg-blue-500/20 text-blue-400{% endif %}">
+                                {{ target.hijack_type }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 rounded text-xs 
+                                {% if target.risk_level == 'high' %}bg-red-500/20 text-red-400
+                                {% elif target.risk_level == 'medium' %}bg-yellow-500/20 text-yellow-400
+                                {% else %}bg-green-500/20 text-green-400{% endif %}">
+                                {{ target.risk_level }}
+                            </span>
+                        </td>
+                        <td class="py-3">{{ target.exports | length if target.exports else 0 }}</td>
+                        <td class="py-3">
+                            <button onclick="selectTarget('{{ target.target_id }}')" class="text-purple-400 hover:text-purple-300">
+                                Select
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Generated DLLs -->
+    <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>📦</span> Generated Proxy DLLs
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="text-gray-400 text-sm border-b border-gray-700">
+                    <tr>
+                        <th class="pb-3">DLL ID</th>
+                        <th class="pb-3">Application</th>
+                        <th class="pb-3">DLL Name</th>
+                        <th class="pb-3">Payload</th>
+                        <th class="pb-3">Created</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="generatedTable" class="text-gray-300">
+                    {% for dll in generated %}
+                    <tr class="border-b border-gray-700/50 hover:bg-gray-700/30">
+                        <td class="py-3 font-mono text-xs">{{ dll.dll_id }}</td>
+                        <td class="py-3">{{ dll.application }}</td>
+                        <td class="py-3 font-mono text-green-400">{{ dll.dll_name }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">
+                                {{ dll.payload_type }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-sm text-gray-500">{{ dll.created_at[:10] }}</td>
+                        <td class="py-3 flex gap-2">
+                            <a href="/dll-sideload/api/download-source/{{ dll.dll_id }}" class="text-blue-400 hover:text-blue-300">
+                                📥 Source
+                            </a>
+                            <button onclick="generateDeployer('{{ dll.dll_id }}')" class="text-green-400 hover:text-green-300">
+                                🚀 Deployer
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Source Code Output -->
+    <div id="sourceOutput" class="bg-gray-800/50 rounded-xl p-6 border border-gray-700 hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <span>💻</span> Generated Source Code
+            </h2>
+            <button onclick="copySource()" class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600">
+                📋 Copy
+            </button>
+        </div>
+        <pre id="sourceCode" class="bg-gray-900 p-4 rounded-lg text-xs text-green-400 overflow-x-auto max-h-96 font-mono"></pre>
+    </div>
+</div>
+
+<script>
+function scanOpportunities() {
+    fetch('/dll-sideload/api/scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Found ${data.count} DLL hijacking opportunities!`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function scanCOMTargets() {
+    fetch('/dll-sideload/api/scan-com', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Found ${data.count} COM hijacking targets!`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function selectTarget(targetId) {
+    document.getElementById('targetSelect').value = targetId;
+}
+
+document.getElementById('generateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        target_id: document.getElementById('targetSelect').value,
+        payload_type: document.getElementById('payloadType').value,
+        callback_url: document.getElementById('callbackUrl').value,
+        shellcode: document.getElementById('customShellcode').value
+    };
+    
+    if (!data.target_id) {
+        alert('Please select a target first');
+        return;
+    }
+    
+    fetch('/dll-sideload/api/generate-dll', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('sourceOutput').classList.remove('hidden');
+            document.getElementById('sourceCode').textContent = data.source_code;
+            alert(`Generated proxy DLL for ${data.dll_name}!`);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+});
+
+document.getElementById('comForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        clsid: document.getElementById('clsid').value,
+        progid: document.getElementById('progid').value,
+        dll_path: document.getElementById('dllPath').value
+    };
+    
+    fetch('/dll-sideload/api/generate-com-reg', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const output = document.getElementById('regScriptOutput');
+            output.classList.remove('hidden');
+            output.querySelector('pre').textContent = data.reg_script;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+});
+
+function generateDeployer(dllId) {
+    fetch('/dll-sideload/api/generate-deployer', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({dll_id: dllId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('sourceOutput').classList.remove('hidden');
+            document.getElementById('sourceCode').textContent = data.script;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function copySource() {
+    const source = document.getElementById('sourceCode').textContent;
+    navigator.clipboard.writeText(source);
+    alert('Copied to clipboard!');
+}
+</script>
+{% endblock %}

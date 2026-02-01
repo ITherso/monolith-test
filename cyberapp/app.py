@@ -60,6 +60,11 @@ stego_bp = _try_import('stego_bp', lambda: __import__('cyberapp.routes.stego_c2'
 bitb_bp = _try_import('bitb_bp', lambda: __import__('cyberapp.routes.bitb_phishing', fromlist=['bitb_bp']).bitb_bp)
 spray_bp = _try_import('spray_bp', lambda: __import__('cyberapp.routes.smart_spray', fromlist=['spray_bp']).spray_bp)
 
+# Advanced Persistence Modules
+dll_sideload_bp = _try_import('dll_sideload_bp', lambda: __import__('cyberapp.routes.dll_sideload', fromlist=['dll_sideload_bp']).dll_sideload_bp)
+wmi_persistence_bp = _try_import('wmi_persistence_bp', lambda: __import__('cyberapp.routes.wmi_persistence', fromlist=['wmi_persistence_bp']).wmi_persistence_bp)
+office_template_bp = _try_import('office_template_bp', lambda: __import__('cyberapp.routes.office_template', fromlist=['office_template_bp']).office_template_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -115,6 +120,11 @@ def create_app(run_migrations_on_start=True):
     if stego_bp: app.register_blueprint(stego_bp)
     if bitb_bp: app.register_blueprint(bitb_bp)
     if spray_bp: app.register_blueprint(spray_bp)
+    
+    # Advanced Persistence Modules
+    if dll_sideload_bp: app.register_blueprint(dll_sideload_bp)
+    if wmi_persistence_bp: app.register_blueprint(wmi_persistence_bp)
+    if office_template_bp: app.register_blueprint(office_template_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

