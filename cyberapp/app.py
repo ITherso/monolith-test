@@ -46,6 +46,7 @@ advanced_waf_bp = _try_import('advanced_waf_bp', lambda: __import__('evasion.adv
 from tools.cred_harvest import cred_harvest_bp
 from evasion.soc_deception import soc_deception_bp
 from tools.pentest_orchestrator import pentest_orchestrator_bp
+vuln_scanner_bp = _try_import('vuln_scanner_bp', lambda: __import__('cyberapp.routes.vuln_scanner', fromlist=['vuln_scanner_bp']).vuln_scanner_bp)
 
 
 def create_app(run_migrations_on_start=True):
@@ -89,6 +90,7 @@ def create_app(run_migrations_on_start=True):
     if cred_harvest_bp: app.register_blueprint(cred_harvest_bp)
     if soc_deception_bp: app.register_blueprint(soc_deception_bp)
     if pentest_orchestrator_bp: app.register_blueprint(pentest_orchestrator_bp)
+    if vuln_scanner_bp: app.register_blueprint(vuln_scanner_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
