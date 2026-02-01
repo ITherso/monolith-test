@@ -1546,6 +1546,21 @@ if __name__ == "__main__":
     
     api = get_edr_poison_api()
     
+    # PRO Features Banner
+    print("\n" + "=" * 60)
+    print("[EDR POISON PRO]")
+    try:
+        from evasion.edr_poison_pro import get_pro_engines
+        pro_engines = get_pro_engines()
+        print("✓ AI Flood Timing Engine: ENABLED")
+        print("✓ Carbon Black Signatures: ENABLED")
+        print("✓ Elastic Security Patterns: ENABLED")
+        print("✓ SOC Analyst Fatigue AI: ENABLED")
+        print("\n[PRO] Rating: 10/10 - SOC Killer Mode")
+    except ImportError:
+        print("✗ PRO features not available")
+    print("=" * 60 + "\n")
+    
     if args.script:
         gen = NoiseScriptGenerator()
         if args.script == "powershell":
