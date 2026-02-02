@@ -100,6 +100,9 @@ docker_escape_bp = _try_import('docker_escape_bp', lambda: __import__('tools.doc
 # Supply Chain Attack Module
 supply_chain_bp = _try_import('supply_chain_bp', lambda: __import__('tools.supply_chain_attack', fromlist=['supply_chain_bp']).supply_chain_bp)
 
+# Hardware & Network Infrastructure Module
+hardware_infra_bp = _try_import('hardware_infra_bp', lambda: __import__('tools.hardware_infra', fromlist=['hardware_infra_bp']).hardware_infra_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -195,6 +198,9 @@ def create_app(run_migrations_on_start=True):
     
     # Supply Chain Attack Module
     if supply_chain_bp: app.register_blueprint(supply_chain_bp)
+    
+    # Hardware & Network Infrastructure Module
+    if hardware_infra_bp: app.register_blueprint(hardware_infra_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

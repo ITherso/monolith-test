@@ -809,6 +809,124 @@ Modern yazılım tedarik zincirine yönelik gelişmiş saldırı modülleri. Dep
 
 ---
 
+## 🔧 Hardware & Network Infrastructure (Fiziksel ve Ağ) - February 2025
+
+Kabloların ve çiplerin içine giren saldırı modülleri. Donanım seviyesinde kalıcılık ve ağ trafiği yakalama.
+
+### 🧛 Switch & Router "Vampire" (Port Mirroring)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🧛 VAMPIRE PORT MIRRORING MODULE                                  │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│   SUPPORTED DEVICES:                                                                     │
+│   ├── Cisco Catalyst (SPAN/RSPAN/ERSPAN)                                                │
+│   ├── Juniper EX/QFX Series (Port Mirroring)                                            │
+│   ├── HP ProCurve                                                                       │
+│   └── Any SNMP-enabled device                                                           │
+│                                                                                          │
+│   ATTACK FLOW:                                                                           │
+│   ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│   │  1. SNMP/SSH ile switch'e erişim                                                 │   │
+│   │  2. Port mirroring session oluştur                                               │   │
+│   │  3. Source port(lar)ı belirle (CEO, finans portları)                             │   │
+│   │  4. Destination port olarak attacker makinesini ayarla                           │   │
+│   │  5. Tüm trafik pasif olarak dinlenir                                             │   │
+│   │  6. Wireshark/tcpdump ile capture                                                │   │
+│   └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                          │
+│   STEALTH TECHNIQUES:                                                                    │
+│   • High session IDs (900+) kullan                                                      │
+│   • Rate limiting ile trafik azalt                                                      │
+│   • VLAN filtering                                                                      │
+│   • Scheduled capture (sadece iş saatleri)                                              │
+│                                                                                          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### ⚡ UEFI Bootkit Installer (Kalıcılığın Zirvesi)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        ⚡ UEFI BOOTKIT INSTALLER                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│   ⚠️ WARNING: DONANIM SEVİYESİNDE KALICILIK - GERİ DÖNÜŞÜ ZOR                           │
+│                                                                                          │
+│   PAYLOAD TYPES:                                                                         │
+│   ├── Bootloader Hook      → bootmgfw.efi hook (ESP partition)                          │
+│   ├── SPI Flash Implant    → BIOS çipine yazma (format atmak bile çözmez!)             │
+│   ├── Secure Boot Bypass   → CVE-2022-21894 (BlackLotus style)                          │
+│   └── NVRAM Persistence    → UEFI değişkenlerinde saklama                               │
+│                                                                                          │
+│   PERSISTENCE LEVELS:                                                                    │
+│   ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│   │  Level 1: ESP Partition    - Survives reinstall: YES, Format: NO                │   │
+│   │  Level 2: NVRAM Variables  - Survives reinstall: YES, Format: YES               │   │
+│   │  Level 3: SPI Flash        - Survives reinstall: YES, Format: YES, Disk: YES    │   │
+│   └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                          │
+│   KNOWN BOOTKITS (Reference):                                                            │
+│   • LoJax (APT28/Fancy Bear) - First UEFI rootkit in the wild                           │
+│   • MosaicRegressor - Advanced UEFI implant                                             │
+│   • CosmicStrand - Chinese APT firmware implant                                         │
+│   • BlackLotus - First to bypass Secure Boot                                            │
+│                                                                                          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🖨️ Printer "Job Capture" Module
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🖨️ PRINTER JOB CAPTURE MODULE                                    │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│   TARGET PORTS:                                                                          │
+│   ├── 9100 (JetDirect/RAW)  - Primary target                                            │
+│   ├── 631 (IPP)             - Internet Printing Protocol                                │
+│   ├── 515 (LPD)             - Line Printer Daemon                                       │
+│   └── 80/443 (Web)          - Admin interface                                           │
+│                                                                                          │
+│   PJL ATTACK TECHNIQUES:                                                                 │
+│   ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│   │  @PJL INFO ID                    → Printer info gathering                        │   │
+│   │  @PJL FSDIRLIST NAME="0:\\"       → Directory listing                            │   │
+│   │  @PJL FSUPLOAD NAME="file"        → Download stored jobs                         │   │
+│   │  @PJL DEFAULT HOLD=ON             → Enable job retention (future capture)        │   │
+│   │  @PJL RDYMSG DISPLAY="HACKED"     → LCD message display                          │   │
+│   └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                          │
+│   TARGET DOCUMENTS:                                                                      │
+│   💰 Maaş Bordroları (Salary reports)                                                   │
+│   📊 CEO/Board Raporları (Executive reports)                                            │
+│   🔑 Şifre Listeleri (Password lists)                                                   │
+│   📄 Gizli Sözleşmeler (Confidential contracts)                                         │
+│                                                                                          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🔗 Hardware Infrastructure API Endpoints
+
+```
+  GET  /hardware-infra/                   - Hardware Infra Dashboard
+  POST /hardware-infra/api/scan-devices   - Scan network devices (switches/routers)
+  POST /hardware-infra/api/cisco-span     - Generate Cisco SPAN config
+  POST /hardware-infra/api/juniper-mirror - Generate Juniper mirror config
+  POST /hardware-infra/api/snmp-mirror    - SNMP-based port mirroring
+  GET  /hardware-infra/api/stealth-techniques - Evasion techniques
+  POST /hardware-infra/api/analyze-uefi   - Analyze target UEFI
+  POST /hardware-infra/api/uefi-payload   - Generate UEFI bootkit payload
+  GET  /hardware-infra/api/known-bootkits - Known bootkit references
+  POST /hardware-infra/api/scan-printers  - Scan network printers
+  POST /hardware-infra/api/pjl-exploit    - Generate PJL exploit
+  POST /hardware-infra/api/ps-exploit     - Generate PostScript exploit
+  POST /hardware-infra/api/capture-script - Full capture automation script
+```
+
+---
+
 ## �🕵️ Exotic Exfiltration PRO Modules (February 2025)
 
 Firewall'ları ve DLP sistemlerini delirtecek covert channel modülleri. Trafik analizi yapılamaz, engellenmesi imkansız.

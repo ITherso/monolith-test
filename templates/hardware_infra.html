@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware & Network Infrastructure | MONOLITH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        
+        * { font-family: 'JetBrains Mono', monospace; }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            min-height: 100vh;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-light {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .neon-cyan { text-shadow: 0 0 20px rgba(34, 211, 238, 0.8); }
+        .neon-red { text-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+        .neon-purple { text-shadow: 0 0 20px rgba(168, 85, 247, 0.8); }
+        .neon-orange { text-shadow: 0 0 20px rgba(249, 115, 22, 0.8); }
+        .neon-blue { text-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+        
+        .gradient-vampire {
+            background: linear-gradient(135deg, #ef4444 0%, #7c3aed 100%);
+        }
+        
+        .gradient-uefi {
+            background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%);
+        }
+        
+        .gradient-printer {
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        }
+        
+        .pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.2));
+            border-color: rgba(168, 85, 247, 0.5);
+        }
+    </style>
+</head>
+<body class="text-white p-6">
+    <!-- Header -->
+    <div class="glass rounded-2xl p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div class="w-16 h-16 gradient-vampire rounded-xl flex items-center justify-center pulse-red">
+                    <i class="fas fa-microchip text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold neon-red">Hardware & Network Infrastructure</h1>
+                    <p class="text-gray-400 mt-1">Fiziksel ve Ağ Altyapısı Saldırı Modülleri</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-bold">
+                    <i class="fas fa-skull-crossbones mr-2"></i>EXTREME DANGER
+                </span>
+                <span class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-bold">
+                    <i class="fas fa-microchip mr-2"></i>HARDWARE LEVEL
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6">
+        <button onclick="showTab('vampire')" id="tab-vampire" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10 tab-active">
+            <i class="fas fa-network-wired mr-2 text-red-400"></i>Vampire (Port Mirror)
+        </button>
+        <button onclick="showTab('uefi')" id="tab-uefi" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10">
+            <i class="fas fa-bolt mr-2 text-orange-400"></i>UEFI Bootkit
+        </button>
+        <button onclick="showTab('printer')" id="tab-printer" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10">
+            <i class="fas fa-print mr-2 text-blue-400"></i>Printer Capture
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="content-vampire" class="tab-content">
+        <!-- Vampire - Switch & Router Port Mirroring -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Device Scanner -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-radar"></i>
+                    Network Device Scanner
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Target Range</label>
+                        <input type="text" id="vampire-range" value="192.168.1.0/24" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">SNMP Community String</label>
+                        <input type="text" id="vampire-snmp" value="public" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                    </div>
+                    <button onclick="scanDevices()" class="w-full gradient-vampire text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                        <i class="fas fa-search mr-2"></i>Scan Network Devices
+                    </button>
+                </div>
+                
+                <div id="discovered-devices" class="mt-4 space-y-2 max-h-64 overflow-y-auto scrollbar-hide"></div>
+            </div>
+
+            <!-- SPAN Configuration -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-purple-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-cog"></i>
+                    Port Mirroring Config
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Device Type</label>
+                        <select id="device-type" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none">
+                            <option value="cisco">Cisco (SPAN)</option>
+                            <option value="juniper">Juniper (Port Mirror)</option>
+                            <option value="snmp">SNMP Generic</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Source Ports (comma separated)</label>
+                        <input type="text" id="source-ports" value="Gi0/1, Gi0/2" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Destination Port</label>
+                        <input type="text" id="dest-port" value="Gi0/24" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none">
+                    </div>
+                    <button onclick="generateSpanConfig()" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 transition-all">
+                        <i class="fas fa-code mr-2"></i>Generate Config
+                    </button>
+                </div>
+            </div>
+
+            <!-- Config Output -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-cyan-400 flex items-center gap-2">
+                        <i class="fas fa-terminal"></i>
+                        Generated Configuration
+                    </h2>
+                    <button onclick="copyConfig()" class="px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg text-sm hover:bg-cyan-500/30 transition-all">
+                        <i class="fas fa-copy mr-2"></i>Copy
+                    </button>
+                </div>
+                <pre id="span-config" class="text-green-400 text-sm">
+! Select device type and generate configuration
+! Supports: Cisco SPAN, RSPAN, ERSPAN
+!           Juniper Port Mirroring
+!           SNMP-based configuration
+                </pre>
+            </div>
+
+            <!-- Stealth Techniques -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <h2 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-user-ninja"></i>
+                    Stealth Techniques
+                </h2>
+                <button onclick="loadStealthTechniques()" class="mb-4 px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm hover:bg-yellow-500/30 transition-all">
+                    <i class="fas fa-eye-slash mr-2"></i>Load Evasion Techniques
+                </button>
+                <div id="stealth-techniques" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-uefi" class="tab-content hidden">
+        <!-- UEFI Bootkit -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Warning Banner -->
+            <div class="lg:col-span-2 bg-red-500/20 border border-red-500/50 rounded-2xl p-6">
+                <div class="flex items-center gap-4">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 animate-pulse"></i>
+                    <div>
+                        <h3 class="text-xl font-bold text-red-400">⚠️ EXTREME DANGER - UEFI LEVEL PERSISTENCE</h3>
+                        <p class="text-gray-400 mt-1">Bu modül donanım seviyesinde değişiklikler yapar. Geri dönüşü olmayan hasarlar verebilir. 
+                        Sadece eğitim ve yetkili güvenlik testleri için kullanın.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UEFI Analyzer -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-orange-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-microscope"></i>
+                    UEFI Analyzer
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Target IP (optional)</label>
+                        <input type="text" id="uefi-target" placeholder="Leave empty for local" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <button onclick="analyzeUefi()" class="w-full gradient-uefi text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                        <i class="fas fa-search mr-2"></i>Analyze UEFI
+                    </button>
+                </div>
+                
+                <div id="uefi-analysis" class="mt-4 space-y-2"></div>
+            </div>
+
+            <!-- Payload Generator -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-virus"></i>
+                    Bootkit Payload Generator
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Payload Type</label>
+                        <select id="uefi-payload-type" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                            <option value="bootloader_hook">Bootloader Hook</option>
+                            <option value="spi_flash_implant">SPI Flash Implant (DANGEROUS)</option>
+                            <option value="secure_boot_bypass">Secure Boot Bypass (BlackLotus)</option>
+                            <option value="nvram_persistence">NVRAM Persistence</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Callback URL</label>
+                        <input type="text" id="uefi-callback" value="https://c2.attacker.com/beacon" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                    </div>
+                    <button onclick="generateUefiPayload()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-all">
+                        <i class="fas fa-bolt mr-2"></i>Generate Bootkit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payload Output -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-orange-400 flex items-center gap-2">
+                        <i class="fas fa-code"></i>
+                        Generated Payload
+                    </h2>
+                    <button onclick="copyUefiPayload()" class="px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30 transition-all">
+                        <i class="fas fa-copy mr-2"></i>Copy
+                    </button>
+                </div>
+                <pre id="uefi-payload-output" class="text-orange-400 text-sm">
+// UEFI Bootkit Payload
+// Select payload type and generate
+                </pre>
+            </div>
+
+            <!-- Known Bootkits -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <h2 class="text-xl font-bold text-purple-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-history"></i>
+                    Known UEFI Bootkits (Reference)
+                </h2>
+                <button onclick="loadKnownBootkits()" class="mb-4 px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition-all">
+                    <i class="fas fa-book mr-2"></i>Load Reference
+                </button>
+                <div id="known-bootkits" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-printer" class="tab-content hidden">
+        <!-- Printer Job Capture -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Printer Scanner -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-print"></i>
+                    Printer Scanner
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Target Range</label>
+                        <input type="text" id="printer-range" value="192.168.1.0/24" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Scan Ports</label>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="port-9100" checked class="rounded">
+                                <span class="text-sm">9100 (JetDirect)</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="port-631" checked class="rounded">
+                                <span class="text-sm">631 (IPP)</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="port-515" class="rounded">
+                                <span class="text-sm">515 (LPD)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button onclick="scanPrinters()" class="w-full gradient-printer text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                        <i class="fas fa-search mr-2"></i>Scan Printers
+                    </button>
+                </div>
+                
+                <div id="discovered-printers" class="mt-4 space-y-2 max-h-64 overflow-y-auto scrollbar-hide"></div>
+            </div>
+
+            <!-- PJL Exploit -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-terminal"></i>
+                    PJL Exploit Generator
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Target Printer IP</label>
+                        <input type="text" id="pjl-target" value="192.168.1.100" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Attack Type</label>
+                        <select id="pjl-action" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 focus:outline-none">
+                            <option value="info_gather">📋 Information Gathering</option>
+                            <option value="directory_listing">📁 Directory Listing</option>
+                            <option value="job_capture">📄 Print Job Capture</option>
+                            <option value="job_retention">💾 Enable Job Retention</option>
+                            <option value="password_extract">🔑 Password Extraction</option>
+                            <option value="display_message">📺 Display Message</option>
+                            <option value="firmware_dump">💽 Firmware Dump</option>
+                        </select>
+                    </div>
+                    <button onclick="generatePjlExploit()" class="w-full bg-cyan-600 text-white py-3 rounded-xl font-bold hover:bg-cyan-700 transition-all">
+                        <i class="fas fa-code mr-2"></i>Generate Exploit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Exploit Output -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-green-400 flex items-center gap-2">
+                        <i class="fas fa-bug"></i>
+                        PJL Exploit Commands
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="copyPjlExploit()" class="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 transition-all">
+                            <i class="fas fa-copy mr-2"></i>Copy
+                        </button>
+                        <button onclick="generateCaptureScript()" class="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm hover:bg-blue-500/30 transition-all">
+                            <i class="fas fa-file-code mr-2"></i>Full Script
+                        </button>
+                    </div>
+                </div>
+                <pre id="pjl-exploit-output" class="text-green-400 text-sm">
+# PJL Exploit Commands
+# Select target and attack type, then generate
+                </pre>
+            </div>
+
+            <!-- Document Types -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <h2 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-file-alt"></i>
+                    Target Document Types
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-file-invoice-dollar text-3xl text-green-400 mb-2"></i>
+                        <p class="text-sm font-medium">Maaş Bordroları</p>
+                        <p class="text-xs text-gray-400">Financial Data</p>
+                    </div>
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-file-contract text-3xl text-blue-400 mb-2"></i>
+                        <p class="text-sm font-medium">CEO Raporları</p>
+                        <p class="text-xs text-gray-400">Executive Reports</p>
+                    </div>
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-key text-3xl text-red-400 mb-2"></i>
+                        <p class="text-sm font-medium">Şifre Listeleri</p>
+                        <p class="text-xs text-gray-400">Credential Files</p>
+                    </div>
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-building text-3xl text-purple-400 mb-2"></i>
+                        <p class="text-sm font-medium">Gizli Sözleşmeler</p>
+                        <p class="text-xs text-gray-400">Confidential Docs</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPjlExploit = '';
+        let currentSpanConfig = '';
+        let currentUefiPayload = '';
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('tab-active'));
+            
+            // Show selected tab
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            document.getElementById('tab-' + tabName).classList.add('tab-active');
+        }
+
+        async function scanDevices() {
+            const range = document.getElementById('vampire-range').value;
+            const snmp = document.getElementById('vampire-snmp').value;
+            
+            const container = document.getElementById('discovered-devices');
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-red-400 text-2xl"></i></div>';
+            
+            try {
+                const response = await fetch('/hardware-infra/api/scan-devices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_range: range, snmp_community: snmp })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.devices.length > 0) {
+                    container.innerHTML = data.devices.map(device => `
+                        <div class="glass-light rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all"
+                             onclick="selectDevice('${device.ip}', '${device.type}')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-${device.type.includes('router') ? 'route' : 'network-wired'} text-red-400"></i>
+                                    <div>
+                                        <p class="font-medium text-sm">${device.hostname}</p>
+                                        <p class="text-xs text-gray-400">${device.ip} - ${device.model}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2 py-1 ${device.span_capable || device.mirror_capable ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} rounded">
+                                    ${device.span_capable || device.mirror_capable ? 'SPAN OK' : 'No SPAN'}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-gray-400 text-center py-4">No devices discovered</p>';
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="text-red-400 text-center py-4">Scan failed: ' + error.message + '</p>';
+            }
+        }
+
+        function selectDevice(ip, type) {
+            // Auto-fill device type based on discovered device
+            const deviceTypeSelect = document.getElementById('device-type');
+            if (type.includes('cisco')) {
+                deviceTypeSelect.value = 'cisco';
+            } else if (type.includes('juniper')) {
+                deviceTypeSelect.value = 'juniper';
+            } else {
+                deviceTypeSelect.value = 'snmp';
+            }
+        }
+
+        async function generateSpanConfig() {
+            const deviceType = document.getElementById('device-type').value;
+            const sourcePorts = document.getElementById('source-ports').value.split(',').map(p => p.trim());
+            const destPort = document.getElementById('dest-port').value;
+            
+            let endpoint = deviceType === 'cisco' ? '/hardware-infra/api/cisco-span' : 
+                           deviceType === 'juniper' ? '/hardware-infra/api/juniper-mirror' : 
+                           '/hardware-infra/api/snmp-mirror';
+            
+            let body = deviceType === 'cisco' ? { source_ports: sourcePorts, dest_port: destPort, session_id: 1 } :
+                       deviceType === 'juniper' ? { source_ports: sourcePorts, dest_port: destPort, instance_name: 'vampire-mirror' } :
+                       { device_ip: '192.168.1.1', community: 'private', source_port: 1, dest_port: 24 };
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    let output = '';
+                    if (data.config.local_span_config) {
+                        output = data.config.local_span_config + '\n\n' + data.config.rspan_config + '\n\n' + data.config.erspan_config;
+                    } else if (data.config.mirror_config) {
+                        output = data.config.mirror_config;
+                    } else if (data.commands) {
+                        output = JSON.stringify(data.commands, null, 2);
+                    }
+                    
+                    currentSpanConfig = output;
+                    document.getElementById('span-config').textContent = output;
+                }
+            } catch (error) {
+                document.getElementById('span-config').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function loadStealthTechniques() {
+            try {
+                const response = await fetch('/hardware-infra/api/stealth-techniques');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('stealth-techniques');
+                    container.innerHTML = data.techniques.techniques.map(tech => `
+                        <div class="glass-light rounded-xl p-4">
+                            <h4 class="text-yellow-400 font-bold mb-2">${tech.name}</h4>
+                            <p class="text-sm text-gray-400 mb-2">${tech.description}</p>
+                            ${tech.command ? `<code class="text-xs text-green-400 bg-black/30 px-2 py-1 rounded">${tech.command}</code>` : ''}
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function copyConfig() {
+            navigator.clipboard.writeText(currentSpanConfig);
+            alert('Configuration copied to clipboard!');
+        }
+
+        // UEFI Functions
+        async function analyzeUefi() {
+            const target = document.getElementById('uefi-target').value;
+            const container = document.getElementById('uefi-analysis');
+            
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-orange-400 text-2xl"></i></div>';
+            
+            try {
+                const response = await fetch('/hardware-infra/api/analyze-uefi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_ip: target || null })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const a = data.analysis;
+                    container.innerHTML = `
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-400">UEFI Mode:</span><span class="text-green-400">${a.uefi_mode ? 'Yes' : 'No'}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">Secure Boot:</span><span class="${a.secure_boot ? 'text-red-400' : 'text-green-400'}">${a.secure_boot ? 'Enabled' : 'Disabled'}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">TPM:</span><span class="text-yellow-400">${a.tpm_present ? a.tpm_version : 'Not Present'}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">Vendor:</span><span class="text-cyan-400">${a.firmware_vendor}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">Version:</span><span class="text-white">${a.firmware_version}</span></div>
+                            ${a.vulnerabilities.length > 0 ? `
+                                <div class="mt-4 bg-red-500/20 rounded-lg p-3">
+                                    <p class="text-red-400 font-bold mb-2">⚠️ Vulnerabilities Found:</p>
+                                    ${a.vulnerabilities.map(v => `<p class="text-sm text-red-300">• ${v.name} (${v.severity})</p>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="text-red-400">Analysis failed: ' + error.message + '</p>';
+            }
+        }
+
+        async function generateUefiPayload() {
+            const payloadType = document.getElementById('uefi-payload-type').value;
+            const callback = document.getElementById('uefi-callback').value;
+            
+            try {
+                const response = await fetch('/hardware-infra/api/uefi-payload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ payload_type: payloadType, callback_url: callback })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUefiPayload = data.payload.code_template + '\n\n// Deployment Script:\n' + data.payload.deployment_script;
+                    document.getElementById('uefi-payload-output').textContent = currentUefiPayload;
+                }
+            } catch (error) {
+                document.getElementById('uefi-payload-output').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function loadKnownBootkits() {
+            try {
+                const response = await fetch('/hardware-infra/api/known-bootkits');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('known-bootkits');
+                    container.innerHTML = Object.entries(data.bootkits).map(([key, bootkit]) => `
+                        <div class="glass-light rounded-xl p-4">
+                            <h4 class="text-purple-400 font-bold mb-2">${bootkit.name}</h4>
+                            <p class="text-sm text-gray-400 mb-2">${bootkit.description}</p>
+                            <div class="text-xs space-y-1">
+                                <p><span class="text-gray-500">Persistence:</span> <span class="text-orange-400">${bootkit.persistence}</span></p>
+                                <p><span class="text-gray-500">Detection:</span> <span class="text-red-400">${bootkit.detection_difficulty}</span></p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function copyUefiPayload() {
+            navigator.clipboard.writeText(currentUefiPayload);
+            alert('Payload copied to clipboard!');
+        }
+
+        // Printer Functions
+        async function scanPrinters() {
+            const range = document.getElementById('printer-range').value;
+            const ports = [];
+            if (document.getElementById('port-9100').checked) ports.push(9100);
+            if (document.getElementById('port-631').checked) ports.push(631);
+            if (document.getElementById('port-515').checked) ports.push(515);
+            
+            const container = document.getElementById('discovered-printers');
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-400 text-2xl"></i></div>';
+            
+            try {
+                const response = await fetch('/hardware-infra/api/scan-printers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_range: range, ports: ports })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.printers.length > 0) {
+                    container.innerHTML = data.printers.map(printer => `
+                        <div class="glass-light rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all"
+                             onclick="selectPrinter('${printer.ip}')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-print text-blue-400"></i>
+                                    <div>
+                                        <p class="font-medium text-sm">${printer.vendor} ${printer.model}</p>
+                                        <p class="text-xs text-gray-400">${printer.ip} - ${printer.status}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2 py-1 ${printer.pjl_enabled ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} rounded">
+                                    ${printer.pjl_enabled ? 'PJL OK' : 'No PJL'}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-gray-400 text-center py-4">No printers discovered</p>';
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="text-red-400 text-center py-4">Scan failed: ' + error.message + '</p>';
+            }
+        }
+
+        function selectPrinter(ip) {
+            document.getElementById('pjl-target').value = ip;
+        }
+
+        async function generatePjlExploit() {
+            const target = document.getElementById('pjl-target').value;
+            const action = document.getElementById('pjl-action').value;
+            
+            try {
+                const response = await fetch('/hardware-infra/api/pjl-exploit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_ip: target, action: action })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    let output = `# ${data.exploit.name}\n# ${data.exploit.description}\n\n`;
+                    output += '# PJL Commands:\n';
+                    data.exploit.commands.forEach(cmd => {
+                        output += cmd + '\n';
+                    });
+                    
+                    if (data.exploit.netcat_command) {
+                        output += `\n# One-liner:\n${data.exploit.netcat_command}\n`;
+                    }
+                    if (data.exploit.pret_command) {
+                        output += `\n# Using PRET:\n${data.exploit.pret_command}\n`;
+                    }
+                    if (data.exploit.capture_script) {
+                        output += `\n${data.exploit.capture_script}`;
+                    }
+                    
+                    currentPjlExploit = output;
+                    document.getElementById('pjl-exploit-output').textContent = output;
+                }
+            } catch (error) {
+                document.getElementById('pjl-exploit-output').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function generateCaptureScript() {
+            const target = document.getElementById('pjl-target').value;
+            
+            try {
+                const response = await fetch('/hardware-infra/api/capture-script', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_ip: target, output_dir: '/tmp/printer_loot' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentPjlExploit = data.script;
+                    document.getElementById('pjl-exploit-output').textContent = data.script;
+                }
+            } catch (error) {
+                document.getElementById('pjl-exploit-output').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function copyPjlExploit() {
+            navigator.clipboard.writeText(currentPjlExploit);
+            alert('Exploit copied to clipboard!');
+        }
+    </script>
+</body>
+</html>
