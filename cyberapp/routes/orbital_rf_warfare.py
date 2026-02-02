@@ -7,12 +7,18 @@ Author: ITherso
 """
 
 from flask import Blueprint, render_template, request, jsonify, Response
-from flask_login import login_required
 import json
 import time
 import queue
 import threading
 from datetime import datetime
+
+# Try to import login_required, fallback to dummy decorator
+try:
+    from flask_login import login_required
+except ImportError:
+    def login_required(f):
+        return f
 
 # Import the RF Warfare module
 import sys
