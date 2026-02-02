@@ -32,6 +32,11 @@ try:
 except ImportError:
     orbital_rf_bp = None
 
+try:
+    from cyberapp.routes.scada_ics_hunter import scada_bp
+except ImportError:
+    scada_bp = None
+
 
 __all__ = [
     'chain_bp',
@@ -41,4 +46,5 @@ __all__ = [
     'bitb_bp',
     'spray_bp',
     'orbital_rf_bp',
+    'scada_bp',
 ]

@@ -130,6 +130,9 @@ god_mode_bp = _try_import('god_mode_bp', lambda: __import__('cyberapp.routes.god
 # Orbital & RF Warfare Module
 orbital_rf_bp = _try_import('orbital_rf_bp', lambda: __import__('cyberapp.routes.orbital_rf_warfare', fromlist=['orbital_rf_bp']).orbital_rf_bp)
 
+# SCADA & ICS Hunter (Industrial Espionage) Module
+scada_bp = _try_import('scada_bp', lambda: __import__('cyberapp.routes.scada_ics_hunter', fromlist=['scada_bp']).scada_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -255,6 +258,9 @@ def create_app(run_migrations_on_start=True):
     
     # Orbital & RF Warfare Module
     if orbital_rf_bp: app.register_blueprint(orbital_rf_bp)
+    
+    # SCADA & ICS Hunter (Industrial Espionage)
+    if scada_bp: app.register_blueprint(scada_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
