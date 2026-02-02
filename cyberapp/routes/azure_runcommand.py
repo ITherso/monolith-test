@@ -24,6 +24,22 @@ try:
     )
 except ImportError:
     get_exploiter = None
+    AzureRunCommandExploiter = None
+    AzureCredentials = None
+    from enum import Enum
+    class AzureRegion(Enum):
+        EAST_US = "eastus"
+        WEST_US = "westus"
+        WEST_EUROPE = "westeurope"
+        NORTH_EUROPE = "northeurope"
+    class VMOSType(Enum):
+        WINDOWS = "windows"
+        LINUX = "linux"
+    class CommandStatus(Enum):
+        PENDING = "pending"
+        RUNNING = "running"
+        COMPLETED = "completed"
+        FAILED = "failed"
 
 azure_runcommand_bp = Blueprint('azure_runcommand', __name__, url_prefix='/azure-runcommand')
 

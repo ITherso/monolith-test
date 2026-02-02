@@ -43,6 +43,32 @@ class CallProvider(Enum):
     SIP_DIRECT = "sip_direct"
 
 
+class VoiceEmotion(Enum):
+    """Voice emotion modifiers for TTS"""
+    NEUTRAL = "neutral"
+    HAPPY = "happy"
+    SAD = "sad"
+    ANGRY = "angry"
+    FEARFUL = "fearful"
+    SURPRISED = "surprised"
+    DISGUSTED = "disgusted"
+    URGENT = "urgent"
+    CALM = "calm"
+    PROFESSIONAL = "professional"
+
+
+class VishingScriptTemplate(Enum):
+    """Pre-built vishing script templates"""
+    CEO_WIRE_TRANSFER = "ceo_wire_transfer"
+    IT_SUPPORT_VERIFICATION = "it_support_verification"
+    HR_SALARY_UPDATE = "hr_salary_update"
+    VENDOR_PAYMENT = "vendor_payment"
+    SECURITY_ALERT = "security_alert"
+    BANK_FRAUD_ALERT = "bank_fraud_alert"
+    TAX_AUTHORITY = "tax_authority"
+    CUSTOM = "custom"
+
+
 @dataclass
 class VoiceProfile:
     """Klonlanmış ses profili"""

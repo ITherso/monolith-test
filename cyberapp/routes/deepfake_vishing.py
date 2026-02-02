@@ -15,7 +15,7 @@ import sys
 # Add tools directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tools'))
 
-from deepfake_vishing import get_deepfake_vishing, VishingScriptTemplate, VoiceEmotion
+from deepfake_vishing import get_vishing_engine, VishingScriptTemplate, VoiceEmotion
 
 bp = Blueprint('deepfake_vishing', __name__, url_prefix='/deepfake-vishing')
 
@@ -42,7 +42,7 @@ def index():
 @handle_errors
 def get_providers():
     """Get available voice and call providers"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     voice_providers = [
         {"id": "elevenlabs", "name": "ElevenLabs", "description": "Best quality voice cloning", "requires_key": True},
@@ -146,7 +146,7 @@ def get_emotions():
 @handle_errors
 def list_profiles():
     """List all voice profiles"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     profiles = []
     for profile_id, profile in vishing.voice_profiles.items():
@@ -170,7 +170,7 @@ def list_profiles():
 def create_profile():
     """Create new voice profile"""
     data = request.json
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     # Get voice sample if provided
     voice_sample = None
@@ -201,7 +201,7 @@ def create_profile():
 @handle_errors
 def delete_profile(profile_id):
     """Delete voice profile"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     if profile_id in vishing.voice_profiles:
         del vishing.voice_profiles[profile_id]
@@ -215,7 +215,7 @@ def delete_profile(profile_id):
 def generate_audio():
     """Generate deepfake audio from text"""
     data = request.json
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     # Render script if template is used
     if data.get('template'):
@@ -255,7 +255,7 @@ def generate_audio():
 def render_script():
     """Render a script template with variables"""
     data = request.json
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     rendered = vishing.render_script(
         template=data.get('template', 'custom'),
@@ -273,7 +273,7 @@ def render_script():
 @handle_errors
 def list_campaigns():
     """List all vishing campaigns"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     campaigns = []
     for campaign_id, campaign in vishing.campaigns.items():
@@ -299,7 +299,7 @@ def list_campaigns():
 def create_campaign():
     """Create new vishing campaign"""
     data = request.json
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     campaign = vishing.create_campaign(
         name=data.get('name', 'Unnamed Campaign'),
@@ -324,7 +324,7 @@ def create_campaign():
 @handle_errors
 def start_campaign(campaign_id):
     """Start a vishing campaign"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     if campaign_id not in vishing.campaigns:
         return jsonify({"success": False, "error": "Campaign not found"}), 404
@@ -344,7 +344,7 @@ def start_campaign(campaign_id):
 @handle_errors
 def stop_campaign(campaign_id):
     """Stop a running campaign"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     if campaign_id not in vishing.campaigns:
         return jsonify({"success": False, "error": "Campaign not found"}), 404
@@ -362,7 +362,7 @@ def stop_campaign(campaign_id):
 @handle_errors
 def delete_campaign(campaign_id):
     """Delete a campaign"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     if campaign_id in vishing.campaigns:
         del vishing.campaigns[campaign_id]
@@ -376,7 +376,7 @@ def delete_campaign(campaign_id):
 def initiate_call():
     """Initiate a single vishing call"""
     data = request.json
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     call = vishing.initiate_call(
         profile_id=data.get('profile_id'),
@@ -402,7 +402,7 @@ def initiate_call():
 @handle_errors
 def list_calls():
     """List recent calls"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     # Collect all calls from all campaigns
     all_calls = []
@@ -431,7 +431,7 @@ def list_calls():
 @handle_errors
 def get_implants():
     """Get voice sample collection implants"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     implants = vishing.generate_voice_sample_collector()
     
@@ -445,7 +445,7 @@ def get_implants():
 @handle_errors
 def get_statistics():
     """Get vishing statistics"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     total_campaigns = len(vishing.campaigns)
     total_profiles = len(vishing.voice_profiles)
@@ -471,7 +471,7 @@ def get_statistics():
 @handle_errors
 def get_config():
     """Get current configuration"""
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     # Return safe config (no API keys)
     return jsonify({
@@ -490,7 +490,7 @@ def get_config():
 def update_config():
     """Update configuration"""
     data = request.json
-    vishing = get_deepfake_vishing()
+    vishing = get_vishing_engine()
     
     # Update allowed config fields
     allowed_fields = [

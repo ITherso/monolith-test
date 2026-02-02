@@ -25,6 +25,19 @@ try:
     )
 except ImportError:
     get_marauder = None
+    S3BucketMarauder = None
+    S3BucketEnumerator = None
+    from enum import Enum
+    class BucketStatus(Enum):
+        UNKNOWN = "unknown"
+        PUBLIC = "public"
+        PRIVATE = "private"
+        RESTRICTED = "restricted"
+    class DataSensitivity(Enum):
+        LOW = "low"
+        MEDIUM = "medium"
+        HIGH = "high"
+        CRITICAL = "critical"
 
 s3_marauder_bp = Blueprint('s3_marauder', __name__, url_prefix='/s3-marauder')
 

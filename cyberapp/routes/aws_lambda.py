@@ -23,6 +23,20 @@ try:
     )
 except ImportError:
     get_lambda_engine = None
+    from enum import Enum
+    class LambdaTriggerType(Enum):
+        API_GATEWAY = "api_gateway"
+        S3_BUCKET = "s3_bucket"
+        CLOUDWATCH = "cloudwatch"
+        SNS = "sns"
+        SQS = "sqs"
+        DYNAMODB = "dynamodb"
+    class PayloadType(Enum):
+        REVERSE_SHELL = "reverse_shell"
+        DATA_EXFIL = "data_exfil"
+        CREDENTIAL_HARVEST = "credential_harvest"
+        PERSISTENCE = "persistence"
+    AWSCredentials = None
 
 aws_lambda_bp = Blueprint('aws_lambda', __name__, url_prefix='/aws-lambda')
 

