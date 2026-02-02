@@ -158,6 +158,32 @@
                           class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none font-mono text-sm"></textarea>
             </div>
             
+            <!-- God Mode Anti-Forensics -->
+            <div class="col-span-2 p-4 rounded-lg border border-purple-500/30" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1));">
+                <label class="flex items-center justify-between cursor-pointer mb-2">
+                    <span class="flex items-center gap-2 text-purple-400 font-semibold">
+                        <span>💀</span> God Mode Anti-Forensics
+                    </span>
+                    <input type="checkbox" id="godModeWmi" style="accent-color: #a855f7;">
+                </label>
+                <div id="godModeWmiOpts" class="hidden pt-3 border-t border-purple-500/20">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <label class="flex items-center gap-2 text-gray-400 cursor-pointer">
+                            <input type="checkbox" id="gmWmiTimestomp" checked style="accent-color: #a855f7;"> 🕐 Time Stomp WMI Objects
+                        </label>
+                        <label class="flex items-center gap-2 text-gray-400 cursor-pointer">
+                            <input type="checkbox" id="gmWmiCleanLogs" checked style="accent-color: #a855f7;"> 👻 Clean Persistence Logs
+                        </label>
+                        <label class="flex items-center gap-2 text-gray-400 cursor-pointer">
+                            <input type="checkbox" id="gmWmiSysmon" style="accent-color: #a855f7;"> ☠️ Sysmon Evasion
+                        </label>
+                        <label class="flex items-center gap-2 text-gray-400 cursor-pointer">
+                            <input type="checkbox" id="gmWmiHideRepo" checked style="accent-color: #a855f7;"> 🔒 Hide WMI Repository
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
             <div class="col-span-2">
                 <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-semibold text-lg">
                     👻 Create Persistence Profile

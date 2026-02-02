@@ -433,6 +433,27 @@
                         </select>
                     </div>
 
+                    <!-- God Mode Anti-Forensics -->
+                    <div class="form-group" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px;">
+                        <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 0;">
+                            <span style="color: #a855f7; font-weight: 600;">💀 God Mode Anti-Forensics</span>
+                            <input type="checkbox" id="godModePrivesc" style="accent-color: #a855f7;">
+                        </label>
+                        <div id="godModePrivescOpts" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(168, 85, 247, 0.2); font-size: 0.75rem;">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.25rem; color: #9ca3af; cursor: pointer;">
+                                    <input type="checkbox" id="gmPrivTimestomp" checked style="accent-color: #a855f7;"> 🕐 Time Stomp Exploits
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.25rem; color: #9ca3af; cursor: pointer;">
+                                    <input type="checkbox" id="gmPrivCleanLogs" checked style="accent-color: #a855f7;"> 👻 Clean Privilege Escalation Logs
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.25rem; color: #9ca3af; cursor: pointer;">
+                                    <input type="checkbox" id="gmPrivSysmon" style="accent-color: #a855f7;"> ☠️ Disable Sysmon During Exploit
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <button class="btn btn-primary" id="startScan" onclick="startScan()">
                         🚀 Start Scan
                     </button>

@@ -195,6 +195,37 @@
                             </label>
                         </div>
 
+                        <!-- God Mode Anti-Forensics -->
+                        <div class="godmode-panel" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="color: #a855f7; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>💀</span> God Mode Anti-Forensics
+                                </span>
+                                <label class="option-toggle" style="margin: 0;">
+                                    <input type="checkbox" id="godModeEnabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div id="godModeOptions" style="display: none;">
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #9ca3af; cursor: pointer;">
+                                        <input type="checkbox" id="gmTimestomp" checked style="accent-color: #a855f7;"> 🕐 Time Stomp
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #9ca3af; cursor: pointer;">
+                                        <input type="checkbox" id="gmPhantomClean" checked style="accent-color: #a855f7;"> 👻 Phantom Clean
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #9ca3af; cursor: pointer;">
+                                        <input type="checkbox" id="gmSysmonKill" style="accent-color: #a855f7;"> ☠️ Sysmon Kill
+                                    </label>
+                                </div>
+                                <select id="gmCleanupProfile" style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 4px; padding: 0.5rem; color: #e5e7eb; font-size: 0.75rem;">
+                                    <option value="lateral_movement">🚀 Lateral Movement Profile</option>
+                                    <option value="credential_theft">🔑 Credential Theft Profile</option>
+                                    <option value="full_cleanup">💀 Full Cleanup (NUKE)</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <button class="btn-submit blue" onclick="executeChain()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             Execute Chain
@@ -420,7 +451,46 @@ document.addEventListener('DOMContentLoaded', function() {
     initMethodCards();
     initDiscoveryCards();
     initCredsSelect();
+    initGodMode();
 });
+
+// God Mode Anti-Forensics Integration
+function initGodMode() {
+    const toggle = document.getElementById('godModeEnabled');
+    const options = document.getElementById('godModeOptions');
+    if (toggle && options) {
+        toggle.addEventListener('change', function() {
+            options.style.display = this.checked ? 'block' : 'none';
+            log(this.checked ? '💀 God Mode ENABLED - Anti-forensics active' : '💀 God Mode disabled', this.checked ? 'warning' : 'info');
+        });
+    }
+}
+
+async function executeGodModeCleanup() {
+    const profile = document.getElementById('gmCleanupProfile')?.value || 'lateral_movement';
+    const timestomp = document.getElementById('gmTimestomp')?.checked;
+    const phantomClean = document.getElementById('gmPhantomClean')?.checked;
+    const sysmonKill = document.getElementById('gmSysmonKill')?.checked;
+    
+    log('💀 Executing God Mode Anti-Forensics...', 'warning');
+    
+    try {
+        if (phantomClean) {
+            const response = await fetch('/god-mode/api/quick-action/clean-lateral', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ time_range_hours: 24 })
+            });
+            const data = await response.json();
+            if (data.script) {
+                log('👻 Phantom Cleaner script generated', 'success');
+            }
+        }
+        log('💀 Anti-forensics cleanup complete', 'success');
+    } catch (e) {
+        log(`God Mode error: ${e.message}`, 'error');
+    }
+}
 
 function initTabs() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -570,6 +640,11 @@ async function executeChain() {
             });
             document.getElementById('chainCount').textContent = parseInt(document.getElementById('chainCount').textContent) + 1;
             visualizeNetwork(targets, methods);
+            
+            // God Mode Anti-Forensics after successful execution
+            if (document.getElementById('godModeEnabled')?.checked) {
+                await executeGodModeCleanup();
+            }
         } else {
             log(`Chain failed: ${data.error}`, 'error');
         }

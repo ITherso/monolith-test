@@ -245,6 +245,63 @@
             <i class="fas fa-code"></i> Generate Cleanup Script
         </button>
     </div>
+
+    <!-- God Mode Anti-Forensics -->
+    <div class="artifacts-panel" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(239, 68, 68, 0.15)); border: 2px solid rgba(168, 85, 247, 0.4); margin-top: 20px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 style="color: #a855f7; margin: 0;">
+                <i class="fas fa-skull me-2"></i>💀 God Mode Anti-Forensics
+            </h3>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="godModeEnabled" style="width: 50px; height: 25px; cursor: pointer;">
+            </div>
+        </div>
+        <div id="godModeOptions" style="display: none;">
+            <p class="text-gray-400 mb-3">Advanced anti-forensics techniques beyond standard cleanup</p>
+            <div class="artifact-grid">
+                <div class="artifact-item" style="border-color: rgba(168, 85, 247, 0.3);">
+                    <input type="checkbox" id="gmTimestomp" checked>
+                    <div class="artifact-info">
+                        <div class="artifact-name" style="color: #a855f7;">🕐 Time Stomping</div>
+                        <div class="artifact-path">MACE timestamp manipulation</div>
+                    </div>
+                </div>
+                <div class="artifact-item" style="border-color: rgba(168, 85, 247, 0.3);">
+                    <input type="checkbox" id="gmPhantomClean" checked>
+                    <div class="artifact-info">
+                        <div class="artifact-name" style="color: #a855f7;">👻 Phantom Event Log Cleaner</div>
+                        <div class="artifact-path">No Event ID 1102 generation</div>
+                    </div>
+                </div>
+                <div class="artifact-item" style="border-color: rgba(168, 85, 247, 0.3);">
+                    <input type="checkbox" id="gmSysmonKill">
+                    <div class="artifact-info">
+                        <div class="artifact-name" style="color: #ef4444;">☠️ Sysmon Kill</div>
+                        <div class="artifact-path">Terminate Sysmon service</div>
+                    </div>
+                </div>
+                <div class="artifact-item" style="border-color: rgba(168, 85, 247, 0.3);">
+                    <input type="checkbox" id="gmUsnJournal" checked>
+                    <div class="artifact-info">
+                        <div class="artifact-name" style="color: #a855f7;">📋 USN Journal Clear</div>
+                        <div class="artifact-path">Clear NTFS change journal</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <select id="gmCleanupProfile" style="width: 100%; padding: 10px; background: var(--bg-secondary); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; color: white;">
+                    <option value="lateral_movement">🔄 Lateral Movement Cleanup</option>
+                    <option value="credential_theft">🔑 Credential Theft Cleanup</option>
+                    <option value="persistence">🔐 Persistence Cleanup</option>
+                    <option value="privilege_escalation">⬆️ Privilege Escalation Cleanup</option>
+                    <option value="full_cleanup" selected>💀 Full Cleanup (All Events)</option>
+                </select>
+            </div>
+            <button class="btn-action btn-generate w-100 mt-3" onclick="executeGodModeCleanup()" style="background: linear-gradient(135deg, #a855f7, #ef4444);">
+                <i class="fas fa-radiation"></i> Execute God Mode Cleanup
+            </button>
+        </div>
+    </div>
     
     <div class="output-panel">
         <div class="output-header">
@@ -387,6 +444,69 @@
         const script = document.getElementById('scriptOutput').textContent;
         navigator.clipboard.writeText(script);
         alert('Script copied to clipboard!');
+    }
+
+    // God Mode Anti-Forensics
+    document.getElementById('godModeEnabled')?.addEventListener('change', function() {
+        document.getElementById('godModeOptions').style.display = this.checked ? 'block' : 'none';
+    });
+
+    async function executeGodModeCleanup() {
+        const timestomp = document.getElementById('gmTimestomp').checked;
+        const phantom = document.getElementById('gmPhantomClean').checked;
+        const sysmonKill = document.getElementById('gmSysmonKill').checked;
+        const usnJournal = document.getElementById('gmUsnJournal').checked;
+        const profile = document.getElementById('gmCleanupProfile').value;
+
+        const output = document.getElementById('scriptOutput');
+        output.textContent = '# 💀 God Mode Anti-Forensics Script\n# Profile: ' + profile + '\n\n';
+
+        try {
+            // Get Time Stomp script
+            if (timestomp) {
+                const tsResponse = await fetch('/god-mode/api/timestomp/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        target_path: '$env:TEMP\\*',
+                        reference_file: 'C:\\Windows\\System32\\notepad.exe',
+                        include_fn: true,
+                        clear_usn: usnJournal
+                    })
+                });
+                const tsData = await tsResponse.json();
+                if (tsData.success) {
+                    output.textContent += '# === TIME STOMPING ===\n' + tsData.script + '\n\n';
+                }
+            }
+
+            // Get Phantom Event Log Cleaner script
+            if (phantom) {
+                const phResponse = await fetch('/god-mode/api/phantom/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        cleanup_profile: profile,
+                        use_phantom: true,
+                        kill_sysmon: sysmonKill
+                    })
+                });
+                const phData = await phResponse.json();
+                if (phData.success) {
+                    output.textContent += '# === PHANTOM EVENT LOG CLEANER ===\n' + phData.script + '\n';
+                }
+            }
+
+            output.textContent += '\n# 💀 God Mode cleanup script generated successfully!\n';
+            output.textContent += '# Profile: ' + profile + '\n';
+            output.textContent += '# Time Stomp: ' + (timestomp ? 'ENABLED' : 'DISABLED') + '\n';
+            output.textContent += '# Phantom Clean: ' + (phantom ? 'ENABLED' : 'DISABLED') + '\n';
+            output.textContent += '# Sysmon Kill: ' + (sysmonKill ? 'ENABLED' : 'DISABLED') + '\n';
+            output.textContent += '# USN Journal: ' + (usnJournal ? 'CLEAR' : 'KEEP') + '\n';
+            
+        } catch (error) {
+            output.textContent = '# Error: ' + error.message;
+        }
     }
 </script>
 {% endblock %}

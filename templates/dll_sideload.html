@@ -83,6 +83,27 @@
                     <textarea id="customShellcode" rows="2" placeholder="Leave empty for built-in payloads"
                               class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none font-mono text-sm"></textarea>
                 </div>
+                
+                <!-- God Mode Anti-Forensics -->
+                <div class="p-3 rounded-lg border border-purple-500/30" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1));">
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="flex items-center gap-2 text-purple-400 font-medium">
+                            <span>💀</span> God Mode Anti-Forensics
+                        </span>
+                        <input type="checkbox" id="godModeEnabled" class="accent-purple-500">
+                    </label>
+                    <div id="godModeOpts" class="hidden mt-2 pt-2 border-t border-purple-500/20 text-xs">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="flex items-center gap-1 text-gray-400 cursor-pointer">
+                                <input type="checkbox" id="gmTimestomp" checked class="accent-purple-500"> 🕐 Time Stomp DLL
+                            </label>
+                            <label class="flex items-center gap-1 text-gray-400 cursor-pointer">
+                                <input type="checkbox" id="gmPhantomClean" checked class="accent-purple-500"> 👻 Clean Persistence Logs
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
                 <button type="submit" class="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-semibold">
                     🏭 Generate Proxy DLL
                 </button>

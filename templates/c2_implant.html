@@ -802,6 +802,22 @@
                                 <label class="form-label">Jitter (%)</label>
                                 <input type="number" id="payloadJitter" class="form-control" value="10">
                             </div>
+                            
+                            <!-- God Mode Anti-Forensics -->
+                            <div class="mb-4 p-3 rounded" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1)); border: 1px solid rgba(168, 85, 247, 0.3);">
+                                <label class="d-flex align-items-center justify-content-between cursor-pointer mb-2" style="cursor: pointer;">
+                                    <span style="color: #a855f7; font-weight: 600;"><span style="margin-right: 0.5rem;">💀</span> God Mode Anti-Forensics</span>
+                                    <input type="checkbox" id="godModePayload" style="accent-color: #a855f7;">
+                                </label>
+                                <div id="godModePayloadOpts" style="display: none; font-size: 0.75rem;">
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <label style="color: #9ca3af; cursor: pointer;"><input type="checkbox" id="gmPyTimestomp" checked style="accent-color: #a855f7; margin-right: 0.25rem;"> 🕐 Auto-Timestomp</label>
+                                        <label style="color: #9ca3af; cursor: pointer;"><input type="checkbox" id="gmPyCleanLogs" checked style="accent-color: #a855f7; margin-right: 0.25rem;"> 👻 Event Log Cleaner</label>
+                                        <label style="color: #9ca3af; cursor: pointer;"><input type="checkbox" id="gmPySysmonEvade" style="accent-color: #a855f7; margin-right: 0.25rem;"> ☠️ Sysmon Evade</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <button class="btn-c2 w-100" onclick="generatePayload()">
                                 <i class="bi bi-lightning-charge"></i> Generate Payload
                             </button>

