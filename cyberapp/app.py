@@ -80,6 +80,11 @@ doh_c2_bp = _try_import('doh_c2_bp', lambda: __import__('cyberapp.routes.doh_c2'
 icmp_tunnel_bp = _try_import('icmp_tunnel_bp', lambda: __import__('cyberapp.routes.icmp_tunnel', fromlist=['bp']).bp)
 telegram_c2_bp = _try_import('telegram_c2_bp', lambda: __import__('cyberapp.routes.telegram_c2', fromlist=['bp']).bp)
 
+# Lateral Movement Modules
+sccm_hunter_bp = _try_import('sccm_hunter_bp', lambda: __import__('cyberapp.routes.sccm_hunter', fromlist=['sccm_hunter_bp']).sccm_hunter_bp)
+rdp_hijack_bp = _try_import('rdp_hijack_bp', lambda: __import__('cyberapp.routes.rdp_hijack', fromlist=['rdp_hijack_bp']).rdp_hijack_bp)
+wsus_spoof_bp = _try_import('wsus_spoof_bp', lambda: __import__('cyberapp.routes.wsus_spoof', fromlist=['wsus_spoof_bp']).wsus_spoof_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -155,6 +160,11 @@ def create_app(run_migrations_on_start=True):
     if doh_c2_bp: app.register_blueprint(doh_c2_bp)
     if icmp_tunnel_bp: app.register_blueprint(icmp_tunnel_bp)
     if telegram_c2_bp: app.register_blueprint(telegram_c2_bp)
+    
+    # Lateral Movement Modules
+    if sccm_hunter_bp: app.register_blueprint(sccm_hunter_bp)
+    if rdp_hijack_bp: app.register_blueprint(rdp_hijack_bp)
+    if wsus_spoof_bp: app.register_blueprint(wsus_spoof_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

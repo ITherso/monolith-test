@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCCM/MECM Hunter - The Game Over Button</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        .pulse-red { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
+        }
+        .terminal-font { font-family: 'Courier New', monospace; }
+        .attack-chain { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-red-900 via-red-800 to-orange-900 p-6 shadow-2xl">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-red-600 rounded-xl flex items-center justify-center pulse-red">
+                        <i class="fas fa-server text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold">SCCM/MECM Hunter</h1>
+                        <p class="text-red-200">The "Game Over" Button for Enterprise Networks</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="px-4 py-2 bg-red-600 rounded-lg font-bold animate-pulse">
+                        <i class="fas fa-skull-crossbones mr-2"></i>PRO
+                    </span>
+                    <a href="/" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Banner -->
+    <div class="bg-red-900/50 border-l-4 border-red-500 p-4 mx-6 mt-6 rounded-r-lg">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle text-red-400 text-2xl mr-4"></i>
+            <div>
+                <p class="font-bold text-red-300">CRITICAL ATTACK MODULE</p>
+                <p class="text-red-200 text-sm">SCCM Admin ≈ Domain Admin. Full SCCM access = Deploy anything to EVERY computer in the network!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Attack Chain Overview -->
+        <div class="attack-chain rounded-xl p-6 mb-6 border border-red-500/30">
+            <h2 class="text-xl font-bold mb-4 text-red-400">
+                <i class="fas fa-route mr-2"></i>Attack Chain
+            </h2>
+            <div class="flex items-center justify-between overflow-x-auto pb-4">
+                <div class="flex items-center space-x-4 min-w-max">
+                    <!-- Phase 1 -->
+                    <div class="bg-gray-800 rounded-lg p-4 w-40 text-center">
+                        <div class="w-12 h-12 bg-blue-600 rounded-full mx-auto mb-2 flex items-center justify-center">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <p class="font-bold text-sm">1. Discovery</p>
+                        <p class="text-xs text-gray-400">Find SCCM Servers</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-red-500"></i>
+                    
+                    <!-- Phase 2 -->
+                    <div class="bg-gray-800 rounded-lg p-4 w-40 text-center">
+                        <div class="w-12 h-12 bg-yellow-600 rounded-full mx-auto mb-2 flex items-center justify-center">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <p class="font-bold text-sm">2. Credentials</p>
+                        <p class="text-xs text-gray-400">Extract NAA/Secrets</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-red-500"></i>
+                    
+                    <!-- Phase 3 -->
+                    <div class="bg-gray-800 rounded-lg p-4 w-40 text-center">
+                        <div class="w-12 h-12 bg-orange-600 rounded-full mx-auto mb-2 flex items-center justify-center">
+                            <i class="fas fa-terminal"></i>
+                        </div>
+                        <p class="font-bold text-sm">3. Access</p>
+                        <p class="text-xs text-gray-400">AdminService API</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-red-500"></i>
+                    
+                    <!-- Phase 4 -->
+                    <div class="bg-gray-800 rounded-lg p-4 w-40 text-center">
+                        <div class="w-12 h-12 bg-red-600 rounded-full mx-auto mb-2 flex items-center justify-center">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <p class="font-bold text-sm">4. Package</p>
+                        <p class="text-xs text-gray-400">Create Malicious App</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-red-500"></i>
+                    
+                    <!-- Phase 5 -->
+                    <div class="bg-gray-800 rounded-lg p-4 w-40 text-center pulse-red">
+                        <div class="w-12 h-12 bg-red-600 rounded-full mx-auto mb-2 flex items-center justify-center">
+                            <i class="fas fa-skull"></i>
+                        </div>
+                        <p class="font-bold text-sm">5. GAME OVER</p>
+                        <p class="text-xs text-gray-400">Deploy to All</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Session Management -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-red-400">
+                    <i class="fas fa-crosshairs mr-2"></i>Hunt Session
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Target Domain</label>
+                        <input type="text" id="targetDomain" value="corp.local" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-red-500 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Discovery Method</label>
+                        <select id="discoveryMethod" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3">
+                            <option value="ldap">LDAP (AD Query)</option>
+                            <option value="dns">DNS SRV Records</option>
+                            <option value="spn">SPN Enumeration</option>
+                            <option value="network">Network Scan</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="createSession()" 
+                            class="w-full bg-red-600 hover:bg-red-500 py-3 rounded-lg font-bold transition">
+                        <i class="fas fa-play mr-2"></i>Start Hunt
+                    </button>
+                </div>
+                
+                <div id="sessionInfo" class="mt-4 hidden">
+                    <div class="bg-gray-900 rounded-lg p-4 border border-green-500/50">
+                        <p class="text-green-400 font-bold"><i class="fas fa-check-circle mr-2"></i>Session Active</p>
+                        <p class="text-sm text-gray-400 mt-1">ID: <span id="sessionId" class="text-white"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discovered Servers -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-orange-400">
+                    <i class="fas fa-server mr-2"></i>Discovered SCCM Servers
+                </h2>
+                
+                <div id="serversContainer" class="space-y-3 max-h-64 overflow-y-auto">
+                    <p class="text-gray-500 text-center py-4">Start a hunt to discover SCCM servers</p>
+                </div>
+                
+                <button onclick="discoverServers()" id="discoverBtn" disabled
+                        class="w-full mt-4 bg-orange-600 hover:bg-orange-500 disabled:bg-gray-600 py-2 rounded-lg transition">
+                    <i class="fas fa-search mr-2"></i>Discover Servers
+                </button>
+            </div>
+        </div>
+
+        <!-- Attack Modules Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <!-- NAA Extraction -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-yellow-500/30 hover:border-yellow-500 transition">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-key text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">NAA Credentials</h3>
+                        <p class="text-xs text-gray-400">Network Access Account</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">Extract DPAPI-encrypted credentials from SCCM clients</p>
+                <button onclick="extractNAA()" class="w-full bg-yellow-600 hover:bg-yellow-500 py-2 rounded-lg text-sm transition">
+                    <i class="fas fa-download mr-2"></i>Extract
+                </button>
+            </div>
+
+            <!-- AdminService Attack -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-purple-500/30 hover:border-purple-500 transition">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-terminal text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">AdminService API</h3>
+                        <p class="text-xs text-gray-400">REST API Abuse</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">Full SCCM control via AdminService REST API</p>
+                <button onclick="attackAdminService()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 rounded-lg text-sm transition">
+                    <i class="fas fa-plug mr-2"></i>Connect
+                </button>
+            </div>
+
+            <!-- PXE Boot Attack -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-cyan-500/30 hover:border-cyan-500 transition">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-cyan-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-network-wired text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">PXE Boot Inject</h3>
+                        <p class="text-xs text-gray-400">Boot Image Poisoning</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">Inject backdoor into PXE boot images</p>
+                <button onclick="pxeAttack()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-2 rounded-lg text-sm transition">
+                    <i class="fas fa-broadcast-tower mr-2"></i>Attack
+                </button>
+            </div>
+        </div>
+
+        <!-- Malicious Package Creation -->
+        <div class="bg-gray-800 rounded-xl p-6 mt-6 border border-red-500/30">
+            <h2 class="text-xl font-bold mb-4 text-red-400">
+                <i class="fas fa-bomb mr-2"></i>Create Malicious Package
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Package Name</label>
+                        <input type="text" id="packageName" value="Microsoft Security Update KB5034441" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-red-500 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Target Collection</label>
+                        <select id="targetCollection" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3">
+                            <option value="SMS00001">All Systems (SMS00001) ⚠️</option>
+                            <option value="SMS00002">All Desktop Clients</option>
+                            <option value="SMS00003">All Servers</option>
+                            <option value="custom">Custom Collection</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Deployment Type</label>
+                        <select id="deploymentType" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3">
+                            <option value="application">Application</option>
+                            <option value="script">Script</option>
+                            <option value="task_sequence">Task Sequence</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="createPackage()" 
+                            class="w-full bg-red-600 hover:bg-red-500 py-3 rounded-lg font-bold transition">
+                        <i class="fas fa-rocket mr-2"></i>Create & Deploy
+                    </button>
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Generated XML</label>
+                    <textarea id="packageXml" rows="12" readonly
+                              class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xs terminal-font text-green-400"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implant Generator -->
+        <div class="bg-gray-800 rounded-xl p-6 mt-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 text-green-400">
+                <i class="fas fa-code mr-2"></i>SCCM-Aware Implant Generator
+            </h2>
+            
+            <div class="flex space-x-4 mb-4">
+                <button onclick="generateImplant('powershell')" 
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded-lg transition">
+                    <i class="fab fa-windows mr-2"></i>PowerShell
+                </button>
+                <button onclick="generateImplant('python')" 
+                        class="flex-1 bg-yellow-600 hover:bg-yellow-500 py-2 rounded-lg transition">
+                    <i class="fab fa-python mr-2"></i>Python
+                </button>
+            </div>
+            
+            <textarea id="implantCode" rows="15" readonly
+                      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm terminal-font text-green-400"></textarea>
+            
+            <button onclick="copyImplant()" class="mt-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">
+                <i class="fas fa-copy mr-2"></i>Copy to Clipboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let discoveredServers = [];
+
+        async function createSession() {
+            const domain = document.getElementById('targetDomain').value;
+            
+            try {
+                const response = await fetch('/sccm-hunter/api/create-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_domain: domain })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    document.getElementById('sessionId').textContent = data.session_id;
+                    document.getElementById('sessionInfo').classList.remove('hidden');
+                    document.getElementById('discoverBtn').disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function discoverServers() {
+            if (!currentSessionId) return;
+            
+            const method = document.getElementById('discoveryMethod').value;
+            
+            try {
+                const response = await fetch('/sccm-hunter/api/discover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: currentSessionId,
+                        method: method
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    discoveredServers = data.servers;
+                    displayServers(data.servers);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function displayServers(servers) {
+            const container = document.getElementById('serversContainer');
+            
+            if (servers.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No SCCM servers found</p>';
+                return;
+            }
+            
+            container.innerHTML = servers.map(s => `
+                <div class="bg-gray-900 rounded-lg p-3 border border-red-500/30">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-red-400">${s.hostname}</p>
+                            <p class="text-xs text-gray-400">${s.ip_address} | Site: ${s.site_code}</p>
+                        </div>
+                        <span class="px-2 py-1 bg-red-600 rounded text-xs">${s.managed_clients} clients</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        ${s.roles.map(r => `<span class="px-2 py-0.5 bg-gray-700 rounded text-xs">${r}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function extractNAA() {
+            if (!currentSessionId || discoveredServers.length === 0) {
+                alert('Start a hunt and discover servers first');
+                return;
+            }
+            
+            const server = discoveredServers[0];
+            
+            try {
+                const response = await fetch('/sccm-hunter/api/extract-naa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: currentSessionId,
+                        target_server: server.hostname
+                    })
+                });
+                
+                const data = await response.json();
+                alert(data.success ? 
+                    `NAA Extracted!\nUser: ${data.credential.domain}\\${data.credential.username}` : 
+                    'Extraction failed');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function attackAdminService() {
+            if (!currentSessionId || discoveredServers.length === 0) {
+                alert('Start a hunt and discover servers first');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/sccm-hunter/api/attack-admin-service', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: currentSessionId,
+                        target_server: discoveredServers[0].hostname
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('AdminService Attack:', data);
+                alert('AdminService endpoints enumerated! Check console.');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function pxeAttack() {
+            if (!currentSessionId || discoveredServers.length === 0) {
+                alert('Start a hunt and discover servers first');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/sccm-hunter/api/pxe-attack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: currentSessionId,
+                        target_server: discoveredServers[0].hostname
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('PXE Attack:', data);
+                alert('PXE attack info generated! Check console.');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function createPackage() {
+            if (!currentSessionId) {
+                alert('Start a session first');
+                return;
+            }
+            
+            const name = document.getElementById('packageName').value;
+            const collection = document.getElementById('targetCollection').value;
+            
+            try {
+                const response = await fetch('/sccm-hunter/api/create-package', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: currentSessionId,
+                        app_name: name,
+                        target_collection: collection
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('packageXml').value = data.application_xml;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function generateImplant(type) {
+            try {
+                const response = await fetch('/sccm-hunter/api/generate-implant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: type })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('implantCode').value = data.code;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function copyImplant() {
+            const code = document.getElementById('implantCode');
+            code.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+    </script>
+</body>
+</html>

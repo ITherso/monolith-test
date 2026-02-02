@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WSUS Spoofing - Fake Windows Update Attack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        .pulse-blue { animation: pulse-blue 2s infinite; }
+        @keyframes pulse-blue {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
+        }
+        .terminal-font { font-family: 'Courier New', monospace; }
+        .windows-update { background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-900 via-blue-800 to-cyan-900 p-6 shadow-2xl">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center pulse-blue">
+                        <i class="fab fa-windows text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold">WSUS Spoofing</h1>
+                        <p class="text-blue-200">Fake Windows Update - ARP/DNS Poisoning Attack</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="px-4 py-2 bg-blue-600 rounded-lg font-bold animate-pulse">
+                        <i class="fas fa-sync-alt mr-2"></i>PRO
+                    </span>
+                    <a href="/" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Windows Update Style Banner -->
+    <div class="windows-update p-4 mx-6 mt-6 rounded-lg">
+        <div class="flex items-center">
+            <i class="fab fa-windows text-4xl mr-4"></i>
+            <div>
+                <p class="font-bold text-lg">Critical Security Update Available</p>
+                <p class="text-sm opacity-80">"Güncelleme" adı altında payload dağıt - Victim: "Sonunda Microsoft güvenliğimi önemsiyor!"</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Attack Flow -->
+        <div class="bg-gray-800 rounded-xl p-6 mb-6 border border-blue-500/30">
+            <h2 class="text-xl font-bold mb-4 text-blue-400">
+                <i class="fas fa-route mr-2"></i>Attack Flow
+            </h2>
+            <div class="flex items-center justify-between overflow-x-auto pb-4">
+                <div class="flex items-center space-x-3 min-w-max">
+                    <div class="bg-gray-900 rounded-lg p-3 text-center w-36">
+                        <i class="fas fa-network-wired text-2xl text-yellow-400 mb-2"></i>
+                        <p class="text-sm font-bold">1. Poison</p>
+                        <p class="text-xs text-gray-400">ARP/DNS Spoof</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-blue-500"></i>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center w-36">
+                        <i class="fas fa-server text-2xl text-blue-400 mb-2"></i>
+                        <p class="text-sm font-bold">2. Fake WSUS</p>
+                        <p class="text-xs text-gray-400">HTTP Server</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-blue-500"></i>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center w-36">
+                        <i class="fas fa-download text-2xl text-green-400 mb-2"></i>
+                        <p class="text-sm font-bold">3. Client Sync</p>
+                        <p class="text-xs text-gray-400">Checks for updates</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-blue-500"></i>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center w-36">
+                        <i class="fas fa-box text-2xl text-purple-400 mb-2"></i>
+                        <p class="text-sm font-bold">4. Serve Update</p>
+                        <p class="text-xs text-gray-400">KB5034441.exe</p>
+                    </div>
+                    <i class="fas fa-arrow-right text-blue-500"></i>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center w-36 border border-red-500">
+                        <i class="fas fa-skull text-2xl text-red-400 mb-2"></i>
+                        <p class="text-sm font-bold">5. SYSTEM</p>
+                        <p class="text-xs text-gray-400">Payload runs!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Session Configuration -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-yellow-400">
+                    <i class="fas fa-cog mr-2"></i>Spoof Configuration
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Target Network</label>
+                        <input type="text" id="targetNetwork" value="10.0.0.0/24" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Poisoning Method</label>
+                        <select id="poisonMethod" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3">
+                            <option value="arp">ARP Spoofing</option>
+                            <option value="dns">DNS Spoofing</option>
+                            <option value="llmnr">LLMNR/NBT-NS (Responder)</option>
+                            <option value="wpad">WPAD Injection</option>
+                            <option value="dhcp">DHCP Option 252</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Gateway IP</label>
+                            <input type="text" id="gatewayIp" value="10.0.0.1" 
+                                   class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">WSUS Server IP</label>
+                            <input type="text" id="wsusIp" value="10.0.0.50" 
+                                   class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    
+                    <button onclick="createSession()" 
+                            class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold transition">
+                        <i class="fas fa-play mr-2"></i>Create Session
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fake Update Configuration -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-green-400">
+                    <i class="fas fa-box mr-2"></i>Fake Update Package
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">KB Number</label>
+                        <select id="kbNumber" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3">
+                            <option value="KB5034441">KB5034441 - Security Update</option>
+                            <option value="KB5034203">KB5034203 - Cumulative Update</option>
+                            <option value="KB5033375">KB5033375 - .NET Update</option>
+                            <option value="KB5034122">KB5034122 - Defender Definition</option>
+                            <option value="KB890830">KB890830 - MSRT</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Update Title</label>
+                        <input type="text" id="updateTitle" value="2025-02 Cumulative Update for Windows" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-green-500 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Severity</label>
+                        <select id="severity" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3">
+                            <option value="critical">Critical (Auto-install)</option>
+                            <option value="important">Important</option>
+                            <option value="moderate">Moderate</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">C2 URL (for callback)</label>
+                        <input type="text" id="c2Url" value="http://192.168.1.100:8080" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:border-green-500 focus:outline-none">
+                    </div>
+                    
+                    <button onclick="createUpdate()" 
+                            class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-lg font-bold transition">
+                        <i class="fas fa-plus mr-2"></i>Create Malicious Update
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Scripts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <!-- Poison Script -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-yellow-500/30">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-yellow-400">
+                        <i class="fas fa-network-wired mr-2"></i>Poison Script
+                    </h2>
+                    <button onclick="generatePoisonScript()" class="bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded-lg text-sm transition">
+                        <i class="fas fa-sync mr-2"></i>Generate
+                    </button>
+                </div>
+                <textarea id="poisonScript" rows="12" readonly
+                          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xs terminal-font text-green-400"></textarea>
+            </div>
+
+            <!-- WSUS Server Script -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-blue-500/30">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-blue-400">
+                        <i class="fas fa-server mr-2"></i>Fake WSUS Server
+                    </h2>
+                    <button onclick="generateServerScript()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm transition">
+                        <i class="fas fa-sync mr-2"></i>Generate
+                    </button>
+                </div>
+                <textarea id="serverScript" rows="12" readonly
+                          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xs terminal-font text-green-400"></textarea>
+            </div>
+        </div>
+
+        <!-- Tools Section -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-orange-500 transition cursor-pointer" onclick="getResponderConfig()">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-reply-all"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Responder</p>
+                        <p class="text-xs text-gray-400">LLMNR/WPAD</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-purple-500 transition cursor-pointer" onclick="getDetectScript()">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Detect WSUS</p>
+                        <p class="text-xs text-gray-400">Find HTTP WSUS</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-cyan-500 transition cursor-pointer" onclick="getTools()">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-toolbox"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Tools</p>
+                        <p class="text-xs text-gray-400">WSUSpect, PyWSUS</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-red-500 transition cursor-pointer" onclick="getAttackFlow()">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Playbook</p>
+                        <p class="text-xs text-gray-400">Full attack guide</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payload Generator -->
+        <div class="bg-gray-800 rounded-xl p-6 mt-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 text-red-400">
+                <i class="fas fa-code mr-2"></i>Payload Generator
+            </h2>
+            
+            <div class="flex space-x-4 mb-4">
+                <button onclick="generatePayload()" 
+                        class="flex-1 bg-red-600 hover:bg-red-500 py-2 rounded-lg transition">
+                    <i class="fas fa-virus mr-2"></i>Generate Disguised Payload
+                </button>
+                <button onclick="generateImplant('powershell')" 
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded-lg transition">
+                    <i class="fab fa-windows mr-2"></i>PowerShell Implant
+                </button>
+            </div>
+            
+            <textarea id="payloadCode" rows="15" readonly
+                      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm terminal-font text-green-400"></textarea>
+            
+            <div class="flex space-x-2 mt-2">
+                <button onclick="copyCode('payloadCode')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-copy mr-2"></i>Copy
+                </button>
+                <button onclick="downloadCode()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-download mr-2"></i>Download as .ps1
+                </button>
+            </div>
+        </div>
+
+        <!-- Update Metadata Preview -->
+        <div class="bg-gray-800 rounded-xl p-6 mt-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 text-purple-400">
+                <i class="fas fa-file-code mr-2"></i>WSUS Metadata (XML)
+            </h2>
+            <textarea id="wsusMetadata" rows="10" readonly
+                      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xs terminal-font text-cyan-400"></textarea>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+
+        async function createSession() {
+            const network = document.getElementById('targetNetwork').value;
+            const method = document.getElementById('poisonMethod').value;
+            
+            try {
+                const response = await fetch('/wsus-spoof/api/create-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_network: network,
+                        poison_method: method
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    alert(`Session created: ${data.session_id}\nWSUS Server Port: ${data.wsus_server.listen_port}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function createUpdate() {
+            const kb = document.getElementById('kbNumber').value;
+            const title = document.getElementById('updateTitle').value;
+            const severity = document.getElementById('severity').value;
+            
+            try {
+                const response = await fetch('/wsus-spoof/api/create-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        kb_number: kb,
+                        title: title,
+                        severity: severity
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('wsusMetadata').value = data.wsus_metadata;
+                    alert(`Malicious update created: ${kb}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function generatePoisonScript() {
+            const method = document.getElementById('poisonMethod').value;
+            const network = document.getElementById('targetNetwork').value;
+            const gateway = document.getElementById('gatewayIp').value;
+            const wsus = document.getElementById('wsusIp').value;
+            
+            try {
+                const response = await fetch('/wsus-spoof/api/generate-poison-script', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        method: method,
+                        target_network: network,
+                        gateway_ip: gateway,
+                        wsus_ip: wsus,
+                        redirect_ip: '192.168.1.100'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('poisonScript').value = data.script;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function generateServerScript() {
+            try {
+                const response = await fetch('/wsus-spoof/api/generate-server', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('serverScript').value = data.server_code;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function generatePayload() {
+            const c2 = document.getElementById('c2Url').value;
+            
+            try {
+                const response = await fetch('/wsus-spoof/api/generate-payload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ c2_url: c2 })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('payloadCode').value = data.powershell_payload;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function generateImplant(type) {
+            const c2 = document.getElementById('c2Url').value;
+            
+            try {
+                const response = await fetch('/wsus-spoof/api/generate-implant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: type, c2_url: c2 })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('payloadCode').value = data.code;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function getResponderConfig() {
+            try {
+                const response = await fetch('/wsus-spoof/api/responder-config');
+                const data = await response.json();
+                console.log('Responder Config:', data);
+                document.getElementById('poisonScript').value = data.responder_config.wpad_dat;
+                alert('Responder configuration loaded! Check console for full config.');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function getDetectScript() {
+            try {
+                const response = await fetch('/wsus-spoof/api/detect-wsus');
+                const data = await response.json();
+                document.getElementById('payloadCode').value = data.detection_script;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function getTools() {
+            try {
+                const response = await fetch('/wsus-spoof/api/tools');
+                const data = await response.json();
+                console.log('Tools:', data);
+                alert(`Recommended: ${data.tools.tool}\n${data.tools.description}\nGitHub: ${data.tools.github}`);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function getAttackFlow() {
+            try {
+                const response = await fetch('/wsus-spoof/api/attack-flow');
+                const data = await response.json();
+                console.log('Attack Flow:', data);
+                alert(`${data.attack_flow.name}\n\n${data.attack_flow.phases.map(p => `${p.phase}. ${p.name}`).join('\n')}`);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function copyCode(elementId) {
+            const textarea = document.getElementById(elementId);
+            textarea.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+
+        function downloadCode() {
+            const code = document.getElementById('payloadCode').value;
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'windows_update.ps1';
+            a.click();
+        }
+    </script>
+</body>
+</html>
