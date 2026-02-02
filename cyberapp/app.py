@@ -118,6 +118,9 @@ k8s_warfare_bp = _try_import('k8s_warfare_bp', lambda: __import__('cyberapp.rout
 # Browser Persistence & Extension Ops Module
 browser_persistence_bp = _try_import('browser_persistence_bp', lambda: __import__('cyberapp.routes.browser_persistence', fromlist=['browser_persistence_bp']).browser_persistence_bp)
 
+# Living off the Forest - Advanced AD Module
+lotf_bp = _try_import('lotf_bp', lambda: __import__('cyberapp.routes.lotf_ad', fromlist=['lotf_bp']).lotf_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -231,6 +234,9 @@ def create_app(run_migrations_on_start=True):
     
     # Browser Persistence & Extension Ops Module
     if browser_persistence_bp: app.register_blueprint(browser_persistence_bp)
+    
+    # Living off the Forest - Advanced AD Module
+    if lotf_bp: app.register_blueprint(lotf_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
