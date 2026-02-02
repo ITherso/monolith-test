@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}Docker Container Escape - Ghost{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary bg-opacity-25 p-3 me-3">
+                            <i class="fab fa-docker fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-1 text-white">Docker Container Escape</h2>
+                            <p class="text-muted mb-0">Container breakout & host system compromise</p>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-primary px-3 py-2">
+                                <i class="fas fa-door-open me-2"></i>BREAKOUT
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container Detection -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary">
+                        <i class="fas fa-search me-2"></i>Container Environment Detection
+                    </h5>
+                    <button class="btn btn-primary" onclick="detectContainer()">
+                        <i class="fas fa-sync me-2"></i>Detect
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3" id="container-info">
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fab fa-docker fa-2x mb-2 text-primary"></i>
+                                <div class="text-muted small">Container Status</div>
+                                <div id="container-status" class="text-white fw-bold">Unknown</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fas fa-cog fa-2x mb-2 text-info"></i>
+                                <div class="text-muted small">Runtime</div>
+                                <div id="container-runtime" class="text-white fw-bold">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fas fa-shield-alt fa-2x mb-2 text-warning"></i>
+                                <div class="text-muted small">Privileged</div>
+                                <div id="container-privileged" class="text-white fw-bold">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fas fa-microchip fa-2x mb-2 text-success"></i>
+                                <div class="text-muted small">Kernel</div>
+                                <div id="kernel-version" class="text-white fw-bold">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Info -->
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-4">
+                            <div class="card bg-black border-secondary">
+                                <div class="card-header bg-dark">
+                                    <small class="text-warning"><i class="fas fa-key me-2"></i>Capabilities</small>
+                                </div>
+                                <div class="card-body">
+                                    <div id="capabilities-list" class="small text-muted">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-black border-secondary">
+                                <div class="card-header bg-dark">
+                                    <small class="text-warning"><i class="fas fa-folder me-2"></i>Sensitive Mounts</small>
+                                </div>
+                                <div class="card-body">
+                                    <div id="mounts-list" class="small text-muted">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-black border-secondary">
+                                <div class="card-header bg-dark">
+                                    <small class="text-warning"><i class="fas fa-network-wired me-2"></i>Namespaces</small>
+                                </div>
+                                <div class="card-body">
+                                    <div id="namespaces-list" class="small text-muted">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Escape Vectors -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-danger">
+                        <i class="fas fa-door-open me-2"></i>Escape Vectors
+                    </h5>
+                    <button class="btn btn-danger" onclick="enumerateVectors()">
+                        <i class="fas fa-search me-2"></i>Enumerate Escapes
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr class="text-danger">
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Risk Level</th>
+                                    <th>Success Rate</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vectors-table">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Click "Enumerate Escapes" to find available methods</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Escape Methods Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4">
+            <div class="card bg-dark border-danger h-100">
+                <div class="card-header bg-danger bg-opacity-25">
+                    <h6 class="mb-0 text-danger">
+                        <i class="fas fa-crown me-2"></i>Privileged Mode
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Mount host filesystem and chroot to gain full host access.</p>
+                    <ul class="small text-muted mb-3">
+                        <li>Access /dev/sda directly</li>
+                        <li>Mount host root filesystem</li>
+                        <li>Execute commands as host root</li>
+                    </ul>
+                    <button class="btn btn-outline-danger btn-sm w-100" onclick="getPayload('privileged')">
+                        <i class="fas fa-code me-2"></i>Get Payload
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card bg-dark border-warning h-100">
+                <div class="card-header bg-warning bg-opacity-25">
+                    <h6 class="mb-0 text-warning">
+                        <i class="fab fa-docker me-2"></i>Docker Socket
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Abuse mounted docker.sock to spawn privileged containers.</p>
+                    <ul class="small text-muted mb-3">
+                        <li>Create new privileged container</li>
+                        <li>Mount host filesystem</li>
+                        <li>Execute via Docker API</li>
+                    </ul>
+                    <button class="btn btn-outline-warning btn-sm w-100" onclick="getPayload('docker_sock')">
+                        <i class="fas fa-code me-2"></i>Get Payload
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card bg-dark border-info h-100">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h6 class="mb-0 text-info">
+                        <i class="fas fa-layer-group me-2"></i>Cgroup Release
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Classic cgroup release_agent escape technique.</p>
+                    <ul class="small text-muted mb-3">
+                        <li>Requires CAP_SYS_ADMIN</li>
+                        <li>Works on cgroup v1</li>
+                        <li>Execute arbitrary commands</li>
+                    </ul>
+                    <button class="btn btn-outline-info btn-sm w-100" onclick="getPayload('cgroup_release')">
+                        <i class="fas fa-code me-2"></i>Get Payload
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card bg-dark border-success h-100">
+                <div class="card-header bg-success bg-opacity-25">
+                    <h6 class="mb-0 text-success">
+                        <i class="fas fa-bug me-2"></i>DirtyPipe (CVE-2022-0847)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Kernel exploit to overwrite read-only files.</p>
+                    <ul class="small text-muted mb-3">
+                        <li>Kernel 5.8 - 5.16.11</li>
+                        <li>Overwrite /etc/passwd</li>
+                        <li>Instant root access</li>
+                    </ul>
+                    <button class="btn btn-outline-success btn-sm w-100" onclick="getPayload('dirty_pipe')">
+                        <i class="fas fa-code me-2"></i>Get Payload
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card bg-dark border-primary h-100">
+                <div class="card-header bg-primary bg-opacity-25">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fas fa-user-shield me-2"></i>CAP_SYS_ADMIN
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Abuse SYS_ADMIN capability to mount filesystems.</p>
+                    <ul class="small text-muted mb-3">
+                        <li>Mount host block devices</li>
+                        <li>Access host filesystem</li>
+                        <li>Modify system files</li>
+                    </ul>
+                    <button class="btn btn-outline-primary btn-sm w-100" onclick="getPayload('cap_sys_admin')">
+                        <i class="fas fa-code me-2"></i>Get Payload
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h6 class="mb-0 text-secondary">
+                        <i class="fas fa-microchip me-2"></i>Host PID Namespace
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Access host processes via shared PID namespace.</p>
+                    <ul class="small text-muted mb-3">
+                        <li>Read host process memory</li>
+                        <li>Access /proc/PID/root</li>
+                        <li>Inject into host processes</li>
+                    </ul>
+                    <button class="btn btn-outline-secondary btn-sm w-100" onclick="getPayload('host_pid')">
+                        <i class="fas fa-code me-2"></i>Get Payload
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payload Output -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-warning">
+                        <i class="fas fa-terminal me-2"></i>Escape Payload
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-info btn-sm" onclick="copyPayload()">
+                            <i class="fas fa-copy me-2"></i>Copy
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="downloadPayload()">
+                            <i class="fas fa-download me-2"></i>Download
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <pre id="payload-output" class="bg-black text-success p-3 rounded border border-secondary" style="max-height: 500px; overflow-y: auto; font-family: 'Fira Code', monospace;">// Select an escape method to generate payload...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPayload = '';
+let escapeVectors = [];
+
+async function detectContainer() {
+    try {
+        const response = await fetch('/docker-escape/api/detect', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.success && data.container_info) {
+            const info = data.container_info;
+            
+            document.getElementById('container-status').innerHTML = info.is_container ?
+                '<span class="text-success">✓ Inside Container</span>' :
+                '<span class="text-warning">⚠ Not in Container</span>';
+            
+            document.getElementById('container-runtime').textContent = info.runtime || 'Unknown';
+            
+            document.getElementById('container-privileged').innerHTML = info.privileged ?
+                '<span class="text-danger">✓ PRIVILEGED</span>' :
+                '<span class="text-success">✗ Not Privileged</span>';
+            
+            document.getElementById('kernel-version').textContent = info.kernel_version || '-';
+            
+            // Capabilities
+            if (info.capabilities && info.capabilities.length > 0) {
+                document.getElementById('capabilities-list').innerHTML = info.capabilities.map(c => 
+                    `<span class="badge bg-danger me-1 mb-1">${c}</span>`
+                ).join('');
+            }
+            
+            // Mounts
+            if (info.sensitive_mounts && info.sensitive_mounts.length > 0) {
+                document.getElementById('mounts-list').innerHTML = info.sensitive_mounts.map(m =>
+                    `<div class="text-warning"><i class="fas fa-folder me-1"></i>${m}</div>`
+                ).join('');
+            }
+            
+            // Namespaces
+            const ns = [];
+            if (info.host_pid) ns.push('<span class="text-danger">Host PID ✓</span>');
+            if (info.host_net) ns.push('<span class="text-danger">Host NET ✓</span>');
+            if (info.docker_sock_mounted) ns.push('<span class="text-danger">Docker Socket ✓</span>');
+            document.getElementById('namespaces-list').innerHTML = ns.length > 0 ? ns.join('<br>') : 'Standard namespaces';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function enumerateVectors() {
+    try {
+        const response = await fetch('/docker-escape/api/enumerate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.success && data.vectors) {
+            escapeVectors = data.vectors;
+            updateVectorsTable();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function updateVectorsTable() {
+    const tbody = document.getElementById('vectors-table');
+    
+    if (escapeVectors.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No escape vectors found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = escapeVectors.map(v => `
+        <tr>
+            <td><span class="badge bg-danger">${v.method}</span></td>
+            <td>${v.available ? 
+                '<span class="text-success"><i class="fas fa-check"></i> Available</span>' : 
+                '<span class="text-muted"><i class="fas fa-times"></i> N/A</span>'}</td>
+            <td><span class="badge bg-${getRiskColor(v.risk_level)}">${v.risk_level}</span></td>
+            <td>${v.success_rate}</td>
+            <td class="small">${v.description}</td>
+            <td>
+                ${v.available ? `<button class="btn btn-sm btn-outline-danger" onclick="getPayload('${v.method}')">
+                    <i class="fas fa-code"></i>
+                </button>` : '-'}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getRiskColor(level) {
+    switch(level) {
+        case 'critical': return 'danger';
+        case 'high': return 'warning';
+        case 'medium': return 'info';
+        default: return 'secondary';
+    }
+}
+
+async function getPayload(method) {
+    try {
+        const response = await fetch('/docker-escape/api/get-payload', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({method: method})
+        });
+        const data = await response.json();
+        
+        if (data.success && data.payload) {
+            currentPayload = data.payload;
+            document.getElementById('payload-output').textContent = data.payload;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function copyPayload() {
+    navigator.clipboard.writeText(currentPayload).then(() => {
+        alert('Payload copied to clipboard!');
+    });
+}
+
+function downloadPayload() {
+    const blob = new Blob([currentPayload], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'docker_escape.sh';
+    a.click();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    detectContainer();
+});
+</script>
+{% endblock %}

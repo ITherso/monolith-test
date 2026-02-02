@@ -92,6 +92,11 @@ autopwn_scanner_bp = _try_import('autopwn_scanner_bp', lambda: __import__('cyber
 # Memory Forensics Evasion
 memory_evasion_bp = _try_import('memory_evasion_bp', lambda: __import__('cyberapp.routes.memory_evasion', fromlist=['memory_evasion_bp']).memory_evasion_bp)
 
+# Linux Infrastructure Domination Modules
+ebpf_rootkit_bp = _try_import('ebpf_rootkit_bp', lambda: __import__('tools.ebpf_rootkit', fromlist=['ebpf_rootkit_bp']).ebpf_rootkit_bp)
+ssh_worm_bp = _try_import('ssh_worm_bp', lambda: __import__('tools.ssh_worm', fromlist=['ssh_worm_bp']).ssh_worm_bp)
+docker_escape_bp = _try_import('docker_escape_bp', lambda: __import__('tools.docker_escape', fromlist=['docker_escape_bp']).docker_escape_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -179,6 +184,11 @@ def create_app(run_migrations_on_start=True):
     
     # Memory Forensics Evasion
     if memory_evasion_bp: app.register_blueprint(memory_evasion_bp)
+    
+    # Linux Infrastructure Domination Modules
+    if ebpf_rootkit_bp: app.register_blueprint(ebpf_rootkit_bp)
+    if ssh_worm_bp: app.register_blueprint(ssh_worm_bp)
+    if docker_escape_bp: app.register_blueprint(docker_escape_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

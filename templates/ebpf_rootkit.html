@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+
+{% block title %}eBPF Rootkit - Ghost{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-danger">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-danger bg-opacity-25 p-3 me-3">
+                            <i class="fas fa-ghost fa-2x text-danger"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-1 text-white">eBPF Rootkit Engine</h2>
+                            <p class="text-muted mb-0">Kernel-level stealth without Loadable Kernel Modules</p>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-danger px-3 py-2">
+                                <i class="fas fa-skull-crossbones me-2"></i>KERNEL LEVEL
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Check -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-danger">
+                        <i class="fas fa-check-circle me-2"></i>eBPF Support Check
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3" id="support-info">
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fas fa-microchip fa-2x mb-2 text-info"></i>
+                                <div class="text-muted small">Kernel Version</div>
+                                <div id="kernel-version" class="text-white fw-bold">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fas fa-cogs fa-2x mb-2 text-warning"></i>
+                                <div class="text-muted small">eBPF Support</div>
+                                <div id="ebpf-support" class="text-white fw-bold">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fas fa-network-wired fa-2x mb-2 text-success"></i>
+                                <div class="text-muted small">XDP Support</div>
+                                <div id="xdp-support" class="text-white fw-bold">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 rounded bg-dark border border-secondary text-center">
+                                <i class="fas fa-shield-alt fa-2x mb-2 text-danger"></i>
+                                <div class="text-muted small">LSM Hooks</div>
+                                <div id="lsm-support" class="text-white fw-bold">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-danger mt-3" onclick="checkSupport()">
+                        <i class="fas fa-sync me-2"></i>Check System
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Program Generator -->
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-danger">
+                        <i class="fas fa-code me-2"></i>eBPF Program Generator
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Hide Targets -->
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-eye-slash me-2"></i>Process Hiding
+                        </label>
+                        <div class="input-group mb-2">
+                            <input type="text" id="hide-process" class="form-control bg-dark text-white border-secondary" placeholder="Process name to hide (e.g., malware.py)">
+                            <button class="btn btn-danger" onclick="generateProcessHide()">
+                                <i class="fas fa-ghost"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-file-excel me-2"></i>File Hiding
+                        </label>
+                        <div class="input-group mb-2">
+                            <input type="text" id="hide-file" class="form-control bg-dark text-white border-secondary" placeholder="File path to hide (e.g., /tmp/.backdoor)">
+                            <button class="btn btn-danger" onclick="generateFileHide()">
+                                <i class="fas fa-ghost"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-network-wired me-2"></i>XDP Packet Filter
+                        </label>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <input type="text" id="filter-ip" class="form-control bg-dark text-white border-secondary" placeholder="Target IP">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" id="filter-port" class="form-control bg-dark text-white border-secondary" placeholder="Port">
+                            </div>
+                            <div class="col-md-4">
+                                <select id="filter-action" class="form-select bg-dark text-white border-secondary">
+                                    <option value="capture">Capture</option>
+                                    <option value="drop">Drop</option>
+                                    <option value="modify">Modify</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" onclick="generateXDPFilter()">
+                            <i class="fas fa-code me-2"></i>Generate XDP
+                        </button>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-keyboard me-2"></i>Special Programs
+                        </label>
+                        <div class="btn-group d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-danger" onclick="generateKeylogger()">
+                                <i class="fas fa-keyboard me-2"></i>Keylogger
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="generatePrivesc()">
+                                <i class="fas fa-user-shield me-2"></i>Privesc
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="generateNetHide()">
+                                <i class="fas fa-wifi me-2"></i>Hide Conn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Persistence & Anti-Forensics -->
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-danger">
+                        <i class="fas fa-anchor me-2"></i>Persistence & Anti-Forensics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Persistence Methods -->
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-lock me-2"></i>Persistence Methods
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="persist-systemd" checked>
+                                    <label class="form-check-label text-white" for="persist-systemd">
+                                        <i class="fas fa-server me-2 text-info"></i>Systemd Service
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="persist-cron">
+                                    <label class="form-check-label text-white" for="persist-cron">
+                                        <i class="fas fa-clock me-2 text-info"></i>Cron Job
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="persist-preload">
+                                    <label class="form-check-label text-white" for="persist-preload">
+                                        <i class="fas fa-link me-2 text-info"></i>LD_PRELOAD
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="persist-udev">
+                                    <label class="form-check-label text-white" for="persist-udev">
+                                        <i class="fas fa-usb me-2 text-info"></i>Udev Rule
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="persist-modprobe">
+                                    <label class="form-check-label text-white" for="persist-modprobe">
+                                        <i class="fas fa-microchip me-2 text-info"></i>Modprobe.d
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="persist-init">
+                                    <label class="form-check-label text-white" for="persist-init">
+                                        <i class="fas fa-play me-2 text-info"></i>Init Script
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger mt-3" onclick="generatePersistence()">
+                            <i class="fas fa-anchor me-2"></i>Generate Persistence
+                        </button>
+                    </div>
+
+                    <!-- Anti-Forensics -->
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-user-secret me-2"></i>Anti-Forensics
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="af-bpftool" checked>
+                                    <label class="form-check-label text-white" for="af-bpftool">
+                                        Hide from bpftool
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="af-maps" checked>
+                                    <label class="form-check-label text-white" for="af-maps">
+                                        Hide eBPF Maps
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="af-logs">
+                                    <label class="form-check-label text-white" for="af-logs">
+                                        Tamper Logs
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="af-timestamps">
+                                    <label class="form-check-label text-white" for="af-timestamps">
+                                        Manipulate Timestamps
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-danger mt-3" onclick="generateAntiForensics()">
+                            <i class="fas fa-user-secret me-2"></i>Generate Anti-Forensics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Output -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-danger">
+                        <i class="fas fa-code me-2"></i>Generated eBPF Code
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-info btn-sm" onclick="copyCode()">
+                            <i class="fas fa-copy me-2"></i>Copy
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="downloadCode()">
+                            <i class="fas fa-download me-2"></i>Download
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="generateLoader()">
+                            <i class="fas fa-rocket me-2"></i>Loader Script
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <pre id="code-output" class="bg-black text-success p-3 rounded border border-secondary" style="max-height: 500px; overflow-y: auto; font-family: 'Fira Code', monospace;">// Select a program type to generate eBPF code...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Programs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-danger">
+                        <i class="fas fa-list me-2"></i>Generated Programs
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr class="text-danger">
+                                    <th>Type</th>
+                                    <th>Target</th>
+                                    <th>Hook</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="programs-table">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No programs generated yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#code-output {
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+</style>
+
+<script>
+let generatedCode = '';
+let programs = [];
+
+async function checkSupport() {
+    try {
+        const response = await fetch('/ebpf-rootkit/api/check-support');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('kernel-version').textContent = data.kernel_version;
+            document.getElementById('ebpf-support').innerHTML = data.ebpf_supported ? 
+                '<span class="text-success">✓ Supported</span>' : 
+                '<span class="text-danger">✗ Not Supported</span>';
+            document.getElementById('xdp-support').innerHTML = data.xdp_supported ?
+                '<span class="text-success">✓ Supported</span>' :
+                '<span class="text-warning">⚠ Limited</span>';
+            document.getElementById('lsm-support').innerHTML = data.lsm_hooks ?
+                '<span class="text-success">✓ Available</span>' :
+                '<span class="text-warning">⚠ Kernel 5.7+</span>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateProcessHide() {
+    const processName = document.getElementById('hide-process').value;
+    if (!processName) {
+        alert('Enter process name to hide');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/ebpf-rootkit/api/generate/process-hide', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({process_name: processName})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.code;
+            document.getElementById('code-output').textContent = data.code;
+            addProgram('Process Hide', processName, 'getdents64', 'generated');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateFileHide() {
+    const filePath = document.getElementById('hide-file').value;
+    if (!filePath) {
+        alert('Enter file path to hide');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/ebpf-rootkit/api/generate/file-hide', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({file_path: filePath})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.code;
+            document.getElementById('code-output').textContent = data.code;
+            addProgram('File Hide', filePath, 'stat/open', 'generated');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateXDPFilter() {
+    const ip = document.getElementById('filter-ip').value;
+    const port = document.getElementById('filter-port').value;
+    const action = document.getElementById('filter-action').value;
+    
+    try {
+        const response = await fetch('/ebpf-rootkit/api/generate/xdp-filter', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target_ip: ip,
+                target_port: parseInt(port) || 0,
+                action: action
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.code;
+            document.getElementById('code-output').textContent = data.code;
+            addProgram('XDP Filter', `${ip}:${port}`, 'XDP', 'generated');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateKeylogger() {
+    try {
+        const response = await fetch('/ebpf-rootkit/api/generate/keylogger', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.code;
+            document.getElementById('code-output').textContent = data.code;
+            addProgram('Keylogger', 'All input', 'tracepoint', 'generated');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generatePrivesc() {
+    try {
+        const response = await fetch('/ebpf-rootkit/api/generate/privesc', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.code;
+            document.getElementById('code-output').textContent = data.code;
+            addProgram('Privilege Escalation', 'cred struct', 'kprobe', 'generated');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateNetHide() {
+    try {
+        const response = await fetch('/ebpf-rootkit/api/generate/network-hide', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.code;
+            document.getElementById('code-output').textContent = data.code;
+            addProgram('Network Hide', '/proc/net/*', 'tcp4_seq_show', 'generated');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generatePersistence() {
+    const methods = [];
+    if (document.getElementById('persist-systemd').checked) methods.push('systemd_service');
+    if (document.getElementById('persist-cron').checked) methods.push('cron');
+    if (document.getElementById('persist-preload').checked) methods.push('ld_preload');
+    if (document.getElementById('persist-udev').checked) methods.push('udev_rule');
+    if (document.getElementById('persist-modprobe').checked) methods.push('kernel_module_param');
+    if (document.getElementById('persist-init').checked) methods.push('init_script');
+    
+    try {
+        const response = await fetch('/ebpf-rootkit/api/persistence', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({methods: methods})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.scripts.join('\n\n---\n\n');
+            document.getElementById('code-output').textContent = generatedCode;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateAntiForensics() {
+    const techniques = [];
+    if (document.getElementById('af-bpftool').checked) techniques.push('hide_from_bpftool');
+    if (document.getElementById('af-maps').checked) techniques.push('hide_maps');
+    if (document.getElementById('af-logs').checked) techniques.push('log_tampering');
+    if (document.getElementById('af-timestamps').checked) techniques.push('timestamp_manipulation');
+    
+    try {
+        const response = await fetch('/ebpf-rootkit/api/anti-forensics', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({techniques: techniques})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.scripts.join('\n\n---\n\n');
+            document.getElementById('code-output').textContent = generatedCode;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateLoader() {
+    try {
+        const response = await fetch('/ebpf-rootkit/api/loader-script', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedCode = data.script;
+            document.getElementById('code-output').textContent = data.script;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function addProgram(type, target, hook, status) {
+    programs.push({type, target, hook, status});
+    updateProgramsTable();
+}
+
+function updateProgramsTable() {
+    const tbody = document.getElementById('programs-table');
+    if (programs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No programs generated yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = programs.map((p, i) => `
+        <tr>
+            <td><span class="badge bg-danger">${p.type}</span></td>
+            <td class="text-warning">${p.target}</td>
+            <td><code>${p.hook}</code></td>
+            <td><span class="badge bg-success">${p.status}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-info" onclick="viewProgram(${i})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function viewProgram(index) {
+    // Scroll to code output
+    document.getElementById('code-output').scrollIntoView({behavior: 'smooth'});
+}
+
+function copyCode() {
+    navigator.clipboard.writeText(generatedCode).then(() => {
+        alert('Code copied to clipboard!');
+    });
+}
+
+function downloadCode() {
+    const blob = new Blob([generatedCode], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ebpf_rootkit.c';
+    a.click();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    checkSupport();
+});
+</script>
+{% endblock %}

