@@ -8,12 +8,12 @@
 ██║ ╚═╝ ██║╚██████╔╝██║ ╚████║╚██████╔╝███████╗██║   ██║   ██║  ██║
 ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚═╝   ╚═╝   ╚═╝  ╚═╝
                     Elite Red Team Automation Platform
-                           v2.0 - January 2026
+                           v2.5 - February 2026
 ```
 
 > **👤 Author:** ITherso  
-> **📅 Last Updated:** January 26, 2026  
-> **🔧 Version:** 2.0.0
+> **📅 Last Updated:** February 2, 2026  
+> **🔧 Version:** 2.5.0
 
 > ⚠️ **DISCLAIMER**: This framework is designed for authorized security testing and educational purposes only. Unauthorized access to computer systems is illegal. Always obtain proper authorization before testing.
 
@@ -31,6 +31,10 @@
 - [API Reference](#-api-reference)
 - [Configuration](#️-configuration)
 - [Installation](#-installation)
+- [God Mode Anti-Forensics](#-god-mode-anti-forensics-february-2026)
+- [Cross-Module Integration](#-cross-module-integration)
+- [K8s Kraken - Kubernetes Warfare](#-k8s-kraken---kubernetes-warfare-february-2026)
+- [C2 Implant Framework](#-c2-implant-framework)
 
 ---
 
@@ -3454,6 +3458,330 @@ python tools/web_app_scanner.py https://example.com
 
 ---
 
+## 💀 God Mode Anti-Forensics (February 2026)
+
+İzleri silmek değil, YOK ETMEK! Profesyonel red team operasyonları için forensic artifact temizleme sistemi.
+
+### 🕐 Time Stomper
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           🕐 TIME STOMPER                                                │
+│                    $STANDARD_INFORMATION + $FILE_NAME Modification                       │
+│                                FULL TIMESTAMP WIPE                                       │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  TIMESTAMP TARGETS                          TECHNIQUES                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 📁 $STANDARD_INFORMATION    │           │ 🔧 SetFileTime API          │              │
+│  │    • Creation Time          │           │    Basic timestamp edit     │              │
+│  │    • Modified Time          │           │                             │              │
+│  │    • Accessed Time          │           │ 🔬 NtSetInformationFile     │              │
+│  │    • MFT Entry Time         │           │    Kernel-level access      │              │
+│  │                             │           │                             │              │
+│  │ 📝 $FILE_NAME               │           │ 🧬 Direct MFT Parse         │              │
+│  │    • FN Creation            │           │    Raw disk manipulation    │              │
+│  │    • FN Modified            │           │                             │              │
+│  │    • FN Accessed            │           │ 🗑️ USN Journal Clear        │              │
+│  │    • FN MFT Modified        │           │    fsutil usn deletejournal │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  WHY $FILE_NAME MATTERS:                                                                 │
+│  ├── Most forensic tools check $FILE_NAME timestamps                                     │
+│  ├── $STANDARD_INFORMATION alone is NOT enough                                           │
+│  ├── MFT analysis reveals $FN discrepancies                                              │
+│  └── Full evasion requires BOTH attribute modification                                   │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 👻 Phantom Event Log Cleaner
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        👻 PHANTOM EVENT LOG CLEANER                                      │
+│               Selective Event Deletion Without Clearing Entire Logs                      │
+│                          Forensic Timeline Reconstruction Killer                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  CLEANUP PROFILES                                                                        │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  🔐 CREDENTIAL_THEFT PROFILE                🔥 FULL_CLEANUP PROFILE                      │
+│  ├── Security Log Events:                   ├── ALL Security Events                      │
+│  │   • 4624 (Logon Success)                 ├── ALL Sysmon Events                        │
+│  │   • 4625 (Logon Failure)                 ├── ALL PowerShell Events                    │
+│  │   • 4648 (Explicit Creds)                ├── ALL Windows Defender                     │
+│  │   • 4672 (Special Privileges)            ├── ALL Application Events                   │
+│  │   • 4768 (Kerberos TGT)                  ├── ALL System Events                        │
+│  │   • 4769 (Kerberos Service)              └── USN Journal + Prefetch                   │
+│  │   • 4771 (Kerberos Pre-Auth)                                                          │
+│  │   • 4776 (NTLM Validation)               💀 NUKE EVERYTHING                           │
+│  │                                          ├── wevtutil cl Security                     │
+│  ├── Sysmon Events:                         ├── wevtutil cl System                       │
+│  │   • Event 1 (Process Create)             ├── Clear all .evtx files                    │
+│  │   • Event 10 (Process Access)            ├── Delete Prefetch files                    │
+│  │   • Event 13 (Registry)                  ├── Clear USN Journal                        │
+│  │   • Event 17/18 (Pipe)                   └── Shred MFT entries                        │
+│  └── PowerShell Events                                                                   │
+│                                                                                          │
+│  TECHNIQUES:                                                                             │
+│  ├── 🔇 Suspend EventLog service threads                                                 │
+│  ├── 🔓 Patch ETW (Event Tracing for Windows)                                            │
+│  ├── 📝 Direct .evtx file manipulation                                                   │
+│  ├── ☠️ Sysmon driver unload                                                             │
+│  └── 🧹 Selective record deletion (keep log structure intact)                            │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /god-mode/                           - God Mode Dashboard
+  GET  /god-mode/api/phantom/suspicious-events - List suspicious events to clean
+  GET  /god-mode/api/phantom/profile/{name} - Get cleanup profile
+  POST /god-mode/api/phantom/generate       - Generate phantom cleaner script
+  POST /god-mode/api/timestomp/generate     - Generate timestomp script
+  GET  /god-mode/api/suspicious-files       - Get files that need timestomping
+```
+
+### 🔗 God Mode Integration (12+ Modules)
+
+God Mode Anti-Forensics şu modüllere entegre edilmiştir:
+
+| Module | Integration |
+|--------|-------------|
+| C2 Implant | ✅ Toggle + Cleanup profiles |
+| Lateral Movement | ✅ Auto-cleanup after spread |
+| Golden Ticket | ✅ Kerberos log cleanup |
+| DPAPI Extractor | ✅ Credential theft profile |
+| Web Shell | ✅ Web activity cleanup |
+| eBPF Rootkit | ✅ Kernel trace cleanup |
+| WMI Persistence | ✅ WMI event cleanup |
+| AutoExploit | ✅ Post-exploit cleanup |
+| DLL Sideload | ✅ Loader trace cleanup |
+| Supply Chain | ✅ CI/CD log cleanup |
+| Mimikatz | ✅ LSASS access cleanup |
+| SSH Worm | ✅ Auth log cleanup |
+
+---
+
+## 🔗 Cross-Module Integration
+
+Tüm saldırı modülleri artık birbirine bağlı! Bir modülden diğerine tek tıkla geçiş.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🔗 CROSS-MODULE INTEGRATION                                       │
+│                    Seamless Attack Chain Workflow                                        │
+│                      20 Templates Interconnected                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  ATTACK CHAIN EXAMPLE                                                                    │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│    AutoExploit ──► C2 Implant ──► Lateral Movement ──► Golden Ticket                    │
+│        │               │                │                    │                           │
+│        ▼               ▼                ▼                    ▼                           │
+│    PrivEsc ◄────► DPAPI Extract ◄───► WMI Persist ◄────► God Mode                       │
+│                                                                                          │
+│  INTEGRATED MODULES (20):                                                                │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐    │
+│  │ C2 Implant      │ Lateral Movement │ Golden Ticket   │ RDP Hijack      │        │    │
+│  │ SSH Worm        │ DPAPI Extractor  │ PrivEsc Toolkit │ AutoExploit     │        │    │
+│  │ WMI Persistence │ DLL Sideload     │ Supply Chain    │ WebShell        │        │    │
+│  │ AI Payload      │ Cloud Pivot      │ K8s Warfare     │ Telegram C2     │        │    │
+│  │ Stego C2        │ eBPF Rootkit     │ Phishing Adv    │ God Mode        │        │    │
+│  └─────────────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                          │
+│  QUICK ACTIONS:                                                                          │
+│  ├── 🚀 Deploy C2 to Target           - One-click C2 deployment                         │
+│  ├── 🔐 Dump Creds                    - Jump to credential extraction                   │
+│  ├── 👻 Persist                       - Quick persistence options                        │
+│  ├── ⬆️ PrivEsc                       - Privilege escalation check                      │
+│  └── 💀 God Mode                      - Anti-forensics cleanup                          │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ☸️ K8s Kraken - Kubernetes Warfare (February 2026)
+
+Container ve orchestration dünyasının hakimi! Kubelet exploit, Helm backdoor ve cluster domination.
+
+### 🦑 K8s Kraken Module
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           ☸️ K8S KRAKEN                                                  │
+│                   Kubernetes Cluster Domination Suite                                    │
+│                       tools/k8s_warfare.py (~1000 lines)                                 │
+│                            CLUSTER TAKEOVER 🎯                                           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  KUBELET EXPLOITER                                                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  TARGET PORTS                               ATTACK VECTORS                               │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 🔓 10250 - Kubelet API      │           │ 📋 /pods - List all pods    │              │
+│  │    Anonymous auth check     │           │ 🖥️ /run - Command execution │              │
+│  │                             │           │ 📁 /configz - Config dump   │              │
+│  │ 📊 10255 - Kubelet RO       │           │ 🔍 /debug/pprof - Profiling │              │
+│  │    Info disclosure          │           │                             │              │
+│  │                             │           │ TOKEN EXTRACTION:           │              │
+│  │ 💾 2379 - ETCD              │           │ /var/run/secrets/kubernetes │              │
+│  │    Cluster secrets          │           │ .io/serviceaccount/token    │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  EXPLOITATION FLOW:                                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐    │
+│  │  1. Scan for exposed Kubelet (10250)                                            │    │
+│  │  2. Check anonymous authentication                                               │    │
+│  │  3. List pods → Find privileged pods                                             │    │
+│  │  4. Execute commands via /run endpoint                                           │    │
+│  │  5. Extract service account tokens                                               │    │
+│  │  6. Escalate to cluster-admin                                                    │    │
+│  │  7. Deploy persistent backdoor                                                   │    │
+│  └─────────────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  HELM BACKDOOR GENERATOR                                                                 │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  CHART TEMPLATES                            PAYLOAD TYPES                                │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 🕵️ coredns-metrics          │           │ 🐚 Reverse Shell            │              │
+│  │    Stealth DNS monitoring   │           │    Netcat/Bash callback     │              │
+│  │                             │           │                             │              │
+│  │ 📊 prometheus-adapter       │           │ 🔐 Token Harvester          │              │
+│  │    Metrics exfiltration     │           │    Service account theft    │              │
+│  │                             │           │                             │              │
+│  │ 📝 logging-operator         │           │ 💀 Cryptominer              │              │
+│  │    Log collection backdoor  │           │    Resource hijacking       │              │
+│  │                             │           │                             │              │
+│  │ 📁 nfs-provisioner          │           │ 🌐 Proxy Pivot              │              │
+│  │    Storage access           │           │    SOCKS5 tunnel            │              │
+│  │                             │           │                             │              │
+│  │ 🔒 cert-manager-webhook     │           │ 📡 C2 Beacon                │              │
+│  │    TLS interception         │           │    Persistent callback      │              │
+│  │                             │           │                             │              │
+│  │ 🎯 kube-state-metrics       │           │ ⬆️ Privilege Escalation     │              │
+│  │    Cluster state access     │           │    Container escape prep    │              │
+│  │                             │           │                             │              │
+│  │ 📈 metrics-server           │           │ 📦 Custom Payload           │              │
+│  │    Resource monitoring      │           │    User-defined code        │              │
+│  │                             │           │                             │              │
+│  │ 🔧 cluster-autoscaler       │           │ 🗝️ Secret Exfil             │              │
+│  │    Scaling manipulation     │           │    Kubernetes secrets dump  │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  STEALTH FEATURES:                                                                       │
+│  ├── 📛 Legitimate-looking names (kube-system namespace)                                 │
+│  ├── 🏷️ Kubernetes system labels                                                         │
+│  ├── 📊 Resource limits (blend with normal pods)                                         │
+│  ├── 🔒 Service account restrictions                                                     │
+│  └── 📝 Audit log evasion techniques                                                     │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  ATTACK PLAYBOOK                                                                         │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  PHASE 1: RECONNAISSANCE           PHASE 2: INITIAL ACCESS                              │
+│  ├── Kubelet port scan             ├── Anonymous auth exploit                            │
+│  ├── API server enumeration        ├── Token theft from pods                             │
+│  ├── ETCD exposure check           ├── Misconfigured RBAC abuse                          │
+│  └── Service account audit         └── Cloud metadata access                             │
+│                                                                                          │
+│  PHASE 3: PRIVILEGE ESCALATION     PHASE 4: PERSISTENCE                                 │
+│  ├── Privileged pod creation       ├── DaemonSet backdoor                                │
+│  ├── Host PID/NET namespace        ├── CronJob persistence                               │
+│  ├── Node access via pods          ├── Mutating webhook                                  │
+│  └── Cluster-admin escalation      └── Malicious Helm release                            │
+│                                                                                          │
+│  PHASE 5: LATERAL MOVEMENT         KEY TARGETS                                           │
+│  ├── Pod-to-pod pivoting           ├── ETCD (cluster secrets)                            │
+│  ├── Service mesh abuse            ├── API Server (full control)                         │
+│  ├── ConfigMap secrets             ├── Cloud IAM credentials                             │
+│  └── Cross-namespace access        └── Application databases                             │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /k8s-kraken/                          - K8s Kraken Dashboard
+  GET  /k8s-kraken/api/status                - Module status
+  POST /k8s-kraken/api/scan-kubelet          - Scan for vulnerable Kubelets
+  POST /k8s-kraken/api/exploit-kubelet       - Exploit anonymous Kubelet
+  POST /k8s-kraken/api/list-pods             - List pods via Kubelet API
+  POST /k8s-kraken/api/exec-command          - Execute command in pod
+  POST /k8s-kraken/api/extract-token         - Extract service account token
+  GET  /k8s-kraken/api/helm-templates        - List Helm backdoor templates
+  POST /k8s-kraken/api/generate-helm         - Generate malicious Helm chart
+  GET  /k8s-kraken/api/attack-playbook       - Get K8s attack playbook
+```
+
+---
+
+## 📡 C2 Implant Framework
+
+Gelişmiş Command & Control implant yönetim sistemi.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           📡 C2 IMPLANT FRAMEWORK                                        │
+│                    Multi-Platform Command & Control System                               │
+│                         Fully Integrated Attack Platform                                 │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  PAYLOAD TYPES                              FEATURES                                     │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 🐍 Python Beacon            │           │ 🔄 Auto-reconnect           │              │
+│  │    Cross-platform           │           │ ⏱️ Configurable sleep/jitter│              │
+│  │                             │           │ 🔐 Encrypted communications │              │
+│  │ 💠 PowerShell Implant       │           │ 📁 File upload/download     │              │
+│  │    Windows native           │           │ 🖥️ Screenshot capture       │              │
+│  │                             │           │ ⌨️ Keylogging               │              │
+│  │ 🔷 C# Agent                 │           │ 🌐 Proxy support            │              │
+│  │    .NET Framework           │           │ 💀 God Mode integration     │              │
+│  │                             │           │                             │              │
+│  │ 🐚 Bash Implant             │           │ INTEGRATIONS:               │              │
+│  │    Linux/macOS              │           │ ├── DLL Sideload            │              │
+│  └─────────────────────────────┘           │ ├── WMI Persistence         │              │
+│                                            │ ├── Lateral Movement        │              │
+│  COMMUNICATION CHANNELS                    │ ├── Supply Chain            │              │
+│  ┌─────────────────────────────┐           │ ├── Golden Ticket           │              │
+│  │ 🌐 HTTP/HTTPS               │           │ └── DPAPI Extractor         │              │
+│  │ ✈️ Telegram Bot             │           └─────────────────────────────┘              │
+│  │ 💬 Discord Webhook          │                                                        │
+│  │ 🖼️ Steganography            │                                                        │
+│  │ 🔗 DNS over HTTPS           │                                                        │
+│  └─────────────────────────────┘                                                        │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /c2/                                  - C2 Dashboard
+  GET  /c2/api/agents                        - List connected agents
+  POST /c2/api/generate                      - Generate implant payload
+  POST /c2/api/task                          - Send task to agent
+  GET  /c2/api/results                       - Get task results
+  POST /c2/api/quick-deploy                  - Deploy module to agent
+```
+
+---
+
 ## 📊 Statistics
 
 ```
@@ -3461,26 +3789,38 @@ python tools/web_app_scanner.py https://example.com
 │                              📊 PROJECT STATISTICS                                       │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 
-  Total Lines of Code:        ~53,000+
-  Python Modules:             62+
-  HTML Templates:             52+
-  API Endpoints:              120+
-  Attack Techniques:          200+
-  Evasion Methods:            50+
-  MITRE ATT&CK Coverage:      12 Tactics, 100+ Techniques
+  Total Lines of Code:        ~65,000+
+  Python Modules:             70+
+  HTML Templates:             86+
+  API Endpoints:              150+
+  Attack Techniques:          250+
+  Evasion Methods:            60+
+  MITRE ATT&CK Coverage:      14 Tactics, 120+ Techniques
   
   Core Components:
-  ├── cybermodules/           ~20,000 lines
-  ├── evasion/                ~8,000 lines
-  ├── cyberapp/routes/        ~5,500 lines
-  ├── templates/              ~16,000 lines
-  └── tools/                  ~3,500 lines
+  ├── cybermodules/           ~22,000 lines
+  ├── evasion/                ~8,500 lines
+  ├── cyberapp/routes/        ~7,500 lines
+  ├── templates/              ~22,000 lines
+  └── tools/                  ~5,000 lines
   
-  NEW Modules (v2.1):
-  ├── Service Fingerprinting Pro:  1,003 lines
-  ├── Web Application Scanner:     1,076 lines
-  ├── Flask Routes:                243 lines
-  └── Templates:                   880 lines
+  NEW in v2.5 (February 2026):
+  ├── God Mode Anti-Forensics:     ~900 lines + 12 template integrations
+  ├── Cross-Module Integration:    20 templates interconnected
+  ├── K8s Kraken (Kubernetes):     ~1,000 lines
+  ├── Telegram/Discord C2:         ~650 lines
+  ├── Stego C2:                    ~550 lines
+  ├── eBPF Rootkit:                ~800 lines
+  ├── SSH Worm:                    ~700 lines
+  ├── Docker Escape:               ~700 lines
+  └── Supply Chain Attack:         ~1,400 lines
+
+  Attack Chain Modules:
+  ├── C2 Implant           → Lateral Movement → Golden Ticket
+  ├── AutoExploit          → PrivEsc → DPAPI Extract
+  ├── Phishing             → Payload Gen → WebShell
+  ├── Cloud Pivot          → K8s Warfare → Container Escape
+  └── All modules          → God Mode Anti-Forensics
 ```
 
 ---
@@ -3525,7 +3865,7 @@ This tool is provided for **educational and authorized security testing purposes
 │                                                                 │
 │   🔴 MONOLITH - Elite Red Team Framework                        │
 │   Built with ❤️ by ITherso                                      │
-│   January 2026                                                  │
+│   v2.5 - February 2026                                          │
 │                                                                 │
 │   "Knowledge is power. Use it responsibly."                     │
 │                                                                 │
