@@ -215,7 +215,12 @@ monolith/
 │   ├── byovd_module.py             # BYOVD EDR Killer - Kernel Level (~650 lines) [PRO]
 │   ├── stego_c2.py                 # Steganography C2 - LSB Encoding (~550 lines) [PRO]
 │   ├── bitb_phishing.py            # Browser-in-the-Browser Phishing (~700 lines) [PRO]
-│   └── smart_spray.py              # AI Smart Password Spraying (~500 lines) [PRO/AI]
+│   ├── smart_spray.py              # AI Smart Password Spraying (~500 lines) [PRO/AI]
+│   │
+│   │   # 🐧 LINUX INFRASTRUCTURE DOMINATION (February 2026)
+│   ├── ebpf_rootkit.py             # eBPF Rootkit Engine - Kernel Level (~800 lines) [KERNEL]
+│   ├── ssh_worm.py                 # SSH Worm & Key Harvester (~700 lines) [WORM]
+│   └── docker_escape.py            # Docker Container Escape (~700 lines) [ESCAPE]
 │
 ├── 📂 templates/                   # Web UI Templates (~50+ pages)
 │   ├── dashboard.html              # Main dashboard
@@ -231,6 +236,10 @@ monolith/
 │   ├── waf_bypass.html             # WAF bypass
 │   ├── webshell.html               # Web shell manager
 │   ├── zeroday.html                # Zero-day research
+│   ├── memory_evasion.html         # Memory forensics evasion
+│   ├── ebpf_rootkit.html           # eBPF rootkit dashboard
+│   ├── ssh_worm.html               # SSH worm control panel
+│   ├── docker_escape.html          # Docker escape techniques
 │   └── ...
 │
 ├── 📂 configs/                     # Configuration Files
@@ -493,7 +502,170 @@ API Endpoints:
 
 ---
 
-## 🕵️ Exotic Exfiltration PRO Modules (February 2025)
+## � Linux Infrastructure Domination (February 2026)
+
+Windows tamamlandı, sıra Linux sunucularda! Kernel seviyesinde stealth, SSH ile auto-spread ve container breakout.
+
+### 👻 eBPF Rootkit Engine
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           👻 eBPF ROOTKIT ENGINE                                         │
+│                   Kernel-Level Stealth Without Loadable Kernel Modules                   │
+│                         tools/ebpf_rootkit.py (~800 lines)                               │
+│                              ⚠️ KERNEL LEVEL ⚠️                                          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  HIDING CAPABILITIES                                                                     │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  SYSCALL HOOKS                              SPECIAL FEATURES                             │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 👁️ getdents64 → Process     │           │ 📡 XDP Packet Capture       │              │
+│  │    hiding from ps, top      │           │    Network-level filtering  │              │
+│  │                             │           │                             │              │
+│  │ 📁 stat/lstat → File        │           │ ⌨️ Keylogger                 │              │
+│  │    hiding from ls, find     │           │    Input tracepoint hook    │              │
+│  │                             │           │                             │              │
+│  │ 🔌 open → Prevent access    │           │ 🔓 Privilege Escalation     │              │
+│  │    to hidden files          │           │    Cred struct manipulation │              │
+│  │                             │           │                             │              │
+│  │ 🌐 tcp4_seq_show → Network  │           │ 🛡️ LSM Hooks (5.7+)         │              │
+│  │    connection hiding        │           │    Security policy bypass   │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  PERSISTENCE METHODS                                                                     │
+│  ├── 🔧 systemd service (auto-load at boot)                                              │
+│  ├── ⏰ cron job (periodic reload)                                                       │
+│  ├── 📚 ld.so.preload (library hijacking)                                                │
+│  ├── 🔌 udev rules (device-triggered)                                                    │
+│  └── 🧩 modprobe.d (kernel module params)                                                │
+│                                                                                          │
+│  ANTI-FORENSICS                                                                          │
+│  ├── 🕵️ Hide from bpftool                                                                │
+│  ├── 📊 Hide eBPF maps                                                                   │
+│  ├── 📝 Log tampering                                                                    │
+│  └── ⏱️ Timestamp manipulation                                                           │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /ebpf-rootkit/api/status         - Module status
+  POST /ebpf-rootkit/api/check-support  - Check kernel eBPF support
+  POST /ebpf-rootkit/api/generate/process-hide - Generate process hiding eBPF
+  POST /ebpf-rootkit/api/generate/file-hide    - Generate file hiding eBPF
+  POST /ebpf-rootkit/api/generate/xdp-filter   - Generate XDP packet filter
+  POST /ebpf-rootkit/api/persistence    - Generate persistence scripts
+  POST /ebpf-rootkit/api/anti-forensics - Generate anti-forensics scripts
+```
+
+### 🔑 SSH Worm & Key Harvester
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🔑 SSH WORM & KEY HARVESTER                                       │
+│                   Auto-Propagating SSH Exploitation & Credential Harvesting              │
+│                           tools/ssh_worm.py (~700 lines)                                 │
+│                              🐛 SELF-SPREADING 🐛                                        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  KEY HARVESTING                             TARGET DISCOVERY                             │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  HARVEST SOURCES                            DISCOVERY METHODS                            │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 🔐 ~/.ssh/id_rsa           │           │ 📋 known_hosts parsing      │              │
+│  │ 🔐 ~/.ssh/id_ed25519       │           │ ⚙️ SSH config parsing       │              │
+│  │ 🔐 ~/.ssh/id_ecdsa         │           │ 📜 Bash history analysis    │              │
+│  │ 🔐 ~/.ssh/id_dsa           │           │ 🗂️ /etc/hosts parsing       │              │
+│  │ 🔑 Authorized keys         │           │ 📡 ARP cache discovery      │              │
+│  │ 📝 Private key passwords   │           │ 🔍 Network scanning         │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  PROPAGATION FEATURES                                                                    │
+│  ├── 🚀 Auto-spread with harvested keys                                                  │
+│  ├── 🎯 Multi-hop propagation (configurable depth)                                       │
+│  ├── 👻 Stealth mode (minimal footprint)                                                 │
+│  ├── 📦 Self-replicating payload generation                                              │
+│  └── 🔄 Recursive target discovery                                                       │
+│                                                                                          │
+│  IMPLANT TYPES                                                                           │
+│  ├── 🐍 Python implant (full featured)                                                   │
+│  ├── 🐚 Bash one-liner (minimal)                                                         │
+│  └── 📡 Reverse shell callback                                                           │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /ssh-worm/api/status           - Worm status
+  POST /ssh-worm/api/harvest-keys     - Harvest SSH keys
+  POST /ssh-worm/api/parse-known-hosts - Parse known_hosts
+  POST /ssh-worm/api/discover-targets - Discover targets
+  POST /ssh-worm/api/propagate        - Start propagation
+  POST /ssh-worm/api/generate-payload - Generate worm payload
+  POST /ssh-worm/api/generate-implant - Generate stealthy implant
+```
+
+### 🐳 Docker Container Escape
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🐳 DOCKER CONTAINER ESCAPE                                        │
+│                   Container Breakout & Host System Compromise                            │
+│                         tools/docker_escape.py (~700 lines)                              │
+│                              🚪 BREAKOUT 🚪                                              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  ESCAPE METHODS                                                                          │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  PRIVILEGED ESCAPES                         KERNEL EXPLOITS                              │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 👑 --privileged mode        │           │ 🔥 DirtyPipe                │              │
+│  │    Full host /dev access    │           │    CVE-2022-0847           │              │
+│  │                             │           │    Kernel 5.8-5.16.11      │              │
+│  │ 🔌 Docker socket mounted    │           │                             │              │
+│  │    Spawn privileged cont.   │           │ 🐄 DirtyCow                 │              │
+│  │                             │           │    CVE-2016-5195           │              │
+│  │ 🔧 CAP_SYS_ADMIN           │           │    Kernel < 4.8.3          │              │
+│  │    Mount host filesystem    │           │                             │              │
+│  │                             │           │ 📁 core_pattern             │              │
+│  │ 🔍 CAP_SYS_PTRACE          │           │    RCE on crash            │              │
+│  │    Process injection        │           └─────────────────────────────┘              │
+│  └─────────────────────────────┘                                                        │
+│                                                                                          │
+│  NAMESPACE ESCAPES                          DETECTION                                    │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 🖥️ Host PID namespace       │           │ 🐳 Docker runtime           │              │
+│  │    /proc/PID/root access    │           │ 📦 containerd              │              │
+│  │                             │           │ 🦭 Podman                   │              │
+│  │ 🌐 Host NET namespace       │           │ 🔷 CRI-O                    │              │
+│  │    Network pivoting         │           │ 📦 LXC                      │              │
+│  │                             │           │                             │              │
+│  │ 📂 Cgroup release_agent     │           │ Auto-detects:               │              │
+│  │    Classic escape (v1)      │           │ • Capabilities              │              │
+│  │                             │           │ • Sensitive mounts          │              │
+│  │ 🔄 /proc/sys abuse          │           │ • Seccomp/AppArmor          │              │
+│  │    Kernel param modify      │           │ • Kernel version            │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /docker-escape/api/status      - Module status
+  POST /docker-escape/api/detect      - Detect container environment
+  POST /docker-escape/api/enumerate   - Enumerate escape vectors
+  POST /docker-escape/api/get-payload - Get escape payload
+  POST /docker-escape/api/attempt     - Attempt escape
+  GET  /docker-escape/api/escape-methods - List all escape methods
+```
+
+---
+
+## �🕵️ Exotic Exfiltration PRO Modules (February 2025)
 
 Firewall'ları ve DLP sistemlerini delirtecek covert channel modülleri. Trafik analizi yapılamaz, engellenmesi imkansız.
 
