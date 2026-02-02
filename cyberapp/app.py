@@ -121,6 +121,9 @@ browser_persistence_bp = _try_import('browser_persistence_bp', lambda: __import_
 # Living off the Forest - Advanced AD Module
 lotf_bp = _try_import('lotf_bp', lambda: __import__('cyberapp.routes.lotf_ad', fromlist=['lotf_bp']).lotf_bp)
 
+# IoT & Industrial (OT) Espionage Module
+iot_bp = _try_import('iot_bp', lambda: __import__('cyberapp.routes.iot_ot_espionage', fromlist=['iot_bp']).iot_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -237,6 +240,9 @@ def create_app(run_migrations_on_start=True):
     
     # Living off the Forest - Advanced AD Module
     if lotf_bp: app.register_blueprint(lotf_bp)
+    
+    # IoT & Industrial (OT) Espionage Module
+    if iot_bp: app.register_blueprint(iot_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

@@ -1,0 +1,866 @@
+{% extends "base.html" %}
+
+{% block title %}IoT & OT Espionage - CyberPulse{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">🏭</span>
+                IoT & Industrial (OT) Espionage
+            </h1>
+            <p class="text-gray-400 mt-2">Fabrikalar ve Akıllı Cihazlar için Casusluk Araçları</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="px-3 py-1 text-xs font-bold bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-full animate-pulse">
+                CRITICAL
+            </span>
+            <span class="px-3 py-1 text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-full">
+                ICS/SCADA
+            </span>
+        </div>
+    </div>
+
+    <!-- Warning Banner -->
+    <div class="glass rounded-xl p-4 border border-red-500/30 bg-red-500/5">
+        <div class="flex items-start gap-3">
+            <span class="text-2xl">⚠️</span>
+            <div>
+                <h4 class="text-red-400 font-semibold">Endüstriyel Sistemler Hassastır!</h4>
+                <p class="text-gray-400 text-sm mt-1">
+                    Bu modül PLC, SCADA ve IoT sistemlerine müdahale edebilir. 
+                    Yanlış kullanım <span class="text-red-400 font-bold">GERÇEK FİZİKSEL HASAR</span> verebilir.
+                    Sadece yetkili pentest ortamlarında kullanın!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="glass rounded-xl border border-gray-700/50">
+        <div class="border-b border-gray-700/50">
+            <nav class="flex space-x-0">
+                <button onclick="switchTab('mqtt')" id="tab-mqtt" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-cyan-500 text-cyan-400 bg-cyan-500/10">
+                    <span class="mr-2">📡</span> MQTT Sniffer & Injector
+                </button>
+                <button onclick="switchTab('printer')" id="tab-printer" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">
+                    <span class="mr-2">🖨️</span> Printer Memory Dump
+                </button>
+                <button onclick="switchTab('playbooks')" id="tab-playbooks" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">
+                    <span class="mr-2">📋</span> Attack Playbooks
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- MQTT Tab -->
+            <div id="content-mqtt" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- MQTT Sniffer -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📡</span> MQTT Sniffer Configuration
+                        </h3>
+                        
+                        <div class="glass rounded-xl p-4 border border-cyan-500/30 mb-4">
+                            <p class="text-cyan-400 text-sm">
+                                <strong>MQTT Nedir?</strong> IoT cihazların konuştuğu hafif mesajlaşma protokolü. 
+                                Akıllı ev cihazları, sensörler, endüstriyel kontrol sistemleri kullanır.
+                            </p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Broker -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">MQTT Broker IP</label>
+                                <input type="text" id="mqttBroker" value="192.168.1.100"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono focus:border-cyan-500 focus:outline-none">
+                            </div>
+
+                            <!-- Port -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Port</label>
+                                <select id="mqttPort" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none">
+                                    <option value="1883">1883 (Standard)</option>
+                                    <option value="8883">8883 (TLS/SSL)</option>
+                                    <option value="1884">1884 (WebSocket)</option>
+                                </select>
+                            </div>
+
+                            <!-- Topics -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Topics to Subscribe</label>
+                                <input type="text" id="mqttTopics" value="#"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono focus:border-cyan-500 focus:outline-none"
+                                       placeholder="# (all topics)">
+                                <p class="text-xs text-gray-500 mt-1"># = all, +/temperature = single level wildcard</p>
+                            </div>
+
+                            <!-- Generate Buttons -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="generateMQTTSniffer()" 
+                                        class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                    <span>👂</span> Sniffer Script
+                                </button>
+                                <button onclick="generateMQTTInjector()" 
+                                        class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                    <span>💉</span> Injector Script
+                                </button>
+                            </div>
+
+                            <button onclick="generateIoTDiscovery()" 
+                                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <span>🔍</span> IoT Discovery Scanner
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Attacks -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>⚡</span> Quick Attack Payloads
+                        </h3>
+                        
+                        <!-- Door Unlock -->
+                        <div class="glass rounded-xl p-4 border border-green-500/30 hover:border-green-500/60 transition-all cursor-pointer" onclick="loadAttackPreset('door')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-3xl">🚪</span>
+                                    <div>
+                                        <h4 class="text-green-400 font-semibold">Door Unlock Attack</h4>
+                                        <p class="text-gray-400 text-sm">Akıllı kapı kilitlerini aç</p>
+                                    </div>
+                                </div>
+                                <span class="text-gray-500">→</span>
+                            </div>
+                        </div>
+
+                        <!-- Sensor Spoof -->
+                        <div class="glass rounded-xl p-4 border border-yellow-500/30 hover:border-yellow-500/60 transition-all cursor-pointer" onclick="loadAttackPreset('sensor')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-3xl">🌡️</span>
+                                    <div>
+                                        <h4 class="text-yellow-400 font-semibold">Sensor Spoofing</h4>
+                                        <p class="text-gray-400 text-sm">Sıcaklık 100°C, sahte yangın alarmı</p>
+                                    </div>
+                                </div>
+                                <span class="text-gray-500">→</span>
+                            </div>
+                        </div>
+
+                        <!-- Industrial Sabotage -->
+                        <div class="glass rounded-xl p-4 border border-red-500/30 hover:border-red-500/60 transition-all cursor-pointer" onclick="loadAttackPreset('industrial')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-3xl">⚙️</span>
+                                    <div>
+                                        <h4 class="text-red-400 font-semibold">Industrial Sabotage</h4>
+                                        <p class="text-gray-400 text-sm">PLC/SCADA sabotaj ⚠️ DİKKAT!</p>
+                                    </div>
+                                </div>
+                                <span class="text-gray-500">→</span>
+                            </div>
+                        </div>
+
+                        <!-- Lights Chaos -->
+                        <div class="glass rounded-xl p-4 border border-purple-500/30 hover:border-purple-500/60 transition-all cursor-pointer" onclick="loadAttackPreset('lights')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-3xl">💡</span>
+                                    <div>
+                                        <h4 class="text-purple-400 font-semibold">Lights Chaos</h4>
+                                        <p class="text-gray-400 text-sm">Tüm ışıkları aç/kapat/yanıp sön</p>
+                                    </div>
+                                </div>
+                                <span class="text-gray-500">→</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Output Section -->
+                <div id="mqttOutputSection" class="hidden mt-6 pt-6 border-t border-gray-700/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>💻</span> Generated Script
+                        </h3>
+                        <div class="flex gap-2">
+                            <button onclick="downloadMQTTScript()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                                <span>⬇️</span> Download
+                            </button>
+                            <button onclick="copyMQTTScript()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                                <span>📋</span> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div id="mqttOutput" class="glass rounded-xl p-4 border border-gray-600/50 max-h-[400px] overflow-auto">
+                        <pre class="text-xs text-gray-300 font-mono"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Printer Tab -->
+            <div id="content-printer" class="tab-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Printer Config -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>🖨️</span> Printer Memory Dump & LDAP Extraction
+                        </h3>
+                        
+                        <div class="glass rounded-xl p-4 border border-amber-500/30 mb-4">
+                            <p class="text-amber-400 text-sm">
+                                <strong>Neden Yazıcılar?</strong> Kurumsal yazıcılar genelde LDAP şifrelerini hafızada tutar.
+                                Scan-to-email için AD'ye bağlanırlar. <span class="text-green-400">Güvenliğin en zayıf halkası!</span>
+                            </p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Target IP -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Target Printer IP</label>
+                                <input type="text" id="printerIP" value="192.168.1.50"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono focus:border-amber-500 focus:outline-none">
+                            </div>
+
+                            <!-- Vendor -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Printer Vendor</label>
+                                <select id="printerVendor" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-amber-500 focus:outline-none">
+                                    <option value="hp">HP LaserJet</option>
+                                    <option value="xerox">Xerox</option>
+                                    <option value="canon">Canon</option>
+                                    <option value="brother">Brother</option>
+                                    <option value="ricoh">Ricoh</option>
+                                    <option value="lexmark">Lexmark</option>
+                                    <option value="kyocera">Kyocera</option>
+                                    <option value="konica_minolta">Konica Minolta</option>
+                                    <option value="sharp">Sharp</option>
+                                    <option value="epson">Epson</option>
+                                </select>
+                            </div>
+
+                            <!-- Port -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">PJL Port</label>
+                                <input type="number" id="printerPort" value="9100"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-amber-500 focus:outline-none">
+                            </div>
+
+                            <!-- Generate Buttons -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="generatePJLExploit()" 
+                                        class="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                    <span>💾</span> PJL Exploit
+                                </button>
+                                <button onclick="generateLDAPExtractor()" 
+                                        class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                    <span>🔐</span> LDAP Extractor
+                                </button>
+                            </div>
+
+                            <!-- Network Scanner -->
+                            <div class="pt-4 border-t border-gray-700/50">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Network Range (for scanning)</label>
+                                <input type="text" id="printerNetwork" value="192.168.1.0/24"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono focus:border-amber-500 focus:outline-none">
+                                <button onclick="generatePrinterScanner()" 
+                                        class="w-full mt-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                                    <span>🔍</span> Network Printer Scanner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Default Credentials & Exploits -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>🔑</span> Default Credentials & Exploits
+                        </h3>
+                        
+                        <!-- Default Creds Table -->
+                        <div class="glass rounded-xl border border-gray-600/50 overflow-hidden">
+                            <div class="px-4 py-3 bg-gray-800/50 border-b border-gray-600/50">
+                                <h4 class="text-gray-300 font-medium">Common Default Passwords</h4>
+                            </div>
+                            <div class="p-4 max-h-[200px] overflow-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="text-gray-400 text-left">
+                                            <th class="pb-2">Vendor</th>
+                                            <th class="pb-2">User</th>
+                                            <th class="pb-2">Pass</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-300 font-mono text-xs">
+                                        <tr><td class="py-1">HP</td><td>admin</td><td>(blank)</td></tr>
+                                        <tr><td class="py-1">Xerox</td><td>admin</td><td>1111</td></tr>
+                                        <tr><td class="py-1">Canon</td><td>ADMIN</td><td>canon</td></tr>
+                                        <tr><td class="py-1">Brother</td><td>admin</td><td>access</td></tr>
+                                        <tr><td class="py-1">Ricoh</td><td>admin</td><td>(blank)</td></tr>
+                                        <tr><td class="py-1">Lexmark</td><td>admin</td><td>(blank)</td></tr>
+                                        <tr><td class="py-1">Kyocera</td><td>Admin</td><td>Admin</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Exploit Types -->
+                        <div class="glass rounded-xl border border-gray-600/50 overflow-hidden">
+                            <div class="px-4 py-3 bg-gray-800/50 border-b border-gray-600/50">
+                                <h4 class="text-gray-300 font-medium">Available Exploits</h4>
+                            </div>
+                            <div class="p-4 space-y-2">
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="text-red-400">●</span>
+                                    <span class="text-gray-300">PJL Directory Traversal</span>
+                                    <span class="text-xs text-gray-500 ml-auto">CVE-2017-2741</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="text-red-400">●</span>
+                                    <span class="text-gray-300">LDAP Config Leak</span>
+                                    <span class="text-xs text-gray-500 ml-auto">CRITICAL</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="text-yellow-400">●</span>
+                                    <span class="text-gray-300">SNMP Community Leak</span>
+                                    <span class="text-xs text-gray-500 ml-auto">MEDIUM</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="text-red-400">●</span>
+                                    <span class="text-gray-300">Memory Dump</span>
+                                    <span class="text-xs text-gray-500 ml-auto">CRITICAL</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="text-yellow-400">●</span>
+                                    <span class="text-gray-300">Print Job History</span>
+                                    <span class="text-xs text-gray-500 ml-auto">HIGH</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Output Section -->
+                <div id="printerOutputSection" class="hidden mt-6 pt-6 border-t border-gray-700/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>💻</span> Generated Script
+                        </h3>
+                        <div class="flex gap-2">
+                            <button onclick="downloadPrinterScript()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                                <span>⬇️</span> Download
+                            </button>
+                            <button onclick="copyPrinterScript()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                                <span>📋</span> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div id="printerOutput" class="glass rounded-xl p-4 border border-gray-600/50 max-h-[400px] overflow-auto">
+                        <pre class="text-xs text-gray-300 font-mono"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playbooks Tab -->
+            <div id="content-playbooks" class="tab-content hidden">
+                <div class="space-y-6">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <span>📋</span> Attack Playbooks
+                    </h3>
+
+                    <!-- Printer to Domain Admin -->
+                    <div class="glass rounded-xl border border-amber-500/30 overflow-hidden">
+                        <div class="px-4 py-3 bg-amber-500/10 border-b border-amber-500/30 flex items-center justify-between">
+                            <h4 class="text-amber-400 font-semibold flex items-center gap-2">
+                                <span>🖨️</span> Printer to Domain Admin
+                            </h4>
+                            <button onclick="loadLateralMovementGuide()" class="text-xs bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-white">
+                                Load Guide
+                            </button>
+                        </div>
+                        <div id="lateralMovementGuide" class="p-4">
+                            <p class="text-gray-400 text-sm mb-4">
+                                Yazıcıdan LDAP credential çekerek Domain Admin'e yükselme rehberi.
+                            </p>
+                            <!-- Loaded via JS -->
+                        </div>
+                    </div>
+
+                    <!-- IoT Device Playbooks -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="glass rounded-xl border border-green-500/30 p-4 cursor-pointer hover:border-green-500/60" onclick="loadDevicePlaybook('door_lock')">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-2xl">🚪</span>
+                                <h4 class="text-green-400 font-semibold">Smart Lock Playbook</h4>
+                            </div>
+                            <p class="text-gray-400 text-sm">Akıllı kapı kilidi saldırı adımları</p>
+                        </div>
+                        
+                        <div class="glass rounded-xl border border-yellow-500/30 p-4 cursor-pointer hover:border-yellow-500/60" onclick="loadDevicePlaybook('thermostat')">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-2xl">🌡️</span>
+                                <h4 class="text-yellow-400 font-semibold">Thermostat Playbook</h4>
+                            </div>
+                            <p class="text-gray-400 text-sm">İklim kontrol manipülasyonu</p>
+                        </div>
+                        
+                        <div class="glass rounded-xl border border-red-500/30 p-4 cursor-pointer hover:border-red-500/60" onclick="loadDevicePlaybook('plc_controller')">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-2xl">⚙️</span>
+                                <h4 class="text-red-400 font-semibold">PLC Attack Playbook</h4>
+                            </div>
+                            <p class="text-gray-400 text-sm">Endüstriyel PLC saldırı adımları</p>
+                        </div>
+                        
+                        <div class="glass rounded-xl border border-cyan-500/30 p-4 cursor-pointer hover:border-cyan-500/60" onclick="loadDevicePlaybook('sensor')">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-2xl">📡</span>
+                                <h4 class="text-cyan-400 font-semibold">Sensor Spoofing Playbook</h4>
+                            </div>
+                            <p class="text-gray-400 text-sm">Sensör verisi manipülasyonu</p>
+                        </div>
+                    </div>
+
+                    <!-- Playbook Display -->
+                    <div id="playbookDisplay" class="hidden glass rounded-xl border border-gray-600/50 p-4">
+                        <div id="playbookContent"></div>
+                    </div>
+                </div>
+
+                <!-- OPSEC Tips -->
+                <div class="mt-6 pt-6 border-t border-gray-700/50">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                        <span>🥷</span> OPSEC Tips
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="glass rounded-xl p-4 border border-green-500/20">
+                            <h4 class="text-green-400 font-semibold mb-2">✅ Low Risk</h4>
+                            <ul class="text-gray-400 text-sm space-y-1">
+                                <li>• Yazıcılar genellikle log tutmaz</li>
+                                <li>• SNMP community string 'public' açık</li>
+                                <li>• IoT cihazlar izlenmez</li>
+                            </ul>
+                        </div>
+                        <div class="glass rounded-xl p-4 border border-red-500/20">
+                            <h4 class="text-red-400 font-semibold mb-2">⚠️ High Risk</h4>
+                            <ul class="text-gray-400 text-sm space-y-1">
+                                <li>• Industrial sabotaj = fiziksel hasar</li>
+                                <li>• SCADA alarmları tetiklenebilir</li>
+                                <li>• Sensör spoof = güvenlik alarmı</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Code Modal -->
+<div id="codeModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
+    <div class="bg-gray-900 rounded-xl border border-gray-700 max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 class="text-white font-semibold" id="modalTitle">Attack Preset</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <div class="p-4 overflow-auto max-h-[70vh]">
+            <div id="modalContent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentMQTTResult = null;
+let currentPrinterResult = null;
+let currentScriptType = null;
+
+// Tab switching
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-cyan-500', 'text-cyan-400', 'bg-cyan-500/10');
+        btn.classList.add('border-transparent', 'text-gray-400');
+    });
+    
+    const activeTab = document.getElementById(`tab-${tabName}`);
+    activeTab.classList.remove('border-transparent', 'text-gray-400');
+    activeTab.classList.add('border-cyan-500', 'text-cyan-400', 'bg-cyan-500/10');
+    
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(`content-${tabName}`).classList.remove('hidden');
+}
+
+// MQTT Functions
+async function generateMQTTSniffer() {
+    const config = {
+        broker: document.getElementById('mqttBroker').value,
+        port: parseInt(document.getElementById('mqttPort').value),
+        topics: document.getElementById('mqttTopics').value.split(',').map(t => t.trim())
+    };
+    
+    try {
+        const response = await fetch('/iot-espionage/api/mqtt/sniffer/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentMQTTResult = data.result;
+            currentScriptType = 'sniffer';
+            displayMQTTOutput(data.result.script);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function generateMQTTInjector() {
+    const config = {
+        broker: document.getElementById('mqttBroker').value,
+        port: parseInt(document.getElementById('mqttPort').value)
+    };
+    
+    try {
+        const response = await fetch('/iot-espionage/api/mqtt/injector/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentMQTTResult = data.result;
+            currentScriptType = 'injector';
+            displayMQTTOutput(data.result.script);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function generateIoTDiscovery() {
+    const config = {
+        network: document.getElementById('mqttBroker').value.replace(/\.\d+$/, '.0/24')
+    };
+    
+    try {
+        const response = await fetch('/iot-espionage/api/mqtt/discovery/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentMQTTResult = data.result;
+            currentScriptType = 'discovery';
+            displayMQTTOutput(data.result.script);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function displayMQTTOutput(script) {
+    const section = document.getElementById('mqttOutputSection');
+    const output = document.getElementById('mqttOutput').querySelector('pre');
+    
+    output.textContent = script;
+    section.classList.remove('hidden');
+}
+
+// Printer Functions
+async function generatePJLExploit() {
+    const config = {
+        target_ip: document.getElementById('printerIP').value,
+        port: parseInt(document.getElementById('printerPort').value)
+    };
+    
+    try {
+        const response = await fetch('/iot-espionage/api/printer/pjl/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentPrinterResult = data.result;
+            currentScriptType = 'pjl';
+            displayPrinterOutput(data.result.script);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function generateLDAPExtractor() {
+    const config = {
+        target_ip: document.getElementById('printerIP').value,
+        vendor: document.getElementById('printerVendor').value
+    };
+    
+    try {
+        const response = await fetch('/iot-espionage/api/printer/ldap/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentPrinterResult = data.result;
+            currentScriptType = 'ldap';
+            displayPrinterOutput(data.result.script);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function generatePrinterScanner() {
+    const config = {
+        network: document.getElementById('printerNetwork').value
+    };
+    
+    try {
+        const response = await fetch('/iot-espionage/api/printer/scanner/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentPrinterResult = data.result;
+            currentScriptType = 'scanner';
+            displayPrinterOutput(data.result.script);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function displayPrinterOutput(script) {
+    const section = document.getElementById('printerOutputSection');
+    const output = document.getElementById('printerOutput').querySelector('pre');
+    
+    output.textContent = script;
+    section.classList.remove('hidden');
+}
+
+// Attack Presets
+async function loadAttackPreset(type) {
+    let endpoint = '';
+    if (type === 'door') endpoint = '/iot-espionage/api/presets/door-unlock';
+    else if (type === 'sensor') endpoint = '/iot-espionage/api/presets/sensor-spoof';
+    else if (type === 'industrial') endpoint = '/iot-espionage/api/presets/industrial-sabotage';
+    else if (type === 'lights') {
+        // Custom lights preset
+        showPresetModal('Lights Chaos', `
+            <div class="space-y-4">
+                <p class="text-gray-300">MQTT topic'leri ve payload'lar:</p>
+                <div class="bg-gray-800/50 rounded-lg p-3">
+                    <pre class="text-xs text-cyan-300 font-mono">
+Topic: zigbee2mqtt/+/set
+Payload: {"state": "OFF"}  // Tüm ışıkları kapat
+
+Topic: tasmota/+/cmnd/Power
+Payload: TOGGLE  // Sürekli aç/kapat (DoS)
+
+Topic: homeassistant/light/+/set
+Payload: {"state": "ON", "brightness": 255, "effect": "strobe"}
+                    </pre>
+                </div>
+            </div>
+        `);
+        return;
+    }
+    
+    try {
+        const response = await fetch(endpoint);
+        const data = await response.json();
+        
+        if (data.success) {
+            showPresetModal(data.preset.name, formatPreset(data.preset));
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function formatPreset(preset) {
+    let html = `<p class="text-gray-300 mb-4">${preset.description}</p>`;
+    
+    if (preset.warning) {
+        html += `<div class="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4 text-red-400 text-sm">${preset.warning}</div>`;
+    }
+    
+    if (preset.topics) {
+        html += `<div class="mb-4"><h5 class="text-gray-400 font-semibold mb-2">Topics:</h5><ul class="text-cyan-400 text-sm font-mono space-y-1">`;
+        preset.topics.forEach(t => html += `<li>• ${t}</li>`);
+        html += `</ul></div>`;
+    }
+    
+    if (preset.payloads) {
+        html += `<div class="mb-4"><h5 class="text-gray-400 font-semibold mb-2">Payloads:</h5><div class="bg-gray-800/50 rounded-lg p-3"><pre class="text-xs text-green-300 font-mono">${JSON.stringify(preset.payloads, null, 2)}</pre></div></div>`;
+    }
+    
+    if (preset.spoofs) {
+        html += `<div class="mb-4"><h5 class="text-gray-400 font-semibold mb-2">Spoofs:</h5><div class="space-y-2">`;
+        preset.spoofs.forEach(s => {
+            html += `<div class="bg-gray-800/50 rounded-lg p-2 text-sm"><span class="text-yellow-400">${s.type}</span>: ${s.value} → <span class="text-red-400">${s.effect}</span></div>`;
+        });
+        html += `</div></div>`;
+    }
+    
+    if (preset.targets) {
+        html += `<div class="mb-4"><h5 class="text-gray-400 font-semibold mb-2">Targets:</h5><div class="space-y-2">`;
+        preset.targets.forEach(t => {
+            html += `<div class="bg-gray-800/50 rounded-lg p-2 text-sm"><span class="text-cyan-400">${t.type}</span>: ${t.action} <code class="text-green-400 ml-2">${t.command}</code></div>`;
+        });
+        html += `</div></div>`;
+    }
+    
+    return html;
+}
+
+function showPresetModal(title, content) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalContent').innerHTML = content;
+    document.getElementById('codeModal').classList.remove('hidden');
+    document.getElementById('codeModal').classList.add('flex');
+}
+
+// Playbook Functions
+async function loadLateralMovementGuide() {
+    try {
+        const response = await fetch('/iot-espionage/api/printer/lateral-movement');
+        const data = await response.json();
+        
+        if (data.success) {
+            const guide = data.guide;
+            const container = document.getElementById('lateralMovementGuide');
+            
+            let html = `<div class="space-y-4">`;
+            guide.steps.forEach(step => {
+                html += `
+                    <div class="glass rounded-lg p-3 border border-gray-600/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs font-bold">${step.phase}</span>
+                            <span class="text-white font-semibold">${step.action}</span>
+                        </div>
+                        ${step.tools ? `<p class="text-xs text-gray-400">Tools: <code class="text-cyan-400">${step.tools.join(', ')}</code></p>` : ''}
+                        ${step.commands ? `<pre class="text-xs text-green-400 mt-2 bg-gray-800/50 p-2 rounded overflow-x-auto">${step.commands.join('\n')}</pre>` : ''}
+                        ${step.common_creds ? `<ul class="text-xs text-gray-400 mt-2">${step.common_creds.map(c => `<li>• ${c}</li>`).join('')}</ul>` : ''}
+                        ${step.note ? `<p class="text-xs text-yellow-400 mt-2">💡 ${step.note}</p>` : ''}
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function loadDevicePlaybook(deviceType) {
+    try {
+        const response = await fetch(`/iot-espionage/api/mqtt/playbook/${deviceType}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const playbook = data.playbook;
+            const container = document.getElementById('playbookContent');
+            
+            let html = `<h4 class="text-lg font-semibold text-white mb-4">${playbook.name}</h4><div class="space-y-3">`;
+            playbook.steps.forEach((step, idx) => {
+                html += `
+                    <div class="flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs font-bold flex-shrink-0">${idx + 1}</span>
+                        <div>
+                            <span class="text-cyan-400 font-semibold">${step.phase}</span>
+                            <p class="text-gray-300 text-sm">${step.action}</p>
+                            ${step.command ? `<code class="text-xs text-green-400">${step.command}</code>` : ''}
+                            ${step.payload ? `<code class="text-xs text-orange-400">${step.payload}</code>` : ''}
+                            ${step.note ? `<p class="text-xs text-yellow-400">💡 ${step.note}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            
+            container.innerHTML = html;
+            document.getElementById('playbookDisplay').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Download Functions
+function downloadMQTTScript() {
+    if (!currentMQTTResult) return;
+    
+    const blob = new Blob([currentMQTTResult.script], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mqtt_${currentScriptType}.py`;
+    a.click();
+}
+
+function copyMQTTScript() {
+    if (!currentMQTTResult) return;
+    navigator.clipboard.writeText(currentMQTTResult.script);
+    alert('Copied to clipboard!');
+}
+
+function downloadPrinterScript() {
+    if (!currentPrinterResult) return;
+    
+    const blob = new Blob([currentPrinterResult.script], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `printer_${currentScriptType}.py`;
+    a.click();
+}
+
+function copyPrinterScript() {
+    if (!currentPrinterResult) return;
+    navigator.clipboard.writeText(currentPrinterResult.script);
+    alert('Copied to clipboard!');
+}
+
+function closeModal() {
+    document.getElementById('codeModal').classList.add('hidden');
+    document.getElementById('codeModal').classList.remove('flex');
+}
+
+// Close modal on escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+{% endblock %}
