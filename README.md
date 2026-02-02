@@ -671,7 +671,265 @@ API Endpoints:
 
 ---
 
-## �🗡️ Core Attack Modules
+## 🚀 Lateral Movement PRO Modules (February 2025)
+
+Enterprise ağlarda hayalet gibi gezme modülleri. SCCM, RDP ve WSUS ile tüm ağı ele geçir!
+
+### 🖥️ SCCM/MECM Hunter - "Game Over" Button
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🖥️ SCCM/MECM HUNTER - GAME OVER BUTTON                           │
+│              SCCM Admin = Domain Admin. Şirketin TÜM bilgisayarlarına hükmet!           │
+│                         tools/sccm_hunter.py (~750 lines)                                │
+│                     🎯 The Ultimate Enterprise Takeover Tool 🎯                          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+SCCM/MECM NEDIR?
+  Microsoft System Center Configuration Manager (SCCM/MECM):
+  - Şirketlerdeki yazılım dağıtım sunucusu
+  - TÜM bilgisayarlara uygulama/update dağıtır
+  - Tam admin yetkisiyle her şeyi çalıştırabilir
+  - SCCM Admin ≈ Domain Admin (hatta DAHA FAZLA!)
+
+ATTACK CHAIN:
+  ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
+  │ 1.DISCOVER │───▶│ 2.NAA CRED │───▶│ 3.ADMIN    │───▶│ 4.PACKAGE  │───▶│ 5.DEPLOY   │
+  │            │    │   EXTRACT  │    │   SERVICE  │    │   CREATE   │    │   TO ALL   │
+  │ • LDAP     │    │ • DPAPI    │    │ • REST API │    │ • Malicious│    │ • GAME     │
+  │ • DNS SRV  │    │ • WMI      │    │ • Full     │    │   MSI/EXE  │    │   OVER!    │
+  │ • SPN Enum │    │ • Registry │    │   Control  │    │ • Task Seq │    │            │
+  └────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘
+
+DISCOVERY METHODS:
+  🔍 LDAP Query    - CN=System Management container arama
+  🌐 DNS SRV       - _mssms-mp-<sitecode>._tcp.domain.com
+  🎫 SPN Enum      - SMS/SCCM service principal names
+  📡 Network Scan  - SCCM portları (80, 443, 8530, 8531)
+
+CREDENTIAL EXTRACTION:
+  🔐 NAA Credentials (Network Access Account)
+  - WMI: root\ccm\policy\Machine\ActualConfig
+  - DPAPI decryption ile şifreyi çöz
+  - Bu hesap genelde over-privileged!
+
+  🔑 Task Sequence Media Password
+  - PXE boot images içindeki şifreler
+  - Boot sırasında yakalanabilir
+
+ADMIN SERVICE ATTACK:
+  📡 REST API Endpoints:
+    /AdminService/wmi/SMS_Site
+    /AdminService/wmi/SMS_Application
+    /AdminService/wmi/SMS_Package
+    /AdminService/wmi/SMS_Advertisement
+
+  ⚡ Yapabileceklerin:
+    - Malicious Application oluştur
+    - Tüm Collection'lara deploy et
+    - Task Sequence ile boot-time saldırı
+    - Script çalıştır (PowerShell, batch)
+
+PXE BOOT ATTACK:
+  🥾 Boot Image Injection:
+    1. PXE sunucusunu bul
+    2. Boot image'ı indir
+    3. Backdoor ekle
+    4. Yeni makineler backdoor'lu boot olur!
+
+IMPLANT GENERATION:
+  🐍 Python (WMI + AdminService)
+  💠 PowerShell (Native Windows)
+  🔷 C# (AdminService REST client)
+
+API Endpoints:
+  POST /sccm-hunter/api/create-session     - Create hunt session
+  POST /sccm-hunter/api/discover           - Discover SCCM servers
+  POST /sccm-hunter/api/extract-naa        - Extract NAA credentials
+  POST /sccm-hunter/api/attack-admin-service - Connect to AdminService
+  POST /sccm-hunter/api/create-package     - Create malicious package
+  POST /sccm-hunter/api/task-sequence      - Create task sequence
+  POST /sccm-hunter/api/pxe-attack         - PXE boot attack
+  POST /sccm-hunter/api/generate-implant   - Generate implant code
+  GET  /sccm-hunter/api/playbook           - Full attack playbook
+```
+
+### 👻 RDP Hijacking - Shadow Session Attack
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                         👻 RDP HIJACKING - SHADOW SESSION                                │
+│               Kullanıcının Ruhu Duymadan RDP Oturumuna Bağlan!                           │
+│                        tools/rdp_hijack.py (~600 lines)                                  │
+│                       🎭 Silent Session Takeover 🎭                                      │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+RDP SHADOW NEDIR?
+  Windows'un yerleşik özelliği:
+  - Aktif RDP oturumunu izleyebilirsin (view)
+  - Kontrol alabilirsin (control)
+  - Disconnected oturumu ele geçirebilirsin
+  - Doğru ayarlarla kullanıcı HİÇBİR ŞEY farketmez!
+
+ATTACK MODES:
+  ┌────────────────────────────────────────────────────────────────────────────────────┐
+  │  MODE           │  DESCRIPTION                    │  DETECTION RISK              │
+  ├────────────────────────────────────────────────────────────────────────────────────┤
+  │  👁️  VIEW ONLY   │  Sadece izle, dokunma          │  LOW (prompt varsa MEDIUM)   │
+  │  🖱️  CONTROL     │  Mouse + keyboard kontrol      │  MEDIUM (prompt varsa HIGH)  │
+  │  👻 SILENT VIEW │  Registry mod + izle           │  VERY LOW (no prompt!)       │
+  │  💀 SILENT CTRL │  Registry mod + tam kontrol    │  LOW (no prompt!)            │
+  └────────────────────────────────────────────────────────────────────────────────────┘
+
+SESSION ENUMERATION:
+  🔍 Methods:
+    - qwinsta /server:TARGET (query user)
+    - WMI: Win32_LogonSession + Win32_LoggedOnUser
+    - PsLoggedOn equivalent
+    
+  📊 Info Gathered:
+    - Session ID, Username, Domain
+    - State (Active/Disconnected/Idle)
+    - Client IP, Logon Time, Idle Time
+    - Is Admin? (High value target!)
+
+SHADOW SESSION:
+  💻 Native Command:
+    mstsc /shadow:<ID> /v:<SERVER> /control
+    
+  🔇 Silent Shadow (No Prompt):
+    Registry: HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services
+    - fAllowToGetHelp = 1
+    - Shadow = 2 (Full Control without consent)
+    - fAllowFullControl = 1
+
+DISCONNECTED SESSION TAKEOVER:
+  ⚠️ ÇOĞU KIŞI BİLMİYOR:
+    - Disconnected RDP = Oturum hala açık!
+    - SYSTEM yetkisiyle doğrudan bağlanabilirsin!
+    
+  💀 Takeover Command (as SYSTEM):
+    tscon <SESSION_ID> /dest:console
+    
+  🔧 Methods to Get SYSTEM:
+    - sc create + binpath
+    - PsExec -s
+    - Scheduled Task as SYSTEM
+
+CAPTURE TOOLS:
+  ⌨️ Keylogger (Shadow sırasında)
+  📸 Screenshot Capture
+  🎥 Session Recording
+
+IMPLANT GENERATION:
+  💠 PowerShell (Native Windows)
+  🐍 Python (WMI based)
+
+API Endpoints:
+  POST /rdp-hijack/api/enumerate         - List RDP sessions
+  POST /rdp-hijack/api/shadow            - Shadow a session
+  POST /rdp-hijack/api/generate-commands - Generate attack commands
+  POST /rdp-hijack/api/takeover          - Takeover disconnected session
+  POST /rdp-hijack/api/enable-silent-shadow - Enable no-prompt shadow
+  POST /rdp-hijack/api/capture-keystrokes - Get keylogger code
+  POST /rdp-hijack/api/generate-implant  - Generate implant code
+  GET  /rdp-hijack/api/techniques        - List all techniques
+```
+
+### 🔄 WSUS Spoofing - Fake Windows Update
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                          🔄 WSUS SPOOFING - FAKE WINDOWS UPDATE                          │
+│              "Windows Update Available!" → Aslında Senin Payload'un 😈                   │
+│                         tools/wsus_spoof.py (~700 lines)                                 │
+│                      🎭 The Update Server is LYING 🎭                                    │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+WSUS NEDIR?
+  Windows Server Update Services:
+  - Şirketlerin kendi update sunucusu
+  - Tüm Windows makineler buradan güncellenir
+  - HTTP kullanıyorsa → MITM ile sahte update ver!
+  - Update SYSTEM yetkisiyle çalışır!
+
+ATTACK FLOW:
+  ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
+  │ 1.POISON   │───▶│ 2.FAKE     │───▶│ 3.CLIENT   │───▶│ 4.SERVE    │───▶│ 5.SYSTEM   │
+  │   NETWORK  │    │   WSUS     │    │   SYNC     │    │   UPDATE   │    │   SHELL!   │
+  │            │    │   SERVER   │    │            │    │            │    │            │
+  │ • ARP Spoof│    │ • HTTP     │    │ • Client   │    │ • Fake KB  │    │ • Payload  │
+  │ • DNS Spoof│    │   Server   │    │   connects │    │ • Your EXE │    │   runs as  │
+  │ • LLMNR    │    │ • SOAP XML │    │ • Asks for │    │ • Signed?  │    │   SYSTEM!  │
+  │ • WPAD     │    │            │    │   updates  │    │            │    │            │
+  └────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘
+
+POISONING METHODS:
+  🌐 ARP Spoofing:
+    - Gateway'i taklit et
+    - WSUS trafiğini yakala
+    - Sahte sunucuya yönlendir
+    
+  🔤 DNS Spoofing:
+    - wsus.corp.local → Attacker IP
+    - Corporate DNS'i zehirle
+    
+  📢 LLMNR/NBT-NS (Responder):
+    - WSUS hostname resolve isteklerini yakala
+    - Kendi IP'ni ver
+    
+  🌍 WPAD Injection:
+    - Proxy ayarını değiştir
+    - WSUS trafiğini MITM yap
+
+FAKE UPDATE CREATION:
+  📦 Legitimate KB Numbers:
+    - KB5034441 (Security Update)
+    - KB5034203 (Cumulative Update)
+    - KB5033375 (.NET Update)
+    - KB890830 (MSRT)
+    
+  📋 WSUS Metadata (SOAP XML):
+    - UpdateID, RevisionNumber
+    - Title, Description, Severity
+    - File URL → Your payload!
+    
+  ⚠️ SIGNING:
+    - Microsoft imzası gerekli? 
+    - Bazı sistemler enforce etmiyor!
+    - PsExec gibi imzalı araç kullan
+
+FAKE WSUS SERVER:
+  🖥️ HTTP Server Features:
+    - /ClientWebService/Client.asmx
+    - GetExtendedUpdateInfo2
+    - SyncUpdates soap action
+    - CAB/EXE file serving
+
+TOOLS INTEGRATION:
+  🔧 WSUSpect - https://github.com/pimps/wsuxploit
+  🔧 PyWSUS - https://github.com/GoSecure/pywsus
+  🔧 Responder - LLMNR/WPAD poisoning
+
+IMPLANT GENERATION:
+  💠 PowerShell (Disguised as update)
+  🐍 Python (Fake WSUS server)
+
+API Endpoints:
+  POST /wsus-spoof/api/create-session    - Create spoof session
+  POST /wsus-spoof/api/create-update     - Create fake update
+  POST /wsus-spoof/api/generate-poison-script - Generate ARP/DNS poison
+  POST /wsus-spoof/api/generate-server   - Generate fake WSUS server
+  POST /wsus-spoof/api/generate-payload  - Generate disguised payload
+  POST /wsus-spoof/api/generate-implant  - Generate implant code
+  GET  /wsus-spoof/api/responder-config  - Get Responder config
+  GET  /wsus-spoof/api/attack-flow       - Full attack playbook
+  GET  /wsus-spoof/api/tools             - Recommended tools
+```
+
+---
+
+## 🗡️ Core Attack Modules
 
 ### 🎫 Kerberos Attack Chain
 
