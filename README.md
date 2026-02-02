@@ -1042,6 +1042,123 @@ MALICIOUS PROFILE TYPES:
   POST /mobile-iot/api/jamf-attack        - Generate Jamf attack scripts
   GET  /mobile-iot/api/profile-types      - List malicious profile types
   POST /mobile-iot/api/generate-profile   - Generate iOS .mobileconfig
+
+---
+
+## 🧠 Psychological & Social Engineering Ops - February 2025
+
+İnsanı hacklemek - The human is always the weakest link. Psikolojik manipülasyon ve sosyal mühendislik saldırıları için gelişmiş araç seti.
+
+### 🔗 LinkedIn Profiler & Relationship Mapper
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                       🔗 LINKEDIN PROFILER & RELATIONSHIP MAPPER                         │
+│                 Hedef Şirketin Çalışanlarını Map'le, Zayıf Halkayı Bul                   │
+│                       tools/social_engineering_ops.py (~800 lines)                       │
+│                          🎯 "New Hire = En Kolay Kurban" 🎯                              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+WHAT IT DOES:
+  📊 Şirketin TÜM çalışanlarını LinkedIn'den toplar
+  📈 Organizasyon şemasını çıkarır (Kim kimin müdürü?)
+  🎯 Vulnerability score hesaplar (Kim en kolay hedef?)
+  🆕 New Hire'ları tespit eder (< 90 gün = zayıf halka)
+  🤖 AI ile phishing hedeflerini otomatik seçer
+
+VULNERABILITY SCORING:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  FACTOR              │  SCORE │  WHY IT MATTERS                │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  New Hire (< 90 days)│  +90   │  Doesn't know processes yet    │
+  │  Job Seeker          │  +85   │  Open to "opportunities"       │
+  │  Recent Promotion    │  +70   │  Eager to please               │
+  │  Active Social Media │  +60   │  Shares too much info          │
+  │  Incomplete Profile  │  +55   │  Less security aware           │
+  │  Many Connections    │  +40   │  Accepts anyone                │
+  └─────────────────────────────────────────────────────────────────┘
+
+DEPARTMENT VALUE (for lateral movement):
+  IT/Security:    95  →  Domain Admin access potential
+  DevOps:         85  →  CI/CD pipeline access
+  HR:             75  →  All employee data
+  Finance:        70  →  Wire transfer authority
+  Executive:     100  →  Ultimate authority
+
+AI PHISHING RECOMMENDATIONS:
+  Input:  Company employee list
+  Output: Prioritized target list with:
+    - Attack vector suggestion
+    - Pretext/email template
+    - Success probability
+    - Best timing
+\`\`\`
+
+### 🔄 Fake Update Landing Page Generator
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                         🔄 FAKE UPDATE LANDING PAGE GENERATOR                            │
+│              "Tarayıcınız Güncel Değil!" - Ama Aslında RAT İndiriyorsunuz               │
+│                   Chrome / Edge / Firefox / Safari - Birebir Aynı Tasarım               │
+│                              💀 Drive-by Download Attack 💀                              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+SUPPORTED BROWSERS:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  BROWSER   │  ICON │  PAYLOAD NAME      │  FAKE VERSION        │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  Chrome    │  🔵   │  ChromeUpdate.exe  │  122.0.6261.112      │
+  │  Edge      │  🔷   │  EdgeUpdate.exe    │  122.0.2365.66       │
+  │  Firefox   │  🦊   │  FirefoxUpdate.exe │  123.0.1             │
+  │  Safari    │  🧭   │  SafariUpdate.pkg  │  17.3.1              │
+  └─────────────────────────────────────────────────────────────────┘
+
+URGENCY LEVELS:
+  🔴 CRITICAL: "ACIL GÜVENLİK AÇIĞI TESPİT EDİLDİ"
+  🟠 HIGH:     "Önemli güvenlik güncellemesi mevcut"
+  🟡 MEDIUM:   "Yeni sürüm kullanılabilir"
+
+HOW IT WORKS:
+  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+  │ User Visits  │ -> │ JS Detects   │ -> │ Shows Fake   │
+  │ Compromised  │    │ Browser Type │    │ Update Page  │
+  │   Website    │    │              │    │              │
+  └──────────────┘    └──────────────┘    └──────────────┘
+          │                   │                    │
+          v                   v                    v
+   Embedded script      Chrome? Edge?      "Download Now"
+   runs silently        Firefox?           → RAT payload
+
+GENERATED ASSETS:
+  📄 Full HTML page (pixel-perfect browser design)
+  🎨 Matching gradients, logos, fonts
+  📊 Fake version comparison table
+  ⬇️ Download button with progress bar
+  📡 Fingerprint collector (UA, screen, timezone)
+  🔗 Tracking pixel for visit logging
+
+BROWSER DETECTION SCRIPT:
+  Embed in ANY website (XSS, compromised CMS)
+  Auto-redirects to browser-specific fake update
+  Configurable trigger (% of visitors, delay)
+\`\`\`
+
+### 🔗 Social Engineering API Endpoints
+
+\`\`\`
+  GET  /social-eng/                         - Social Eng Ops Dashboard
+  POST /social-eng/api/scan-company         - Scan company for employees
+  GET  /social-eng/api/get-targets          - Get top phishing targets
+  GET  /social-eng/api/get-new-hires        - Get all new hires
+  GET  /social-eng/api/get-org-chart        - Get organizational chart
+  GET  /social-eng/api/phishing-recommendations - AI phishing recommendations
+  GET  /social-eng/api/browser-templates    - Get browser templates
+  POST /social-eng/api/generate-update-page - Generate fake update page
+  POST /social-eng/api/generate-detection-script - Generate browser detect JS
+  GET  /social-eng/api/urgency-messages     - Get urgency message templates
+\`\`\`
+
 \`\`\`
 
 ---

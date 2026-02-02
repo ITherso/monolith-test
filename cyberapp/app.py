@@ -106,6 +106,9 @@ hardware_infra_bp = _try_import('hardware_infra_bp', lambda: __import__('tools.h
 # Mobile & IoT Module
 mobile_iot_bp = _try_import('mobile_iot_bp', lambda: __import__('tools.mobile_iot', fromlist=['mobile_iot_bp']).mobile_iot_bp)
 
+# Social Engineering Ops Module
+social_eng_bp = _try_import('social_eng_bp', lambda: __import__('tools.social_engineering_ops', fromlist=['social_eng_bp']).social_eng_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -207,6 +210,9 @@ def create_app(run_migrations_on_start=True):
     
     # Mobile & IoT Module
     if mobile_iot_bp: app.register_blueprint(mobile_iot_bp)
+    
+    # Social Engineering Ops Module
+    if social_eng_bp: app.register_blueprint(social_eng_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
