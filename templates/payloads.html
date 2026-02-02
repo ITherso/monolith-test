@@ -366,6 +366,175 @@
                             </div>
                         </div>
 
+                        <!-- ADVANCED MEMORY EVASION SECTION -->
+                        <div class="form-section evasion-section">
+                            <h3 class="section-title" style="color: #a855f7;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #a855f7;">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                </svg>
+                                Advanced Memory Evasion
+                                <span class="pro-badge">GHOST</span>
+                            </h3>
+                            
+                            <!-- Enable Evasion Toggle -->
+                            <div class="evasion-toggle">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="enableEvasion" name="enable_evasion">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label">Enable Memory Forensics Evasion</span>
+                            </div>
+
+                            <!-- Evasion Options (hidden by default) -->
+                            <div id="evasionOptions" class="evasion-options" style="display: none;">
+                                <!-- Sleep Obfuscation -->
+                                <div class="evasion-group">
+                                    <h4 class="evasion-group-title">
+                                        <i class="fas fa-moon" style="color: #06b6d4;"></i>
+                                        Sleep Obfuscation
+                                    </h4>
+                                    <div class="evasion-select-row">
+                                        <select id="sleepTechnique" name="sleep_technique" class="evasion-select">
+                                            <option value="none">Disabled</option>
+                                            <option value="ekko">Ekko (ROP-based) - Most Reliable</option>
+                                            <option value="foliage">Foliage (Fiber-based)</option>
+                                            <option value="death_sleep">Death Sleep (Suspension)</option>
+                                            <option value="gargoyle">Gargoyle (Timer-based)</option>
+                                            <option value="cronos">Cronos (Delayed chains)</option>
+                                        </select>
+                                    </div>
+                                    <div class="evasion-params" id="sleepParams" style="display: none;">
+                                        <div class="param-row">
+                                            <div class="param-item">
+                                                <label>Sleep Duration (ms)</label>
+                                                <input type="number" name="sleep_duration" value="5000" min="1000" max="60000">
+                                            </div>
+                                            <div class="param-item">
+                                                <label>Jitter %</label>
+                                                <input type="number" name="sleep_jitter" value="20" min="0" max="50">
+                                            </div>
+                                            <div class="param-item">
+                                                <label>Encryption</label>
+                                                <select name="sleep_encryption">
+                                                    <option value="rc4">RC4</option>
+                                                    <option value="xor_rolling">XOR Rolling</option>
+                                                    <option value="aes_ctr">AES-CTR</option>
+                                                    <option value="chacha20">ChaCha20</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Stack Spoofing -->
+                                <div class="evasion-group">
+                                    <h4 class="evasion-group-title">
+                                        <i class="fas fa-layer-group" style="color: #eab308;"></i>
+                                        Call Stack Spoofing
+                                    </h4>
+                                    <div class="evasion-select-row">
+                                        <select id="stackMethod" name="stack_method" class="evasion-select">
+                                            <option value="none">Disabled</option>
+                                            <option value="synthetic_frames">Synthetic Frames - Microsoft Signed</option>
+                                            <option value="frame_hijack">Frame Hijack</option>
+                                            <option value="rop_chain">ROP Chain - Maximum Control</option>
+                                            <option value="desync_stack">Desync Call/Ret</option>
+                                            <option value="phantom_thread">Phantom Thread</option>
+                                        </select>
+                                    </div>
+                                    <div class="evasion-params" id="stackParams" style="display: none;">
+                                        <div class="param-row">
+                                            <div class="param-item">
+                                                <label>Fake Frame Count</label>
+                                                <input type="number" name="fake_frames" value="5" min="1" max="10">
+                                            </div>
+                                            <div class="param-item">
+                                                <label>Target DLLs</label>
+                                                <select name="target_dll" multiple size="3">
+                                                    <option value="kernel32.dll" selected>kernel32.dll</option>
+                                                    <option value="ntdll.dll" selected>ntdll.dll</option>
+                                                    <option value="user32.dll">user32.dll</option>
+                                                    <option value="combase.dll">combase.dll</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Process Injection -->
+                                <div class="evasion-group">
+                                    <h4 class="evasion-group-title">
+                                        <i class="fas fa-syringe" style="color: #ef4444;"></i>
+                                        Process Injection
+                                    </h4>
+                                    <div class="evasion-select-row">
+                                        <select id="injectionTechnique" name="injection_technique" class="evasion-select">
+                                            <option value="none">Disabled</option>
+                                            <option value="process_doppelganging">Process Doppelgänging (NTFS) - Zero Disk Artifact</option>
+                                            <option value="process_hollowing">Process Hollowing (Classic)</option>
+                                            <option value="process_herpaderping">Process Herpaderping</option>
+                                            <option value="transacted_hollowing">Transacted Hollowing</option>
+                                            <option value="ghostly_hollowing">Ghostly Hollowing</option>
+                                        </select>
+                                    </div>
+                                    <div class="evasion-params" id="injectionParams" style="display: none;">
+                                        <div class="param-row">
+                                            <div class="param-item">
+                                                <label>Target Process</label>
+                                                <select name="target_process">
+                                                    <option value="svchost.exe">svchost.exe</option>
+                                                    <option value="notepad.exe">notepad.exe</option>
+                                                    <option value="explorer.exe">explorer.exe</option>
+                                                    <option value="RuntimeBroker.exe">RuntimeBroker.exe</option>
+                                                    <option value="dllhost.exe">dllhost.exe</option>
+                                                    <option value="taskhostw.exe">taskhostw.exe</option>
+                                                </select>
+                                            </div>
+                                            <div class="param-item checkbox-group">
+                                                <label><input type="checkbox" name="ppid_spoof" checked> PPID Spoof</label>
+                                                <label><input type="checkbox" name="unhook_ntdll" checked> Unhook ntdll.dll</label>
+                                                <label><input type="checkbox" name="block_dlls"> Block Non-MS DLLs</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Detection Matrix Preview -->
+                                <div class="detection-preview">
+                                    <h4 class="evasion-group-title">
+                                        <i class="fas fa-shield-alt" style="color: #22c55e;"></i>
+                                        EDR Bypass Preview
+                                    </h4>
+                                    <div class="bypass-indicators">
+                                        <div class="bypass-item" data-tool="crowdstrike">
+                                            <span class="tool-name">CrowdStrike</span>
+                                            <span class="bypass-status pending">-</span>
+                                        </div>
+                                        <div class="bypass-item" data-tool="defender">
+                                            <span class="tool-name">Defender</span>
+                                            <span class="bypass-status pending">-</span>
+                                        </div>
+                                        <div class="bypass-item" data-tool="sentinelone">
+                                            <span class="tool-name">SentinelOne</span>
+                                            <span class="bypass-status pending">-</span>
+                                        </div>
+                                        <div class="bypass-item" data-tool="carbonblack">
+                                            <span class="tool-name">Carbon Black</span>
+                                            <span class="bypass-status pending">-</span>
+                                        </div>
+                                        <div class="bypass-item" data-tool="moneta">
+                                            <span class="tool-name">Moneta</span>
+                                            <span class="bypass-status pending">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="overall-score">
+                                        <span>Estimated Evasion Rate:</span>
+                                        <span id="evasionScore" class="score-value">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn-generate">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
@@ -646,6 +815,110 @@
         document.body.appendChild(container);
         return container;
     }
+
+    // Memory Evasion Functions
+    function initEvasionControls() {
+        const enableEvasion = document.getElementById('enableEvasion');
+        const evasionOptions = document.getElementById('evasionOptions');
+        
+        if (enableEvasion) {
+            enableEvasion.addEventListener('change', function() {
+                evasionOptions.style.display = this.checked ? 'block' : 'none';
+                if (this.checked) {
+                    updateBypassPreview();
+                }
+            });
+        }
+
+        // Sleep technique change
+        const sleepTechnique = document.getElementById('sleepTechnique');
+        if (sleepTechnique) {
+            sleepTechnique.addEventListener('change', function() {
+                document.getElementById('sleepParams').style.display = this.value !== 'none' ? 'flex' : 'none';
+                updateBypassPreview();
+            });
+        }
+
+        // Stack method change
+        const stackMethod = document.getElementById('stackMethod');
+        if (stackMethod) {
+            stackMethod.addEventListener('change', function() {
+                document.getElementById('stackParams').style.display = this.value !== 'none' ? 'flex' : 'none';
+                updateBypassPreview();
+            });
+        }
+
+        // Injection technique change
+        const injectionTechnique = document.getElementById('injectionTechnique');
+        if (injectionTechnique) {
+            injectionTechnique.addEventListener('change', function() {
+                document.getElementById('injectionParams').style.display = this.value !== 'none' ? 'flex' : 'none';
+                updateBypassPreview();
+            });
+        }
+    }
+
+    function updateBypassPreview() {
+        const sleepTech = document.getElementById('sleepTechnique')?.value || 'none';
+        const stackMethod = document.getElementById('stackMethod')?.value || 'none';
+        const injectionTech = document.getElementById('injectionTechnique')?.value || 'none';
+
+        let score = 0;
+        const bypassStatus = {
+            crowdstrike: 'pending',
+            defender: 'pending',
+            sentinelone: 'pending',
+            carbonblack: 'pending',
+            moneta: 'pending'
+        };
+
+        // Calculate bypass based on selected techniques
+        if (sleepTech !== 'none') {
+            score += 30;
+            bypassStatus.crowdstrike = 'bypassed';
+            bypassStatus.defender = 'bypassed';
+            bypassStatus.moneta = 'bypassed';
+        }
+
+        if (stackMethod !== 'none') {
+            score += 25;
+            bypassStatus.sentinelone = 'bypassed';
+            if (stackMethod === 'synthetic_frames' || stackMethod === 'rop_chain') {
+                bypassStatus.carbonblack = 'bypassed';
+            }
+        }
+
+        if (injectionTech !== 'none') {
+            score += 30;
+            if (injectionTech === 'process_doppelganging' || injectionTech === 'ghostly_hollowing') {
+                bypassStatus.crowdstrike = 'bypassed';
+                bypassStatus.defender = 'bypassed';
+                bypassStatus.sentinelone = 'bypassed';
+                bypassStatus.carbonblack = 'bypassed';
+                score += 10;
+            }
+        }
+
+        // Update UI
+        Object.keys(bypassStatus).forEach(tool => {
+            const item = document.querySelector(`.bypass-item[data-tool="${tool}"] .bypass-status`);
+            if (item) {
+                item.className = `bypass-status ${bypassStatus[tool]}`;
+                item.textContent = bypassStatus[tool] === 'bypassed' ? '✓' : bypassStatus[tool] === 'detected' ? '✗' : '-';
+            }
+        });
+
+        const scoreEl = document.getElementById('evasionScore');
+        if (scoreEl) {
+            scoreEl.textContent = score > 0 ? `${Math.min(score, 95)}%` : '-';
+            scoreEl.className = `score-value ${score >= 70 ? 'high' : score >= 40 ? 'medium' : 'low'}`;
+        }
+    }
+
+    // Initialize evasion controls on load
+    document.addEventListener('DOMContentLoaded', function() {
+        initEvasionControls();
+    });
 </script>
 
 <style>
@@ -1554,6 +1827,315 @@
         .info-grid {
             grid-template-columns: 1fr;
         }
+    }
+
+    /* ========================================
+       MEMORY EVASION STYLES
+       ======================================== */
+    
+    .evasion-section {
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(6, 182, 212, 0.05));
+        border: 1px solid rgba(168, 85, 247, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .evasion-section .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .pro-badge {
+        background: linear-gradient(135deg, #a855f7, #06b6d4);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-left: auto;
+    }
+
+    .evasion-toggle {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 15px 0;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+    }
+
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        transition: 0.3s;
+        border-radius: 26px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background: white;
+        transition: 0.3s;
+        border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #a855f7, #06b6d4);
+        border-color: #a855f7;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .toggle-label {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .evasion-options {
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .evasion-group {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .evasion-group-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+    }
+
+    .evasion-group-title i {
+        font-size: 14px;
+    }
+
+    .evasion-select-row {
+        margin-bottom: 10px;
+    }
+
+    .evasion-select {
+        width: 100%;
+        padding: 10px 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        color: white;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .evasion-select:hover {
+        border-color: rgba(168, 85, 247, 0.5);
+    }
+
+    .evasion-select:focus {
+        outline: none;
+        border-color: #a855f7;
+        box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+    }
+
+    .evasion-select option {
+        background: #1a1a2e;
+        color: white;
+    }
+
+    .evasion-params {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .param-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .param-item {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .param-item label {
+        display: block;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .param-item input[type="number"],
+    .param-item select {
+        width: 100%;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        color: white;
+        font-size: 12px;
+    }
+
+    .param-item select[multiple] {
+        height: auto;
+        min-height: 60px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        accent-color: #a855f7;
+    }
+
+    /* Detection Preview */
+    .detection-preview {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(0, 0, 0, 0.2));
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .bypass-indicators {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .bypass-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+    }
+
+    .tool-name {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .bypass-status {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .bypass-status.pending {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .bypass-status.bypassed {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+    }
+
+    .bypass-status.detected {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+    }
+
+    .overall-score {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .overall-score span:first-child {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+    }
+
+    .score-value {
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .score-value.high {
+        color: #22c55e;
+    }
+
+    .score-value.medium {
+        color: #eab308;
+    }
+
+    .score-value.low {
+        color: #ef4444;
     }
 </style>
 {% endblock %}
