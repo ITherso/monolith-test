@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block title %}DPAPI Master Key Extractor - PRO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-3xl font-bold text-white">DPAPI Master Key Extractor</h1>
+                <span class="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded-full">PRO</span>
+            </div>
+            <p class="text-gray-400 mt-2">Chrome/Edge şifreleri ve cookie'leri decrypt et, plaintext'e çevir</p>
+        </div>
+        <a href="/" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            ← Dashboard
+        </a>
+    </div>
+
+    <!-- Browser Selection -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold text-white mb-4">🌐 Browser Seçimi</h3>
+            <select id="browserSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                <option value="CHROME">Google Chrome</option>
+                <option value="EDGE">Microsoft Edge</option>
+                <option value="BRAVE">Brave Browser</option>
+                <option value="OPERA">Opera</option>
+                <option value="VIVALDI">Vivaldi</option>
+                <option value="CHROMIUM">Chromium</option>
+            </select>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold text-white mb-4">🎯 Domain Filter (Cookies)</h3>
+            <input type="text" id="domainFilter" placeholder="github.com, google.com" 
+                   class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400">
+            <p class="text-gray-500 text-sm mt-2">Virgülle ayırarak birden fazla domain girin</p>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold text-white mb-4">📊 İstatistikler</h3>
+            <div id="statsDisplay" class="text-gray-300">
+                <p>Passwords: <span id="statPasswords" class="text-green-400 font-bold">0</span></p>
+                <p>Cookies: <span id="statCookies" class="text-blue-400 font-bold">0</span></p>
+                <p>Decrypted: <span id="statDecrypted" class="text-yellow-400 font-bold">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <button onclick="extractPasswords()" class="px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            🔐 Şifreleri Çıkar
+        </button>
+        <button onclick="extractCookies()" class="px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            🍪 Cookie'leri Çıkar
+        </button>
+        <button onclick="extractCreditCards()" class="px-6 py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            💳 Kredi Kartları
+        </button>
+        <button onclick="extractAll()" class="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            🚀 Hepsini Çıkar
+        </button>
+    </div>
+
+    <!-- Results Tabs -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <div class="flex border-b border-gray-700">
+            <button onclick="showTab('passwords')" id="tabPasswords" class="tab-btn px-6 py-3 text-white bg-gray-700 font-semibold">
+                🔐 Şifreler
+            </button>
+            <button onclick="showTab('cookies')" id="tabCookies" class="tab-btn px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                🍪 Cookies
+            </button>
+            <button onclick="showTab('cards')" id="tabCards" class="tab-btn px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                💳 Kartlar
+            </button>
+            <button onclick="showTab('export')" id="tabExport" class="tab-btn px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                📤 Export
+            </button>
+        </div>
+
+        <!-- Passwords Tab -->
+        <div id="panelPasswords" class="tab-panel p-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700">
+                            <th class="pb-3 pr-4">URL</th>
+                            <th class="pb-3 pr-4">Username</th>
+                            <th class="pb-3 pr-4">Password</th>
+                            <th class="pb-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="passwordsTable" class="text-gray-300">
+                        <tr><td colspan="4" class="py-4 text-center text-gray-500">Henüz veri yok. "Şifreleri Çıkar" butonuna tıklayın.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cookies Tab -->
+        <div id="panelCookies" class="tab-panel p-6 hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700">
+                            <th class="pb-3 pr-4">Host</th>
+                            <th class="pb-3 pr-4">Name</th>
+                            <th class="pb-3 pr-4">Value</th>
+                            <th class="pb-3">Expires</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cookiesTable" class="text-gray-300">
+                        <tr><td colspan="4" class="py-4 text-center text-gray-500">Henüz veri yok. "Cookie'leri Çıkar" butonuna tıklayın.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cards Tab -->
+        <div id="panelCards" class="tab-panel p-6 hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700">
+                            <th class="pb-3 pr-4">Kart Sahibi</th>
+                            <th class="pb-3 pr-4">Kart Numarası</th>
+                            <th class="pb-3 pr-4">Son Kullanma</th>
+                            <th class="pb-3">Browser</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cardsTable" class="text-gray-300">
+                        <tr><td colspan="4" class="py-4 text-center text-gray-500">Henüz veri yok. "Kredi Kartları" butonuna tıklayın.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="panelExport" class="tab-panel p-6 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-white font-semibold mb-3">🍪 Cookie Export</h4>
+                    <div class="space-y-2">
+                        <a href="/dpapi-extractor/api/export/cookies/netscape" class="block px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors text-center">
+                            Netscape Format (.txt)
+                        </a>
+                        <a href="/dpapi-extractor/api/export/cookies/json" class="block px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors text-center">
+                            JSON Format (EditThisCookie)
+                        </a>
+                        <button onclick="getCurlCommand()" class="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors">
+                            cURL Command
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-white font-semibold mb-3">📜 Script Generation</h4>
+                    <div class="space-y-2">
+                        <a href="/dpapi-extractor/api/generate/powershell" class="block px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 transition-colors text-center">
+                            PowerShell Script
+                        </a>
+                        <a href="/dpapi-extractor/api/generate/csharp" class="block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors text-center">
+                            C# Source Code
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-white font-semibold mb-3">📋 cURL Command</h4>
+                    <textarea id="curlOutput" readonly class="w-full h-24 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm text-green-400 font-mono" placeholder="cURL komutu burada görünecek..."></textarea>
+                    <button onclick="copyCurl()" class="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500 transition-colors w-full">
+                        📋 Kopyala
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="mt-8 bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl p-6 border border-purple-700/50">
+        <h3 class="text-lg font-semibold text-white mb-3">⚠️ Kullanım Notları</h3>
+        <ul class="text-gray-300 space-y-2 text-sm">
+            <li>• Windows DPAPI (Data Protection API) kullanılarak şifreleme anahtarı çözülür</li>
+            <li>• Chromium v80+ için AES-GCM decryption uygulanır</li>
+            <li>• Cookie export formatları: Netscape (curl/wget), JSON (EditThisCookie), cURL header</li>
+            <li>• Hedef sistemde çalıştırılacak PowerShell ve C# script'leri oluşturulabilir</li>
+            <li>• Bu araç sadece yetkili güvenlik testleri için kullanılmalıdır</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .tab-btn.active { background-color: rgb(55, 65, 81); color: white; }
+    .tab-panel.hidden { display: none; }
+</style>
+
+<script>
+    function showTab(tabName) {
+        // Hide all panels
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'bg-gray-700');
+            b.classList.add('text-gray-400');
+        });
+
+        // Show selected panel
+        document.getElementById('panel' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.remove('hidden');
+        const btn = document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+        btn.classList.add('active', 'bg-gray-700');
+        btn.classList.remove('text-gray-400');
+    }
+
+    async function extractPasswords() {
+        const browser = document.getElementById('browserSelect').value;
+        
+        try {
+            const response = await fetch('/dpapi-extractor/api/extract/passwords', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ browser })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updatePasswordsTable(data.credentials);
+                document.getElementById('statPasswords').textContent = data.count;
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function extractCookies() {
+        const browser = document.getElementById('browserSelect').value;
+        const domainsInput = document.getElementById('domainFilter').value;
+        const domains = domainsInput ? domainsInput.split(',').map(d => d.trim()) : [];
+        
+        try {
+            const response = await fetch('/dpapi-extractor/api/extract/cookies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ browser, domains })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updateCookiesTable(data.cookies);
+                document.getElementById('statCookies').textContent = data.count;
+                showTab('cookies');
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function extractCreditCards() {
+        const browser = document.getElementById('browserSelect').value;
+        
+        try {
+            const response = await fetch('/dpapi-extractor/api/extract/credit-cards', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ browser })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updateCardsTable(data.credit_cards);
+                showTab('cards');
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function extractAll() {
+        try {
+            const response = await fetch('/dpapi-extractor/api/extract/all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updatePasswordsTable(data.results.passwords);
+                updateCookiesTable(data.results.cookies);
+                updateCardsTable(data.results.credit_cards);
+                
+                document.getElementById('statPasswords').textContent = data.results.passwords.length;
+                document.getElementById('statCookies').textContent = data.results.cookies.length;
+                document.getElementById('statDecrypted').textContent = data.statistics.decrypted_passwords;
+                
+                alert(`Tamamlandı!\nBrowsers: ${data.results.browsers_found.join(', ')}\nPasswords: ${data.results.passwords.length}\nCookies: ${data.results.cookies.length}`);
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function getCurlCommand() {
+        const domain = document.getElementById('domainFilter').value.split(',')[0]?.trim();
+        
+        try {
+            const response = await fetch('/dpapi-extractor/api/export/cookies/curl', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                document.getElementById('curlOutput').value = data.curl_command;
+                showTab('export');
+            }
+        } catch (error) {
+            alert('Hata: ' + error.message);
+        }
+    }
+
+    function copyCurl() {
+        const textarea = document.getElementById('curlOutput');
+        textarea.select();
+        document.execCommand('copy');
+        alert('Kopyalandı!');
+    }
+
+    function updatePasswordsTable(credentials) {
+        const tbody = document.getElementById('passwordsTable');
+        
+        if (!credentials || credentials.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">Şifre bulunamadı</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = credentials.map(c => `
+            <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                <td class="py-3 pr-4 max-w-xs truncate">${escapeHtml(c.url)}</td>
+                <td class="py-3 pr-4">${escapeHtml(c.username)}</td>
+                <td class="py-3 pr-4 font-mono ${c.decrypted ? 'text-green-400' : 'text-red-400'}">${escapeHtml(c.password)}</td>
+                <td class="py-3">
+                    <span class="px-2 py-1 rounded text-xs ${c.decrypted ? 'bg-green-600' : 'bg-red-600'}">${c.decrypted ? 'Decrypted' : 'Encrypted'}</span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function updateCookiesTable(cookies) {
+        const tbody = document.getElementById('cookiesTable');
+        
+        if (!cookies || cookies.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">Cookie bulunamadı</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = cookies.slice(0, 100).map(c => `
+            <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                <td class="py-3 pr-4">${escapeHtml(c.host)}</td>
+                <td class="py-3 pr-4">${escapeHtml(c.name)}</td>
+                <td class="py-3 pr-4 font-mono text-xs max-w-xs truncate">${escapeHtml(c.value?.substring(0, 50))}${c.value?.length > 50 ? '...' : ''}</td>
+                <td class="py-3">${c.expires || 'Session'}</td>
+            </tr>
+        `).join('');
+    }
+
+    function updateCardsTable(cards) {
+        const tbody = document.getElementById('cardsTable');
+        
+        if (!cards || cards.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">Kredi kartı bulunamadı</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = cards.map(c => `
+            <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                <td class="py-3 pr-4">${escapeHtml(c.name_on_card)}</td>
+                <td class="py-3 pr-4 font-mono ${c.decrypted ? 'text-green-400' : 'text-red-400'}">${escapeHtml(c.card_number)}</td>
+                <td class="py-3 pr-4">${escapeHtml(c.expiration)}</td>
+                <td class="py-3">${escapeHtml(c.browser)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize
+    showTab('passwords');
+</script>
+{% endblock %}

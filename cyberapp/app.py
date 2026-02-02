@@ -70,6 +70,11 @@ aws_lambda_bp = _try_import('aws_lambda_bp', lambda: __import__('cyberapp.routes
 s3_marauder_bp = _try_import('s3_marauder_bp', lambda: __import__('cyberapp.routes.s3_marauder', fromlist=['s3_marauder_bp']).s3_marauder_bp)
 azure_runcommand_bp = _try_import('azure_runcommand_bp', lambda: __import__('cyberapp.routes.azure_runcommand', fromlist=['azure_runcommand_bp']).azure_runcommand_bp)
 
+# Post-Exploitation Modules
+dpapi_extractor_bp = _try_import('dpapi_extractor_bp', lambda: __import__('cyberapp.routes.dpapi_extractor', fromlist=['bp']).bp)
+wifi_grabber_bp = _try_import('wifi_grabber_bp', lambda: __import__('cyberapp.routes.wifi_grabber', fromlist=['bp']).bp)
+mail_sniper_bp = _try_import('mail_sniper_bp', lambda: __import__('cyberapp.routes.mail_sniper', fromlist=['bp']).bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -135,6 +140,11 @@ def create_app(run_migrations_on_start=True):
     if aws_lambda_bp: app.register_blueprint(aws_lambda_bp)
     if s3_marauder_bp: app.register_blueprint(s3_marauder_bp)
     if azure_runcommand_bp: app.register_blueprint(azure_runcommand_bp)
+    
+    # Post-Exploitation Modules
+    if dpapi_extractor_bp: app.register_blueprint(dpapi_extractor_bp)
+    if wifi_grabber_bp: app.register_blueprint(wifi_grabber_bp)
+    if mail_sniper_bp: app.register_blueprint(mail_sniper_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

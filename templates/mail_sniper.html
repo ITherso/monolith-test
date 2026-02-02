@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Mail Sniper - PRO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-3xl font-bold text-white">Mail Sniper</h1>
+                <span class="px-3 py-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full">PRO</span>
+            </div>
+            <p class="text-gray-400 mt-2">Outlook/Exchange'de keyword arama, hassas e-postaları zipple</p>
+        </div>
+        <a href="/" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            ← Dashboard
+        </a>
+    </div>
+
+    <!-- Keywords Management -->
+    <div class="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4">🔑 Anahtar Kelimeler</h3>
+        <div class="flex flex-wrap gap-2 mb-4" id="keywordTags">
+            <!-- Keywords will be rendered here -->
+        </div>
+        <div class="flex space-x-4">
+            <input type="text" id="newKeyword" placeholder="Yeni anahtar kelime ekle..." 
+                   class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400">
+            <button onclick="addKeyword()" class="px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-500 transition-colors">
+                + Ekle
+            </button>
+        </div>
+    </div>
+
+    <!-- Connection Tabs -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden mb-8">
+        <div class="flex border-b border-gray-700">
+            <button onclick="showConnectionTab('directory')" id="connDirectory" class="conn-tab px-6 py-3 text-white bg-gray-700 font-semibold">
+                📁 EML Dizini
+            </button>
+            <button onclick="showConnectionTab('pst')" id="connPst" class="conn-tab px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                📦 PST Dosyası
+            </button>
+            <button onclick="showConnectionTab('exchange')" id="connExchange" class="conn-tab px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                🏢 Exchange
+            </button>
+            <button onclick="showConnectionTab('imap')" id="connImap" class="conn-tab px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                📧 IMAP
+            </button>
+        </div>
+
+        <!-- Directory Panel -->
+        <div id="panelDirectory" class="conn-panel p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-400 mb-2">EML Dosyaları Dizini</label>
+                    <input type="text" id="directoryPath" placeholder="/path/to/eml/files" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Max Sonuç</label>
+                    <input type="number" id="dirMaxResults" value="1000" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+            </div>
+            <button onclick="searchDirectory()" class="mt-4 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+                🔍 Dizinde Ara
+            </button>
+        </div>
+
+        <!-- PST Panel -->
+        <div id="panelPst" class="conn-panel p-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-400 mb-2">PST Dosya Yolu</label>
+                    <input type="text" id="pstPath" placeholder="C:\Users\...\Outlook.pst" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Klasörler (virgülle ayır)</label>
+                    <input type="text" id="pstFolders" value="Inbox, Sent Items" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+            </div>
+            <button onclick="searchPst()" class="mt-4 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+                🔍 PST'de Ara
+            </button>
+        </div>
+
+        <!-- Exchange Panel -->
+        <div id="panelExchange" class="conn-panel p-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-400 mb-2">Exchange Server</label>
+                    <input type="text" id="exchServer" placeholder="mail.company.com" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Domain (opsiyonel)</label>
+                    <input type="text" id="exchDomain" placeholder="CORP" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Username</label>
+                    <input type="text" id="exchUsername" placeholder="user@company.com" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Password</label>
+                    <input type="password" id="exchPassword" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="connectExchange()" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-500 transition-colors">
+                    🔗 Bağlan
+                </button>
+                <button onclick="searchExchange()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+                    🔍 Exchange'de Ara
+                </button>
+            </div>
+            <p id="exchStatus" class="mt-2 text-sm text-gray-500"></p>
+        </div>
+
+        <!-- IMAP Panel -->
+        <div id="panelImap" class="conn-panel p-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-400 mb-2">IMAP Server</label>
+                    <input type="text" id="imapServer" placeholder="imap.gmail.com" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Port</label>
+                    <input type="number" id="imapPort" value="993" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div class="flex items-end">
+                    <label class="flex items-center text-gray-400">
+                        <input type="checkbox" id="imapSsl" checked class="mr-2 bg-gray-700 rounded">
+                        SSL/TLS
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Username</label>
+                    <input type="text" id="imapUsername" placeholder="user@gmail.com" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Password / App Password</label>
+                    <input type="password" id="imapPassword" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2">Folders</label>
+                    <input type="text" id="imapFolders" value="INBOX" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                </div>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="connectImap()" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-500 transition-colors">
+                    🔗 Bağlan
+                </button>
+                <button onclick="searchImap()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+                    🔍 IMAP'te Ara
+                </button>
+            </div>
+            <p id="imapStatus" class="mt-2 text-sm text-gray-500"></p>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+            <h3 class="text-lg font-semibold text-white">📧 Arama Sonuçları</h3>
+            <div class="flex space-x-2">
+                <span id="resultCount" class="px-3 py-1 bg-gray-700 text-white rounded">0 sonuç</span>
+                <a href="/mail-sniper/api/export/json" class="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors">
+                    📄 JSON
+                </a>
+                <a href="/mail-sniper/api/export/zip" class="px-4 py-1 bg-green-600 text-white rounded hover:bg-green-500 transition-colors">
+                    📦 ZIP
+                </a>
+            </div>
+        </div>
+        
+        <div id="resultsContainer" class="p-6 max-h-96 overflow-y-auto">
+            <p class="text-gray-500 text-center py-8">Henüz arama yapılmadı. Yukarıdan bir kaynak seçip arama yapın.</p>
+        </div>
+    </div>
+
+    <!-- Script Generation -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold text-white mb-4">📜 Script Generation</h3>
+            <div class="space-y-2">
+                <a href="/mail-sniper/api/generate/powershell" class="block px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-colors text-center font-semibold">
+                    ⚡ PowerShell Script (Outlook COM)
+                </a>
+                <a href="/mail-sniper/api/generate/vba" class="block px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-500 transition-colors text-center font-semibold">
+                    📊 VBA Macro (Outlook)
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-red-900/50 to-pink-900/50 rounded-xl p-6 border border-red-700/50">
+            <h3 class="text-lg font-semibold text-white mb-3">⚠️ Kullanım Notları</h3>
+            <ul class="text-gray-300 space-y-2 text-sm">
+                <li>• Exchange: EWS (Exchange Web Services) protokolü kullanılır</li>
+                <li>• PST: libpff/pypff kütüphanesi gereklidir</li>
+                <li>• Varsayılan keywords: Password, Fatura, VPN, Config...</li>
+                <li>• Ek dosyalar da taranır (txt, csv, json, config)</li>
+                <li>• Sonuçlar ZIP olarak exfil edilebilir</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .conn-tab.active { background-color: rgb(55, 65, 81); color: white; }
+    .conn-panel.hidden { display: none; }
+</style>
+
+<script>
+    let keywords = [];
+
+    // Load default keywords on page load
+    window.onload = async function() {
+        try {
+            const response = await fetch('/mail-sniper/api/keywords');
+            const data = await response.json();
+            if (data.status === 'success') {
+                keywords = data.keywords;
+                renderKeywords();
+            }
+        } catch (error) {
+            console.error('Failed to load keywords:', error);
+        }
+    };
+
+    function renderKeywords() {
+        const container = document.getElementById('keywordTags');
+        container.innerHTML = keywords.slice(0, 20).map((kw, idx) => `
+            <span class="px-3 py-1 bg-gradient-to-r from-red-600 to-pink-600 text-white text-sm rounded-full flex items-center">
+                ${escapeHtml(kw)}
+                <button onclick="removeKeyword(${idx})" class="ml-2 text-white/70 hover:text-white">×</button>
+            </span>
+        `).join('');
+        
+        if (keywords.length > 20) {
+            container.innerHTML += `<span class="px-3 py-1 bg-gray-600 text-gray-300 text-sm rounded-full">+${keywords.length - 20} more</span>`;
+        }
+    }
+
+    async function addKeyword() {
+        const input = document.getElementById('newKeyword');
+        const keyword = input.value.trim();
+        
+        if (!keyword) return;
+        
+        try {
+            const response = await fetch('/mail-sniper/api/keywords', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keywords: [keyword] })
+            });
+            
+            const data = await response.json();
+            if (data.status === 'success') {
+                keywords = data.keywords;
+                renderKeywords();
+                input.value = '';
+            }
+        } catch (error) {
+            alert('Hata: ' + error.message);
+        }
+    }
+
+    function removeKeyword(idx) {
+        keywords.splice(idx, 1);
+        renderKeywords();
+    }
+
+    function showConnectionTab(tabName) {
+        document.querySelectorAll('.conn-panel').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.conn-tab').forEach(b => {
+            b.classList.remove('active', 'bg-gray-700');
+            b.classList.add('text-gray-400');
+        });
+
+        document.getElementById('panel' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.remove('hidden');
+        const btn = document.getElementById('conn' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+        btn.classList.add('active', 'bg-gray-700');
+        btn.classList.remove('text-gray-400');
+    }
+
+    async function searchDirectory() {
+        const directory = document.getElementById('directoryPath').value;
+        const maxResults = parseInt(document.getElementById('dirMaxResults').value) || 1000;
+        
+        if (!directory) {
+            alert('Lütfen dizin yolu girin');
+            return;
+        }
+        
+        await performSearch('/mail-sniper/api/search/directory', {
+            directory,
+            keywords: keywords,
+            max_results: maxResults
+        });
+    }
+
+    async function searchPst() {
+        const pstPath = document.getElementById('pstPath').value;
+        const folders = document.getElementById('pstFolders').value.split(',').map(f => f.trim());
+        
+        if (!pstPath) {
+            alert('Lütfen PST dosya yolu girin');
+            return;
+        }
+        
+        await performSearch('/mail-sniper/api/search/pst', {
+            pst_path: pstPath,
+            folders,
+            keywords: keywords
+        });
+    }
+
+    async function connectExchange() {
+        const server = document.getElementById('exchServer').value;
+        const domain = document.getElementById('exchDomain').value;
+        const username = document.getElementById('exchUsername').value;
+        const password = document.getElementById('exchPassword').value;
+        
+        try {
+            const response = await fetch('/mail-sniper/api/connect/exchange', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ server, domain, username, password })
+            });
+            
+            const data = await response.json();
+            document.getElementById('exchStatus').textContent = data.message;
+            document.getElementById('exchStatus').className = data.status === 'success' 
+                ? 'mt-2 text-sm text-green-400' 
+                : 'mt-2 text-sm text-red-400';
+        } catch (error) {
+            document.getElementById('exchStatus').textContent = 'Bağlantı hatası: ' + error.message;
+            document.getElementById('exchStatus').className = 'mt-2 text-sm text-red-400';
+        }
+    }
+
+    async function searchExchange() {
+        await performSearch('/mail-sniper/api/search/exchange', {
+            keywords: keywords,
+            folders: ['Inbox', 'Sent Items']
+        });
+    }
+
+    async function connectImap() {
+        const server = document.getElementById('imapServer').value;
+        const port = parseInt(document.getElementById('imapPort').value);
+        const useSsl = document.getElementById('imapSsl').checked;
+        const username = document.getElementById('imapUsername').value;
+        const password = document.getElementById('imapPassword').value;
+        
+        try {
+            const response = await fetch('/mail-sniper/api/connect/imap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ server, port, use_ssl: useSsl, username, password })
+            });
+            
+            const data = await response.json();
+            document.getElementById('imapStatus').textContent = data.message;
+            document.getElementById('imapStatus').className = data.status === 'success' 
+                ? 'mt-2 text-sm text-green-400' 
+                : 'mt-2 text-sm text-red-400';
+        } catch (error) {
+            document.getElementById('imapStatus').textContent = 'Bağlantı hatası: ' + error.message;
+            document.getElementById('imapStatus').className = 'mt-2 text-sm text-red-400';
+        }
+    }
+
+    async function searchImap() {
+        const folders = document.getElementById('imapFolders').value.split(',').map(f => f.trim());
+        
+        await performSearch('/mail-sniper/api/search/imap', {
+            keywords: keywords,
+            folders
+        });
+    }
+
+    async function performSearch(endpoint, params) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(params)
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                displayResults(data.results);
+                document.getElementById('resultCount').textContent = `${data.count} sonuç`;
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    function displayResults(results) {
+        const container = document.getElementById('resultsContainer');
+        
+        if (!results || results.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">Eşleşen e-posta bulunamadı.</p>';
+            return;
+        }
+        
+        container.innerHTML = results.map((msg, idx) => `
+            <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                        <h4 class="text-white font-semibold">${escapeHtml(msg.subject || '(No Subject)')}</h4>
+                        <p class="text-gray-400 text-sm">From: ${escapeHtml(msg.sender)}</p>
+                        <p class="text-gray-500 text-xs">${msg.date || 'Unknown date'} • ${escapeHtml(msg.folder)}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 bg-pink-600 text-white text-xs rounded">${msg.total_matches} match</span>
+                        ${msg.attachments?.length > 0 ? '<span class="px-2 py-1 bg-blue-600 text-white text-xs rounded">📎 Attachments</span>' : ''}
+                    </div>
+                </div>
+                <p class="text-gray-300 text-sm mt-2">${escapeHtml(msg.body_preview?.substring(0, 200))}${msg.body_preview?.length > 200 ? '...' : ''}</p>
+                ${msg.keywords_found?.length > 0 ? `
+                    <div class="mt-2 flex flex-wrap gap-1">
+                        ${msg.keywords_found.slice(0, 5).map(k => `
+                            <span class="px-2 py-0.5 bg-red-900/50 text-red-300 text-xs rounded">${escapeHtml(k.keyword)}</span>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize
+    showConnectionTab('directory');
+</script>
+{% endblock %}
