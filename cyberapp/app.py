@@ -75,6 +75,11 @@ dpapi_extractor_bp = _try_import('dpapi_extractor_bp', lambda: __import__('cyber
 wifi_grabber_bp = _try_import('wifi_grabber_bp', lambda: __import__('cyberapp.routes.wifi_grabber', fromlist=['bp']).bp)
 mail_sniper_bp = _try_import('mail_sniper_bp', lambda: __import__('cyberapp.routes.mail_sniper', fromlist=['bp']).bp)
 
+# Exotic Exfiltration Modules
+doh_c2_bp = _try_import('doh_c2_bp', lambda: __import__('cyberapp.routes.doh_c2', fromlist=['bp']).bp)
+icmp_tunnel_bp = _try_import('icmp_tunnel_bp', lambda: __import__('cyberapp.routes.icmp_tunnel', fromlist=['bp']).bp)
+telegram_c2_bp = _try_import('telegram_c2_bp', lambda: __import__('cyberapp.routes.telegram_c2', fromlist=['bp']).bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -145,6 +150,11 @@ def create_app(run_migrations_on_start=True):
     if dpapi_extractor_bp: app.register_blueprint(dpapi_extractor_bp)
     if wifi_grabber_bp: app.register_blueprint(wifi_grabber_bp)
     if mail_sniper_bp: app.register_blueprint(mail_sniper_bp)
+    
+    # Exotic Exfiltration Modules
+    if doh_c2_bp: app.register_blueprint(doh_c2_bp)
+    if icmp_tunnel_bp: app.register_blueprint(icmp_tunnel_bp)
+    if telegram_c2_bp: app.register_blueprint(telegram_c2_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
