@@ -753,42 +753,31 @@
                                         CORE ENGINE
                                     </h4>
                                     <div class="space-y-3">
-                                                                                                                        <ul class="list-unstyled">
-                                                                                                                            <li>
-                                                                                                                                <input type="checkbox" name="tools" value="pentest_orchestrator" class="w-4 h-4 rounded border-fuchsia-500 bg-white/5 text-fuchsia-500 focus:ring-fuchsia-500/50">
-                                                                                                                                <a href="/tools/pentest_orchestrator" class="text-fuchsia-400 font-bold hover:text-white transition-colors ml-2">🤖 Automated Pentest Workflow Orchestrator</a>
-                                                                                                                                <span class="badge bg-fuchsia-500 text-white font-bold ml-2">NEW</span>
-                                                                                                                                <span class="text-xs text-fuchsia-300 ml-2">Vuln Scan · Exploit Chain · Lateral · Persistence · AI Decisions</span>
-                                                                                                                            </li>
-                                                                                                                        </ul>
-                                                                                <ul class="list-unstyled">
-                                                                                    <li>
-                                                                                        <input type="checkbox" name="tools" value="soc_deception" class="w-4 h-4 rounded border-cyan-500 bg-white/5 text-cyan-500 focus:ring-cyan-500/50">
-                                                                                        <a href="/evasion/soc_deception" class="text-cyan-400 font-bold hover:text-white transition-colors ml-2">🧑‍💻 SOC Deception & Honey Pot Poisoning</a>
-                                                                                        <span class="badge bg-cyan-500 text-white font-bold ml-2">NEW</span>
-                                                                                        <span class="text-xs text-cyan-300 ml-2">Decoy Servers · False Flag Events · AI Deception · SOC Fatigue</span>
-                                                                                    </li>
-                                                                                </ul>
-                                        <ul class="list-unstyled">
-                                            <li>
-                                                <input type="checkbox" name="tools" value="cred_harvest" class="w-4 h-4 rounded border-amber-500 bg-white/5 text-amber-500 focus:ring-amber-500/50">
-                                                <a href="/cred_harvest" class="text-amber-400 font-bold hover:text-white transition-colors ml-2">🕵️‍♂️ Credential Harvesting & Session Hijacking Kit</a>
-                                                <span class="badge bg-amber-500 text-white font-bold ml-2">NEW</span>
-                                                <span class="text-xs text-amber-300 ml-2">XSS/SSRF · Keylogger · Cookie Steal · AI Validation · 90% Success</span>
-                                            </li>
-                                            <li>
-                                                <input type="checkbox" name="tools" value="advanced_waf_bypass" class="w-4 h-4 rounded border-orange-500 bg-white/5 text-orange-500 focus:ring-orange-500/50">
-                                                <a href="/evasion/advanced-waf-bypass" class="text-orange-400 font-bold hover:text-white transition-colors ml-2">🛡️ Advanced WAF & API Gateway Bypass</a>
-                                                <span class="badge bg-danger text-white font-bold ml-2">NEW</span>
-                                                <span class="text-xs text-orange-300 ml-2">QUIC · GraphQL · WebSocket · AI Rule Inference · 98% Success</span>
-                                            </li>
-                                            <li>
-                                                <input type="checkbox" name="tools" value="web_obfuscator" class="w-4 h-4 rounded border-violet-500 bg-white/5 text-violet-500 focus:ring-violet-500/50">
-                                                <a href="/evasion/web-obfuscator" class="text-violet-400 font-bold hover:text-white transition-colors ml-2">🔮 Web Payload Obfuscator</a>
-                                                <span class="badge bg-violet-500 text-white font-bold ml-2">NEW</span>
-                                                <span class="text-xs text-violet-300 ml-2">Language/Technique Randomization · AI Evasion · 96% Success</span>
-                                            </li>
-                                        </ul>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="tools" value="pentest_orchestrator" class="w-4 h-4 rounded border-white/20 bg-white/5 text-fuchsia-500 focus:ring-fuchsia-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🤖 Automated Pentest Workflow Orchestrator</span>
+                                            <span class="text-xs text-fuchsia-400 font-bold">NEW</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="tools" value="soc_deception" class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyan-500 focus:ring-cyan-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🧑‍💻 SOC Deception & Honey Pot Poisoning</span>
+                                            <span class="text-xs text-cyan-400 font-bold">NEW</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="tools" value="cred_harvest" class="w-4 h-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🕵️‍♂️ Credential Harvesting & Session Hijacking Kit</span>
+                                            <span class="text-xs text-amber-400 font-bold">NEW</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="tools" value="advanced_waf_bypass" class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🛡️ Advanced WAF & API Gateway Bypass</span>
+                                            <span class="text-xs text-orange-400 font-bold">NEW</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="tools" value="web_obfuscator" class="w-4 h-4 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🔮 Web Payload Obfuscator</span>
+                                            <span class="text-xs text-violet-400 font-bold">NEW</span>
+                                        </label>
                                         <label class="flex items-center gap-3 cursor-pointer group">
                                             <input type="checkbox" name="python_scan" checked class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyber-primary focus:ring-cyber-primary/50">
                                             <span class="text-gray-300 group-hover:text-white transition-colors">Full Ghost Analysis (Python)</span>
@@ -891,30 +880,20 @@
                                         EVASION & STEALTH
                                     </h4>
                                     <div class="space-y-3">
-                                        <ul class="list-unstyled">
-                                            <li>
-                                                <input type="checkbox" name="tools" value="cred_harvest" class="w-4 h-4 rounded border-amber-500 bg-white/5 text-amber-500 focus:ring-amber-500/50">
-                                                <a href="/cred_harvest" class="text-amber-400 font-bold hover:text-white transition-colors ml-2">🕵️‍♂️ Credential Harvesting & Session Hijacking Kit</a>
-                                                <span class="badge bg-amber-500 text-white font-bold ml-2">NEW</span>
-                                                <span class="text-xs text-amber-300 ml-2">XSS/SSRF · Keylogger · Cookie Steal · AI Validation · 90% Success</span>
-                                            </li>
-                                            <li>
-                                                <input type="checkbox" name="tools" value="advanced_waf_bypass" class="w-4 h-4 rounded border-orange-500 bg-white/5 text-orange-500 focus:ring-orange-500/50">
-                                                <a href="/evasion/advanced-waf-bypass" class="text-orange-400 font-bold hover:text-white transition-colors ml-2">🛡️ Advanced WAF & API Gateway Bypass</a>
-                                                <span class="badge bg-danger text-white font-bold ml-2">NEW</span>
-                                                <span class="text-xs text-orange-300 ml-2">QUIC · GraphQL · WebSocket · AI Rule Inference · 98% Success</span>
-                                            </li>
-                                            <li>
-                                                <input type="checkbox" name="tools" value="web_obfuscator" class="w-4 h-4 rounded border-violet-500 bg-white/5 text-violet-500 focus:ring-violet-500/50">
-                                                <a href="/evasion/web-obfuscator" class="text-violet-400 font-bold hover:text-white transition-colors ml-2">🔮 Web Payload Obfuscator</a>
-                                                <span class="badge bg-violet-500 text-white font-bold ml-2">NEW</span>
-                                                <span class="text-xs text-violet-300 ml-2">Language/Technique Randomization · AI Evasion · 96% Success</span>
-                                            </li>
-                                        </ul>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="tools" value="cred_harvest" class="w-4 h-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🕵️‍♂️ Credential Harvesting & Session Hijacking Kit</span>
+                                            <span class="text-xs text-amber-400 font-bold">NEW</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" name="tools" value="advanced_waf_bypass" class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/50">
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🛡️ Advanced WAF & API Gateway Bypass</span>
+                                            <span class="text-xs text-orange-400 font-bold">NEW</span>
+                                        </label>
                                         <label class="flex items-center gap-3 cursor-pointer group">
                                             <input type="checkbox" name="tools" value="web_obfuscator" class="w-4 h-4 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50">
-                                            <span class="text-violet-400 font-bold group-hover:text-white transition-colors">🔮 Web Payload Obfuscator</span>
-                                            <span class="text-xs text-violet-400 font-bold ml-2">NEW</span>
+                                            <span class="text-gray-300 group-hover:text-white transition-colors">🔮 Web Payload Obfuscator</span>
+                                            <span class="text-xs text-violet-400 font-bold">NEW</span>
                                         </label>
                                         <label class="flex items-center gap-3 cursor-pointer group">
                                             <input type="checkbox" name="tools" value="amsi_bypass" class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyan-500 focus:ring-cyan-500/50">
