@@ -97,6 +97,9 @@ ebpf_rootkit_bp = _try_import('ebpf_rootkit_bp', lambda: __import__('tools.ebpf_
 ssh_worm_bp = _try_import('ssh_worm_bp', lambda: __import__('tools.ssh_worm', fromlist=['ssh_worm_bp']).ssh_worm_bp)
 docker_escape_bp = _try_import('docker_escape_bp', lambda: __import__('tools.docker_escape', fromlist=['docker_escape_bp']).docker_escape_bp)
 
+# Supply Chain Attack Module
+supply_chain_bp = _try_import('supply_chain_bp', lambda: __import__('tools.supply_chain_attack', fromlist=['supply_chain_bp']).supply_chain_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -189,6 +192,9 @@ def create_app(run_migrations_on_start=True):
     if ebpf_rootkit_bp: app.register_blueprint(ebpf_rootkit_bp)
     if ssh_worm_bp: app.register_blueprint(ssh_worm_bp)
     if docker_escape_bp: app.register_blueprint(docker_escape_bp)
+    
+    # Supply Chain Attack Module
+    if supply_chain_bp: app.register_blueprint(supply_chain_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

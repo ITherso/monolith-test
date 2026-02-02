@@ -1,0 +1,857 @@
+{% extends "base.html" %}
+
+{% block title %}Supply Chain Attack - Tedarik Zinciri 2.0{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <!-- Header -->
+    <div class="bg-black/30 border-b border-purple-500/30 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+                        <i class="fas fa-link mr-2"></i>Supply Chain Attack
+                    </h1>
+                    <p class="text-gray-400 text-sm">Tedarik Zinciri 2.0 - Kodları Zehirle</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold border border-red-500/30">
+                    <i class="fas fa-skull-crossbones mr-1"></i>CRITICAL
+                </span>
+                <span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-bold border border-purple-500/30">
+                    <i class="fas fa-crown mr-1"></i>PRO
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Attack Vector Tabs -->
+        <div class="flex gap-2 mb-8 overflow-x-auto pb-2">
+            <button onclick="showTab('confusion')" id="tab-confusion" class="tab-btn active px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+                <i class="fas fa-bomb"></i>
+                Dependency Confusion
+            </button>
+            <button onclick="showTab('git-backdoor')" id="tab-git-backdoor" class="tab-btn px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+                <i class="fab fa-git-alt"></i>
+                Git Backdoor
+            </button>
+            <button onclick="showTab('typosquat')" id="tab-typosquat" class="tab-btn px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+                <i class="fas fa-keyboard"></i>
+                Typosquatting
+            </button>
+            <button onclick="showTab('scanner')" id="tab-scanner" class="tab-btn px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+                <i class="fas fa-search"></i>
+                Dependency Scanner
+            </button>
+        </div>
+
+        <!-- Dependency Confusion Tab -->
+        <div id="panel-confusion" class="tab-panel">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Configuration -->
+                <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-purple-500/30 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-purple-500/30 bg-purple-500/10">
+                        <h2 class="text-xl font-bold text-purple-400 flex items-center gap-2">
+                            <i class="fas fa-bomb"></i>
+                            Dependency Confusion Attack
+                        </h2>
+                        <p class="text-gray-400 text-sm mt-1">Şirket içi paket isimlerini ele geçir</p>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <!-- Package Name -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-cube mr-1"></i>Target Package Name
+                            </label>
+                            <input type="text" id="confusionPackageName" 
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                                   placeholder="örn: sirket-auth-v1, @company/utils">
+                            <p class="text-xs text-gray-500 mt-1">Şirketin internal kullandığı paket ismi</p>
+                        </div>
+
+                        <!-- Registry -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-database mr-1"></i>Target Registry
+                            </label>
+                            <select id="confusionRegistry" 
+                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors">
+                                <option value="npm">📦 NPM (Node.js)</option>
+                                <option value="pypi">🐍 PyPI (Python)</option>
+                                <option value="rubygems">💎 RubyGems</option>
+                                <option value="maven">☕ Maven (Java)</option>
+                                <option value="nuget">🔷 NuGet (.NET)</option>
+                            </select>
+                        </div>
+
+                        <!-- Exfil URL -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-satellite-dish mr-1"></i>Exfiltration URL
+                            </label>
+                            <input type="text" id="confusionExfilUrl" 
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                                   placeholder="https://your-server.com">
+                            <p class="text-xs text-gray-500 mt-1">Çalınan veriler buraya gönderilecek</p>
+                        </div>
+
+                        <!-- Version -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-tag mr-1"></i>Malicious Version
+                            </label>
+                            <input type="text" id="confusionVersion" value="99.99.99"
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors">
+                            <p class="text-xs text-gray-500 mt-1">Yüksek versiyon numarası ile internal sürümü override et</p>
+                        </div>
+
+                        <!-- Generate Button -->
+                        <button onclick="generateConfusionAttack()" 
+                                class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold text-white hover:from-purple-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-magic"></i>
+                            Generate Malicious Package
+                        </button>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
+                <div class="space-y-6">
+                    <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-red-500/30 p-6">
+                        <h3 class="text-lg font-bold text-red-400 flex items-center gap-2 mb-4">
+                            <i class="fas fa-crosshairs"></i>
+                            Attack Flow
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex gap-4 items-start">
+                                <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 font-bold flex-shrink-0">1</div>
+                                <div>
+                                    <p class="text-white font-medium">Keşif</p>
+                                    <p class="text-gray-400 text-sm">Hedef şirketin package.json veya requirements.txt dosyalarını bul</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <div class="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold flex-shrink-0">2</div>
+                                <div>
+                                    <p class="text-white font-medium">Internal Paket Tespiti</p>
+                                    <p class="text-gray-400 text-sm">sirket-auth-v1 gibi internal paket isimlerini tespit et</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <div class="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 font-bold flex-shrink-0">3</div>
+                                <div>
+                                    <p class="text-white font-medium">Yüksek Versiyon</p>
+                                    <p class="text-gray-400 text-sm">Aynı isimle v99.99.99 versiyonlu paketi public registry'e yükle</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold flex-shrink-0">4</div>
+                                <div>
+                                    <p class="text-white font-medium">Kod Çalıştırma</p>
+                                    <p class="text-gray-400 text-sm">npm install veya pip install sırasında zararlı kod çalışır</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div id="confusionResults" class="hidden bg-black/40 backdrop-blur-xl rounded-2xl border border-green-500/30 p-6">
+                        <h3 class="text-lg font-bold text-green-400 flex items-center gap-2 mb-4">
+                            <i class="fas fa-check-circle"></i>
+                            Generated Package
+                        </h3>
+                        <div id="confusionOutput" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Git Backdoor Tab -->
+        <div id="panel-git-backdoor" class="tab-panel hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Configuration -->
+                <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-orange-500/30 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-orange-500/30 bg-orange-500/10">
+                        <h2 class="text-xl font-bold text-orange-400 flex items-center gap-2">
+                            <i class="fab fa-git-alt"></i>
+                            Git Repo Backdoorer
+                        </h2>
+                        <p class="text-gray-400 text-sm mt-1">Pre-commit hook ile sessiz kod enjeksiyonu</p>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <!-- Repository Path -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-folder mr-1"></i>Repository Path
+                            </label>
+                            <input type="text" id="gitRepoPath" 
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
+                                   placeholder="/home/developer/project">
+                            <p class="text-xs text-gray-500 mt-1">Hedef geliştiricinin repo dizini</p>
+                        </div>
+
+                        <!-- Hook Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-hook mr-1"></i>Hook Type
+                            </label>
+                            <select id="gitHookType" 
+                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500 transition-colors">
+                                <option value="pre-commit">🔄 pre-commit (Her commit'te)</option>
+                                <option value="post-commit">✅ post-commit (Commit sonrası)</option>
+                                <option value="pre-push">📤 pre-push (Push öncesi)</option>
+                                <option value="post-merge">🔀 post-merge (Merge sonrası)</option>
+                            </select>
+                        </div>
+
+                        <!-- Magic String -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-magic mr-1"></i>Magic String (Marker)
+                            </label>
+                            <input type="text" id="gitMagicString" value="/* AUTOMATED FIX */"
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors">
+                            <p class="text-xs text-gray-500 mt-1">Enjekte edilen kodun işaretçisi (duplike önleme)</p>
+                        </div>
+
+                        <!-- Target Extensions -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-file-code mr-1"></i>Target File Extensions
+                            </label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input type="checkbox" class="git-ext-checkbox" value=".js" checked>
+                                    <span class="text-gray-300 text-sm">.js</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input type="checkbox" class="git-ext-checkbox" value=".ts" checked>
+                                    <span class="text-gray-300 text-sm">.ts</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input type="checkbox" class="git-ext-checkbox" value=".py" checked>
+                                    <span class="text-gray-300 text-sm">.py</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input type="checkbox" class="git-ext-checkbox" value=".php">
+                                    <span class="text-gray-300 text-sm">.php</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input type="checkbox" class="git-ext-checkbox" value=".rb">
+                                    <span class="text-gray-300 text-sm">.rb</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input type="checkbox" class="git-ext-checkbox" value=".go">
+                                    <span class="text-gray-300 text-sm">.go</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Exfil URL -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-satellite-dish mr-1"></i>Exfiltration URL
+                            </label>
+                            <input type="text" id="gitExfilUrl" 
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
+                                   placeholder="https://your-server.com">
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="installGitBackdoor()" 
+                                    class="py-4 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl font-bold text-white hover:from-orange-500 hover:to-red-500 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-virus"></i>
+                                Install Hook
+                            </button>
+                            <button onclick="generateGlobalHook()" 
+                                    class="py-4 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl font-bold text-white hover:from-red-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-globe"></i>
+                                Global Hook
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info & Results -->
+                <div class="space-y-6">
+                    <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-yellow-500/30 p-6">
+                        <h3 class="text-lg font-bold text-yellow-400 flex items-center gap-2 mb-4">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            How Git Backdoor Works
+                        </h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex gap-3 items-start">
+                                <i class="fas fa-arrow-right text-yellow-400 mt-1"></i>
+                                <p class="text-gray-300">Geliştiricinin bilgisayarına sızıldığında <code class="text-yellow-400">.git/hooks/pre-commit</code> dosyasına zararlı script eklenir</p>
+                            </div>
+                            <div class="flex gap-3 items-start">
+                                <i class="fas fa-arrow-right text-yellow-400 mt-1"></i>
+                                <p class="text-gray-300">Geliştirici her <code class="text-yellow-400">git commit</code> yaptığında hook çalışır</p>
+                            </div>
+                            <div class="flex gap-3 items-start">
+                                <i class="fas fa-arrow-right text-yellow-400 mt-1"></i>
+                                <p class="text-gray-300">Hook, commit edilen dosyalara sessizce backdoor kodu ekler</p>
+                            </div>
+                            <div class="flex gap-3 items-start">
+                                <i class="fas fa-arrow-right text-yellow-400 mt-1"></i>
+                                <p class="text-gray-300">Değiştirilmiş dosyalar otomatik olarak tekrar stage edilir</p>
+                            </div>
+                            <div class="flex gap-3 items-start">
+                                <i class="fas fa-arrow-right text-yellow-400 mt-1"></i>
+                                <p class="text-gray-300">Backdoor production'a kadar fark edilmeden ilerler</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Git Results -->
+                    <div id="gitResults" class="hidden bg-black/40 backdrop-blur-xl rounded-2xl border border-green-500/30 p-6">
+                        <h3 class="text-lg font-bold text-green-400 flex items-center gap-2 mb-4">
+                            <i class="fas fa-check-circle"></i>
+                            Hook Installed
+                        </h3>
+                        <div id="gitOutput" class="space-y-4"></div>
+                    </div>
+
+                    <!-- Global Hook Script -->
+                    <div id="globalHookResults" class="hidden bg-black/40 backdrop-blur-xl rounded-2xl border border-red-500/30 p-6">
+                        <h3 class="text-lg font-bold text-red-400 flex items-center gap-2 mb-4">
+                            <i class="fas fa-globe"></i>
+                            Global Hook Installer
+                        </h3>
+                        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                            <p class="text-red-400 text-sm">
+                                <i class="fas fa-skull-crossbones mr-1"></i>
+                                <strong>WARNING:</strong> Bu script sistemdeki TÜM git repolarını etkiler!
+                            </p>
+                        </div>
+                        <pre id="globalHookScript" class="bg-black/50 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto max-h-64"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typosquatting Tab -->
+        <div id="panel-typosquat" class="tab-panel hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Generator -->
+                <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-cyan-500/30 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-cyan-500/30 bg-cyan-500/10">
+                        <h2 class="text-xl font-bold text-cyan-400 flex items-center gap-2">
+                            <i class="fas fa-keyboard"></i>
+                            Typosquatting Generator
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-cube mr-1"></i>Target Package Name
+                            </label>
+                            <input type="text" id="typosquatPackage" 
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                                   placeholder="örn: lodash, axios, requests">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-list-ol mr-1"></i>Number of Variants
+                            </label>
+                            <input type="number" id="typosquatCount" value="20" min="5" max="50"
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors">
+                        </div>
+
+                        <button onclick="generateTyposquats()" 
+                                class="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-xl font-bold text-white hover:from-cyan-500 hover:to-blue-500 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-random"></i>
+                            Generate Variants
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="lg:col-span-2 bg-black/40 backdrop-blur-xl rounded-2xl border border-cyan-500/30 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-cyan-500/30 bg-cyan-500/10">
+                        <h2 class="text-xl font-bold text-cyan-400 flex items-center gap-2">
+                            <i class="fas fa-list"></i>
+                            Typosquat Candidates
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div id="typosquatResults" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div class="text-center text-gray-500 py-8 col-span-full">
+                                <i class="fas fa-keyboard text-4xl mb-3 opacity-30"></i>
+                                <p>Enter a package name and generate variants</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Techniques Info -->
+            <div class="mt-8 bg-black/40 backdrop-blur-xl rounded-2xl border border-cyan-500/30 p-6">
+                <h3 class="text-lg font-bold text-cyan-400 mb-4">
+                    <i class="fas fa-info-circle mr-2"></i>Typosquatting Techniques
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div class="text-cyan-400 font-bold mb-2">Missing Char</div>
+                        <code class="text-gray-300 text-sm">lodash → lodas</code>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div class="text-cyan-400 font-bold mb-2">Swapped Chars</div>
+                        <code class="text-gray-300 text-sm">lodash → lodasg</code>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div class="text-cyan-400 font-bold mb-2">Double Char</div>
+                        <code class="text-gray-300 text-sm">lodash → loddash</code>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div class="text-cyan-400 font-bold mb-2">Homoglyph</div>
+                        <code class="text-gray-300 text-sm">lodash → ⅼodash</code>
+                        <p class="text-xs text-gray-500 mt-1">(Unicode karakterler)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dependency Scanner Tab -->
+        <div id="panel-scanner" class="tab-panel hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Scanner Config -->
+                <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-green-500/30 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-green-500/30 bg-green-500/10">
+                        <h2 class="text-xl font-bold text-green-400 flex items-center gap-2">
+                            <i class="fas fa-search"></i>
+                            Dependency Scanner
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-folder mr-1"></i>Target Project Path
+                            </label>
+                            <input type="text" id="scannerPath" 
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors"
+                                   placeholder="/path/to/project">
+                        </div>
+
+                        <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                            <h4 class="text-green-400 font-bold mb-2">Supported Files</h4>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div class="flex items-center gap-2">
+                                    <i class="fab fa-npm text-red-400"></i>
+                                    <span class="text-gray-300">package.json</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fab fa-python text-yellow-400"></i>
+                                    <span class="text-gray-300">requirements.txt</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fab fa-python text-blue-400"></i>
+                                    <span class="text-gray-300">pyproject.toml</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-gem text-pink-400"></i>
+                                    <span class="text-gray-300">Gemfile</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fab fa-php text-purple-400"></i>
+                                    <span class="text-gray-300">composer.json</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="scanDependencies()" 
+                                class="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-bold text-white hover:from-green-500 hover:to-emerald-500 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-search"></i>
+                            Scan for Vulnerabilities
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scan Results -->
+                <div class="lg:col-span-2 bg-black/40 backdrop-blur-xl rounded-2xl border border-green-500/30 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-green-500/30 bg-green-500/10">
+                        <h2 class="text-xl font-bold text-green-400 flex items-center gap-2">
+                            <i class="fas fa-clipboard-list"></i>
+                            Scan Results
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div id="scannerResults">
+                            <div class="text-center text-gray-500 py-12">
+                                <i class="fas fa-search text-4xl mb-3 opacity-30"></i>
+                                <p>No scan results yet. Enter a path and click scan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tab-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #9ca3af;
+    }
+    .tab-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+    .tab-btn.active {
+        background: linear-gradient(to right, rgba(147, 51, 234, 0.3), rgba(236, 72, 153, 0.3));
+        border-color: rgba(147, 51, 234, 0.5);
+        color: white;
+    }
+</style>
+
+<script>
+function showTab(tabName) {
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    // Deactivate all tabs
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    
+    // Show selected panel
+    document.getElementById('panel-' + tabName).classList.remove('hidden');
+    // Activate selected tab
+    document.getElementById('tab-' + tabName).classList.add('active');
+}
+
+async function generateConfusionAttack() {
+    const packageName = document.getElementById('confusionPackageName').value;
+    const registry = document.getElementById('confusionRegistry').value;
+    const exfilUrl = document.getElementById('confusionExfilUrl').value;
+    
+    if (!packageName) {
+        alert('Package name is required');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/supply-chain/api/generate-confusion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                package_name: packageName,
+                registry: registry,
+                exfil_url: exfilUrl || 'https://your-server.com'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('confusionResults').classList.remove('hidden');
+            
+            let html = `
+                <div class="bg-white/5 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-green-400 font-bold">${data.package_name}@${data.version}</span>
+                        <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">${data.registry}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Show generated files
+            for (const [filename, content] of Object.entries(data.files)) {
+                html += `
+                    <div class="bg-white/5 rounded-lg overflow-hidden">
+                        <div class="px-4 py-2 bg-white/5 border-b border-white/10 flex justify-between items-center">
+                            <span class="text-gray-300 font-mono text-sm">${filename}</span>
+                            <button onclick="copyCode(this)" data-code="${encodeURIComponent(content)}" class="text-xs text-purple-400 hover:text-purple-300">
+                                <i class="fas fa-copy mr-1"></i>Copy
+                            </button>
+                        </div>
+                        <pre class="p-4 text-xs text-gray-400 overflow-x-auto max-h-48">${escapeHtml(content)}</pre>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mt-4">
+                    <h4 class="text-purple-400 font-bold mb-2">📤 Upload Instructions</h4>
+                    <pre class="text-xs text-gray-300 whitespace-pre-wrap">${escapeHtml(data.upload_instructions)}</pre>
+                </div>
+            `;
+            
+            document.getElementById('confusionOutput').innerHTML = html;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function installGitBackdoor() {
+    const repoPath = document.getElementById('gitRepoPath').value;
+    const hookType = document.getElementById('gitHookType').value;
+    const magicString = document.getElementById('gitMagicString').value;
+    const exfilUrl = document.getElementById('gitExfilUrl').value;
+    
+    const extensions = Array.from(document.querySelectorAll('.git-ext-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    if (!repoPath) {
+        alert('Repository path is required');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/supply-chain/api/git-backdoor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                repo_path: repoPath,
+                hook_type: hookType,
+                magic_string: magicString,
+                exfil_url: exfilUrl || 'https://your-server.com',
+                target_extensions: extensions
+            })
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('gitResults').classList.remove('hidden');
+        
+        if (data.success) {
+            document.getElementById('gitOutput').innerHTML = `
+                <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                    <div class="flex items-center gap-2 text-green-400 mb-3">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="font-bold">Hook Installed Successfully!</span>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Hook Path:</span>
+                            <code class="text-green-400">${data.hook_path}</code>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Hook Type:</span>
+                            <span class="text-white">${data.hook_type}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Stealth Mode:</span>
+                            <span class="${data.stealth_mode ? 'text-green-400' : 'text-yellow-400'}">${data.stealth_mode ? 'Enabled' : 'Disabled'}</span>
+                        </div>
+                        ${data.backup_path ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Backup:</span>
+                            <code class="text-gray-300">${data.backup_path}</code>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        } else {
+            document.getElementById('gitOutput').innerHTML = `
+                <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                    <div class="flex items-center gap-2 text-red-400">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="font-bold">Error: ${data.error}</span>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function generateGlobalHook() {
+    const exfilUrl = document.getElementById('gitExfilUrl').value;
+    
+    try {
+        const response = await fetch('/supply-chain/api/global-hook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                exfil_url: exfilUrl || 'https://your-server.com'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('globalHookResults').classList.remove('hidden');
+            document.getElementById('globalHookScript').textContent = data.installer_script;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function generateTyposquats() {
+    const packageName = document.getElementById('typosquatPackage').value;
+    const count = document.getElementById('typosquatCount').value;
+    
+    if (!packageName) {
+        alert('Package name is required');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/supply-chain/api/typosquat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                package_name: packageName,
+                count: parseInt(count)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            let html = '';
+            
+            const techniqueColors = {
+                'missing_char': 'red',
+                'swapped_chars': 'orange',
+                'double_char': 'yellow',
+                'homoglyph': 'pink',
+                'hyphen_underscore': 'blue',
+                'no_separator': 'purple',
+                'suffix': 'cyan'
+            };
+            
+            for (const candidate of data.candidates) {
+                const color = techniqueColors[candidate.technique] || 'gray';
+                html += `
+                    <div class="bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
+                        <div class="font-mono text-white">${candidate.name}</div>
+                        <div class="text-xs text-${color}-400 mt-1">${candidate.technique}</div>
+                        ${candidate.note ? `<div class="text-xs text-gray-500 mt-1">${candidate.note}</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('typosquatResults').innerHTML = html;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function scanDependencies() {
+    const targetPath = document.getElementById('scannerPath').value;
+    
+    if (!targetPath) {
+        alert('Target path is required');
+        return;
+    }
+    
+    document.getElementById('scannerResults').innerHTML = `
+        <div class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
+            <p class="text-gray-400 mt-3">Scanning dependencies...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/supply-chain/api/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_path: targetPath })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            let html = `
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-white">${data.total_packages}</div>
+                        <div class="text-gray-400 text-sm">Total Packages</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-yellow-400">${data.private_packages.length}</div>
+                        <div class="text-gray-400 text-sm">Private Packages</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-red-400">${data.vulnerable_count}</div>
+                        <div class="text-gray-400 text-sm">Vulnerable</div>
+                    </div>
+                </div>
+            `;
+            
+            if (data.private_packages.length > 0) {
+                html += `<h4 class="text-green-400 font-bold mb-3">Private Packages Found</h4>`;
+                html += `<div class="space-y-2 mb-6">`;
+                
+                for (const pkg of data.private_packages) {
+                    const bgColor = pkg.vulnerable ? 'red' : 'yellow';
+                    html += `
+                        <div class="bg-${bgColor}-500/10 border border-${bgColor}-500/30 rounded-lg p-3 flex justify-between items-center">
+                            <div>
+                                <span class="font-mono text-white">${pkg.name}</span>
+                                <span class="text-gray-400 text-sm ml-2">(${pkg.registry})</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-400">${Math.round(pkg.confidence * 100)}% confidence</span>
+                                ${pkg.vulnerable ? 
+                                    '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">VULNERABLE</span>' :
+                                    '<span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Protected</span>'
+                                }
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+            }
+            
+            if (data.recommendations.length > 0) {
+                html += `<h4 class="text-green-400 font-bold mb-3">Recommendations</h4>`;
+                html += `<ul class="space-y-2 text-sm text-gray-300">`;
+                for (const rec of data.recommendations) {
+                    html += `<li class="flex items-start gap-2"><i class="fas fa-shield-alt text-green-400 mt-1"></i>${rec}</li>`;
+                }
+                html += `</ul>`;
+            }
+            
+            document.getElementById('scannerResults').innerHTML = html;
+        } else {
+            document.getElementById('scannerResults').innerHTML = `
+                <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+                    <i class="fas fa-exclamation-circle mr-2"></i>Error: ${data.error}
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('scannerResults').innerHTML = `
+            <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+                <i class="fas fa-exclamation-circle mr-2"></i>Error: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function copyCode(btn) {
+    const code = decodeURIComponent(btn.dataset.code);
+    navigator.clipboard.writeText(code);
+    btn.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy';
+    }, 2000);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
