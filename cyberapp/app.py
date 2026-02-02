@@ -115,6 +115,9 @@ ddexec_bp = _try_import('ddexec_bp', lambda: __import__('cyberapp.routes.ddexec'
 # K8s Kraken - Kubernetes Warfare Module
 k8s_warfare_bp = _try_import('k8s_warfare_bp', lambda: __import__('cyberapp.routes.k8s_warfare', fromlist=['k8s_warfare_bp']).k8s_warfare_bp)
 
+# Browser Persistence & Extension Ops Module
+browser_persistence_bp = _try_import('browser_persistence_bp', lambda: __import__('cyberapp.routes.browser_persistence', fromlist=['browser_persistence_bp']).browser_persistence_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -225,6 +228,9 @@ def create_app(run_migrations_on_start=True):
     
     # K8s Kraken - Kubernetes Warfare Module
     if k8s_warfare_bp: app.register_blueprint(k8s_warfare_bp)
+    
+    # Browser Persistence & Extension Ops Module
+    if browser_persistence_bp: app.register_blueprint(browser_persistence_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

