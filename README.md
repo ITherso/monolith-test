@@ -493,6 +493,184 @@ API Endpoints:
 
 ---
 
+## 🕵️ Exotic Exfiltration PRO Modules (February 2025)
+
+Firewall'ları ve DLP sistemlerini delirtecek covert channel modülleri. Trafik analizi yapılamaz, engellenmesi imkansız.
+
+### 🌐 DNS-over-HTTPS (DoH) C2 Channel
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🌐 DNS-OVER-HTTPS C2 CHANNEL                                      │
+│                   Firewall "Bu Google ile konuşuyor" Sanarken Gizli C2                   │
+│                          tools/doh_c2.py (~750 lines)                                    │
+│                    🔒 Double Encryption: TLS + AES-256-GCM 🔒                            │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+DOH PROVIDERS:
+  🔴 Google DNS      - https://dns.google/dns-query
+  🟠 Cloudflare DNS  - https://cloudflare-dns.com/dns-query  
+  🟣 Quad9 DNS       - https://dns.quad9.net/dns-query
+  🔵 NextDNS         - https://dns.nextdns.io/dns-query
+  🟢 AdGuard DNS     - https://dns.adguard.com/dns-query
+
+HOW IT WORKS:
+  1. Command Encoded → Base32 → DNS labels
+  2. Query Built → cmd.data.session.c2.com
+  3. DoH Request → HTTPS POST → dns.google
+  4. Response → TXT record = C2 data
+
+FIREWALL PERSPECTIVE:
+  ✓ HTTPS to dns.google.com
+  ✓ Content-Type: dns-message
+  ✓ Looks like legitimate DNS
+  ❌ Cannot inspect content
+  ❌ Cannot block Google DNS!
+
+IMPLANT GENERATION:
+  🐍 Python (Full featured)
+  💠 PowerShell (Windows native)
+  🔷 C# (.NET Framework)
+
+FEATURES:
+  🔐 AES-256-GCM encryption on top of TLS
+  📦 Chunked transfer for large payloads
+  🎲 Beacon jitter for detection evasion
+  📊 Multiple record types (TXT, A, AAAA, NULL)
+  🔄 Provider rotation for resilience
+
+API Endpoints:
+  POST /doh-c2/api/create-session   - Create DoH C2 session
+  POST /doh-c2/api/generate-implant - Generate implant code
+  POST /doh-c2/api/build-query      - Build sample DNS query
+  GET  /doh-c2/api/statistics       - Get channel statistics
+  GET  /doh-c2/api/providers        - List DoH providers
+```
+
+### 📡 ICMP Tunneling (Ping Channel)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                          📡 ICMP TUNNELING (PING CHANNEL)                                │
+│                    Çoğu Şirket Ping'i Engellemez - Bunu Kullan!                          │
+│                          tools/icmp_tunnel.py (~700 lines)                               │
+│                        🏓 Hide C2 in Ping Packets 🏓                                     │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+ICMP PACKET STRUCTURE:
+  ┌─────────────────────────────────────┐
+  │ Type │ Code │ Checksum             │
+  │ Identifier  │ Sequence Number      │
+  │ Payload: [MAGIC(4B)][ENCRYPTED C2] │
+  └─────────────────────────────────────┘
+
+TUNNEL MODES:
+  🔄 HALF_DUPLEX    - Data in Echo Request only
+  🔁 FULL_DUPLEX    - Data in both Request and Reply
+  📏 COVERT_SIZE    - Data encoded in packet size variations
+  ⏱️ COVERT_TIMING  - Data encoded in timing between packets
+
+STANDARD SIZES (Blend In): 56, 64, 84, 128, 256, 512, 1024 bytes
+
+IDS/FIREWALL PERSPECTIVE:
+  → ICMP Echo Request, Type 8, Code 0
+  → 64 bytes payload
+  → Destination: External IP
+  Status: ✓ ALLOWED "Normal ping traffic"
+  Reality: Each packet contains encrypted C2 commands! 🔴
+
+CAPABILITIES:
+  💀 Command Execution
+  📤 Data Exfiltration
+  🔐 AES-256 Encryption
+  📦 Chunked Transfer
+  🎯 Session Management
+
+IMPLANT GENERATION:
+  🐍 Python (Raw sockets, root required)
+  💠 PowerShell (Admin required, uses .NET Ping)
+  ⚙️ C (Compile with gcc, most portable)
+
+API Endpoints:
+  POST /icmp-tunnel/api/create-session   - Create tunnel session
+  POST /icmp-tunnel/api/generate-implant - Generate implant code
+  POST /icmp-tunnel/api/simulate-traffic - Simulate traffic demo
+  GET  /icmp-tunnel/api/statistics       - Get tunnel statistics
+  GET  /icmp-tunnel/api/modes            - List tunnel modes
+```
+
+### 🤖 Telegram/Discord Bot C2
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🤖 TELEGRAM/DISCORD BOT C2                                        │
+│                       IP'in ASLA Görünmez - Platform Sunucuları Kullan                   │
+│                          tools/telegram_c2.py (~800 lines)                               │
+│                    🛡️ Zero Infrastructure - Use Their Servers 🛡️                        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+SUPPORTED PLATFORMS:
+  ✈️ TELEGRAM
+     • Bot API (@BotFather)
+     • Chat ID for commands
+     • File upload support
+     • Long polling
+
+  🎮 DISCORD
+     • Webhook URL (easy!)
+     • Bot token optional
+     • Rich embeds
+     • Gaming traffic cover
+
+  💬 SLACK (Optional)
+     • Webhook integration
+     • Corporate blend-in
+
+  🔗 MATRIX (Decentralized)
+     • Self-hosted possible
+     • E2E encryption
+
+TRAFFIC FLOW:
+  VICTIM 💻 --HTTPS--> TELEGRAM/DISCORD SERVERS --HTTPS--> YOU 😈 (HIDDEN)
+  
+  VICTIM'S LOGS: "Connection to api.telegram.org:443"
+  YOUR IP: ███████ NEVER VISIBLE
+
+ADVANTAGES:
+  🔒 IP HIDDEN      - Your IP never appears in victim's logs
+  🏢 NO INFRA       - Use Telegram's servers for free!
+  🚫 HARD TO BLOCK  - Can't block telegram.org easily
+  🎭 BLENDS IN      - Looks like normal chat app traffic
+
+FEATURES:
+  📱 Mobile Control - Command from phone app
+  🔐 AES-256 + TLS  - Double encryption layer
+  📊 Rich Embeds    - Beautiful beacon data
+  📁 File Transfer  - Upload/download via bot
+  ⏱️ Beacon Jitter  - Random timing evasion
+
+SETUP EXAMPLE (Telegram):
+  1. Create bot with @BotFather → Get TOKEN
+  2. Create group/channel → Get CHAT_ID
+  3. Generate implant with token + chat_id
+  4. Victim runs implant → Beacon appears in your Telegram!
+  5. Send commands as messages → Results returned as replies
+
+IMPLANT GENERATION:
+  🐍 Python (Telegram Bot API / Discord Webhook)
+  💠 PowerShell (Invoke-RestMethod based)
+
+API Endpoints:
+  POST /telegram-c2/api/configure       - Configure bot settings
+  POST /telegram-c2/api/generate-implant - Generate implant code
+  POST /telegram-c2/api/send-command    - Send command (demo)
+  GET  /telegram-c2/api/statistics      - Get C2 statistics
+  GET  /telegram-c2/api/platforms       - List supported platforms
+  GET  /telegram-c2/api/advantages      - List advantages
+```
+
+---
+
 ## �🗡️ Core Attack Modules
 
 ### 🎫 Kerberos Attack Chain
