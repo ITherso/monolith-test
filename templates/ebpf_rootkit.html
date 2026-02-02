@@ -758,4 +758,58 @@ document.addEventListener('DOMContentLoaded', function() {
     checkSupport();
 });
 </script>
+
+<!-- Cross-Module Integration Panel -->
+<div class="card bg-dark border-purple mt-4" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(239, 68, 68, 0.1)); border-color: rgba(168, 85, 247, 0.3);">
+    <div class="card-header border-bottom border-purple">
+        <h5 class="mb-0 text-purple-400">
+            <i class="fas fa-link me-2"></i>🔗 Chain with Other Modules
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">eBPF rootkit sonrası persistence ve lateral movement modülleriyle devam edin</p>
+        <div class="row g-2">
+            <div class="col-md-3">
+                <a href="/c2" target="_blank" class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>📡</span> C2 Implant
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/ssh-worm" target="_blank" class="btn btn-outline-success btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>🐛</span> SSH Worm
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/lateral" target="_blank" class="btn btn-outline-info btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>🌐</span> Lateral Move
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/privesc-toolkit" target="_blank" class="btn btn-outline-warning btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>⬆️</span> PrivEsc
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/stego-c2" target="_blank" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>🖼️</span> Stego C2
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/telegram-c2" target="_blank" class="btn btn-outline-light btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>✈️</span> Telegram C2
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/dpapi" target="_blank" class="btn btn-outline-warning btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>🔐</span> DPAPI Extract
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/god-mode" target="_blank" class="btn btn-outline-danger btn-sm w-100 d-flex align-items-center gap-2">
+                    <span>💀</span> God Mode
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

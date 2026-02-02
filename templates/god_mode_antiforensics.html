@@ -870,4 +870,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 </script>
+
+<!-- Cross-Module Integration Panel -->
+<div class="bg-gray-900/50 rounded-xl p-6 mt-8 border border-red-500/30" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(168, 85, 247, 0.1));">
+    <h3 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+        <span>🔗</span> God Mode Enabled Modules
+    </h3>
+    <p class="text-gray-400 text-sm mb-4">Bu modüllerde God Mode entegre edilmiştir - aktivitelerinden sonra otomatik temizlik yapabilirler</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <a href="/c2" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-blue-500 text-white text-sm">
+            <span class="text-blue-400">📡</span> C2 Implant
+        </a>
+        <a href="/lateral" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-green-500 text-white text-sm">
+            <span class="text-green-400">🌐</span> Lateral Movement
+        </a>
+        <a href="/golden" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-yellow-500 text-white text-sm">
+            <span class="text-yellow-400">🎫</span> Golden Ticket
+        </a>
+        <a href="/dpapi" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-orange-500 text-white text-sm">
+            <span class="text-orange-400">🔐</span> DPAPI Extract
+        </a>
+        <a href="/webshell" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-red-500 text-white text-sm">
+            <span class="text-red-400">🐚</span> Web Shell
+        </a>
+        <a href="/ebpf-rootkit" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-cyan-500 text-white text-sm">
+            <span class="text-cyan-400">🐧</span> eBPF Rootkit
+        </a>
+        <a href="/wmi-persistence" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-purple-500 text-white text-sm">
+            <span class="text-purple-400">👻</span> WMI Persist
+        </a>
+        <a href="/autoexploit" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-pink-500 text-white text-sm">
+            <span class="text-pink-400">⚡</span> AutoExploit
+        </a>
+    </div>
+</div>
 {% endblock %}

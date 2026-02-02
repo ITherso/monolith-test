@@ -586,4 +586,38 @@ function copyAgentCode() {
     });
 });
 </script>
+
+<!-- Cross-Module Integration Panel -->
+<div class="glass rounded-xl p-6 mt-6 border border-emerald-500/30" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(168, 85, 247, 0.1));">
+    <h3 class="text-xl font-semibold text-emerald-400 mb-4 flex items-center gap-2">
+        <span>🔗</span> Chain with Other Modules
+    </h3>
+    <p class="text-gray-400 text-sm mb-4">Steganography C2 ile birlikte diğer modülleri kullanın - covert exfiltration için ideal</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <a href="/c2" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-blue-500 text-white text-sm">
+            <span class="text-blue-400">📡</span> HTTP C2
+        </a>
+        <a href="/telegram-c2" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-cyan-500 text-white text-sm">
+            <span class="text-cyan-400">✈️</span> Telegram C2
+        </a>
+        <a href="/dpapi" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-yellow-500 text-white text-sm">
+            <span class="text-yellow-400">🔐</span> DPAPI Extract
+        </a>
+        <a href="/lateral" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-green-500 text-white text-sm">
+            <span class="text-green-400">🌐</span> Lateral Move
+        </a>
+        <a href="/phishing" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-orange-500 text-white text-sm">
+            <span class="text-orange-400">🎣</span> Phishing
+        </a>
+        <a href="/wmi-persistence" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-purple-500 text-white text-sm">
+            <span class="text-purple-400">👻</span> WMI Persist
+        </a>
+        <a href="/ebpf-rootkit" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-red-500 text-white text-sm">
+            <span class="text-red-400">🐧</span> eBPF Rootkit
+        </a>
+        <a href="/god-mode" target="_blank" class="flex items-center gap-2 px-4 py-3 bg-black/30 hover:bg-black/50 rounded-lg transition-all border border-gray-600 hover:border-pink-500 text-white text-sm">
+            <span class="text-pink-400">💀</span> God Mode
+        </a>
+    </div>
+</div>
 {% endblock %}

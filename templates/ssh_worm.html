@@ -395,6 +395,26 @@
                 <div class="card-body">
                     <pre id="output" class="bg-black text-success p-3 rounded border border-secondary" style="max-height: 400px; overflow-y: auto; font-family: 'Fira Code', monospace;">// Output will appear here...</pre>
                 </div>
+
+                <!-- Cross-Module Integration -->
+                <div class="card-footer" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.1)); border-top: 1px solid rgba(59, 130, 246, 0.3);">
+                    <h6 class="text-info mb-3"><i class="fas fa-link me-2"></i>🔗 Chain with Other Modules</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/c2" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-broadcast-tower me-1"></i> Deploy C2 Implant
+                        </a>
+                        <a href="/ebpf-rootkit" target="_blank" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-ghost me-1"></i> eBPF Rootkit
+                        </a>
+                        <a href="/lateral" target="_blank" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-diagram-3 me-1"></i> Lateral Movement
+                        </a>
+                        <a href="/privesc-toolkit" target="_blank" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-arrow-up me-1"></i> PrivEsc Check
+                        </a>
+                    </div>
+                    <small class="text-muted mt-2 d-block">💡 After SSH propagation, deploy additional payloads to compromised hosts</small>
+                </div>
             </div>
         </div>
     </div>
