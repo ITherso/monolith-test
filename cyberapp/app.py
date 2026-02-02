@@ -112,6 +112,9 @@ social_eng_bp = _try_import('social_eng_bp', lambda: __import__('tools.social_en
 # DDexec Fileless Linux Execution Module
 ddexec_bp = _try_import('ddexec_bp', lambda: __import__('cyberapp.routes.ddexec', fromlist=['ddexec_bp']).ddexec_bp)
 
+# K8s Kraken - Kubernetes Warfare Module
+k8s_warfare_bp = _try_import('k8s_warfare_bp', lambda: __import__('cyberapp.routes.k8s_warfare', fromlist=['k8s_warfare_bp']).k8s_warfare_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -219,6 +222,9 @@ def create_app(run_migrations_on_start=True):
     
     # DDexec Fileless Linux Execution Module
     if ddexec_bp: app.register_blueprint(ddexec_bp)
+    
+    # K8s Kraken - Kubernetes Warfare Module
+    if k8s_warfare_bp: app.register_blueprint(k8s_warfare_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
