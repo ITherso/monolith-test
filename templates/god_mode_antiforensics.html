@@ -1,0 +1,873 @@
+{% extends "base.html" %}
+
+{% block title %}God Mode Anti-Forensics - CyberPulse{% endblock %}
+
+{% block extra_css %}
+<style>
+    .god-gradient {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f1a 100%);
+    }
+    .neon-red {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3);
+    }
+    .neon-purple {
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), 0 0 40px rgba(168, 85, 247, 0.3);
+    }
+    .skull-pulse {
+        animation: skullPulse 2s infinite;
+    }
+    @keyframes skullPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    .timeline-line {
+        background: linear-gradient(180deg, #ef4444 0%, #a855f7 100%);
+    }
+    .event-card:hover {
+        transform: translateX(5px);
+        border-left-color: #ef4444;
+    }
+    .phantom-glow {
+        animation: phantomGlow 3s infinite alternate;
+    }
+    @keyframes phantomGlow {
+        0% { box-shadow: 0 0 10px rgba(168, 85, 247, 0.3); }
+        100% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.6); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="god-gradient min-h-screen py-8 px-4">
+    <div class="container mx-auto max-w-7xl">
+        
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <span class="text-6xl skull-pulse">💀</span>
+                <div>
+                    <h1 class="text-4xl font-bold text-white">God Mode Anti-Forensics</h1>
+                    <p class="text-gray-400 text-lg mt-2">İzleri silmek değil, YOK ETMEK!</p>
+                </div>
+                <span class="text-6xl skull-pulse">💀</span>
+            </div>
+            <div class="flex justify-center gap-4 mt-4">
+                <span class="px-4 py-1 bg-red-500/20 text-red-400 rounded-full text-sm border border-red-500/50">
+                    🕐 Time Stomping
+                </span>
+                <span class="px-4 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm border border-purple-500/50">
+                    👻 Phantom Cleaner
+                </span>
+                <span class="px-4 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm border border-yellow-500/50">
+                    ⚠️ Kernel Level
+                </span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-gray-900/50 rounded-xl p-1 flex gap-2">
+                <button onclick="showTab('timestomp')" id="tab-timestomp"
+                    class="tab-btn px-6 py-3 rounded-lg font-medium transition-all bg-red-500 text-white">
+                    🕐 Time Stomping (MACE)
+                </button>
+                <button onclick="showTab('phantom')" id="tab-phantom"
+                    class="tab-btn px-6 py-3 rounded-lg font-medium transition-all text-gray-400 hover:text-white">
+                    👻 Phantom Cleaner
+                </button>
+                <button onclick="showTab('profiles')" id="tab-profiles"
+                    class="tab-btn px-6 py-3 rounded-lg font-medium transition-all text-gray-400 hover:text-white">
+                    📋 Cleanup Profiles
+                </button>
+            </div>
+        </div>
+
+        <!-- Time Stomping Tab -->
+        <div id="panel-timestomp" class="tab-panel">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Time Stomp Config -->
+                <div class="bg-gray-900/80 rounded-xl p-6 border border-red-500/30 neon-red">
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="text-2xl">🕐</span> Time Stomping Configuration
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Target File Path</label>
+                            <input type="text" id="ts-target-file" value="C:\malware\payload.exe"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-sm
+                                       focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Timestamp Source</label>
+                            <select id="ts-source-type"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white
+                                       focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                                <option value="system_file">System File (calc.exe, notepad.exe)</option>
+                                <option value="random_old">Random Old Date (Windows Update)</option>
+                                <option value="specific_date">Specific Date</option>
+                                <option value="windows_install">Windows Install Date</option>
+                            </select>
+                        </div>
+                        
+                        <div id="ts-reference-container">
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Reference File</label>
+                            <select id="ts-reference-file"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white
+                                       focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                                <option value="calc.exe">calc.exe - Windows Calculator (2019)</option>
+                                <option value="notepad.exe">notepad.exe - Notepad (2019)</option>
+                                <option value="cmd.exe">cmd.exe - Command Prompt (2019)</option>
+                                <option value="mspaint.exe">mspaint.exe - Paint (2019-2020)</option>
+                                <option value="explorer.exe">explorer.exe - Explorer (2019)</option>
+                                <option value="svchost.exe">svchost.exe - Service Host (2019)</option>
+                                <option value="taskmgr.exe">taskmgr.exe - Task Manager (2019)</option>
+                                <option value="regedit.exe">regedit.exe - Registry Editor (2019)</option>
+                            </select>
+                        </div>
+                        
+                        <div id="ts-custom-date-container" class="hidden">
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Custom Date</label>
+                            <input type="datetime-local" id="ts-custom-date"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white
+                                       focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                        </div>
+                        
+                        <div class="flex gap-3 pt-4">
+                            <button onclick="generateTimestomp()" 
+                                class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <span>🔨</span> Generate Script
+                            </button>
+                            <button onclick="generateAdvancedTimestomp()"
+                                class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <span>⚡</span> Advanced (MFT)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MACE Explanation -->
+                    <div class="mt-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <h4 class="text-sm font-bold text-yellow-400 mb-2">📚 MACE Nedir?</h4>
+                        <ul class="text-xs text-gray-400 space-y-1">
+                            <li><span class="text-red-400">M</span>odified - Son değiştirilme zamanı</li>
+                            <li><span class="text-red-400">A</span>ccessed - Son erişim zamanı</li>
+                            <li><span class="text-red-400">C</span>reated - Oluşturulma zamanı</li>
+                            <li><span class="text-red-400">E</span>ntry Modified - MFT entry değişimi (NTFS)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Batch Time Stomp -->
+                <div class="bg-gray-900/80 rounded-xl p-6 border border-orange-500/30">
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="text-2xl">📁</span> Batch Time Stomping
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Target Folder</label>
+                            <input type="text" id="ts-batch-folder" value="C:\malware"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-sm
+                                       focus:border-orange-500 focus:ring-1 focus:ring-orange-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">File Pattern</label>
+                            <input type="text" id="ts-batch-pattern" value="*.exe"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-sm
+                                       focus:border-orange-500 focus:ring-1 focus:ring-orange-500">
+                            <p class="text-xs text-gray-500 mt-1">Örnekler: *.exe, *.dll, *.ps1, *.*</p>
+                        </div>
+                        
+                        <button onclick="generateBatchTimestomp()"
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <span>📦</span> Generate Batch Script
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="mt-6">
+                        <h4 class="text-sm font-bold text-gray-400 mb-3">⚡ Hızlı Aksiyonlar</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="quickTimestompCalc()" 
+                                class="bg-gray-800 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-sm transition-all">
+                                🧮 calc.exe Clone
+                            </button>
+                            <button onclick="quickTimestompNotepad()"
+                                class="bg-gray-800 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-sm transition-all">
+                                📝 notepad.exe Clone
+                            </button>
+                            <button onclick="quickTimestompCmd()"
+                                class="bg-gray-800 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-sm transition-all">
+                                💻 cmd.exe Clone
+                            </button>
+                            <button onclick="quickTimestompExplorer()"
+                                class="bg-gray-800 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-sm transition-all">
+                                📂 explorer.exe Clone
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- OPSEC Notes -->
+            <div class="mt-6 bg-yellow-900/20 rounded-xl p-6 border border-yellow-500/30">
+                <h3 class="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                    <span>⚠️</span> OPSEC Notları - Forensic Timeline Bypass
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="bg-gray-900/50 p-4 rounded-lg">
+                        <h4 class="text-green-400 font-bold mb-2">✅ Bu Yöntem Atlatır:</h4>
+                        <ul class="text-gray-300 space-y-1">
+                            <li>• "Son 24 saatte değişen dosyalar" araması</li>
+                            <li>• $STANDARD_INFORMATION timestamp kontrolü</li>
+                            <li>• Basit dosya tarihi karşılaştırması</li>
+                            <li>• Windows Explorer sıralama</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-900/50 p-4 rounded-lg">
+                        <h4 class="text-red-400 font-bold mb-2">❌ Dikkat Edilmesi Gerekenler:</h4>
+                        <ul class="text-gray-300 space-y-1">
+                            <li>• $FILE_NAME attribute hala orijinal tarihi tutar</li>
+                            <li>• USN Journal'da kayıt kalır</li>
+                            <li>• MFT analizi farklılığı gösterir</li>
+                            <li>• Gelişmiş forensic araçlar farkı bulur</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phantom Cleaner Tab -->
+        <div id="panel-phantom" class="tab-panel hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Phantom Config -->
+                <div class="bg-gray-900/80 rounded-xl p-6 border border-purple-500/30 neon-purple phantom-glow">
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="text-2xl">👻</span> Phantom Event Log Cleaner
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">
+                        Clear-EventLog şüphe çeker (Event ID 1102 oluşur). Bu modül kernel seviyesinde çalışır - loglar duruyor ama <span class="text-purple-400 font-bold">SEN YOKSUN!</span>
+                    </p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Log Type</label>
+                            <select id="phantom-log-type"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white
+                                       focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                                <option value="Security">Security Log</option>
+                                <option value="System">System Log</option>
+                                <option value="Application">Application Log</option>
+                                <option value="Microsoft-Windows-PowerShell/Operational">PowerShell Log</option>
+                                <option value="Microsoft-Windows-Sysmon/Operational">Sysmon Log</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Time Range (Hours)</label>
+                            <input type="number" id="phantom-time-range" value="24" min="1" max="720"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white
+                                       focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Target Event IDs (comma separated)</label>
+                            <input type="text" id="phantom-events" value="4624, 4625, 4648, 4672, 4688"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-sm
+                                       focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Keyword Filter (optional)</label>
+                            <input type="text" id="phantom-keywords" placeholder="psexec, mimikatz, powershell"
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-sm
+                                       focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                        </div>
+                        
+                        <button onclick="generatePhantomCleaner()"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <span>👻</span> Generate Phantom Cleaner
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Sysmon Killer & Techniques -->
+                <div class="space-y-6">
+                    
+                    <!-- Sysmon Killer -->
+                    <div class="bg-gray-900/80 rounded-xl p-6 border border-red-500/30">
+                        <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">☠️</span> Sysmon Killer
+                        </h3>
+                        <p class="text-gray-400 text-sm mb-4">
+                            Sysmon ayrı bir driver olarak çalışır. Event Log temizlemek Sysmon'u ETKİLEMEZ! Bu script Sysmon'u tespit edip devre dışı bırakır.
+                        </p>
+                        
+                        <button onclick="getSysmonKiller()"
+                            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <span>💀</span> Get Sysmon Killer Script
+                        </button>
+                        
+                        <div class="mt-4 p-3 bg-gray-800/50 rounded-lg">
+                            <h4 class="text-xs font-bold text-gray-400 mb-2">Yöntemler:</h4>
+                            <ul class="text-xs text-gray-500 space-y-1">
+                                <li>• Service Stop (tespit edilir)</li>
+                                <li>• Driver Unload (stealth)</li>
+                                <li>• Config Patch (en stealth)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Alternative Methods -->
+                    <div class="bg-gray-900/80 rounded-xl p-6 border border-gray-700">
+                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span>🔧</span> Alternatif Temizleme Yöntemleri
+                        </h3>
+                        
+                        <div class="space-y-2">
+                            <button onclick="getAlternativeMethod('phantom')"
+                                class="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm text-left transition-all flex items-center justify-between">
+                                <span>🧵 Thread Suspend</span>
+                                <span class="text-xs text-green-400">VERY HIGH stealth</span>
+                            </button>
+                            <button onclick="getAlternativeMethod('memory')"
+                                class="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm text-left transition-all flex items-center justify-between">
+                                <span>🧠 Memory Patching</span>
+                                <span class="text-xs text-green-400">VERY HIGH stealth</span>
+                            </button>
+                            <button onclick="getAlternativeMethod('evt')"
+                                class="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm text-left transition-all flex items-center justify-between">
+                                <span>📄 EVT File Manipulation</span>
+                                <span class="text-xs text-yellow-400">HIGH stealth</span>
+                            </button>
+                            <button onclick="getAlternativeMethod('api')"
+                                class="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm text-left transition-all flex items-center justify-between">
+                                <span>🔌 Windows API</span>
+                                <span class="text-xs text-red-400">LOW stealth</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- How It Works -->
+            <div class="mt-6 bg-gray-900/80 rounded-xl p-6 border border-purple-500/20">
+                <h3 class="text-lg font-bold text-purple-400 mb-4">🔬 Phantom Cleaner Nasıl Çalışır?</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">1️⃣</div>
+                        <h4 class="text-white font-bold text-sm mb-1">Thread Suspend</h4>
+                        <p class="text-xs text-gray-400">Event Log servisinin thread'lerini kernel seviyesinde suspend et</p>
+                    </div>
+                    <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">2️⃣</div>
+                        <h4 class="text-white font-bold text-sm mb-1">Event Tespiti</h4>
+                        <p class="text-xs text-gray-400">Hedef Event ID'leri ve zaman aralığını filtrele</p>
+                    </div>
+                    <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">3️⃣</div>
+                        <h4 class="text-white font-bold text-sm mb-1">Seçici Silme</h4>
+                        <p class="text-xs text-gray-400">Sadece saldırı izlerini sil, diğer logları koru</p>
+                    </div>
+                    <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">4️⃣</div>
+                        <h4 class="text-white font-bold text-sm mb-1">Thread Resume</h4>
+                        <p class="text-xs text-gray-400">Servisi devam ettir - Event ID 1102 YOK!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cleanup Profiles Tab -->
+        <div id="panel-profiles" class="tab-panel hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Profile Cards -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold text-white mb-4">📋 Saldırı Tipi Cleanup Profilleri</h3>
+                    
+                    <div onclick="loadProfile('lateral_movement')" 
+                        class="bg-gray-900/80 rounded-xl p-4 border border-blue-500/30 cursor-pointer hover:border-blue-500 transition-all event-card">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-white font-bold flex items-center gap-2">
+                                <span>🚀</span> Lateral Movement
+                            </h4>
+                            <span class="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">PSExec, WMI, RDP</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Ağ içi hareket izlerini temizle</p>
+                    </div>
+                    
+                    <div onclick="loadProfile('credential_theft')"
+                        class="bg-gray-900/80 rounded-xl p-4 border border-yellow-500/30 cursor-pointer hover:border-yellow-500 transition-all event-card">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-white font-bold flex items-center gap-2">
+                                <span>🔑</span> Credential Theft
+                            </h4>
+                            <span class="text-xs text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded">Mimikatz, LSASS</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Kimlik bilgisi hırsızlığı izlerini temizle</p>
+                    </div>
+                    
+                    <div onclick="loadProfile('persistence')"
+                        class="bg-gray-900/80 rounded-xl p-4 border border-green-500/30 cursor-pointer hover:border-green-500 transition-all event-card">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-white font-bold flex items-center gap-2">
+                                <span>🔒</span> Persistence
+                            </h4>
+                            <span class="text-xs text-green-400 bg-green-500/20 px-2 py-1 rounded">Task, Service, Registry</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Kalıcılık mekanizması izlerini temizle</p>
+                    </div>
+                    
+                    <div onclick="loadProfile('privilege_escalation')"
+                        class="bg-gray-900/80 rounded-xl p-4 border border-orange-500/30 cursor-pointer hover:border-orange-500 transition-all event-card">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-white font-bold flex items-center gap-2">
+                                <span>⬆️</span> Privilege Escalation
+                            </h4>
+                            <span class="text-xs text-orange-400 bg-orange-500/20 px-2 py-1 rounded">Token, UAC</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Yetki yükseltme izlerini temizle</p>
+                    </div>
+                    
+                    <div onclick="loadProfile('full_cleanup')"
+                        class="bg-gray-900/80 rounded-xl p-4 border border-red-500/30 cursor-pointer hover:border-red-500 transition-all event-card">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-white font-bold flex items-center gap-2">
+                                <span>💀</span> Full Cleanup
+                            </h4>
+                            <span class="text-xs text-red-400 bg-red-500/20 px-2 py-1 rounded">NUKE EVERYTHING</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Tüm saldırı izlerini temizle (en kapsamlı)</p>
+                    </div>
+                </div>
+                
+                <!-- Profile Details -->
+                <div class="bg-gray-900/80 rounded-xl p-6 border border-gray-700">
+                    <h3 class="text-xl font-bold text-white mb-4" id="profile-title">📋 Profil Detayları</h3>
+                    <p class="text-gray-400 text-sm mb-4" id="profile-description">Soldaki bir profili seçin</p>
+                    
+                    <div id="profile-details" class="space-y-4">
+                        <!-- Profile details will be loaded here -->
+                    </div>
+                    
+                    <button onclick="generateProfileCleaner()" id="generate-profile-btn"
+                        class="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 hidden">
+                        <span>👻</span> Generate Cleaner for This Profile
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Suspicious Events Reference -->
+            <div class="mt-6 bg-gray-900/80 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <span>📊</span> Şüpheli Event ID Referansı
+                </h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="text-left py-2 px-3 text-gray-400">Event ID</th>
+                                <th class="text-left py-2 px-3 text-gray-400">Log</th>
+                                <th class="text-left py-2 px-3 text-gray-400">Description</th>
+                                <th class="text-left py-2 px-3 text-gray-400">Risk</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-table" class="text-gray-300">
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                                <td class="py-2 px-3 font-mono text-red-400">4624</td>
+                                <td class="py-2 px-3">Security</td>
+                                <td class="py-2 px-3">Successful Logon</td>
+                                <td class="py-2 px-3"><span class="text-yellow-400">Medium</span></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                                <td class="py-2 px-3 font-mono text-red-400">4672</td>
+                                <td class="py-2 px-3">Security</td>
+                                <td class="py-2 px-3">Special Privileges Assigned</td>
+                                <td class="py-2 px-3"><span class="text-red-400">Critical</span></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                                <td class="py-2 px-3 font-mono text-red-400">4688</td>
+                                <td class="py-2 px-3">Security</td>
+                                <td class="py-2 px-3">Process Creation</td>
+                                <td class="py-2 px-3"><span class="text-orange-400">High</span></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                                <td class="py-2 px-3 font-mono text-red-400">7045</td>
+                                <td class="py-2 px-3">System</td>
+                                <td class="py-2 px-3">Service Installed</td>
+                                <td class="py-2 px-3"><span class="text-red-400">Critical</span></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                                <td class="py-2 px-3 font-mono text-red-400">4104</td>
+                                <td class="py-2 px-3">PowerShell</td>
+                                <td class="py-2 px-3">Script Block Logging</td>
+                                <td class="py-2 px-3"><span class="text-red-400">Critical</span></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                                <td class="py-2 px-3 font-mono text-red-400">1</td>
+                                <td class="py-2 px-3">Sysmon</td>
+                                <td class="py-2 px-3">Process Creation</td>
+                                <td class="py-2 px-3"><span class="text-red-400">Critical</span></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                                <td class="py-2 px-3 font-mono text-red-400">10</td>
+                                <td class="py-2 px-3">Sysmon</td>
+                                <td class="py-2 px-3">Process Access (LSASS)</td>
+                                <td class="py-2 px-3"><span class="text-red-400">Critical</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="mt-8 bg-gray-900/80 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>📄</span> Generated Script
+                </h3>
+                <div class="flex gap-2">
+                    <button onclick="copyOutput()" 
+                        class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+                        <span>📋</span> Copy
+                    </button>
+                    <button onclick="downloadOutput()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+                        <span>⬇️</span> Download
+                    </button>
+                </div>
+            </div>
+            <pre id="output-panel" class="bg-black/50 rounded-lg p-4 text-green-400 font-mono text-sm overflow-x-auto max-h-96 overflow-y-auto">
+# 💀 God Mode Anti-Forensics
+# Select an option above to generate a script...
+
+# Features:
+# 🕐 Time Stomping - MACE manipulation
+# 👻 Phantom Cleaner - Kernel-level log cleaning
+# ☠️ Sysmon Killer - Disable monitoring
+
+# "İzleri silmek değil, YOK ETMEK!"
+            </pre>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentScript = '';
+let currentProfile = null;
+
+function showTab(tabName) {
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    // Reset all tabs
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-red-500', 'bg-purple-500', 'text-white');
+        b.classList.add('text-gray-400');
+    });
+    
+    // Show selected panel
+    document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+    
+    // Activate selected tab
+    const activeTab = document.getElementById(`tab-${tabName}`);
+    activeTab.classList.remove('text-gray-400');
+    activeTab.classList.add('text-white');
+    
+    if (tabName === 'timestomp') {
+        activeTab.classList.add('bg-red-500');
+    } else {
+        activeTab.classList.add('bg-purple-500');
+    }
+}
+
+// Time Stomping source change handler
+document.getElementById('ts-source-type').addEventListener('change', function() {
+    const refContainer = document.getElementById('ts-reference-container');
+    const customContainer = document.getElementById('ts-custom-date-container');
+    
+    if (this.value === 'specific_date') {
+        refContainer.classList.add('hidden');
+        customContainer.classList.remove('hidden');
+    } else if (this.value === 'system_file') {
+        refContainer.classList.remove('hidden');
+        customContainer.classList.add('hidden');
+    } else {
+        refContainer.classList.add('hidden');
+        customContainer.classList.add('hidden');
+    }
+});
+
+async function generateTimestomp() {
+    const data = {
+        target_file: document.getElementById('ts-target-file').value,
+        source_type: document.getElementById('ts-source-type').value,
+        reference_file: document.getElementById('ts-reference-file').value,
+        custom_date: document.getElementById('ts-custom-date').value
+    };
+    
+    try {
+        const response = await fetch('/god-mode/api/timestomp/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        currentScript = result.script;
+        
+        let output = result.script;
+        output += '\n\n# ═══════════════════════════════════════════\n';
+        output += '# OPSEC Notes:\n';
+        result.opsec_notes.forEach(note => {
+            output += `# - ${note}\n`;
+        });
+        
+        document.getElementById('output-panel').textContent = output;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateAdvancedTimestomp() {
+    const data = {
+        target_file: document.getElementById('ts-target-file').value,
+        reference_file: 'C:\\Windows\\System32\\' + document.getElementById('ts-reference-file').value
+    };
+    
+    try {
+        const response = await fetch('/god-mode/api/timestomp/advanced', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        currentScript = result.powershell_script;
+        document.getElementById('output-panel').textContent = result.powershell_script;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateBatchTimestomp() {
+    const data = {
+        target_folder: document.getElementById('ts-batch-folder').value,
+        file_pattern: document.getElementById('ts-batch-pattern').value,
+        reference_file: document.getElementById('ts-reference-file').value
+    };
+    
+    try {
+        const response = await fetch('/god-mode/api/timestomp/batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        currentScript = result.script;
+        document.getElementById('output-panel').textContent = result.script;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function quickTimestompCalc() {
+    document.getElementById('ts-reference-file').value = 'calc.exe';
+    await generateTimestomp();
+}
+
+async function quickTimestompNotepad() {
+    document.getElementById('ts-reference-file').value = 'notepad.exe';
+    await generateTimestomp();
+}
+
+async function quickTimestompCmd() {
+    document.getElementById('ts-reference-file').value = 'cmd.exe';
+    await generateTimestomp();
+}
+
+async function quickTimestompExplorer() {
+    document.getElementById('ts-reference-file').value = 'explorer.exe';
+    await generateTimestomp();
+}
+
+async function generatePhantomCleaner() {
+    const eventsStr = document.getElementById('phantom-events').value;
+    const events = eventsStr.split(',').map(e => parseInt(e.trim())).filter(e => !isNaN(e));
+    
+    const keywordsStr = document.getElementById('phantom-keywords').value;
+    const keywords = keywordsStr ? keywordsStr.split(',').map(k => k.trim()) : [];
+    
+    const data = {
+        target_events: events,
+        log_type: document.getElementById('phantom-log-type').value,
+        time_range_hours: parseInt(document.getElementById('phantom-time-range').value),
+        keywords: keywords
+    };
+    
+    try {
+        const response = await fetch('/god-mode/api/phantom/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        currentScript = result.script;
+        
+        let output = result.script;
+        output += '\n\n# ═══════════════════════════════════════════\n';
+        output += '# Stealth Features:\n';
+        result.stealth_features.forEach(f => {
+            output += `# ✓ ${f}\n`;
+        });
+        
+        document.getElementById('output-panel').textContent = output;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function getSysmonKiller() {
+    try {
+        const response = await fetch('/god-mode/api/phantom/sysmon-killer');
+        const result = await response.json();
+        currentScript = result.script;
+        document.getElementById('output-panel').textContent = result.script;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function getAlternativeMethod(method) {
+    try {
+        const response = await fetch('/god-mode/api/phantom/alternative', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ method: method })
+        });
+        
+        const result = await response.json();
+        currentScript = result.script;
+        document.getElementById('output-panel').textContent = result.script;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function loadProfile(profileType) {
+    try {
+        const response = await fetch(`/god-mode/api/phantom/profile/${profileType}`);
+        const profile = await response.json();
+        currentProfile = profile;
+        
+        document.getElementById('profile-title').textContent = profile.name;
+        document.getElementById('profile-description').textContent = profile.description;
+        
+        let detailsHtml = '<div class="space-y-4">';
+        
+        // Events by log type
+        for (const [logType, events] of Object.entries(profile.events)) {
+            detailsHtml += `
+                <div class="bg-gray-800/50 p-3 rounded-lg">
+                    <h5 class="text-sm font-bold text-purple-400 mb-2">${logType}</h5>
+                    <div class="flex flex-wrap gap-2">
+                        ${events.map(e => `<span class="bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs font-mono">${e}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Keywords
+        if (profile.keywords && profile.keywords.length > 0) {
+            detailsHtml += `
+                <div class="bg-gray-800/50 p-3 rounded-lg">
+                    <h5 class="text-sm font-bold text-yellow-400 mb-2">Keywords</h5>
+                    <div class="flex flex-wrap gap-2">
+                        ${profile.keywords.map(k => `<span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">${k}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        detailsHtml += '</div>';
+        document.getElementById('profile-details').innerHTML = detailsHtml;
+        document.getElementById('generate-profile-btn').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function generateProfileCleaner() {
+    if (!currentProfile) return;
+    
+    // Get Security events from profile
+    const securityEvents = currentProfile.events.Security || [];
+    
+    const data = {
+        target_events: securityEvents,
+        log_type: 'Security',
+        time_range_hours: 24,
+        keywords: currentProfile.keywords || []
+    };
+    
+    try {
+        const response = await fetch('/god-mode/api/phantom/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        currentScript = result.script;
+        document.getElementById('output-panel').textContent = result.script;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function copyOutput() {
+    const output = document.getElementById('output-panel').textContent;
+    navigator.clipboard.writeText(output);
+    
+    // Visual feedback
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span>✓</span> Copied!';
+    setTimeout(() => btn.innerHTML = originalText, 2000);
+}
+
+function downloadOutput() {
+    const output = document.getElementById('output-panel').textContent;
+    const blob = new Blob([output], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'god_mode_script.ps1';
+    a.click();
+    
+    URL.revokeObjectURL(url);
+}
+
+// Load suspicious events on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await fetch('/god-mode/api/phantom/suspicious-events');
+        const data = await response.json();
+        // Events table is already populated with key examples
+    } catch (error) {
+        console.error('Error loading events:', error);
+    }
+});
+</script>
+{% endblock %}
