@@ -127,6 +127,9 @@ iot_bp = _try_import('iot_bp', lambda: __import__('cyberapp.routes.iot_ot_espion
 # God Mode Anti-Forensics Module
 god_mode_bp = _try_import('god_mode_bp', lambda: __import__('cyberapp.routes.god_mode_antiforensics', fromlist=['god_mode_bp']).god_mode_bp)
 
+# Orbital & RF Warfare Module
+orbital_rf_bp = _try_import('orbital_rf_bp', lambda: __import__('cyberapp.routes.orbital_rf_warfare', fromlist=['orbital_rf_bp']).orbital_rf_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -249,6 +252,9 @@ def create_app(run_migrations_on_start=True):
     
     # God Mode Anti-Forensics Module
     if god_mode_bp: app.register_blueprint(god_mode_bp)
+    
+    # Orbital & RF Warfare Module
+    if orbital_rf_bp: app.register_blueprint(orbital_rf_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

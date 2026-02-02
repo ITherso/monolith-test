@@ -34,6 +34,7 @@
 - [God Mode Anti-Forensics](#-god-mode-anti-forensics-february-2026)
 - [Cross-Module Integration](#-cross-module-integration)
 - [K8s Kraken - Kubernetes Warfare](#-k8s-kraken---kubernetes-warfare-february-2026)
+- [Orbital & RF Warfare](#-orbital--rf-warfare-february-2026)
 - [C2 Implant Framework](#-c2-implant-framework)
 
 ---
@@ -230,7 +231,10 @@ monolith/
 │   ├── k8s_warfare.py              # K8s Kraken - Kubelet Exploit & Helm Backdoor (~1000 lines) [KRAKEN]
 │   │
 │   │   # 🔗 SUPPLY CHAIN ATTACKS (February 2026)
-│   └── supply_chain_attack.py      # Supply Chain Attack Suite (~1400 lines) [CHAIN]
+│   ├── supply_chain_attack.py      # Supply Chain Attack Suite (~1400 lines) [CHAIN]
+│   │
+│   │   # 📡 ORBITAL & RF WARFARE (February 2026)
+│   └── orbital_rf_warfare.py       # SatCom Sniffer, GPS Spoof, IMSI Catcher (~1000 lines) [SDR]
 │
 ├── 📂 templates/                   # Web UI Templates (~50+ pages)
 │   ├── dashboard.html              # Main dashboard
@@ -252,6 +256,7 @@ monolith/
 │   ├── docker_escape.html          # Docker escape techniques
 │   ├── supply_chain_attack.html    # Supply chain attack dashboard
 │   ├── k8s_warfare.html            # K8s Kraken - Kubernetes Warfare dashboard
+│   ├── orbital_rf_warfare.html     # Orbital RF Warfare - SDR Operations
 │   └── ...
 │
 ├── 📂 configs/                     # Configuration Files
@@ -3731,6 +3736,177 @@ API Endpoints:
 
 ---
 
+## 📡 Orbital & RF Warfare (February 2026)
+
+Yörünge ve Radyo Frekans Savaşları - Software Defined Radio ile uydu ve RF sinyal istihbaratı. RTL-SDR ve HackRF ile profesyonel SIGINT operasyonları.
+
+### 🛰️ Orbital RF Warfare Teknik Detayları
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                          🛰️ ORBITAL & RF WARFARE                                        │
+│               Software Defined Radio (SDR) Signal Intelligence Operations                │
+│                         tools/orbital_rf_warfare.py (~1000 lines)                        │
+│                              📡 "Gökyüzünden Dinle" 📡                                   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  SATCOM DOWNLINK SNIFFER               GPS SPOOFING "NO-FLY ZONE"                       │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  📡 SATELLITE SYSTEMS:                 🎯 FEATURES (HackRF Required):                    │
+│                                                                                          │
+│  ┌─────────────────────────────┐       ┌─────────────────────────────┐                  │
+│  │ 🛰️ IRIDIUM                 │       │ 🌍 Static Location Spoof    │                  │
+│  │    1621.25 MHz              │       │    Set any GPS coordinates  │                  │
+│  │    Pager, Voice, ACARS      │       │                             │                  │
+│  ├─────────────────────────────┤       ├─────────────────────────────┤                  │
+│  │ 📻 INMARSAT                 │       │ 🚗 Trajectory Spoof         │                  │
+│  │    1545.0 MHz               │       │    Moving path simulation   │                  │
+│  │    EGC, SafetyNET, NAVTEX   │       │                             │                  │
+│  ├─────────────────────────────┤       ├─────────────────────────────┤                  │
+│  │ 🌤️ NOAA APT                │       │ 📍 FAMOUS LOCATIONS:        │                  │
+│  │    137.62 MHz               │       │    • White House            │                  │
+│  │    Weather satellite images │       │    • Kremlin                │                  │
+│  ├─────────────────────────────┤       │    • Pentagon               │                  │
+│  │ 🛳️ ORBCOMM                  │       │    • Area 51                │                  │
+│  │    137.5 MHz                │       │    • Forbidden City         │                  │
+│  │    AIS ship tracking        │       │    • Vatican                │                  │
+│  └─────────────────────────────┘       └─────────────────────────────┘                  │
+│                                                                                          │
+│  CAPTURED DATA TYPES:                  ⚠️ WARNING: GPS spoofing is                      │
+│  • Ship coordinates & routes           ILLEGAL without authorization!                    │
+│  • Weather broadcasts                  Requires HackRF or TX-capable SDR                │
+│  • Pager messages                                                                        │
+│  • ACARS flight data                                                                     │
+│  • Safety navigation alerts                                                              │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  GSM IMSI CATCHER MONITOR                  SDR HARDWARE SUPPORT                         │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  📱 PASSIVE IMSI COLLECTION:               🔧 SUPPORTED DEVICES:                        │
+│                                                                                          │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ GSM BANDS:                  │           │ 📻 RTL-SDR (RX Only)        │              │
+│  │                             │           │    24-1766 MHz              │              │
+│  │ GSM850:  869-894 MHz        │           │    Best for: SatCom, GSM    │              │
+│  │ GSM900:  935-960 MHz        │           │                             │              │
+│  │ DCS1800: 1805-1880 MHz      │           ├─────────────────────────────┤              │
+│  │ PCS1900: 1930-1990 MHz      │           │ 📡 HackRF One (TX/RX)       │              │
+│  └─────────────────────────────┘           │    1-6000 MHz               │              │
+│                                            │    Best for: GPS Spoof      │              │
+│  📊 ANALYSIS FEATURES:                     │                             │              │
+│                                            ├─────────────────────────────┤              │
+│  • IMSI collection per cell tower          │ 🖥️ BladeRF (TX/RX)          │              │
+│  • Provider identification (MCC/MNC)       │    300-3800 MHz             │              │
+│  • Density heatmap visualization           │    High bandwidth ops       │              │
+│  • Country & carrier statistics            └─────────────────────────────┘              │
+│  • Export to JSON/CSV                                                                    │
+│                                                                                          │
+│  📶 NO BASE STATION SPOOFING -                                                          │
+│     Purely passive monitoring!                                                           │
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+MCC/MNC DATABASE (Sample):
+  286-01: Turkey - Turkcell
+  286-02: Turkey - Vodafone TR
+  310-410: USA - AT&T
+  234-10: UK - O2
+  262-01: Germany - T-Mobile DE
+  208-01: France - Orange FR
+  460-00: China - China Mobile
+  440-10: Japan - NTT Docomo
+  250-01: Russia - MTS
+```
+
+### 🔗 Orbital RF Warfare API Endpoints
+
+```
+  GET  /orbital-rf/                          - RF Warfare Dashboard
+  GET  /orbital-rf/api/status                - Module & hardware status
+  POST /orbital-rf/api/devices/detect        - Detect connected SDR devices
+  POST /orbital-rf/api/devices/select        - Select active SDR device
+  
+  # SatCom Downlink Sniffer
+  GET  /orbital-rf/api/satcom/systems        - List satellite systems
+  POST /orbital-rf/api/satcom/start          - Start satellite capture
+  POST /orbital-rf/api/satcom/stop           - Stop capture
+  GET  /orbital-rf/api/satcom/captures       - Get captured data
+  GET  /orbital-rf/api/satcom/stats          - Capture statistics
+  GET  /orbital-rf/api/satcom/stream         - SSE live capture stream
+  
+  # GPS Spoofing (HackRF Required)
+  GET  /orbital-rf/api/gps/locations         - Famous no-fly zone locations
+  GET  /orbital-rf/api/gps/check-hardware    - Check TX capability
+  POST /orbital-rf/api/gps/configure         - Configure spoof parameters
+  POST /orbital-rf/api/gps/start             - Start GPS transmission
+  POST /orbital-rf/api/gps/stop              - Stop transmission
+  
+  # GSM IMSI Catcher
+  GET  /orbital-rf/api/gsm/bands             - List GSM bands
+  POST /orbital-rf/api/gsm/scan              - Scan for cell towers
+  POST /orbital-rf/api/gsm/start             - Start IMSI monitoring
+  POST /orbital-rf/api/gsm/stop              - Stop monitoring
+  GET  /orbital-rf/api/gsm/records           - Get IMSI records
+  GET  /orbital-rf/api/gsm/analysis          - Density analysis
+  GET  /orbital-rf/api/gsm/export            - Export data
+  GET  /orbital-rf/api/gsm/stream            - SSE live IMSI stream
+  
+  POST /orbital-rf/api/quick-scan            - Quick RF environment scan
+```
+
+### 💻 Python Usage Example
+
+```python
+from tools.orbital_rf_warfare import get_orbital_rf_warfare, SatelliteSystem, GSMBand
+
+# Initialize RF Warfare
+warfare = get_orbital_rf_warfare()
+
+# Check hardware status
+status = warfare.get_status()
+print(f"SDR Devices: {len(status['sdr_devices'])}")
+print(f"TX Capable: {status['tx_ready']}")
+
+# Start Iridium satellite capture
+result = warfare.satcom_sniffer.start_capture(
+    satellite_system=SatelliteSystem.IRIDIUM,
+    duration_seconds=300,
+    live_feed_callback=lambda d: print(f"Captured: {d['decoded_content']}")
+)
+
+# GPS Spoofing (HackRF required!)
+# Configure spoof to Area 51
+warfare.gps_spoofer.generate_spoof_config(
+    location_name="area_51",
+    duration_seconds=60
+)
+# Start transmission
+warfare.gps_spoofer.start_transmission()
+
+# GSM IMSI Monitoring
+warfare.gsm_monitor.start_monitoring(
+    band=GSMBand.GSM900,
+    duration_seconds=300
+)
+
+# Get captured IMSI records
+records = warfare.gsm_monitor.get_imsi_records()
+for record in records:
+    print(f"IMSI: {record['imsi']} | Provider: {record['provider']}")
+
+# Density analysis
+analysis = warfare.gsm_monitor.get_density_analysis()
+print(f"Unique IMSI: {analysis['total_unique_imsi']}")
+print(f"By Provider: {analysis['by_provider']}")
+```
+
+---
+
 ## 📡 C2 Implant Framework
 
 Gelişmiş Command & Control implant yönetim sistemi.
@@ -3808,6 +3984,7 @@ API Endpoints:
   ├── God Mode Anti-Forensics:     ~900 lines + 12 template integrations
   ├── Cross-Module Integration:    20 templates interconnected
   ├── K8s Kraken (Kubernetes):     ~1,000 lines
+  ├── Orbital RF Warfare:          ~1,000 lines (SatCom, GPS Spoof, IMSI)
   ├── Telegram/Discord C2:         ~650 lines
   ├── Stego C2:                    ~550 lines
   ├── eBPF Rootkit:                ~800 lines
@@ -3820,6 +3997,7 @@ API Endpoints:
   ├── AutoExploit          → PrivEsc → DPAPI Extract
   ├── Phishing             → Payload Gen → WebShell
   ├── Cloud Pivot          → K8s Warfare → Container Escape
+  ├── Orbital RF           → SIGINT → GPS/IMSI Collection
   └── All modules          → God Mode Anti-Forensics
 ```
 

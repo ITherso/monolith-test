@@ -27,6 +27,11 @@ try:
 except ImportError:
     spray_bp = None
 
+try:
+    from cyberapp.routes.orbital_rf_warfare import orbital_rf_bp
+except ImportError:
+    orbital_rf_bp = None
+
 
 __all__ = [
     'chain_bp',
@@ -35,4 +40,5 @@ __all__ = [
     'stego_bp',
     'bitb_bp',
     'spray_bp',
+    'orbital_rf_bp',
 ]
