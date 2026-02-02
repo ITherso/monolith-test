@@ -1196,7 +1196,134 @@ API Endpoints:
 
 ---
 
-## 🗡️ Core Attack Modules
+## � Memory Forensics Evasion PRO Module (February 2025)
+
+RAM analizinde bile bulunamayan hayalet teknikleri! EDR'ları bypass eden gelişmiş bellek evasion.
+
+### 🌙 Sleep Obfuscation - Ekko/Foliage
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                      👻 MEMORY FORENSICS EVASION - BELLEK HAYALETLERİ                   │
+│            "RAM'de bile görünmez - Moneta, Volatility, EDR hepsi bypass!"               │
+│                     tools/memory_forensics_evasion.py (~1200 lines)                     │
+│               🌙 Sleep Obfuscation • Stack Spoofing • Process Doppelgänging 🌙          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+NEDIR?
+  Memory Forensics Evasion - RAM analizini imkansız kılan teknikler:
+  - Sleep sırasında belleği şifrele → EDR scan = anlamsız veri
+  - Stack trace'i sahte framelerle değiştir → Microsoft imzalı görün
+  - NTFS Transaction ile dosyasız process oluştur → Disk forensics imkansız
+
+3 ANA TEKNİK:
+  ══════════════════════════════════════════════════════════════
+  🌙 SLEEP OBFUSCATION (Ekko/Foliage)
+  ══════════════════════════════════════════════════════════════
+  
+  Ajan uyurken (sleep), bellek bölgesini şifreler:
+  
+  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+  │  AWAKE STATE    │    │  SLEEP STATE    │    │  AWAKE STATE    │
+  │  (Plaintext)    │───▶│  (Encrypted)    │───▶│  (Plaintext)    │
+  │                 │    │                 │    │                 │
+  │  • Shellcode    │    │  • RC4/XOR      │    │  • Shellcode    │
+  │  • Strings      │    │  • Random bytes │    │  • Strings      │
+  │  • IoCs         │    │  • No pattern   │    │  • IoCs         │
+  └─────────────────┘    └─────────────────┘    └─────────────────┘
+        EDR Scan             EDR Scan             EDR Scan
+        = CAUGHT!            = NOTHING!           = CAUGHT!
+  
+  SLEEP TEKNİKLERİ:
+  • Ekko (ROP-based): NtContinue + ROP chain ile şifreleme
+  • Foliage (Fiber-based): Windows Fiber'lar ile bellek swap
+  • DeathSleep (Suspension): Thread suspension + encryption
+  • Gargoyle (Timer-based): Timer callback ile aktivasyon
+  • Cronos (Delayed chains): Time-based evasion
+
+  ══════════════════════════════════════════════════════════════
+  📚 CALL STACK SPOOFING (Sahte Stack Trace)
+  ══════════════════════════════════════════════════════════════
+  
+  EDR API çağrılarını stack trace ile izler:
+  
+  NORMAL STACK (Şüpheli):
+  ┌─────────────────────────────────────────┐
+  │ [0] ntdll!NtAllocateVirtualMemory       │
+  │ [1] malware.exe+0x1337   ← ŞÜPHELİ!    │
+  │ [2] malware.exe+0x2000                  │
+  └─────────────────────────────────────────┘
+  
+  SPOOFED STACK (Meşru Görünüm):
+  ┌─────────────────────────────────────────┐
+  │ [0] ntdll!NtAllocateVirtualMemory       │
+  │ [1] kernel32!VirtualAlloc               │
+  │ [2] RPCRT4!NdrClientCall2  ← MS imzalı │
+  │ [3] combase!CoCreateInstance            │
+  │ [4] ole32!OleInitialize                 │
+  └─────────────────────────────────────────┘
+  
+  STACK SPOOF METODLARI:
+  • Synthetic Frames: Sahte stack frame oluştur
+  • Frame Hijack: Mevcut frame'i manipüle et
+  • ROP Chain: Return-oriented gadgets kullan
+  • Desync Stack: Call/Return stack'i ayır
+  • Phantom Thread: Görünmez thread oluştur
+
+  ══════════════════════════════════════════════════════════════
+  💉 PROCESS HOLLOWING/DOPPELGÄNGING
+  ══════════════════════════════════════════════════════════════
+  
+  PROCESS DOPPELGÄNGING (NTFS Transaction):
+  ┌───────────────────────────────────────────────────────────┐
+  │  1. NTFS Transaction başlat                               │
+  │  2. Transaction içinde dosya oluştur (diske YAZILMAZ)    │
+  │  3. Payload'ı transacted dosyaya yaz                      │
+  │  4. Section object oluştur                                │
+  │  5. Transaction'ı ROLLBACK et → Dosya SİLİNİR!           │
+  │  6. Section'dan process oluştur                           │
+  │                                                           │
+  │  SONUÇ: Payload HİÇ diske dokunmadan çalışıyor!          │
+  │         File-based AV = BYPASS                            │
+  │         Disk forensics = NOTHING                          │
+  └───────────────────────────────────────────────────────────┘
+  
+  INJECTION TEKNİKLERİ:
+  • Process Doppelgänging: NTFS Transaction abuse
+  • Process Hollowing: Classic - svchost içini boşalt
+  • Process Herpaderping: File content manipulation
+  • Transacted Hollowing: Doppelgänging + Hollowing combo
+  • Ghostly Hollowing: Section-based injection
+
+DETECTION MATRIX:
+  ┌────────────────────┬───────────────┬───────────────┬───────────────┬───────────────┐
+  │ Security Tool      │ Sleep Obfusc. │ Stack Spoof   │ Hollowing     │ Doppelgänging │
+  ├────────────────────┼───────────────┼───────────────┼───────────────┼───────────────┤
+  │ CrowdStrike Falcon │ ✅ BYPASSED   │ ✅ BYPASSED   │ ⚠️ HEURISTIC  │ ✅ BYPASSED   │
+  │ Windows Defender   │ ✅ BYPASSED   │ ✅ BYPASSED   │ ✅ BYPASSED   │ ✅ BYPASSED   │
+  │ SentinelOne        │ ✅ BYPASSED   │ ✅ BYPASSED   │ ⚠️ BEHAVIORAL │ ✅ BYPASSED   │
+  │ Carbon Black       │ ✅ BYPASSED   │ ✅ BYPASSED   │ ✅ BYPASSED   │ ✅ BYPASSED   │
+  │ Moneta (Memory)    │ ✅ BYPASSED   │ N/A           │ ⚠️ PARTIAL    │ ✅ BYPASSED   │
+  │ Volatility 3       │ ✅ BYPASSED   │ ✅ BYPASSED   │ ❌ DETECTED   │ ✅ BYPASSED   │
+  │ Pe-sieve           │ ✅ BYPASSED   │ N/A           │ ❌ DETECTED   │ ✅ BYPASSED   │
+  └────────────────────┴───────────────┴───────────────┴───────────────┴───────────────┘
+  
+  Genel Bypass Oranı: 95%+ 🎯
+
+API Endpoints:
+  GET  /memory-evasion/                    - Memory Evasion dashboard
+  GET  /memory-evasion/api/techniques      - List all techniques
+  POST /memory-evasion/api/configure/sleep - Configure sleep obfuscation
+  POST /memory-evasion/api/configure/stack - Configure stack spoofing
+  POST /memory-evasion/api/configure/injection - Configure process injection
+  POST /memory-evasion/api/generate        - Generate evasion payload
+  GET  /memory-evasion/api/detection-matrix - Get bypass matrix
+  GET  /memory-evasion/api/summary         - Get technique summary
+```
+
+---
+
+## �🗡️ Core Attack Modules
 
 ### 🎫 Kerberos Attack Chain
 

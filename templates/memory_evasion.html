@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Memory Forensics Evasion - Bellek Hayaletleri{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <i class="fas fa-ghost text-purple-500"></i>
+                Memory Forensics Evasion
+                <span class="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">GHOST</span>
+            </h1>
+            <p class="text-gray-400 mt-2">Bellek Hayaletleri - RAM analizinde bile bulunamayan teknikler</p>
+        </div>
+        <a href="{{ url_for('dashboard.index') }}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition">
+            <i class="fas fa-arrow-left mr-2"></i>Dashboard
+        </a>
+    </div>
+
+    <!-- Technique Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sleep Obfuscation Card -->
+        <div class="glass rounded-xl p-6 border border-cyan-500/30">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                    <i class="fas fa-moon text-cyan-400 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Sleep Obfuscation</h3>
+                    <p class="text-xs text-cyan-400">Ekko / Foliage Tekniği</p>
+                </div>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">
+                Ajan uyurken stack & heap'i şifreler. EDR/Memory Scanner tarama yaptığında anlamsız veri görür.
+            </p>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-gray-400">Teknik</label>
+                    <select id="sleepTechnique" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <option value="ekko">Ekko (ROP-based)</option>
+                        <option value="foliage">Foliage (Fiber-based)</option>
+                        <option value="death_sleep">Death Sleep (Suspension)</option>
+                        <option value="gargoyle">Gargoyle (Timer-based)</option>
+                        <option value="cronos">Cronos (Delayed chains)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs text-gray-400">Sleep (ms)</label>
+                        <input type="number" id="sleepDuration" value="5000" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">Jitter %</label>
+                        <input type="number" id="sleepJitter" value="20" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Şifreleme</label>
+                    <select id="sleepEncryption" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <option value="rc4">RC4</option>
+                        <option value="xor_rolling">XOR Rolling</option>
+                        <option value="aes_ctr">AES-CTR</option>
+                        <option value="chacha20">ChaCha20</option>
+                    </select>
+                </div>
+                <button onclick="configureSleep()" class="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white transition">
+                    <i class="fas fa-cog mr-2"></i>Yapılandır
+                </button>
+            </div>
+        </div>
+
+        <!-- Call Stack Spoofing Card -->
+        <div class="glass rounded-xl p-6 border border-yellow-500/30">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                    <i class="fas fa-layer-group text-yellow-400 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Call Stack Spoofing</h3>
+                    <p class="text-xs text-yellow-400">Sahte Stack Trace</p>
+                </div>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">
+                API çağrılarındaki stack trace'i sahte framelerle değiştirir. Microsoft imzalı görünür.
+            </p>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-gray-400">Metod</label>
+                    <select id="stackMethod" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <option value="synthetic_frames">Synthetic Frames</option>
+                        <option value="frame_hijack">Frame Hijack</option>
+                        <option value="rop_chain">ROP Chain</option>
+                        <option value="desync_stack">Desync Stack</option>
+                        <option value="phantom_thread">Phantom Thread</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Sahte Frame Sayısı</label>
+                    <input type="number" id="fakeFrames" value="5" min="1" max="10" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Hedef DLL'ler</label>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                        <label class="flex items-center gap-1 text-xs text-gray-300">
+                            <input type="checkbox" checked class="dll-check" value="kernel32.dll"> kernel32.dll
+                        </label>
+                        <label class="flex items-center gap-1 text-xs text-gray-300">
+                            <input type="checkbox" checked class="dll-check" value="ntdll.dll"> ntdll.dll
+                        </label>
+                        <label class="flex items-center gap-1 text-xs text-gray-300">
+                            <input type="checkbox" class="dll-check" value="user32.dll"> user32.dll
+                        </label>
+                    </div>
+                </div>
+                <button onclick="configureStack()" class="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-white transition">
+                    <i class="fas fa-cog mr-2"></i>Yapılandır
+                </button>
+            </div>
+        </div>
+
+        <!-- Process Injection Card -->
+        <div class="glass rounded-xl p-6 border border-red-500/30">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <i class="fas fa-syringe text-red-400 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Process Injection</h3>
+                    <p class="text-xs text-red-400">Hollowing / Doppelgänging</p>
+                </div>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">
+                Meşru bir işlemi başlatıp içine kod enjekte eder. NTFS Transaction ile dosya diskte görünmez.
+            </p>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-gray-400">Teknik</label>
+                    <select id="injectionTechnique" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <option value="process_doppelganging">Process Doppelgänging (NTFS)</option>
+                        <option value="process_hollowing">Process Hollowing (Classic)</option>
+                        <option value="process_herpaderping">Process Herpaderping</option>
+                        <option value="transacted_hollowing">Transacted Hollowing</option>
+                        <option value="ghostly_hollowing">Ghostly Hollowing</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Hedef İşlem</label>
+                    <select id="targetProcess" class="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <option value="svchost.exe">svchost.exe</option>
+                        <option value="notepad.exe">notepad.exe</option>
+                        <option value="explorer.exe">explorer.exe</option>
+                        <option value="RuntimeBroker.exe">RuntimeBroker.exe</option>
+                        <option value="dllhost.exe">dllhost.exe</option>
+                        <option value="taskhostw.exe">taskhostw.exe</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-300">
+                        <input type="checkbox" id="ppidSpoof" checked class="rounded"> PPID Spoof
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300">
+                        <input type="checkbox" id="unhookNtdll" checked class="rounded"> Unhook ntdll
+                    </label>
+                </div>
+                <button onclick="configureInjection()" class="w-full px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white transition">
+                    <i class="fas fa-cog mr-2"></i>Yapılandır
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detection Matrix -->
+    <div class="glass rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-shield-alt text-green-400"></i>
+                Detection Matrix
+            </h3>
+            <button onclick="loadDetectionMatrix()" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-white text-sm transition">
+                <i class="fas fa-sync mr-1"></i>Yükle
+            </button>
+        </div>
+        <div id="detectionMatrix" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-700">
+                        <th class="text-left py-2 px-3">Security Tool</th>
+                        <th class="text-center py-2 px-3">Sleep Obfuscation</th>
+                        <th class="text-center py-2 px-3">Stack Spoofing</th>
+                        <th class="text-center py-2 px-3">Hollowing</th>
+                        <th class="text-center py-2 px-3">Doppelgänging</th>
+                    </tr>
+                </thead>
+                <tbody id="matrixBody">
+                    <tr class="text-gray-500">
+                        <td colspan="5" class="text-center py-8">Detection Matrix yüklemek için butona tıklayın</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="overallRate" class="mt-4 text-center hidden">
+            <span class="text-gray-400">Genel Evasion Oranı: </span>
+            <span class="text-2xl font-bold text-green-400" id="rateValue">-</span>
+        </div>
+    </div>
+
+    <!-- Generate Payload Section -->
+    <div class="glass rounded-xl p-6">
+        <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-code text-purple-400"></i>
+            Payload Oluştur
+        </h3>
+        <div class="flex flex-wrap gap-3 mb-4">
+            <button onclick="generatePayload('sleep')" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white transition">
+                <i class="fas fa-moon mr-2"></i>Sleep Obfuscation
+            </button>
+            <button onclick="generatePayload('stack')" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-white transition">
+                <i class="fas fa-layer-group mr-2"></i>Stack Spoofing
+            </button>
+            <button onclick="generatePayload('hollowing')" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white transition">
+                <i class="fas fa-syringe mr-2"></i>Process Hollowing
+            </button>
+            <button onclick="generatePayload('doppelganging')" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white transition">
+                <i class="fas fa-ghost mr-2"></i>Doppelgänging
+            </button>
+            <button onclick="generatePayload('all')" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg text-white transition">
+                <i class="fas fa-magic mr-2"></i>Tümü
+            </button>
+        </div>
+        <div id="payloadOutput" class="hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-gray-400" id="payloadType">-</span>
+                <button onclick="copyPayload()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm transition">
+                    <i class="fas fa-copy mr-1"></i>Kopyala
+                </button>
+            </div>
+            <pre class="bg-gray-900 rounded-lg p-4 overflow-x-auto max-h-96"><code id="payloadCode" class="text-green-400 text-xs"></code></pre>
+        </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass rounded-xl p-4 border border-cyan-500/20">
+            <div class="flex items-center gap-3 mb-2">
+                <i class="fas fa-eye-slash text-cyan-400 text-2xl"></i>
+                <span class="text-white font-semibold">Moneta Bypass</span>
+            </div>
+            <p class="text-gray-400 text-sm">Sleep sırasında bellek şifreli olduğundan Moneta hiçbir şüpheli pattern bulamaz.</p>
+        </div>
+        <div class="glass rounded-xl p-4 border border-yellow-500/20">
+            <div class="flex items-center gap-3 mb-2">
+                <i class="fas fa-user-secret text-yellow-400 text-2xl"></i>
+                <span class="text-white font-semibold">SOC Yanıltma</span>
+            </div>
+            <p class="text-gray-400 text-sm">Stack trace Microsoft imzalı DLL'lere işaret eder. Analist her şeyi "meşru" görür.</p>
+        </div>
+        <div class="glass rounded-xl p-4 border border-red-500/20">
+            <div class="flex items-center gap-3 mb-2">
+                <i class="fas fa-file-excel text-red-400 text-2xl"></i>
+                <span class="text-white font-semibold">Zero Disk Artifact</span>
+            </div>
+            <p class="text-gray-400 text-sm">Doppelgänging ile payload dosyası diskte hiç görünmez. NTFS transaction rollback!</p>
+        </div>
+    </div>
+</div>
+
+<script>
+async function configureSleep() {
+    const data = {
+        technique: document.getElementById('sleepTechnique').value,
+        duration_ms: parseInt(document.getElementById('sleepDuration').value),
+        jitter: parseInt(document.getElementById('sleepJitter').value),
+        encryption: document.getElementById('sleepEncryption').value
+    };
+    
+    try {
+        const resp = await fetch('/memory-evasion/api/configure/sleep', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showNotification('Sleep obfuscation yapılandırıldı', 'success');
+        }
+    } catch (e) {
+        showNotification('Hata: ' + e.message, 'error');
+    }
+}
+
+async function configureStack() {
+    const dlls = Array.from(document.querySelectorAll('.dll-check:checked')).map(c => c.value);
+    const data = {
+        method: document.getElementById('stackMethod').value,
+        fake_frames: parseInt(document.getElementById('fakeFrames').value),
+        target_dlls: dlls
+    };
+    
+    try {
+        const resp = await fetch('/memory-evasion/api/configure/stack', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showNotification('Stack spoofing yapılandırıldı', 'success');
+        }
+    } catch (e) {
+        showNotification('Hata: ' + e.message, 'error');
+    }
+}
+
+async function configureInjection() {
+    const data = {
+        technique: document.getElementById('injectionTechnique').value,
+        target: document.getElementById('targetProcess').value,
+        ppid_spoof: document.getElementById('ppidSpoof').checked,
+        unhook_ntdll: document.getElementById('unhookNtdll').checked
+    };
+    
+    try {
+        const resp = await fetch('/memory-evasion/api/configure/injection', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showNotification('Process injection yapılandırıldı', 'success');
+        }
+    } catch (e) {
+        showNotification('Hata: ' + e.message, 'error');
+    }
+}
+
+async function generatePayload(type) {
+    try {
+        const resp = await fetch('/memory-evasion/api/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({type: type})
+        });
+        const result = await resp.json();
+        
+        if (result.success) {
+            document.getElementById('payloadOutput').classList.remove('hidden');
+            document.getElementById('payloadType').textContent = `Payload: ${type.toUpperCase()} - ${result.timestamp}`;
+            document.getElementById('payloadCode').textContent = result.code;
+            showNotification('Payload oluşturuldu', 'success');
+        }
+    } catch (e) {
+        showNotification('Hata: ' + e.message, 'error');
+    }
+}
+
+async function loadDetectionMatrix() {
+    try {
+        const resp = await fetch('/memory-evasion/api/detection-matrix');
+        const result = await resp.json();
+        
+        if (result.success) {
+            const tbody = document.getElementById('matrixBody');
+            tbody.innerHTML = '';
+            
+            for (const [tool, data] of Object.entries(result.matrix)) {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-800';
+                row.innerHTML = `
+                    <td class="py-2 px-3 text-white font-medium">${tool}</td>
+                    <td class="py-2 px-3 text-center">${formatStatus(data.sleep_obfuscation)}</td>
+                    <td class="py-2 px-3 text-center">${formatStatus(data.stack_spoofing)}</td>
+                    <td class="py-2 px-3 text-center">${formatStatus(data.hollowing)}</td>
+                    <td class="py-2 px-3 text-center">${formatStatus(data.doppelganging)}</td>
+                `;
+                tbody.appendChild(row);
+            }
+            
+            document.getElementById('overallRate').classList.remove('hidden');
+            document.getElementById('rateValue').textContent = result.overall_rate;
+        }
+    } catch (e) {
+        showNotification('Hata: ' + e.message, 'error');
+    }
+}
+
+function formatStatus(status) {
+    if (status.includes('BYPASSED')) {
+        return `<span class="text-green-400">${status}</span>`;
+    } else if (status.includes('DETECTED')) {
+        return `<span class="text-red-400">${status}</span>`;
+    }
+    return `<span class="text-gray-400">${status}</span>`;
+}
+
+function copyPayload() {
+    const code = document.getElementById('payloadCode').textContent;
+    navigator.clipboard.writeText(code);
+    showNotification('Payload kopyalandı', 'success');
+}
+
+function showNotification(message, type) {
+    const colors = {
+        success: 'bg-green-600',
+        error: 'bg-red-600',
+        info: 'bg-blue-600'
+    };
+    
+    const notification = document.createElement('div');
+    notification.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg z-50`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.remove(), 3000);
+}
+
+// Load techniques on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadDetectionMatrix();
+});
+</script>
+{% endblock %}

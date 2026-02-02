@@ -89,6 +89,9 @@ wsus_spoof_bp = _try_import('wsus_spoof_bp', lambda: __import__('cyberapp.routes
 deepfake_vishing_bp = _try_import('deepfake_vishing_bp', lambda: __import__('cyberapp.routes.deepfake_vishing', fromlist=['bp']).bp)
 autopwn_scanner_bp = _try_import('autopwn_scanner_bp', lambda: __import__('cyberapp.routes.autopwn_scanner', fromlist=['bp']).bp)
 
+# Memory Forensics Evasion
+memory_evasion_bp = _try_import('memory_evasion_bp', lambda: __import__('cyberapp.routes.memory_evasion', fromlist=['memory_evasion_bp']).memory_evasion_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -173,6 +176,9 @@ def create_app(run_migrations_on_start=True):
     # AI & Automation Modules
     if deepfake_vishing_bp: app.register_blueprint(deepfake_vishing_bp)
     if autopwn_scanner_bp: app.register_blueprint(autopwn_scanner_bp)
+    
+    # Memory Forensics Evasion
+    if memory_evasion_bp: app.register_blueprint(memory_evasion_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
