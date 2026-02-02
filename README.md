@@ -927,6 +927,125 @@ Kabloların ve çiplerin içine giren saldırı modülleri. Donanım seviyesinde
 
 ---
 
+## 📱 Mobile & IoT Attack Suite (Cebimizdeki Düşman) - February 2025
+
+Mobil cihazları ve IoT altyapısını hedef alan gelişmiş saldırı araçları. Android telefonlardan iOS'a, şirket MDM sistemlerinden akıllı cihazlara kadar tüm mobil ekosistemine sızın.
+
+### 👻 Android Ghost RAT APK Generator
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                         👻 ANDROID GHOST RAT APK GENERATOR                               │
+│                    Masum Görünümlü APK - İçinde Hayalet RAT 👻                           │
+│                          tools/mobile_iot.py (~1000 lines)                               │
+│                       🎭 "Calculator Pro" ama aslında... 🎭                              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+DECOY APP TEMPLATES:
+  🧮 Calculator Pro     - com.calc.pro.free
+  🔦 Flashlight Plus    - com.flashlight.super.bright
+  📷 QR Scanner Fast    - com.qrcode.scanner.fast
+  🌤️ Weather Daily      - com.weather.daily.forecast
+  🔋 Battery Saver Max  - com.battery.saver.optimize
+  🧹 Phone Cleaner Pro  - com.cleaner.booster.free
+  🔐 VPN Shield Free    - com.vpn.shield.secure
+  🎮 Brain Puzzle Game  - com.puzzle.brain.trainer
+
+RAT CAPABILITIES (Hidden):
+  📱 SMS Read/Send      - Read & send messages (2FA theft)
+  �� Call Log Access    - Spy on call history
+  👥 Contacts Dump      - Exfiltrate all contacts
+  📍 Live Location      - GPS tracking in background
+  📷 Camera Access      - Silent photo/video capture
+  🎙️ Microphone         - Ambient audio recording
+  📂 File Browser       - Browse entire storage
+  🔐 Keylogger          - Accessibility-based keylogging
+  📲 Screen Capture     - Take screenshots
+  ⚙️ Device Admin       - Anti-uninstall protection
+  🔔 Notification Spy   - Read all notifications
+
+BUILD PROCESS:
+  ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+  │ Select Decoy  │ -> │ Choose Caps   │ -> │ Generate APK  │
+  │   Template    │    │  (RAT Powers) │    │   + Smali     │
+  └───────────────┘    └───────────────┘    └───────────────┘
+           │                   │                    │
+           v                   v                    v
+    "Calculator Pro"   SMS + Camera +     Looks legit, acts
+      icon & name      Location + ...         as RAT
+\`\`\`
+
+### 📱 MDM Hijacker (Intune / Jamf / Workspace ONE)
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           📱 MDM HIJACKER SUITE                                          │
+│              Tek Komut = Şirketteki TÜM Telefonlar Ele Geçirildi 📱                      │
+│                    Microsoft Intune / Jamf / VMware WS1 Attacks                          │
+│                          🎯 Enterprise Fleet Pwnership 🎯                                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+SUPPORTED MDM PLATFORMS:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  PLATFORM         │  VENDOR      │  AUTH TYPE   │  FEATURES    │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  Microsoft Intune │  Microsoft   │  Azure AD    │  iOS/Android │
+  │  Jamf Pro         │  Jamf        │  API Token   │  macOS/iOS   │
+  │  Workspace ONE    │  VMware      │  OAuth2      │  All devices │
+  │  MobileIron       │  Ivanti      │  API Key     │  Enterprise  │
+  │  Meraki SM        │  Cisco       │  Dashboard   │  Simple MDM  │
+  └─────────────────────────────────────────────────────────────────┘
+
+ATTACK EFFECTS:
+  🔴 Install malicious apps on ALL devices
+  🔴 Deploy rogue CA certificates (MITM all HTTPS)
+  🔴 Push WiFi profiles (connect to attacker AP)
+  🔴 Deploy VPN profiles (route all traffic to attacker)
+  🔴 Remote wipe devices (DoS attack)
+  🔴 Exfiltrate device inventory
+\`\`\`
+
+### 🍎 iOS Malicious Profile Injection
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🍎 iOS MALICIOUS PROFILE INJECTION                                │
+│                  .mobileconfig = iPhone'un Tam Kontrolü 🍎                               │
+│              Root CA + VPN + WiFi + MDM = Complete iOS Pwnership                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+MALICIOUS PROFILE TYPES:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  PROFILE TYPE     │  RISK     │  ATTACK EFFECT                 │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  CA Certificate   │  CRITICAL │  Decrypt ALL HTTPS traffic     │
+  │  VPN Profile      │  CRITICAL │  Route traffic to attacker VPN │
+  │  WiFi Profile     │  HIGH     │  Auto-connect to evil twin     │
+  │  Email Profile    │  HIGH     │  Intercept all email           │
+  │  Restrictions     │  MEDIUM   │  Disable security features     │
+  │  MDM Enrollment   │  CRITICAL │  Full device control           │
+  └─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+### 🔗 Mobile & IoT API Endpoints
+
+\`\`\`
+  GET  /mobile-iot/                       - Mobile & IoT Dashboard
+  GET  /mobile-iot/api/app-templates      - List decoy app templates
+  GET  /mobile-iot/api/rat-capabilities   - Available RAT capabilities
+  POST /mobile-iot/api/generate-apk       - Generate Ghost RAT APK config
+  POST /mobile-iot/api/generate-smali     - Generate Smali payload code
+  POST /mobile-iot/api/generate-manifest  - Generate AndroidManifest.xml
+  GET  /mobile-iot/api/mdm-platforms      - List supported MDM platforms
+  POST /mobile-iot/api/scan-mdm           - Scan MDM panel for vulnerabilities
+  POST /mobile-iot/api/intune-attack      - Generate Intune attack scripts
+  POST /mobile-iot/api/jamf-attack        - Generate Jamf attack scripts
+  GET  /mobile-iot/api/profile-types      - List malicious profile types
+  POST /mobile-iot/api/generate-profile   - Generate iOS .mobileconfig
+\`\`\`
+
+---
+
 ## �🕵️ Exotic Exfiltration PRO Modules (February 2025)
 
 Firewall'ları ve DLP sistemlerini delirtecek covert channel modülleri. Trafik analizi yapılamaz, engellenmesi imkansız.

@@ -103,6 +103,9 @@ supply_chain_bp = _try_import('supply_chain_bp', lambda: __import__('tools.suppl
 # Hardware & Network Infrastructure Module
 hardware_infra_bp = _try_import('hardware_infra_bp', lambda: __import__('tools.hardware_infra', fromlist=['hardware_infra_bp']).hardware_infra_bp)
 
+# Mobile & IoT Module
+mobile_iot_bp = _try_import('mobile_iot_bp', lambda: __import__('tools.mobile_iot', fromlist=['mobile_iot_bp']).mobile_iot_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -201,6 +204,9 @@ def create_app(run_migrations_on_start=True):
     
     # Hardware & Network Infrastructure Module
     if hardware_infra_bp: app.register_blueprint(hardware_infra_bp)
+    
+    # Mobile & IoT Module
+    if mobile_iot_bp: app.register_blueprint(mobile_iot_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
