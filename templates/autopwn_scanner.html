@@ -1,0 +1,878 @@
+{% extends "base.html" %}
+
+{% block title %}AutoPwn Scanner - N-Day Exploiter{% endblock %}
+
+{% block extra_css %}
+<style>
+    .autopwn-header {
+        background: linear-gradient(135deg, #0a1628 0%, #1a0a0a 50%, #2d1b1b 100%);
+        border: 1px solid #dc2626;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .autopwn-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(220, 38, 38, 0.1) 0%, transparent 70%);
+        animation: pulse-bg 4s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-bg {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.3; }
+    }
+    
+    .autopwn-header h1 {
+        color: #f87171;
+        text-shadow: 0 0 20px #dc2626;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .vuln-card {
+        background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+        border: 1px solid #374151;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .vuln-card:hover {
+        border-color: #ef4444;
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+    }
+    
+    .vuln-card.critical {
+        border-left: 4px solid #dc2626;
+    }
+    
+    .vuln-card.high {
+        border-left: 4px solid #f97316;
+    }
+    
+    .vuln-card.medium {
+        border-left: 4px solid #eab308;
+    }
+    
+    .severity-badge {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .severity-critical { background: #dc2626; color: white; }
+    .severity-high { background: #f97316; color: white; }
+    .severity-medium { background: #eab308; color: black; }
+    .severity-low { background: #22c55e; color: white; }
+    
+    .target-card {
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .target-card.pwned {
+        border-color: #22c55e;
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    }
+    
+    .target-card.pwned::before {
+        content: '🎯 PWNED';
+        position: absolute;
+        top: -10px;
+        right: 10px;
+        background: #22c55e;
+        color: black;
+        padding: 2px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 0.75rem;
+    }
+    
+    .port-badge {
+        background: #1f2937;
+        border: 1px solid #374151;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        margin: 2px;
+        display: inline-block;
+    }
+    
+    .port-badge.open { border-color: #22c55e; color: #22c55e; }
+    
+    .scan-progress {
+        background: #1f1f1f;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .scan-progress .progress {
+        height: 20px;
+        background: #2d2d2d;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .scan-progress .progress-bar {
+        background: linear-gradient(90deg, #dc2626, #f97316, #eab308);
+        background-size: 200% 100%;
+        animation: progress-shimmer 2s linear infinite;
+    }
+    
+    @keyframes progress-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .shell-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        animation: shell-pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes shell-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+        50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+    }
+    
+    .exploit-output {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.85rem;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        color: #22c55e;
+    }
+    
+    .cve-tag {
+        background: #1e3a5f;
+        color: #60a5fa;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.8rem;
+    }
+    
+    .stats-card {
+        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+        border: 1px solid #374151;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .stats-card .value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        background: linear-gradient(90deg, #dc2626, #f97316);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .target-input {
+        background: #0a0a14;
+        border: 2px dashed #374151;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .target-input:hover, .target-input:focus-within {
+        border-color: #dc2626;
+        box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
+    }
+    
+    .quick-scan-btn {
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+        border: none;
+        padding: 15px 40px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 10px;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .quick-scan-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
+    }
+    
+    .autopwn-toggle {
+        position: relative;
+        width: 60px;
+        height: 30px;
+    }
+    
+    .autopwn-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .autopwn-toggle .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #333;
+        border-radius: 30px;
+        transition: 0.4s;
+    }
+    
+    .autopwn-toggle .slider::before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.4s;
+    }
+    
+    .autopwn-toggle input:checked + .slider {
+        background: linear-gradient(90deg, #dc2626, #f97316);
+    }
+    
+    .autopwn-toggle input:checked + .slider::before {
+        transform: translateX(30px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="autopwn-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="fas fa-crosshairs me-3"></i>AutoPwn Scanner</h1>
+                <p class="text-muted mb-0">
+                    <span class="badge bg-danger me-2">PRO</span>
+                    N-Day Vulnerability Scanner • Automatic Exploitation • Log4j • ProxyShell • ZeroLogon • EternalBlue
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex align-items-center justify-content-end gap-3">
+                    <span class="text-light">Auto-Exploit</span>
+                    <label class="autopwn-toggle">
+                        <input type="checkbox" id="autoExploitToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="value" id="statVulns">25+</div>
+                <div class="text-muted">Supported Vulns</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="value" id="statScanned">0</div>
+                <div class="text-muted">Targets Scanned</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="value text-danger" id="statCritical">0</div>
+                <div class="text-muted">Critical Vulns</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="value text-success" id="statPwned">0</div>
+                <div class="text-muted">Targets PWNED</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Panel - Target Input & Sessions -->
+        <div class="col-lg-4">
+            <!-- Target Input -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bullseye me-2"></i>Target Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="target-input mb-3">
+                        <i class="fas fa-network-wired fa-3x text-danger mb-3"></i>
+                        <textarea class="form-control bg-transparent border-0 text-light text-center" 
+                            id="targetInput" rows="4" 
+                            placeholder="Enter targets:&#10;192.168.1.0/24&#10;10.0.0.1-50&#10;target.com"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small">Quick Presets</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="setPreset('local')">Local Network</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="setPreset('dc')">Domain Controllers</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="setPreset('web')">Web Servers</button>
+                        </div>
+                    </div>
+                    
+                    <button class="quick-scan-btn w-100" id="startScanBtn">
+                        <i class="fas fa-rocket me-2"></i>Launch AutoPwn
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Recent Sessions -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Scan Sessions</h5>
+                    <span class="badge bg-secondary" id="sessionCount">0</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="sessionsList" style="max-height: 300px; overflow-y: auto;">
+                        <div class="list-group-item bg-dark border-secondary text-center text-muted py-4">
+                            <i class="fas fa-search fa-2x mb-2 opacity-50"></i>
+                            <p class="small mb-0">No scan sessions yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Center Panel - Scan Results -->
+        <div class="col-lg-5">
+            <!-- Scan Progress -->
+            <div class="scan-progress" id="scanProgress" style="display: none;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Scanning...</span>
+                    <span id="scanPercent">0%</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" id="scanProgressBar" style="width: 0%"></div>
+                </div>
+                <div class="mt-2 small text-muted">
+                    <span id="scanStatus">Initializing...</span>
+                </div>
+            </div>
+            
+            <!-- Discovered Targets -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-desktop me-2"></i>Discovered Targets</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-success" id="exportReportBtn" style="display: none;">
+                            <i class="fas fa-file-export"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" id="targetsContainer" style="max-height: 500px; overflow-y: auto;">
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-crosshairs fa-4x mb-3 opacity-25"></i>
+                        <h5>No targets discovered</h5>
+                        <p class="small">Enter target IPs and launch AutoPwn</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Vulnerability Database -->
+        <div class="col-lg-3">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bug me-2"></i>Vulnerability Database</h5>
+                </div>
+                <div class="card-body p-2" id="vulnDatabase" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Vulnerabilities will be loaded here -->
+                    <div class="text-center py-3">
+                        <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exploit Details Modal -->
+<div class="modal fade" id="exploitModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border-danger">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-skull-crossbones me-2"></i>Exploit Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Target</label>
+                        <div id="exploitTarget" class="h5 text-danger">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Vulnerability</label>
+                        <div id="exploitVuln" class="h5">-</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">CVE</label>
+                    <div id="exploitCVE">-</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Exploit Output</label>
+                    <div class="exploit-output" id="exploitOutput">
+                        Waiting for exploit...
+                    </div>
+                </div>
+                <div id="shellInfo" style="display: none;">
+                    <div class="alert alert-success">
+                        <i class="fas fa-terminal me-2"></i>
+                        <strong>Shell Established!</strong>
+                        <div class="mt-2">
+                            <span class="shell-indicator">
+                                <i class="fas fa-circle"></i> Active Shell
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="manualExploitBtn">
+                    <i class="fas fa-bolt me-2"></i>Run Exploit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Scan Modal -->
+<div class="modal fade" id="quickScanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-search me-2"></i>Quick Vulnerability Check</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Target IP</label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="quickScanTarget" placeholder="192.168.1.100">
+                </div>
+                <div id="quickScanResults" style="display: none;">
+                    <h6 class="text-muted mt-4">Results</h6>
+                    <div id="quickScanOutput"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="runQuickScanBtn">
+                    <i class="fas fa-search me-2"></i>Scan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentSessionId = null;
+let scanInterval = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadVulnerabilities();
+    loadSessions();
+    loadStatistics();
+    
+    document.getElementById('startScanBtn').addEventListener('click', startScan);
+    document.getElementById('runQuickScanBtn').addEventListener('click', runQuickScan);
+    document.getElementById('exportReportBtn').addEventListener('click', exportReport);
+});
+
+async function loadVulnerabilities() {
+    try {
+        const response = await fetch('/autopwn/api/vulnerabilities');
+        const data = await response.json();
+        
+        const container = document.getElementById('vulnDatabase');
+        
+        // Group by severity
+        const critical = data.vulnerabilities.filter(v => v.severity === 'critical');
+        const high = data.vulnerabilities.filter(v => v.severity === 'high');
+        const medium = data.vulnerabilities.filter(v => v.severity === 'medium');
+        
+        let html = '';
+        
+        // Critical
+        html += '<div class="mb-2"><small class="text-danger fw-bold">CRITICAL</small></div>';
+        critical.forEach(v => {
+            html += createVulnCard(v, 'critical');
+        });
+        
+        // High
+        html += '<div class="mb-2 mt-3"><small class="text-warning fw-bold">HIGH</small></div>';
+        high.forEach(v => {
+            html += createVulnCard(v, 'high');
+        });
+        
+        // Medium
+        if (medium.length > 0) {
+            html += '<div class="mb-2 mt-3"><small class="text-info fw-bold">MEDIUM</small></div>';
+            medium.forEach(v => {
+                html += createVulnCard(v, 'medium');
+            });
+        }
+        
+        container.innerHTML = html;
+        
+        document.getElementById('statVulns').textContent = data.total + '+';
+        
+    } catch (error) {
+        console.error('Error loading vulnerabilities:', error);
+    }
+}
+
+function createVulnCard(vuln, severity) {
+    return `
+        <div class="vuln-card ${severity}" onclick="showVulnDetails('${vuln.id}')">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <strong class="small">${vuln.name}</strong>
+                <span class="severity-badge severity-${severity}">${severity}</span>
+            </div>
+            <div class="small text-muted">${vuln.cve}</div>
+            <div class="mt-1">
+                ${vuln.ports.slice(0, 4).map(p => `<span class="port-badge">${p}</span>`).join('')}
+            </div>
+        </div>
+    `;
+}
+
+async function loadSessions() {
+    try {
+        const response = await fetch('/autopwn/api/sessions');
+        const data = await response.json();
+        
+        const container = document.getElementById('sessionsList');
+        document.getElementById('sessionCount').textContent = data.sessions.length;
+        
+        if (data.sessions.length === 0) {
+            container.innerHTML = `
+                <div class="list-group-item bg-dark border-secondary text-center text-muted py-4">
+                    <i class="fas fa-search fa-2x mb-2 opacity-50"></i>
+                    <p class="small mb-0">No scan sessions yet</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = data.sessions.map(session => `
+            <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary" 
+               onclick="loadSession('${session.id}')">
+                <div class="d-flex justify-content-between">
+                    <span class="small">${session.targets.join(', ').substring(0, 30)}...</span>
+                    <span class="badge ${session.status === 'completed' ? 'bg-success' : 'bg-warning'}">${session.status}</span>
+                </div>
+                <div class="small text-muted mt-1">
+                    <i class="fas fa-desktop me-1"></i>${session.discovered} discovered
+                    <i class="fas fa-skull-crossbones ms-2 me-1 text-danger"></i>${session.pwned} pwned
+                </div>
+            </a>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading sessions:', error);
+    }
+}
+
+async function loadStatistics() {
+    try {
+        const response = await fetch('/autopwn/api/statistics');
+        const data = await response.json();
+        
+        document.getElementById('statScanned').textContent = data.statistics.total_sessions;
+        document.getElementById('statPwned').textContent = data.statistics.total_targets_pwned;
+        
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+}
+
+async function startScan() {
+    const targets = document.getElementById('targetInput').value;
+    const autoExploit = document.getElementById('autoExploitToggle').checked;
+    
+    if (!targets.trim()) {
+        alert('Please enter target IP addresses');
+        return;
+    }
+    
+    const btn = document.getElementById('startScanBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Initializing...';
+    
+    try {
+        // Create session
+        const createResponse = await fetch('/autopwn/api/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                targets: targets,
+                auto_exploit: autoExploit
+            })
+        });
+        
+        const createData = await createResponse.json();
+        currentSessionId = createData.session.id;
+        
+        // Show progress
+        document.getElementById('scanProgress').style.display = 'block';
+        
+        // Start scan
+        const startResponse = await fetch(`/autopwn/api/sessions/${currentSessionId}/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ max_threads: 50 })
+        });
+        
+        const startData = await startResponse.json();
+        
+        // Update UI with results
+        updateScanResults(startData.session);
+        
+        // Hide progress
+        document.getElementById('scanProgress').style.display = 'none';
+        document.getElementById('exportReportBtn').style.display = 'inline-block';
+        
+        // Reload sessions
+        loadSessions();
+        loadStatistics();
+        
+    } catch (error) {
+        console.error('Error starting scan:', error);
+        alert('Error starting scan: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-rocket me-2"></i>Launch AutoPwn';
+    }
+}
+
+async function loadSession(sessionId) {
+    try {
+        const response = await fetch(`/autopwn/api/sessions/${sessionId}`);
+        const data = await response.json();
+        
+        currentSessionId = sessionId;
+        updateScanResults(data);
+        document.getElementById('exportReportBtn').style.display = 'inline-block';
+        
+    } catch (error) {
+        console.error('Error loading session:', error);
+    }
+}
+
+function updateScanResults(data) {
+    const container = document.getElementById('targetsContainer');
+    const targets = data.discovered_targets || [];
+    
+    if (targets.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-search fa-4x mb-3 opacity-25"></i>
+                <h5>No targets discovered</h5>
+                <p class="small">No vulnerable hosts found in the scan range</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Update stats
+    document.getElementById('statScanned').textContent = targets.length;
+    const pwned = targets.filter(t => t.exploited).length;
+    document.getElementById('statPwned').textContent = pwned;
+    const critical = targets.reduce((sum, t) => sum + t.vulnerabilities.length, 0);
+    document.getElementById('statCritical').textContent = critical;
+    
+    container.innerHTML = targets.map(target => `
+        <div class="target-card position-relative ${target.exploited ? 'pwned' : ''}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h5 class="mb-0 text-danger">${target.ip}</h5>
+                    <small class="text-muted">${target.hostname || 'Unknown'}</small>
+                </div>
+                ${target.shells > 0 ? '<span class="shell-indicator"><i class="fas fa-terminal"></i> Shell</span>' : ''}
+            </div>
+            
+            <div class="mb-2">
+                <small class="text-muted d-block mb-1">Open Ports:</small>
+                ${Object.entries(target.ports).map(([port, service]) => 
+                    `<span class="port-badge open">${port}/${service}</span>`
+                ).join('')}
+            </div>
+            
+            ${target.vulnerabilities.length > 0 ? `
+                <div>
+                    <small class="text-muted d-block mb-1">Vulnerabilities:</small>
+                    ${target.vulnerabilities.map(v => `
+                        <span class="cve-tag me-1 mb-1">${v}</span>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            <div class="mt-3">
+                <button class="btn btn-sm btn-outline-danger" onclick="exploitTarget('${target.ip}', '${target.vulnerabilities[0] || ''}')">
+                    <i class="fas fa-bolt me-1"></i>Exploit
+                </button>
+                <button class="btn btn-sm btn-outline-secondary ms-1" onclick="showQuickScan('${target.ip}')">
+                    <i class="fas fa-search me-1"></i>Rescan
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function runQuickScan() {
+    const target = document.getElementById('quickScanTarget').value;
+    
+    if (!target) {
+        alert('Please enter a target IP');
+        return;
+    }
+    
+    const btn = document.getElementById('runQuickScanBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Scanning...';
+    
+    try {
+        const response = await fetch('/autopwn/api/quick-scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_ip: target })
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('quickScanResults').style.display = 'block';
+        
+        let html = `
+            <div class="mb-2">
+                <strong>Open Ports:</strong>
+                ${Object.entries(data.open_ports).map(([p, s]) => `<span class="port-badge open">${p}</span>`).join('')}
+            </div>
+        `;
+        
+        if (data.vulnerabilities.length > 0) {
+            html += `
+                <div class="alert alert-danger mt-3">
+                    <strong><i class="fas fa-exclamation-triangle me-2"></i>Vulnerabilities Found!</strong>
+                    <ul class="mb-0 mt-2">
+                        ${data.vulnerabilities.map(v => `
+                            <li>${v.name} <span class="cve-tag">${v.cve}</span></li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+        } else {
+            html += `<div class="alert alert-success mt-3">No known vulnerabilities detected</div>`;
+        }
+        
+        document.getElementById('quickScanOutput').innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error running quick scan:', error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-search me-2"></i>Scan';
+    }
+}
+
+async function exploitTarget(targetIp, vulnId) {
+    document.getElementById('exploitTarget').textContent = targetIp;
+    document.getElementById('exploitVuln').textContent = vulnId || 'Auto-detect';
+    document.getElementById('exploitCVE').textContent = 'Loading...';
+    document.getElementById('exploitOutput').textContent = 'Initializing exploit...';
+    document.getElementById('shellInfo').style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('exploitModal'));
+    modal.show();
+    
+    // Auto-run exploit
+    try {
+        const response = await fetch('/autopwn/api/exploit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                target_ip: targetIp,
+                vuln_id: vulnId || 'log4shell'
+            })
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('exploitOutput').textContent = data.result.output || 'No output';
+        
+        if (data.success) {
+            document.getElementById('shellInfo').style.display = 'block';
+        }
+        
+    } catch (error) {
+        document.getElementById('exploitOutput').textContent = 'Error: ' + error.message;
+    }
+}
+
+function showVulnDetails(vulnId) {
+    // Could open a modal with full vulnerability details
+    console.log('Show details for:', vulnId);
+}
+
+function showQuickScan(ip) {
+    document.getElementById('quickScanTarget').value = ip;
+    new bootstrap.Modal(document.getElementById('quickScanModal')).show();
+}
+
+function setPreset(preset) {
+    const presets = {
+        'local': '192.168.1.0/24\n192.168.0.0/24\n10.0.0.0/24',
+        'dc': '192.168.1.1\n10.0.0.1\ndc01.local\ndc02.local',
+        'web': '80\n443\n8080\n8443'
+    };
+    document.getElementById('targetInput').value = presets[preset] || '';
+}
+
+async function exportReport() {
+    if (!currentSessionId) return;
+    
+    window.open(`/autopwn/api/sessions/${currentSessionId}/export?format=html`, '_blank');
+}
+</script>
+{% endblock %}

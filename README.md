@@ -929,6 +929,273 @@ API Endpoints:
 
 ---
 
+## 🤖 AI & Automation PRO Modules (February 2025)
+
+Yapay zeka destekli saldırı araçları. Deepfake ses klonlama ve otomatik N-Day exploitation!
+
+### 🎤 Deepfake Vishing - CEO Voice Cloning
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        🎤 DEEPFAKE VISHING - CEO VOICE CLONING                          │
+│            "Hi, this is the CEO. I need you to transfer $50K immediately"               │
+│                          tools/deepfake_vishing.py (~750 lines)                         │
+│                     🔊 AI-Powered Voice Cloning & VoIP Attacks 🔊                       │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+NEDIR?
+  Deepfake Vishing (Voice Phishing):
+  - CEO/CFO sesini yapay zeka ile klonla
+  - "Acil para transferi gerekli!" diyen ses kaydı oluştur
+  - VoIP ile gerçek telefon araması yap
+  - Caller ID spooflama ile CEO'nun numarasından ara
+  - Hedef muhasebe çalışanını ikna et → PROFIT!
+
+ATTACK FLOW:
+  ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
+  │ 1.COLLECT  │───▶│ 2.CLONE    │───▶│ 3.SCRIPT   │───▶│ 4.SPOOF    │───▶│ 5.CALL     │
+  │   SAMPLE   │    │   VOICE    │    │   PREPARE  │    │   CALLER   │    │   TARGET   │
+  │            │    │            │    │            │    │   ID       │    │            │
+  │ • YouTube  │    │ • Eleven   │    │ • CEO      │    │ • Twilio   │    │ • Play     │
+  │ • LinkedIn │    │   Labs API │    │   urgent   │    │ • SIP      │    │   audio    │
+  │ • Webinar  │    │ • Azure    │    │   transfer │    │ • Asterisk │    │ • Social   │
+  │ • Podcast  │    │ • Local    │    │ • IT pwd   │    │            │    │   Engineer │
+  │            │    │   RVC      │    │ • Vendor   │    │            │    │            │
+  └────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘
+
+VOICE PROVIDERS:
+  🔊 ElevenLabs (Best Quality)
+    - Professional voice cloning
+    - 30 saniye ses örneği yeterli
+    - Ultra-realistic output
+    
+  ☁️ Azure Cognitive Services
+    - Microsoft TTS with SSML
+    - Custom Neural Voice
+    
+  🤖 OpenAI TTS
+    - GPT-powered voice synthesis
+    - Natural conversation flow
+    
+  🖥️ Local RVC (Self-Hosted)
+    - Retrieval-based Voice Conversion
+    - No API limits
+    - Full offline capability
+
+CALL PROVIDERS (VoIP):
+  📞 Twilio          - Cloud telephony, easy API
+  📞 Vonage/Nexmo    - Enterprise VoIP
+  📞 Plivo           - Budget-friendly
+  📞 Asterisk PBX    - Self-hosted, full control
+  📞 FreePBX         - Web-managed Asterisk
+  📞 SIP Direct      - Direct SIP trunking
+
+SCRIPT TEMPLATES:
+  💰 CEO Urgent Transfer:
+    "Hi Sarah, this is John from the executive office. I'm in a critical 
+     meeting and need you to process a wire transfer of $47,500 to our 
+     vendor immediately. This is confidential - don't discuss with anyone. 
+     I'll explain when I'm back. Please confirm when done."
+     
+  🔐 IT Support Password Reset:
+    "Hello, this is Mike from IT Support. We're seeing unusual login attempts 
+     on your account. For security, I need to verify your identity. Can you 
+     confirm your current password so we can reset it properly?"
+     
+  📄 Vendor Invoice Update:
+    "Hi, this is accounting from [Vendor]. We've updated our banking details 
+     due to a recent merger. Please update your payment records. The new 
+     account number is..."
+
+VOICE EMOTIONS:
+  😰 Urgent      - Stressed, time-sensitive (for wire fraud)
+  👔 Authoritative - Commanding, executive presence
+  😌 Calm        - Professional, measured
+  😟 Worried     - Concerned, anxious
+  😊 Friendly    - Warm, approachable
+
+VOICE SAMPLE COLLECTION:
+  🎯 Implants for collecting target voice samples:
+  - Python microphone capture
+  - PowerShell audio recording
+  - Browser-based recorder
+  
+  📍 Sample Sources:
+  - YouTube interviews/presentations
+  - LinkedIn videos
+  - Webinars/podcasts
+  - Earnings calls
+  - Social media clips
+
+API Endpoints:
+  GET  /deepfake-vishing/api/providers     - List voice/call providers
+  GET  /deepfake-vishing/api/templates     - Script templates
+  GET  /deepfake-vishing/api/emotions      - Voice emotion settings
+  POST /deepfake-vishing/api/profiles      - Create voice profile
+  POST /deepfake-vishing/api/generate-audio - Generate deepfake audio
+  POST /deepfake-vishing/api/campaigns     - Create vishing campaign
+  POST /deepfake-vishing/api/call          - Initiate single call
+  GET  /deepfake-vishing/api/statistics    - Campaign statistics
+```
+
+### 🎯 AutoPwn Scanner - N-Day Exploiter
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                      🎯 AUTOPWN SCANNER - N-DAY AUTO-EXPLOITER                          │
+│                   Ağa girdiğinde otomatik olarak bilinen açıkları bul ve exploit et     │
+│                          tools/autopwn_scanner.py (~900 lines)                          │
+│                    🔥 Log4Shell • ProxyShell • ZeroLogon • EternalBlue 🔥               │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+NEDIR?
+  Automated Vulnerability Scanner with N-Day Exploitation:
+  - 25+ CRITICAL/HIGH vulnerability desteği
+  - Ağı tara, vulnerable hedefleri bul
+  - Auto-exploit mode: Sormadan shell al!
+  - Multi-threaded scanning (50+ concurrent)
+  - Campaign mode for large networks
+
+SUPPORTED VULNERABILITIES:
+  ═══════════════════════════════════════════════════════════════
+  🔴 CRITICAL (Immediate RCE)
+  ═══════════════════════════════════════════════════════════════
+  
+  🪵 Log4Shell (CVE-2021-44228)
+    - Apache Log4j JNDI RCE
+    - Affects: Java apps, Elastic, VMware, Minecraft
+    - Ports: 80, 443, 8080, 9200
+    
+  📧 ProxyShell (CVE-2021-34473 chain)
+    - Exchange Server pre-auth RCE
+    - Full chain: SSRF → Impersonation → RCE
+    - Port: 443
+    
+  📧 ProxyLogon (CVE-2021-26855)
+    - Exchange SSRF + arbitrary file write
+    - Port: 443
+    
+  🔑 ZeroLogon (CVE-2020-1472)
+    - Netlogon privilege escalation
+    - Domain Controller → Domain Admin
+    - Ports: 135, 445
+    
+  🖨️ PrintNightmare (CVE-2021-34527)
+    - Windows Print Spooler RCE
+    - Remote DLL loading → SYSTEM
+    - Port: 445
+    
+  💀 EternalBlue (MS17-010)
+    - SMBv1 RCE (WannaCry exploit)
+    - Windows 7/Server 2008 R2
+    - Port: 445
+    
+  🔵 BlueKeep (CVE-2019-0708)
+    - Windows RDP pre-auth RCE
+    - Port: 3389
+    
+  🌱 Spring4Shell (CVE-2022-22965)
+    - Spring Framework RCE
+    - Ports: 80, 8080
+    
+  📝 Confluence RCE (CVE-2022-26134)
+    - Atlassian OGNL injection
+    - Port: 8090
+    
+  🔧 vCenter RCE (CVE-2021-22005)
+    - VMware arbitrary file upload
+    - Port: 443
+    
+  🍊 Citrix ADC RCE (CVE-2023-3519)
+    - Unauthenticated RCE
+    - Port: 443
+    
+  🛡️ FortiGate SSL-VPN (CVE-2023-27997)
+    - Heap buffer overflow
+    - Port: 443, 10443
+    
+  📁 MOVEit RCE (CVE-2023-34362)
+    - SQL injection to RCE
+    - Port: 443
+
+  ═══════════════════════════════════════════════════════════════
+  🟠 HIGH (Auth Bypass / PrivEsc)
+  ═══════════════════════════════════════════════════════════════
+  
+  🎟️ AD CS Certifried (CVE-2022-26923)
+  👻 SMBGhost (CVE-2020-0796)
+  🔓 PetitPotam (CVE-2021-36942)
+  🐱 Tomcat Ghostcat (CVE-2020-1938)
+  🏗️ Jenkins RCE (CVE-2024-23897)
+  💔 Heartbleed (CVE-2014-0160)
+
+ATTACK FLOW:
+  ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
+  │ 1.TARGET   │───▶│ 2.PORT     │───▶│ 3.VULN     │───▶│ 4.AUTO     │───▶│ 5.SHELL    │
+  │   INPUT    │    │   SCAN     │    │   CHECK    │    │   EXPLOIT  │    │   MANAGE   │
+  │            │    │            │    │            │    │            │    │            │
+  │ • CIDR     │    │ • Top 20   │    │ • CVE      │    │ • Log4j    │    │ • Reverse  │
+  │ • Range    │    │   ports    │    │   specific │    │ • ProxyS   │    │ • Webshell │
+  │ • Single   │    │ • Service  │    │   checks   │    │ • ZeroLog  │    │ • Meterp   │
+  │ • Hostname │    │   ID       │    │ • Banner   │    │ • EternalB │    │ • PTH/PTT  │
+  │            │    │            │    │   grab     │    │            │    │            │
+  └────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘
+
+SCAN MODES:
+  🔍 Discovery Only (--no-exploit)
+    - Sadece vulnerable hedefleri listele
+    - Safe mode for assessment
+    
+  ⚡ Auto-Pwn Mode (Default)
+    - Vulnerable bulunduğunda otomatik exploit
+    - Sormadan shell al!
+    - Aggressive but effective
+    
+  🎯 Manual Exploit
+    - Specific CVE, specific target
+    - Full control over exploitation
+
+OUTPUT FORMATS:
+  📊 JSON Report - API/automation için
+  📄 HTML Report - Presentation için
+  🖥️ Live Dashboard - Real-time progress
+
+EXPLOIT METHODS:
+  💥 Log4Shell:
+    - JNDI payload injection
+    - Multi-header spray (User-Agent, X-Forwarded-For, etc.)
+    - LDAP/RMI callback server
+    
+  💥 ProxyShell/ProxyLogon:
+    - SSRF chain exploitation
+    - Webshell deployment
+    - Exchange mailbox access
+    
+  💥 ZeroLogon:
+    - Netlogon auth bypass
+    - DC machine account password reset
+    - DCSync for all domain hashes
+    
+  💥 EternalBlue:
+    - SMBv1 buffer overflow
+    - Kernel-mode code execution
+    - SYSTEM shell
+
+API Endpoints:
+  GET  /autopwn/api/vulnerabilities    - List supported CVEs
+  GET  /autopwn/api/sessions           - List scan sessions
+  POST /autopwn/api/sessions           - Create new scan
+  POST /autopwn/api/sessions/{id}/start - Start scanning
+  GET  /autopwn/api/sessions/{id}      - Get session details
+  GET  /autopwn/api/sessions/{id}/report - Generate report
+  POST /autopwn/api/quick-scan         - Quick single-target scan
+  POST /autopwn/api/exploit            - Manual exploit trigger
+  GET  /autopwn/api/shells             - List active shells
+  GET  /autopwn/api/statistics         - Scanner stats
+```
+
+---
+
 ## 🗡️ Core Attack Modules
 
 ### 🎫 Kerberos Attack Chain

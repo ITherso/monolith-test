@@ -85,6 +85,10 @@ sccm_hunter_bp = _try_import('sccm_hunter_bp', lambda: __import__('cyberapp.rout
 rdp_hijack_bp = _try_import('rdp_hijack_bp', lambda: __import__('cyberapp.routes.rdp_hijack', fromlist=['rdp_hijack_bp']).rdp_hijack_bp)
 wsus_spoof_bp = _try_import('wsus_spoof_bp', lambda: __import__('cyberapp.routes.wsus_spoof', fromlist=['wsus_spoof_bp']).wsus_spoof_bp)
 
+# AI & Automation Modules
+deepfake_vishing_bp = _try_import('deepfake_vishing_bp', lambda: __import__('cyberapp.routes.deepfake_vishing', fromlist=['bp']).bp)
+autopwn_scanner_bp = _try_import('autopwn_scanner_bp', lambda: __import__('cyberapp.routes.autopwn_scanner', fromlist=['bp']).bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -165,6 +169,10 @@ def create_app(run_migrations_on_start=True):
     if sccm_hunter_bp: app.register_blueprint(sccm_hunter_bp)
     if rdp_hijack_bp: app.register_blueprint(rdp_hijack_bp)
     if wsus_spoof_bp: app.register_blueprint(wsus_spoof_bp)
+    
+    # AI & Automation Modules
+    if deepfake_vishing_bp: app.register_blueprint(deepfake_vishing_bp)
+    if autopwn_scanner_bp: app.register_blueprint(autopwn_scanner_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
