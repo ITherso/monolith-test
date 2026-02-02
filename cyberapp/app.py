@@ -109,6 +109,9 @@ mobile_iot_bp = _try_import('mobile_iot_bp', lambda: __import__('tools.mobile_io
 # Social Engineering Ops Module
 social_eng_bp = _try_import('social_eng_bp', lambda: __import__('tools.social_engineering_ops', fromlist=['social_eng_bp']).social_eng_bp)
 
+# DDexec Fileless Linux Execution Module
+ddexec_bp = _try_import('ddexec_bp', lambda: __import__('cyberapp.routes.ddexec', fromlist=['ddexec_bp']).ddexec_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -213,6 +216,9 @@ def create_app(run_migrations_on_start=True):
     
     # Social Engineering Ops Module
     if social_eng_bp: app.register_blueprint(social_eng_bp)
+    
+    # DDexec Fileless Linux Execution Module
+    if ddexec_bp: app.register_blueprint(ddexec_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

