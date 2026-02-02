@@ -439,7 +439,7 @@
                                     {% else %}⚙️{% endif %}
                                 </span>
                                 <div>
-                                    <strong class="text-white">{{ scenario.name }}</strong>
+                                    <strong class="text-white">{{ scenario.name or key.replace('_', ' ').title() }}</strong>
                                     <div class="text-muted small">{{ scenario.description }}</div>
                                 </div>
                             </div>

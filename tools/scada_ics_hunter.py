@@ -238,30 +238,35 @@ class ModbusGhostInjector:
     # Stuxnet-style attack scenarios
     ATTACK_SCENARIOS = {
         "centrifuge_sabotage": {
+            "name": "Santrifüj Sabotaj",
             "description": "Stuxnet-style: Speed up centrifuges while showing normal RPM",
             "targets": ["motor_speed", "vibration_sensor"],
             "display": "normal",
             "actual": "dangerous"
         },
         "pressure_bomb": {
+            "name": "Basınç Bombası",
             "description": "Increase pressure while showing safe readings",
             "targets": ["pressure_1", "valve_1", "pump_1"],
             "display": "5 bar (safe)",
             "actual": "15 bar (rupture)"
         },
         "thermal_runaway": {
+            "name": "Termal Kaçış",
             "description": "Disable cooling while showing normal temps",
             "targets": ["temperature_1", "valve_2", "pump_2"],
             "display": "45°C (normal)",
             "actual": "500°C (meltdown)"
         },
         "overflow_attack": {
+            "name": "Tank Taşırma",
             "description": "Fill tanks while showing low level",
             "targets": ["tank_level_1", "valve_3", "pump_1"],
             "display": "30% (normal)",
             "actual": "overflow imminent"
         },
         "chemical_mix": {
+            "name": "Kimyasal Karışım",
             "description": "Alter chemical ratios while showing correct mix",
             "targets": ["flow_1", "flow_2", "valve_1", "valve_2"],
             "display": "1:1 ratio",
