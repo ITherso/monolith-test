@@ -47,6 +47,11 @@ try:
 except ImportError:
     airgap_bp = None
 
+try:
+    from cyberapp.routes.blockchain_c2 import blockchain_c2_bp
+except ImportError:
+    blockchain_c2_bp = None
+
 
 __all__ = [
     'chain_bp',
@@ -59,4 +64,5 @@ __all__ = [
     'scada_bp',
     'automotive_bp',
     'airgap_bp',
+    'blockchain_c2_bp',
 ]

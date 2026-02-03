@@ -139,6 +139,9 @@ automotive_bp = _try_import('automotive_bp', lambda: __import__('cyberapp.routes
 # Air-Gap Jumping Module
 airgap_bp = _try_import('airgap_bp', lambda: __import__('cyberapp.routes.airgap_jumper', fromlist=['airgap_bp']).airgap_bp)
 
+# Blockchain & Decentralized C2 Module
+blockchain_c2_bp = _try_import('blockchain_c2_bp', lambda: __import__('cyberapp.routes.blockchain_c2', fromlist=['blockchain_c2_bp']).blockchain_c2_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -273,6 +276,9 @@ def create_app(run_migrations_on_start=True):
     
     # Air-Gap Jumping Module
     if airgap_bp: app.register_blueprint(airgap_bp)
+    
+    # Blockchain & Decentralized C2 Module
+    if blockchain_c2_bp: app.register_blueprint(blockchain_c2_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
