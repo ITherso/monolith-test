@@ -37,6 +37,11 @@ try:
 except ImportError:
     scada_bp = None
 
+try:
+    from cyberapp.routes.automotive_canbus import automotive_bp
+except ImportError:
+    automotive_bp = None
+
 
 __all__ = [
     'chain_bp',
@@ -47,4 +52,5 @@ __all__ = [
     'spray_bp',
     'orbital_rf_bp',
     'scada_bp',
+    'automotive_bp',
 ]

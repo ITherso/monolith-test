@@ -1,0 +1,911 @@
+{% extends "base.html" %}
+{% block title %}Vehicle Ops - Automotive & CAN Bus Hacking{% endblock %}
+
+{% block extra_css %}
+<style>
+    .vehicle-display {
+        background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+        border-radius: 15px;
+        padding: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .vehicle-display::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        pointer-events: none;
+    }
+    
+    .car-silhouette {
+        font-size: 8rem;
+        text-align: center;
+        filter: drop-shadow(0 0 30px rgba(0, 255, 136, 0.3));
+    }
+    
+    .attack-btn {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .attack-btn:hover {
+        border-color: #ff4444;
+        box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    .attack-btn.danger:hover {
+        border-color: #ff0000;
+        box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+    }
+    
+    .attack-btn .icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+    
+    .attack-btn .name {
+        font-weight: bold;
+        color: #fff;
+        font-size: 0.9rem;
+    }
+    
+    .attack-btn .desc {
+        font-size: 0.75rem;
+        color: #888;
+    }
+    
+    .can-frame {
+        font-family: 'Courier New', monospace;
+        background: #0a0a0a;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin: 3px 0;
+        font-size: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .can-id {
+        color: #00ff88;
+        font-weight: bold;
+    }
+    
+    .can-data {
+        color: #ffaa00;
+    }
+    
+    .signal-card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .signal-card.replayable {
+        border-color: #00ff88;
+    }
+    
+    .signal-card.rolling-code {
+        border-color: #ff4444;
+    }
+    
+    .frequency-display {
+        font-size: 3rem;
+        font-weight: bold;
+        text-align: center;
+        color: #00ff88;
+        text-shadow: 0 0 20px #00ff88;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .sdr-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+    }
+    
+    .status-led {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #333;
+    }
+    
+    .status-led.active {
+        background: #00ff00;
+        box-shadow: 0 0 10px #00ff00;
+        animation: pulse-led 1s infinite;
+    }
+    
+    .status-led.warning {
+        background: #ffaa00;
+        box-shadow: 0 0 10px #ffaa00;
+    }
+    
+    .status-led.danger {
+        background: #ff0000;
+        box-shadow: 0 0 10px #ff0000;
+        animation: pulse-led 0.5s infinite;
+    }
+    
+    @keyframes pulse-led {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .terminal-output {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 5px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        max-height: 250px;
+        overflow-y: auto;
+        color: #00ff88;
+    }
+    
+    .form-control.vehicle-input {
+        background-color: #1a1a2e !important;
+        border: 2px solid #00ff88 !important;
+        color: #fff !important;
+        padding: 10px 12px;
+        border-radius: 6px;
+    }
+    
+    .form-control.vehicle-input:focus {
+        border-color: #00ffaa !important;
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.4) !important;
+    }
+    
+    .tab-btn {
+        background: transparent;
+        border: none;
+        color: #888;
+        padding: 15px 25px;
+        font-size: 1rem;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+    }
+    
+    .tab-btn:hover {
+        color: #fff;
+    }
+    
+    .tab-btn.active {
+        color: #00ff88;
+        border-bottom-color: #00ff88;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .vehicle-info-card {
+        background: linear-gradient(145deg, #1a2a1a, #162e16);
+        border: 1px solid #00ff88;
+        border-radius: 10px;
+        padding: 20px;
+    }
+    
+    .jammer-active {
+        animation: jammer-pulse 0.3s infinite;
+    }
+    
+    @keyframes jammer-pulse {
+        0%, 100% { background-color: #ff0000; }
+        50% { background-color: #ff4444; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="text-danger">
+                        <i class="fas fa-car me-2"></i>
+                        Vehicle Ops
+                    </h1>
+                    <p class="text-muted mb-0">Automotive & CAN Bus Hacking Suite</p>
+                </div>
+                <div>
+                    <span class="badge bg-success me-2" id="can-status">
+                        <span class="status-led me-1"></span> CAN: Disconnected
+                    </span>
+                    <span class="badge bg-info me-2" id="sdr-status">
+                        <span class="status-led me-1"></span> SDR: Disconnected
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex border-bottom border-secondary">
+                <button class="tab-btn active" onclick="switchTab('canbus')">
+                    <i class="fas fa-network-wired me-2"></i>CAN Bus Kill Switch
+                </button>
+                <button class="tab-btn" onclick="switchTab('keyless')">
+                    <i class="fas fa-key me-2"></i>Keyless Entry Replay
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAN Bus Tab -->
+    <div class="tab-content active" id="tab-canbus">
+        <div class="row">
+            <!-- Vehicle Display -->
+            <div class="col-lg-5">
+                <div class="card bg-dark mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-car-side me-2"></i>Target Vehicle
+                    </div>
+                    <div class="card-body vehicle-display">
+                        <div class="car-silhouette">🚗</div>
+                        <div class="text-center mt-3" id="vehicle-info">
+                            <span class="text-muted">Vehicle not detected</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Connection -->
+                <div class="card bg-dark mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-plug me-2"></i>OBD-II Connection
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">CAN Interface</label>
+                            <select class="form-control vehicle-input" id="can-interface">
+                                <option value="can0">can0 (Native)</option>
+                                <option value="vcan0">vcan0 (Virtual)</option>
+                                <option value="slcan0">slcan0 (Serial)</option>
+                                <option value="pcan0">pcan0 (Peak CAN)</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success" onclick="connectCAN()" id="btn-connect-can">
+                                <i class="fas fa-plug me-1"></i> Connect to OBD-II
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="detectVehicle()">
+                                <i class="fas fa-search me-1"></i> Auto-Detect Vehicle
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CAN Sniffer -->
+                <div class="card bg-dark">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-wave-square me-2"></i>CAN Traffic</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-success" onclick="startSniffing()">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="stopSniffing()">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2" style="max-height: 200px; overflow-y: auto;" id="can-frames">
+                        <div class="text-muted text-center py-3">
+                            <i class="fas fa-info-circle me-1"></i> Connect and start sniffing to see CAN traffic
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Attack Panel -->
+            <div class="col-lg-7">
+                <div class="card bg-dark">
+                    <div class="card-header">
+                        <i class="fas fa-bolt text-danger me-2"></i>CAN Bus Attacks
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                            These attacks send malicious CAN frames to the vehicle's internal network
+                        </p>
+                        
+                        <div class="row g-3" id="attack-grid">
+                            {% for key, attack in can_attacks.items() %}
+                            <div class="col-4 col-md-3">
+                                <div class="attack-btn {{ 'danger' if 'kill' in key or 'engine' in key else '' }}" 
+                                     onclick="executeAttack('{{ key }}')">
+                                    <span class="icon">{{ attack.icon }}</span>
+                                    <span class="name">{{ attack.name }}</span>
+                                    <span class="desc">{{ attack.description[:30] }}...</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Manual Send -->
+                        <div class="mt-4 p-3 border border-secondary rounded">
+                            <h6 class="text-info mb-3"><i class="fas fa-terminal me-2"></i>Manual CAN Frame</h6>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="text" class="form-control vehicle-input" 
+                                           id="manual-can-id" placeholder="CAN ID (hex)" value="0x7E0">
+                                </div>
+                                <div class="col-6">
+                                    <input type="text" class="form-control vehicle-input" 
+                                           id="manual-can-data" placeholder="Data (hex)" value="02 10 02 00 00 00 00 00">
+                                </div>
+                                <div class="col-2">
+                                    <button class="btn btn-danger w-100" onclick="sendManualFrame()">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyless Entry Tab -->
+    <div class="tab-content" id="tab-keyless">
+        <div class="row">
+            <!-- SDR Control -->
+            <div class="col-lg-5">
+                <div class="card bg-dark mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-broadcast-tower me-2"></i>SDR Configuration
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">SDR Device</label>
+                            <select class="form-control vehicle-input" id="sdr-device">
+                                <option value="hackrf">HackRF One</option>
+                                <option value="rtlsdr">RTL-SDR (RX only)</option>
+                                <option value="yardstick">YARD Stick One</option>
+                                <option value="flipper">Flipper Zero</option>
+                                <option value="proxmark3">Proxmark3</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">Target Frequency</label>
+                            <div class="frequency-display" id="freq-display">315.00 MHz</div>
+                            <div class="btn-group w-100 mt-2">
+                                <button class="btn btn-sm btn-outline-info" onclick="setFrequency(315.0)">315 MHz</button>
+                                <button class="btn btn-sm btn-outline-info" onclick="setFrequency(433.92)">433 MHz</button>
+                                <button class="btn btn-sm btn-outline-info" onclick="setFrequency(868.0)">868 MHz</button>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-info" onclick="connectSDR()" id="btn-connect-sdr">
+                                <i class="fas fa-satellite-dish me-1"></i> Connect SDR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Signal Capture -->
+                <div class="card bg-dark mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-key me-2"></i>Signal Capture
+                    </div>
+                    <div class="card-body">
+                        <div class="sdr-status mb-3" id="sdr-listening-status">
+                            <span class="status-led" id="listening-led"></span>
+                            <span>Status: Idle</span>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mb-3">
+                            <button class="btn btn-success" onclick="startListening()">
+                                <i class="fas fa-microphone me-1"></i> Start Listening
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="stopListening()">
+                                <i class="fas fa-stop me-1"></i> Stop
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">Signal Type to Capture</label>
+                            <select class="form-control vehicle-input" id="signal-type">
+                                <option value="unlock">🔓 Unlock</option>
+                                <option value="lock">🔒 Lock</option>
+                                <option value="panic">🚨 Panic</option>
+                                <option value="trunk">📦 Trunk</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-warning w-100" onclick="captureSignal()">
+                            <i class="fas fa-record-vinyl me-1"></i> Capture Now
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- RollJam Jammer -->
+                <div class="card bg-dark">
+                    <div class="card-header bg-danger text-white">
+                        <i class="fas fa-ban me-2"></i>RollJam Jammer
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">
+                            Jams the frequency while capturing victim's signal. Used for rolling code bypass.
+                        </p>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">Jam Duration (sec)</label>
+                            <input type="number" class="form-control vehicle-input" 
+                                   id="jam-duration" value="30" min="5" max="120">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-danger" onclick="startJammer()" id="btn-jammer">
+                                <i class="fas fa-broadcast-tower me-1"></i> Start Jammer
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="stopJammer()">
+                                <i class="fas fa-stop me-1"></i> Stop Jammer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Captured Signals -->
+            <div class="col-lg-7">
+                <div class="card bg-dark mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-database me-2"></i>Captured Signals</span>
+                        <span class="badge bg-info" id="signal-count">0 signals</span>
+                    </div>
+                    <div class="card-body" id="signals-list" style="max-height: 300px; overflow-y: auto;">
+                        <div class="text-muted text-center py-4">
+                            <i class="fas fa-satellite-dish fa-3x mb-3"></i>
+                            <p>No signals captured yet</p>
+                            <small>Connect SDR and start listening to capture key fob signals</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attack Techniques -->
+                <div class="card bg-dark">
+                    <div class="card-header">
+                        <i class="fas fa-skull-crossbones me-2"></i>Attack Techniques
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            {% for key, tech in key_techniques.items() %}
+                            <div class="col-md-6">
+                                <div class="signal-card">
+                                    <h6 class="text-white mb-1">{{ tech.name }}</h6>
+                                    <p class="text-muted small mb-2">{{ tech.description }}</p>
+                                    <span class="badge {{ 'bg-success' if tech.difficulty == 'Easy' else 'bg-warning' if tech.difficulty == 'Medium' else 'bg-danger' }}">
+                                        {{ tech.difficulty }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal Output -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-terminal me-2"></i>Terminal Output</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearTerminal()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="terminal-output" id="terminal-output">
+                        <div class="text-success">Vehicle Ops v1.0 initialized</div>
+                        <div class="text-secondary">[*] Awaiting commands...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let canConnected = false;
+let sdrConnected = false;
+let isSniffing = false;
+let isListening = false;
+let jammerActive = false;
+let capturedSignals = [];
+
+function log(message, type = 'info') {
+    const terminal = document.getElementById('terminal-output');
+    const timestamp = new Date().toLocaleTimeString();
+    let color = 'text-secondary';
+    let prefix = '[*]';
+    
+    if (type === 'success') { color = 'text-success'; prefix = '[+]'; }
+    else if (type === 'error') { color = 'text-danger'; prefix = '[-]'; }
+    else if (type === 'warning') { color = 'text-warning'; prefix = '[!]'; }
+    else if (type === 'attack') { color = 'text-danger'; prefix = '[💀]'; }
+    else if (type === 'can') { color = 'text-info'; prefix = '[CAN]'; }
+    else if (type === 'rf') { color = 'text-purple'; prefix = '[RF]'; }
+    
+    terminal.innerHTML += `<div class="${color}">${prefix} [${timestamp}] ${message}</div>`;
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+function clearTerminal() {
+    document.getElementById('terminal-output').innerHTML = '<div class="text-success">Terminal cleared</div>';
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+// CAN Bus Functions
+async function connectCAN() {
+    const iface = document.getElementById('can-interface').value;
+    log(`Connecting to ${iface}...`, 'info');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/can/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ interface: iface })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            canConnected = true;
+            document.getElementById('can-status').innerHTML = '<span class="status-led active me-1"></span> CAN: Connected';
+            document.getElementById('can-status').className = 'badge bg-success me-2';
+            log(`Connected to ${iface}`, 'success');
+        } else {
+            log(`Connection failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function detectVehicle() {
+    if (!canConnected) {
+        log('Connect to CAN interface first!', 'error');
+        return;
+    }
+    
+    log('Detecting vehicle...', 'info');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/can/detect-vehicle', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('vehicle-info').innerHTML = `
+                <div class="vehicle-info-card">
+                    <h5 class="text-success mb-2">${data.make.toUpperCase()} ${data.model}</h5>
+                    <div class="text-muted">Year: ${data.year}</div>
+                    <div class="text-muted">Protocol: ${data.protocol}</div>
+                </div>
+            `;
+            log(`Vehicle detected: ${data.year} ${data.make} ${data.model}`, 'success');
+        } else {
+            log(`Detection failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function startSniffing() {
+    if (!canConnected) {
+        log('Connect to CAN interface first!', 'error');
+        return;
+    }
+    
+    isSniffing = true;
+    log('Started CAN sniffing...', 'success');
+    
+    // Poll for frames
+    const frameInterval = setInterval(async () => {
+        if (!isSniffing) {
+            clearInterval(frameInterval);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/vehicle-ops/api/can/frames?limit=20');
+            const frames = await response.json();
+            
+            const container = document.getElementById('can-frames');
+            container.innerHTML = frames.map(f => `
+                <div class="can-frame">
+                    <span class="can-id">${f.id}</span>
+                    <span class="can-data">${f.data}</span>
+                </div>
+            `).join('') || '<div class="text-muted text-center">No frames captured</div>';
+        } catch (e) {}
+    }, 500);
+}
+
+function stopSniffing() {
+    isSniffing = false;
+    log('Stopped CAN sniffing', 'warning');
+}
+
+async function executeAttack(attackName) {
+    if (!canConnected) {
+        log('Connect to CAN interface first!', 'error');
+        return;
+    }
+    
+    log(`Executing attack: ${attackName}...`, 'attack');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/can/attack', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attack: attackName })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            log(`${data.icon} ${data.attack_name} - ${data.description}`, 'attack');
+            log(`Sent to ${data.can_id}: ${data.payload}`, 'can');
+        } else {
+            log(`Attack failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function sendManualFrame() {
+    const canId = document.getElementById('manual-can-id').value;
+    const canData = document.getElementById('manual-can-data').value.replace(/\s/g, '');
+    
+    log(`Sending frame ${canId}: ${canData}`, 'can');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/can/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ can_id: canId, payload: canData })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            log(`Frame sent: ${data.frame}`, 'success');
+        } else {
+            log(`Send failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Keyless Entry Functions
+async function connectSDR() {
+    const device = document.getElementById('sdr-device').value;
+    log(`Connecting to ${device}...`, 'rf');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/keyless/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device: device })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            sdrConnected = true;
+            document.getElementById('sdr-status').innerHTML = '<span class="status-led active me-1"></span> SDR: Connected';
+            document.getElementById('sdr-status').className = 'badge bg-info me-2';
+            log(`SDR connected: ${device}`, 'success');
+            log(`Capabilities: TX=${data.capabilities.can_transmit}, Jam=${data.capabilities.can_jam}`, 'info');
+        } else {
+            log(`Connection failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+function setFrequency(freq) {
+    document.getElementById('freq-display').textContent = freq.toFixed(2) + ' MHz';
+    log(`Frequency set to ${freq} MHz`, 'rf');
+    
+    fetch('/vehicle-ops/api/keyless/frequency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frequency: freq })
+    });
+}
+
+async function startListening() {
+    if (!sdrConnected) {
+        log('Connect SDR first!', 'error');
+        return;
+    }
+    
+    isListening = true;
+    document.getElementById('listening-led').classList.add('active');
+    document.getElementById('sdr-listening-status').querySelector('span:last-child').textContent = 'Status: Listening...';
+    
+    log('Started listening for key fob signals...', 'rf');
+    
+    try {
+        await fetch('/vehicle-ops/api/keyless/listen/start', { method: 'POST' });
+    } catch (e) {}
+}
+
+function stopListening() {
+    isListening = false;
+    document.getElementById('listening-led').classList.remove('active');
+    document.getElementById('sdr-listening-status').querySelector('span:last-child').textContent = 'Status: Idle';
+    
+    log('Stopped listening', 'warning');
+    fetch('/vehicle-ops/api/keyless/listen/stop', { method: 'POST' });
+}
+
+async function captureSignal() {
+    if (!isListening) {
+        log('Start listening first!', 'error');
+        return;
+    }
+    
+    const signalType = document.getElementById('signal-type').value;
+    log(`Capturing ${signalType} signal...`, 'rf');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/keyless/capture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ signal_type: signalType })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            capturedSignals.push(data);
+            log(`Signal captured! ID: ${data.signal_id}`, 'success');
+            log(data.warning, data.is_rolling_code ? 'error' : 'success');
+            updateSignalsList();
+        } else {
+            log(`Capture failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+function updateSignalsList() {
+    const container = document.getElementById('signals-list');
+    document.getElementById('signal-count').textContent = `${capturedSignals.length} signals`;
+    
+    container.innerHTML = capturedSignals.map(s => `
+        <div class="signal-card ${s.is_rolling_code ? 'rolling-code' : 'replayable'}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong class="text-white">${s.signal_type.toUpperCase()}</strong>
+                    <span class="text-muted ms-2">${s.frequency}</span>
+                </div>
+                <div>
+                    ${s.is_rolling_code ? 
+                        '<span class="badge bg-danger">Rolling Code</span>' : 
+                        '<span class="badge bg-success">Replayable</span>'}
+                </div>
+            </div>
+            <div class="text-muted small mt-1">ID: ${s.signal_id}</div>
+            <button class="btn btn-sm btn-outline-warning mt-2" onclick="replaySignal('${s.signal_id}')" 
+                    ${s.is_rolling_code ? 'disabled' : ''}>
+                <i class="fas fa-play me-1"></i> Replay
+            </button>
+        </div>
+    `).join('') || '<div class="text-muted text-center py-4">No signals captured</div>';
+}
+
+async function replaySignal(signalId) {
+    log(`Replaying signal ${signalId}...`, 'rf');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/keyless/replay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ signal_id: signalId })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            log(`🔓 Signal transmitted! ${data.warning}`, 'success');
+        } else {
+            log(`Replay failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function startJammer() {
+    if (!sdrConnected) {
+        log('Connect SDR first!', 'error');
+        return;
+    }
+    
+    const duration = document.getElementById('jam-duration').value;
+    log(`Starting jammer for ${duration} seconds...`, 'attack');
+    
+    try {
+        const response = await fetch('/vehicle-ops/api/keyless/jammer/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duration: parseInt(duration) })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            jammerActive = true;
+            document.getElementById('btn-jammer').classList.add('jammer-active');
+            log(`🚨 JAMMER ACTIVE - ${data.warning}`, 'attack');
+            
+            setTimeout(() => {
+                jammerActive = false;
+                document.getElementById('btn-jammer').classList.remove('jammer-active');
+                log('Jammer stopped automatically', 'warning');
+            }, duration * 1000);
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+function stopJammer() {
+    jammerActive = false;
+    document.getElementById('btn-jammer').classList.remove('jammer-active');
+    log('Jammer stopped', 'warning');
+    fetch('/vehicle-ops/api/keyless/jammer/stop', { method: 'POST' });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    log('Vehicle Ops module loaded', 'success');
+    log('⚠️ WARNING: Unauthorized vehicle hacking is illegal!', 'warning');
+});
+</script>
+{% endblock %}

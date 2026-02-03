@@ -133,6 +133,9 @@ orbital_rf_bp = _try_import('orbital_rf_bp', lambda: __import__('cyberapp.routes
 # SCADA & ICS Hunter (Industrial Espionage) Module
 scada_bp = _try_import('scada_bp', lambda: __import__('cyberapp.routes.scada_ics_hunter', fromlist=['scada_bp']).scada_bp)
 
+# Automotive & CAN Bus Hacking Module
+automotive_bp = _try_import('automotive_bp', lambda: __import__('cyberapp.routes.automotive_canbus', fromlist=['automotive_bp']).automotive_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -261,6 +264,9 @@ def create_app(run_migrations_on_start=True):
     
     # SCADA & ICS Hunter (Industrial Espionage)
     if scada_bp: app.register_blueprint(scada_bp)
+    
+    # Automotive & CAN Bus Hacking Module
+    if automotive_bp: app.register_blueprint(automotive_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
