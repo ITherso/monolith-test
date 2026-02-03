@@ -136,6 +136,9 @@ scada_bp = _try_import('scada_bp', lambda: __import__('cyberapp.routes.scada_ics
 # Automotive & CAN Bus Hacking Module
 automotive_bp = _try_import('automotive_bp', lambda: __import__('cyberapp.routes.automotive_canbus', fromlist=['automotive_bp']).automotive_bp)
 
+# Air-Gap Jumping Module
+airgap_bp = _try_import('airgap_bp', lambda: __import__('cyberapp.routes.airgap_jumper', fromlist=['airgap_bp']).airgap_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -267,6 +270,9 @@ def create_app(run_migrations_on_start=True):
     
     # Automotive & CAN Bus Hacking Module
     if automotive_bp: app.register_blueprint(automotive_bp)
+    
+    # Air-Gap Jumping Module
+    if airgap_bp: app.register_blueprint(airgap_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request

@@ -42,6 +42,11 @@ try:
 except ImportError:
     automotive_bp = None
 
+try:
+    from cyberapp.routes.airgap_jumper import airgap_bp
+except ImportError:
+    airgap_bp = None
+
 
 __all__ = [
     'chain_bp',
@@ -53,4 +58,5 @@ __all__ = [
     'orbital_rf_bp',
     'scada_bp',
     'automotive_bp',
+    'airgap_bp',
 ]
