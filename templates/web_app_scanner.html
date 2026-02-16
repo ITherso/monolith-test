@@ -79,6 +79,7 @@
 <script>
 let currentJobId = null;
 let pollInterval = null;
+window.addEventListener('beforeunload', () => { if (pollInterval) clearInterval(pollInterval); });
 
 function startScan() {
     const targetUrl = document.getElementById('targetUrl').value.trim();

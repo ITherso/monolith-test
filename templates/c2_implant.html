@@ -1335,9 +1335,10 @@ async function quickDeploy() {
 }
 
 // Auto refresh every 15 seconds
-setInterval(() => {
+const beaconPollInterval = setInterval(() => {
     refreshBeacons();
     loadStats();
 }, 15000);
+window.addEventListener('beforeunload', () => clearInterval(beaconPollInterval));
 </script>
 {% endblock %}

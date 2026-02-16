@@ -751,6 +751,7 @@
 let canConnected = false;
 let sdrConnected = false;
 let isSniffing = false;
+let sniffInterval = null;
 let isListening = false;
 let jammerActive = false;
 let capturedSignals = [];
@@ -845,13 +846,21 @@ async function startSniffing() {
         return;
     }
     
+    // Tell server to start sniffing
+    try {
+        await fetch('/vehicle-ops/api/can/sniff/start', { method: 'POST' });
+    } catch (e) {
+        log('Warning: Could not start server-side sniffer', 'warning');
+    }
+    
     isSniffing = true;
     log('Started CAN sniffing...', 'success');
     
     // Poll for frames
-    const frameInterval = setInterval(async () => {
+    sniffInterval = setInterval(async () => {
         if (!isSniffing) {
-            clearInterval(frameInterval);
+            clearInterval(sniffInterval);
+            sniffInterval = null;
             return;
         }
         
@@ -870,8 +879,18 @@ async function startSniffing() {
     }, 500);
 }
 
-function stopSniffing() {
+async function stopSniffing() {
     isSniffing = false;
+    if (sniffInterval) {
+        clearInterval(sniffInterval);
+        sniffInterval = null;
+    }
+    
+    // Tell server to stop sniffing
+    try {
+        await fetch('/vehicle-ops/api/can/sniff/stop', { method: 'POST' });
+    } catch (e) {}
+    
     log('Stopped CAN sniffing', 'warning');
 }
 
