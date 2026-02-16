@@ -52,6 +52,11 @@ try:
 except ImportError:
     blockchain_c2_bp = None
 
+try:
+    from cyberapp.routes.apple_orchard import apple_orchard_bp
+except ImportError:
+    apple_orchard_bp = None
+
 
 __all__ = [
     'chain_bp',
@@ -65,4 +70,5 @@ __all__ = [
     'automotive_bp',
     'airgap_bp',
     'blockchain_c2_bp',
+    'apple_orchard_bp',
 ]

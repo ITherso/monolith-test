@@ -142,6 +142,9 @@ airgap_bp = _try_import('airgap_bp', lambda: __import__('cyberapp.routes.airgap_
 # Blockchain & Decentralized C2 Module
 blockchain_c2_bp = _try_import('blockchain_c2_bp', lambda: __import__('cyberapp.routes.blockchain_c2', fromlist=['blockchain_c2_bp']).blockchain_c2_bp)
 
+# Apple Orchard - MacOS Operations Module
+apple_orchard_bp = _try_import('apple_orchard_bp', lambda: __import__('cyberapp.routes.apple_orchard', fromlist=['apple_orchard_bp']).apple_orchard_bp)
+
 
 def create_app(run_migrations_on_start=True):
     from flask import Flask
@@ -279,6 +282,9 @@ def create_app(run_migrations_on_start=True):
     
     # Blockchain & Decentralized C2 Module
     if blockchain_c2_bp: app.register_blueprint(blockchain_c2_bp)
+    
+    # Apple Orchard - MacOS Operations Module
+    if apple_orchard_bp: app.register_blueprint(apple_orchard_bp)
     
     # ⚠️ VULNERABLE: CORS misconfiguration
     @app.after_request
