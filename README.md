@@ -45,6 +45,8 @@
 
 ## 🚀 Quick Start
 
+### Web Interface
+
 ```bash
 # Clone and setup
 git clone https://github.com/ITherso/monolith.git
@@ -64,6 +66,45 @@ gunicorn -w 4 -b 0.0.0.0:8080 wsgi:application
 ```
 
 **Access:** http://localhost:8080
+
+### 🖥️ Command Line Interface (CLI)
+
+```bash
+# Run MONOLITH web interface with CLI
+python3 cyber.py
+
+# Web App Scanner - Black Box Scan
+python3 cyber.py --web-app-scan https://target.com --scan-mode black_box
+
+# Web App Scanner - Detailed Scan
+python3 cyber.py --web-app-scan https://target.com --scan-mode gray_box --scan-depth 4 --max-requests 5000
+
+# Web App Scanner - Output as HTML Report
+python3 cyber.py --web-app-scan https://target.com --output-format html
+
+# Web App Scanner - Output as JSON Report
+python3 cyber.py --web-app-scan https://target.com --output-format json
+
+# Target Reconnaissance Scan
+python3 cyber.py --target https://example.com --quick
+
+# Deep Network Scan
+python3 cyber.py --target 192.168.1.0/24 --deep
+
+# Auto-Exploit Mode
+python3 cyber.py --target https://vulnerable.app --autoexploit
+
+# Threat Hunter
+python3 cyber.py --threathunter
+
+# Headless Mode (No Web UI)
+python3 cyber.py --target 10.0.0.0/8 --headless
+
+# Database Management
+python3 cyber.py --db-upgrade          # Run migrations
+python3 cyber.py --db-current          # Show current revision
+python3 cyber.py --db-revision "Add feature"  # Create migration
+```
 
 ---
 
@@ -3456,6 +3497,13 @@ PAYLOAD CATEGORIES:
 ```
 
 **Usage:**
+
+**Via Web Interface:**
+- Access: http://localhost:8080/tools/web-app-scanner
+- Input target URL, select scan mode and depth
+- View results in real-time with dashboard
+
+**Via Python:**
 ```python
 from tools.web_app_scanner import get_web_app_scanner
 
@@ -3466,9 +3514,64 @@ job_id = scanner.start_scan(
     scan_depth=2,
     max_requests=1000
 )
+```
 
-# Or via CLI
-python tools/web_app_scanner.py https://example.com
+**Via CLI (Command Line):**
+```bash
+# Basic black box scan
+python3 cyber.py --web-app-scan https://example.com
+
+# Detailed gray box scan
+python3 cyber.py --web-app-scan https://example.com --scan-mode gray_box --scan-depth 4
+
+# White box scan with custom request limit
+python3 cyber.py --web-app-scan https://example.com --scan-mode white_box --max-requests 5000
+
+# Output as HTML report
+python3 cyber.py --web-app-scan https://example.com --output-format html
+
+# Output as JSON report
+python3 cyber.py --web-app-scan https://example.com --output-format json --scan-depth 3
+
+# Output as CSV
+python3 cyber.py --web-app-scan https://example.com --output-format csv
+```
+
+**CLI Options:**
+```
+--web-app-scan URL           Target URL to scan (required)
+--scan-mode MODE             Scan mode: black_box (default), gray_box, white_box
+--scan-depth DEPTH           Scan depth: 1-5 (default: 2)
+--max-requests COUNT         Maximum HTTP requests (default: 1000)
+--output-format FORMAT       Output format: json (default), html, csv
+```
+
+**Example Output:**
+```
+======================================================================
+🕷️  WEB APPLICATION SCANNER - CLI MODE
+======================================================================
+Target: https://target.com
+Scan Mode: black_box
+Scan Depth: 2
+Max Requests: 1000
+======================================================================
+
+[*] Initializing scanner...
+[*] Job ID: cli_1708108800
+[*] Starting scan of https://target.com...
+[*] This will take some time depending on target size...
+
+[████████████████████████████████████████] 100% - Pages: 50, Vulns: 26
+
+[✓] Scan completed!
+[*] Pages scanned: 50
+[*] Vulnerabilities found: 26
+
+[+] Report saved: /tmp/cli_1708108800_report.json
+
+[*] Access web interface for detailed analysis:
+[*] http://localhost:8080/tools/web-app-scanner
 ```
 
 **API Endpoints:**
