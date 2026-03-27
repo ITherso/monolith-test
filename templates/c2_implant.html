@@ -1214,6 +1214,13 @@ async function generatePayload() {
             sysmon_evade: document.getElementById('gmPySysmonEvade').checked
         };
         
+        // DEBUG: Log what we're sending
+        console.log('🔍 Payload Generation Request:', {
+            type: payloadType,
+            godModeEnabled: godModeEnabled,
+            gmOptions: gmOptions
+        });
+        
         const res = await fetch('/c2/payloads/generate', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

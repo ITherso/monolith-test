@@ -322,22 +322,8 @@ def get_payload_types():
     })
 
 
-@c2_bp.route("/c2/payloads/generate", methods=["POST"])
-def generate_payload():
-    """Generate an implant payload."""
-    if not session.get("logged_in"):
-        return jsonify({"error": "login_required"}), 401
-    
-    data = request.get_json()
-    c2 = get_c2_server()
-    
-    result = c2.generate_payload(
-        listener_id=data.get("listener_id"),
-        payload_type=data.get("type", "python"),
-        options=data.get("options", {})
-    )
-    
-    return jsonify(result)
+# NOTE: Payload generation endpoint moved to c2_beacon.py
+# This route is deprecated - use /c2/payloads/generate from c2_beacon blueprint
 
 
 # ============== Credentials ==============
