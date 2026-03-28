@@ -46,6 +46,7 @@ def create_template():
         doc_type = data.get('doc_type', 'word')
         payload_type = data.get('payload_type', 'reverse_shell')
         custom_payload = data.get('custom_payload')
+        custom_payload_mode = data.get('custom_payload_mode', False)
         
         # Payload parameters
         payload_params = {}
@@ -54,13 +55,19 @@ def create_template():
             if key in data:
                 payload_params[key] = data[key]
         
+        # Custom payload mode: use direct payload instead of auto-generation
+        if custom_payload_mode and payload_params.get('payload'):
+            payload_type = 'custom'
+            # Don't override the custom payload
+        
         injector = get_injector()
         template = injector.create_malicious_template(
             name=name,
             doc_type=DocumentType(doc_type),
-            payload_type=PayloadType(payload_type),
+            payload_type=PayloadType(payload_type) if payload_type != 'custom' else PayloadType('reverse_shell'),
             payload_params=payload_params,
-            custom_payload=custom_payload
+            custom_payload=custom_payload,
+            use_custom_payload_direct=custom_payload_mode
         )
         
         return jsonify({
@@ -68,8 +75,9 @@ def create_template():
             'template_id': template.template_id,
             'name': template.name,
             'doc_type': template.doc_type.value,
-            'payload_type': template.payload_type.value,
-            'payload_preview': template.payload[:200] + '...' if len(template.payload) > 200 else template.payload
+            'payload_type': 'custom' if custom_payload_mode else template.payload_type.value,
+            'payload_preview': template.payload[:200] + '...' if len(template.payload) > 200 else template.payload,
+            'payload_size': len(template.payload)
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

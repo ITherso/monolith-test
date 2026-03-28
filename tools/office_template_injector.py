@@ -351,7 +351,8 @@ End Sub
         doc_type: DocumentType,
         payload_type: PayloadType,
         payload_params: Dict[str, Any] = None,
-        custom_payload: str = None
+        custom_payload: str = None,
+        use_custom_payload_direct: bool = False
     ) -> MaliciousTemplate:
         """
         Create a malicious Office template with embedded macro
@@ -362,6 +363,7 @@ End Sub
             payload_type: Type of payload
             payload_params: Parameters for payload template
             custom_payload: Custom VBA macro code
+            use_custom_payload_direct: If True, use payload_params['payload'] directly as VBA
             
         Returns:
             MaliciousTemplate object
@@ -369,9 +371,14 @@ End Sub
         payload_params = payload_params or {}
         
         # Get or create payload
-        if custom_payload:
+        if use_custom_payload_direct and payload_params.get('payload'):
+            # Direct custom payload mode - use payload as-is
+            payload = payload_params['payload']
+        elif custom_payload:
+            # Custom VBA macro wrapper
             payload = custom_payload
         else:
+            # Auto-generation mode
             payload_template = self.MACRO_PAYLOADS.get(payload_type, "")
             
             # Encode PowerShell payload if needed
@@ -396,7 +403,7 @@ End Sub
         )
         
         self._save_template(template)
-        logger.info(f"📄 Created malicious template: {name}")
+        logger.info(f"📄 Created malicious template: {name} (custom_payload_direct={use_custom_payload_direct})")
         
         return template
     
