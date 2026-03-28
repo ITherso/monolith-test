@@ -308,22 +308,8 @@ def cancel_task(task_id):
 
 # ============== Payload Generation ==============
 
-@c2_bp.route("/c2/payloads/types")
-def get_payload_types():
-    """Get available payload types."""
-    if not session.get("logged_in"):
-        return jsonify({"error": "login_required"}), 401
-    
-    c2 = get_c2_server()
-    types = c2.get_payload_types()
-    return jsonify({
-        "success": True,
-        "types": types
-    })
-
-
-# NOTE: Payload generation endpoint moved to c2_beacon.py
-# This route is deprecated - use /c2/payloads/generate from c2_beacon blueprint
+# NOTE: All payload generation endpoints moved to c2_beacon.py
+# Use /c2/payloads/types and /c2/payloads/generate from beacon_bp
 
 
 # ============== Credentials ==============
