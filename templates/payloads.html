@@ -578,8 +578,14 @@
                     {% if payload_html %}
                     <div class="payload-output">
                         <div class="output-header">
-                            <span class="output-title">reverse_shell.{{ payload_type }}</span>
-                            <span class="output-size">{{ payload_html|length }} bytes</span>
+                            <span class="output-title">{% if payload_info %}{{ payload_info.type }}_beacon{% else %}reverse_shell.{{ payload_type }}{% endif %}</span>
+                            <span class="output-size">
+                                {% if payload_info %}
+                                    {{ payload_info.size }} bytes - {{ payload_info.features }}
+                                {% else %}
+                                    {{ payload_html|length }} bytes
+                                {% endif %}
+                            </span>
                         </div>
                         <div class="output-code">
                             <pre id="payloadCode">{{ payload_html|safe }}</pre>
@@ -591,7 +597,7 @@
                             <line x1="12" y1="9" x2="12" y2="13"/>
                             <line x1="12" y1="17" x2="12.01" y2="17"/>
                         </svg>
-                        <span>Warning: Use this payload only in authorized testing environments!</span>
+                        <span>{% if payload_info %}🚀 Elite Beacon with God Mode Anti-Forensics enabled!{% else %}Warning: Use this payload only in authorized testing environments!{% endif %}</span>
                     </div>
                     {% else %}
                     <div class="empty-output">

