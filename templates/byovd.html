@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block title %}BYOVD Module - EDR Killer - CyberPulse Pro{% endblock %}
+
+{% block head %}
+<style>
+    .driver-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .driver-card:hover, .driver-card.selected {
+        border-color: #dc3545;
+        box-shadow: 0 0 25px rgba(220, 53, 69, 0.4);
+    }
+    .driver-card.selected {
+        background: linear-gradient(135deg, #2a1a1e 0%, #261316 100%);
+    }
+    .edr-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 15px;
+        border-radius: 20px;
+        margin: 5px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .edr-badge.defender { background: rgba(0, 120, 215, 0.2); border: 1px solid #0078d7; }
+    .edr-badge.crowdstrike { background: rgba(255, 0, 0, 0.2); border: 1px solid #ff0000; }
+    .edr-badge.sentinelone { background: rgba(108, 0, 250, 0.2); border: 1px solid #6c00fa; }
+    .edr-badge.carbonblack { background: rgba(0, 0, 0, 0.4); border: 1px solid #666; }
+    .edr-badge.sophos { background: rgba(0, 100, 200, 0.2); border: 1px solid #0064c8; }
+    .edr-badge.selected { box-shadow: 0 0 15px currentColor; }
+    
+    .capability-tag {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        margin: 2px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+    .reliability-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: #333;
+        overflow: hidden;
+    }
+    .reliability-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+    .terminal-output {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        min-height: 300px;
+        max-height: 500px;
+        overflow-y: auto;
+        color: #00ff00;
+    }
+    .kernel-mode {
+        background: linear-gradient(45deg, #ff0000, #ff6600);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: bold;
+    }
+    .warning-banner {
+        background: linear-gradient(90deg, rgba(255,0,0,0.2) 0%, rgba(255,100,0,0.2) 100%);
+        border: 1px solid rgba(255, 0, 0, 0.5);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Warning Banner -->
+    <div class="warning-banner">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-radiation fa-2x text-danger me-3"></i>
+            <div>
+                <h5 class="text-danger mb-1">⚠️ KERNEL-LEVEL OPERATIONS</h5>
+                <p class="text-muted mb-0">BYOVD attacks operate at Ring 0. Improper use can cause system instability or BSOD.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-gradient mb-2">
+                        <i class="fas fa-skull me-3"></i>BYOVD Module
+                    </h1>
+                    <p class="text-muted mb-0">
+                        <span class="kernel-mode">Bring Your Own Vulnerable Driver</span> • Kernel-level EDR termination
+                    </p>
+                </div>
+                <span class="badge bg-danger px-3 py-2">
+                    <i class="fas fa-microchip me-2"></i>RING 0
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Configuration -->
+        <div class="col-lg-5">
+            <!-- Target -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-danger bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-crosshairs me-2"></i>Target System</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Target IP/Hostname</label>
+                        <input type="text" class="form-control bg-dark text-white" id="targetHost" 
+                               placeholder="192.168.1.100 or WORKSTATION-01">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control bg-dark text-white" id="targetUser" 
+                                   placeholder="Administrator">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control bg-dark text-white" id="targetPass">
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-danger w-100 mt-3" onclick="detectEDR()">
+                        <i class="fas fa-search me-2"></i>Detect EDR Products
+                    </button>
+                </div>
+            </div>
+
+            <!-- EDR Selection -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Target EDR Products</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Select EDR products to terminate</p>
+                    <div id="edrContainer">
+                        <span class="edr-badge defender" onclick="toggleEDR(this, 'windows_defender')">
+                            <i class="fab fa-windows me-2"></i>Windows Defender
+                        </span>
+                        <span class="edr-badge crowdstrike" onclick="toggleEDR(this, 'crowdstrike')">
+                            <i class="fas fa-crow me-2"></i>CrowdStrike
+                        </span>
+                        <span class="edr-badge sentinelone" onclick="toggleEDR(this, 'sentinelone')">
+                            <i class="fas fa-satellite me-2"></i>SentinelOne
+                        </span>
+                        <span class="edr-badge carbonblack" onclick="toggleEDR(this, 'carbon_black')">
+                            <i class="fas fa-cube me-2"></i>Carbon Black
+                        </span>
+                        <span class="edr-badge sophos" onclick="toggleEDR(this, 'sophos')">
+                            <i class="fas fa-shield-virus me-2"></i>Sophos
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driver Selection -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-hdd me-2"></i>Vulnerable Driver</h5>
+                </div>
+                <div class="card-body" id="driverContainer">
+                    <!-- Drivers loaded dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Output & Actions -->
+        <div class="col-lg-7">
+            <!-- Quick Actions -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-danger bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Attack Operations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-warning w-100 mb-2" onclick="generatePayload()">
+                                <i class="fas fa-code me-2"></i>Generate Payload
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-info w-100 mb-2" onclick="deployDriver()">
+                                <i class="fas fa-upload me-2"></i>Deploy Driver
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-danger w-100 mb-2" onclick="killEDR()">
+                                <i class="fas fa-skull-crossbones me-2"></i>Kill EDR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Capabilities Info -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>Driver Capabilities</h5>
+                </div>
+                <div class="card-body" id="capabilitiesInfo">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="p-3 bg-dark rounded">
+                                <i class="fas fa-eye fa-2x text-info mb-2"></i>
+                                <p class="mb-0 small">Kernel Read</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-dark rounded">
+                                <i class="fas fa-pen fa-2x text-warning mb-2"></i>
+                                <p class="mb-0 small">Kernel Write</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-dark rounded">
+                                <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                                <p class="mb-0 small">Kill Process</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Output -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-secondary bg-opacity-25 d-flex justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-terminal me-2"></i>Kernel Terminal</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearOutput()">
+                        <i class="fas fa-trash me-1"></i>Clear
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="terminal-output" id="terminalOutput">
+<span style="color: #ff6600;">╔══════════════════════════════════════════════════════════╗
+║             BYOVD Module - EDR Killer v1.0               ║
+║           Kernel-Level Security Bypass Engine            ║
+╚══════════════════════════════════════════════════════════╝</span>
+
+<span style="color: #888;">[*] Module initialized</span>
+<span style="color: #888;">[*] Vulnerable driver database loaded</span>
+<span style="color: #888;">[*] EDR signatures loaded</span>
+
+<span style="color: #ff0;">[!] WARNING: Operations at Ring 0 level</span>
+<span style="color: #ff0;">[!] Improper use may cause BSOD</span>
+
+<span style="color: #0f0;">[+] Ready for kernel operations</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedDriver = null;
+let selectedEDRs = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDrivers();
+});
+
+function loadDrivers() {
+    fetch('/byovd/api/drivers')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('driverContainer');
+            container.innerHTML = data.drivers.map(d => `
+                <div class="driver-card" onclick="selectDriver('${d.id}', this)" data-driver="${d.id}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${d.name}</h6>
+                            <p class="text-muted small mb-2">${d.vendor}</p>
+                            <span class="badge bg-danger">${d.cve}</span>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">Reliability</small>
+                            <div class="reliability-bar" style="width: 80px;">
+                                <div class="reliability-fill" style="width: ${d.reliability * 100}%; background: ${d.reliability > 0.8 ? '#00ff00' : d.reliability > 0.5 ? '#ffff00' : '#ff0000'};"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        ${d.capabilities.map(c => `<span class="capability-tag">${c}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+function selectDriver(driverId, element) {
+    document.querySelectorAll('.driver-card').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedDriver = driverId;
+    appendOutput(`[*] Selected driver: ${driverId}`);
+}
+
+function toggleEDR(element, edrId) {
+    element.classList.toggle('selected');
+    if (selectedEDRs.includes(edrId)) {
+        selectedEDRs = selectedEDRs.filter(e => e !== edrId);
+    } else {
+        selectedEDRs.push(edrId);
+    }
+    appendOutput(`[*] Target EDRs: ${selectedEDRs.join(', ') || 'none'}`);
+}
+
+function detectEDR() {
+    const target = document.getElementById('targetHost').value;
+    if (!target) {
+        alert('Please enter target host');
+        return;
+    }
+    
+    appendOutput(`\n[*] Scanning ${target} for EDR products...`);
+    
+    fetch('/byovd/api/detect-edr', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target: target,
+            credentials: {
+                username: document.getElementById('targetUser').value,
+                password: document.getElementById('targetPass').value
+            }
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.detected_edr && data.detected_edr.length > 0) {
+            appendOutput(`[+] Detected EDR products:`);
+            data.detected_edr.forEach(edr => {
+                appendOutput(`    - ${edr}`);
+            });
+        } else {
+            appendOutput(`[-] No EDR products detected`);
+        }
+    });
+}
+
+function generatePayload() {
+    if (!selectedDriver) {
+        alert('Please select a vulnerable driver');
+        return;
+    }
+    
+    appendOutput(`\n[*] Generating BYOVD payload with ${selectedDriver}...`);
+    
+    fetch('/byovd/api/generate-payload', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            driver: selectedDriver,
+            edr_products: selectedEDRs
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.payload) {
+            appendOutput(`[+] Payload generated successfully`);
+            appendOutput(`[+] Size: ${data.payload.length} bytes`);
+            appendOutput(`[+] Target processes: ${selectedEDRs.length}`);
+        }
+    });
+}
+
+function deployDriver() {
+    const target = document.getElementById('targetHost').value;
+    if (!target || !selectedDriver) {
+        alert('Please enter target and select driver');
+        return;
+    }
+    
+    appendOutput(`\n[*] Deploying vulnerable driver to ${target}...`);
+    appendOutput(`[*] Loading ${selectedDriver}.sys into kernel...`);
+    
+    fetch('/byovd/api/deploy', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target: target,
+            driver: selectedDriver,
+            credentials: {
+                username: document.getElementById('targetUser').value,
+                password: document.getElementById('targetPass').value
+            }
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            appendOutput(`[+] Driver loaded successfully!`);
+            appendOutput(`[+] Device handle: ${data.handle || '\\\\.\\'+ selectedDriver}`);
+        } else {
+            appendOutput(`[-] Deployment failed: ${data.error}`);
+        }
+    });
+}
+
+function killEDR() {
+    if (!confirm('⚠️ This will terminate EDR processes at kernel level. Continue?')) {
+        return;
+    }
+    
+    const target = document.getElementById('targetHost').value;
+    if (!target || !selectedDriver || selectedEDRs.length === 0) {
+        alert('Please configure target, driver, and select EDR products');
+        return;
+    }
+    
+    appendOutput(`\n<span style="color: #ff0000;">[!] INITIATING EDR TERMINATION</span>`);
+    appendOutput(`[*] Target: ${target}`);
+    appendOutput(`[*] Driver: ${selectedDriver}`);
+    appendOutput(`[*] EDR targets: ${selectedEDRs.join(', ')}`);
+    
+    selectedEDRs.forEach((edr, i) => {
+        setTimeout(() => {
+            appendOutput(`[*] Killing ${edr} processes...`);
+            
+            fetch('/byovd/api/kill-edr', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    target: target,
+                    edr_product: edr,
+                    driver: selectedDriver,
+                    credentials: {
+                        username: document.getElementById('targetUser').value,
+                        password: document.getElementById('targetPass').value
+                    }
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    appendOutput(`<span style="color: #00ff00;">[+] ${edr} TERMINATED ☠️</span>`);
+                } else {
+                    appendOutput(`<span style="color: #ff0000;">[-] Failed to kill ${edr}</span>`);
+                }
+            });
+        }, i * 1000);
+    });
+}
+
+function appendOutput(text) {
+    const output = document.getElementById('terminalOutput');
+    output.innerHTML += '\n' + text;
+    output.scrollTop = output.scrollHeight;
+}
+
+function clearOutput() {
+    document.getElementById('terminalOutput').innerHTML = '[*] Terminal cleared\n[+] Ready';
+}
+</script>
+{% endblock %}

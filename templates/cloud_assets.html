@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Cloud Assets Discovery - Monolith{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+    <div style="margin-bottom: 30px;">
+        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 10px;">☁️ Cloud Assets Discovery</h1>
+        <p style="color: #94a3b8;">Multi-cloud asset enumeration and misconfiguration scanner</p>
+    </div>
+    
+    <!-- Scan Form -->
+    <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px;">Select Cloud Providers</h3>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; cursor: pointer;">
+                <input type="checkbox" id="aws" value="aws" style="width: 20px; height: 20px;">
+                <div>
+                    <div style="font-weight: 600; color: #f59e0b;">AWS</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8;">Amazon Web Services</div>
+                </div>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; cursor: pointer;">
+                <input type="checkbox" id="azure" value="azure" style="width: 20px; height: 20px;">
+                <div>
+                    <div style="font-weight: 600; color: #3b82f6;">Azure</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8;">Microsoft Azure</div>
+                </div>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; cursor: pointer;">
+                <input type="checkbox" id="gcp" value="gcp" style="width: 20px; height: 20px;">
+                <div>
+                    <div style="font-weight: 600; color: #10b981;">GCP</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8;">Google Cloud Platform</div>
+                </div>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; cursor: pointer;">
+                <input type="checkbox" id="kubernetes" value="kubernetes" style="width: 20px; height: 20px;">
+                <div>
+                    <div style="font-weight: 600; color: #8b5cf6;">Kubernetes</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8;">K8s Clusters</div>
+                </div>
+            </label>
+        </div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #94a3b8; font-size: 0.9rem;">Scan Type</label>
+                <select id="scanType" style="padding: 10px 20px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; color: #e2e8f0;">
+                    <option value="quick">Quick Scan</option>
+                    <option value="full">Full Scan</option>
+                    <option value="deep">Deep Scan</option>
+                </select>
+            </div>
+            <button onclick="startScan()" style="margin-top: 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: 600;">🚀 Start Scan</button>
+        </div>
+    </div>
+    
+    <!-- Scan Status -->
+    <div id="scanStatus" style="display: none; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 15px;">Scan Progress</h3>
+        <p><strong>Job ID:</strong> <span id="jobId">-</span></p>
+        <p><strong>Providers:</strong> <span id="statusProviders">-</span></p>
+        <p><strong>Assets Found:</strong> <span id="assetCount">0</span> | <strong>IAM Findings:</strong> <span id="iamCount">0</span></p>
+        <div style="height: 8px; background: rgba(15, 23, 42, 0.6); border-radius: 4px; overflow: hidden; margin: 15px 0;">
+            <div id="progressBar" style="height: 100%; background: linear-gradient(90deg, #10b981, #3b82f6); transition: width 0.3s ease; width: 0%"></div>
+        </div>
+        <p style="text-align: center; color: #94a3b8;" id="progressText">0%</p>
+    </div>
+    
+    <!-- Results Summary -->
+    <div id="resultsSummary" style="display: none; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 30px;">
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #8b5cf6; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Total</div>
+            <div id="totalCount" style="font-size: 2rem; font-weight: 700; color: #8b5cf6; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #ef4444; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Critical</div>
+            <div id="criticalCount" style="font-size: 2rem; font-weight: 700; color: #ef4444; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #f59e0b; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">High</div>
+            <div id="highCount" style="font-size: 2rem; font-weight: 700; color: #f59e0b; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #eab308; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Medium</div>
+            <div id="mediumCount" style="font-size: 2rem; font-weight: 700; color: #eab308; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #06b6d4; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Public</div>
+            <div id="publicCount" style="font-size: 2rem; font-weight: 700; color: #06b6d4; margin: 10px 0;">0</div>
+        </div>
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid #f43f5e; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Unencrypted</div>
+            <div id="unencryptedCount" style="font-size: 2rem; font-weight: 700; color: #f43f5e; margin: 10px 0;">0</div>
+        </div>
+    </div>
+    
+    <!-- Results Tabs -->
+    <div id="resultsContainer" style="display: none;">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid rgba(148, 163, 184, 0.1);">
+            <button class="tab-btn active" onclick="switchTab('assets')" style="background: transparent; border: none; color: #10b981; padding: 12px 24px; cursor: pointer; font-weight: 600; border-bottom: 2px solid #10b981; margin-bottom: -2px;">☁️ Assets</button>
+            <button class="tab-btn" onclick="switchTab('iam')" style="background: transparent; border: none; color: #94a3b8; padding: 12px 24px; cursor: pointer; font-weight: 600;">🔐 IAM Findings</button>
+        </div>
+        
+        <div id="assetsTab" class="tab-content" style="display: block;"></div>
+        <div id="iamTab" class="tab-content" style="display: none;"></div>
+    </div>
+</div>
+
+<script>
+let currentJobId = null;
+let pollInterval = null;
+
+function startScan() {
+    const providers = [];
+    if (document.getElementById('aws').checked) providers.push('aws');
+    if (document.getElementById('azure').checked) providers.push('azure');
+    if (document.getElementById('gcp').checked) providers.push('gcp');
+    if (document.getElementById('kubernetes').checked) providers.push('kubernetes');
+    
+    const scanType = document.getElementById('scanType').value;
+    
+    if (providers.length === 0) {
+        alert('Please select at least one provider');
+        return;
+    }
+    
+    fetch('/tools/api/cloud-assets/scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({providers: providers, scan_type: scanType})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentJobId = data.job_id;
+            document.getElementById('jobId').textContent = data.job_id;
+            document.getElementById('statusProviders').textContent = data.providers.join(', ').toUpperCase();
+            document.getElementById('scanStatus').style.display = 'block';
+            document.getElementById('resultsSummary').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'none';
+            
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(checkStatus, 2000);
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => alert('Error starting scan: ' + error));
+}
+
+function checkStatus() {
+    if (!currentJobId) return;
+    
+    fetch(`/tools/api/cloud-assets/status/${currentJobId}`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('progressBar').style.width = data.progress + '%';
+        document.getElementById('progressText').textContent = data.progress + '%';
+        document.getElementById('assetCount').textContent = data.asset_count;
+        document.getElementById('iamCount').textContent = data.iam_findings_count;
+        
+        if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            loadResults();
+        } else if (data.status === 'failed') {
+            clearInterval(pollInterval);
+            alert('Scan failed: ' + data.error_message);
+        }
+    })
+    .catch(error => console.error('Error checking status:', error));
+}
+
+function loadResults() {
+    fetch(`/tools/api/cloud-assets/results/${currentJobId}`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('totalCount').textContent = data.summary.total_assets;
+        document.getElementById('criticalCount').textContent = data.summary.critical_risk;
+        document.getElementById('highCount').textContent = data.summary.high_risk;
+        document.getElementById('mediumCount').textContent = data.summary.medium_risk;
+        document.getElementById('publicCount').textContent = data.summary.public_assets;
+        document.getElementById('unencryptedCount').textContent = data.summary.unencrypted;
+        
+        document.getElementById('resultsSummary').style.display = 'grid';
+        document.getElementById('resultsContainer').style.display = 'block';
+        
+        displayAssets(data.assets);
+        displayIAM(data.iam_findings);
+    })
+    .catch(error => console.error('Error loading results:', error));
+}
+
+function displayAssets(assets) {
+    const container = document.getElementById('assetsTab');
+    container.innerHTML = '';
+    
+    const riskColors = {critical: '#ef4444', high: '#f59e0b', medium: '#eab308', low: '#3b82f6', info: '#94a3b8'};
+    const providerColors = {aws: '#f59e0b', azure: '#3b82f6', gcp: '#10b981', kubernetes: '#8b5cf6'};
+    
+    assets.forEach(asset => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid ' + riskColors[asset.risk_level] + '; border-radius: 12px; padding: 20px; margin-bottom: 15px;';
+        
+        const misconfigs = asset.misconfiguration.length > 0 ? 
+            '<div style="margin-top: 15px;"><strong style="color: #ef4444;">⚠️ Misconfigurations:</strong><ul style="margin: 10px 0; padding-left: 20px;">' + 
+            asset.misconfiguration.map(m => '<li style="color: #fca5a5; margin: 5px 0;">' + m + '</li>').join('') + 
+            '</ul></div>' : '';
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <strong style="font-size: 1.1rem; color: #e2e8f0;">${asset.name}</strong>
+                    <span style="padding: 4px 10px; background: rgba(${providerColors[asset.provider] === '#f59e0b' ? '245, 158, 11' : providerColors[asset.provider] === '#3b82f6' ? '59, 130, 246' : providerColors[asset.provider] === '#10b981' ? '16, 185, 129' : '139, 92, 246'}, 0.2); color: ${providerColors[asset.provider]}; border-radius: 12px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">${asset.provider}</span>
+                </div>
+                <span style="padding: 4px 12px; background: rgba(${riskColors[asset.risk_level] === '#ef4444' ? '239, 68, 68' : riskColors[asset.risk_level] === '#f59e0b' ? '245, 158, 11' : riskColors[asset.risk_level] === '#eab308' ? '234, 179, 8' : riskColors[asset.risk_level] === '#3b82f6' ? '59, 130, 246' : '148, 163, 184'}, 0.2); color: ${riskColors[asset.risk_level]}; border-radius: 12px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">${asset.risk_level}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 15px 0;">
+                <div><strong style="color: #94a3b8;">Type:</strong> <span style="color: #e2e8f0;">${asset.asset_type}</span></div>
+                <div><strong style="color: #94a3b8;">Region:</strong> <span style="color: #e2e8f0;">${asset.region || 'N/A'}</span></div>
+                <div><strong style="color: #94a3b8;">ID:</strong> <code style="color: #10b981; font-size: 0.85rem;">${asset.asset_id}</code></div>
+            </div>
+            <div style="display: flex; gap: 20px; margin-top: 15px;">
+                ${asset.public_access ? '<span style="color: #ef4444;">🌐 Public Access</span>' : '<span style="color: #10b981;">🔒 Private</span>'}
+                ${asset.encryption_enabled ? '<span style="color: #10b981;">🔐 Encrypted</span>' : '<span style="color: #f59e0b;">⚠️ Not Encrypted</span>'}
+            </div>
+            ${misconfigs}
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+function displayIAM(findings) {
+    const container = document.getElementById('iamTab');
+    container.innerHTML = '';
+    
+    if (findings.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">No IAM findings</p>';
+        return;
+    }
+    
+    const riskColors = {critical: '#ef4444', high: '#f59e0b', medium: '#eab308', low: '#3b82f6'};
+    
+    findings.forEach(finding => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-left: 4px solid ' + riskColors[finding.risk_level] + '; border-radius: 12px; padding: 20px; margin-bottom: 15px;';
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 10px;">
+                <strong style="font-size: 1.1rem; color: #e2e8f0;">${finding.finding_type.replace('_', ' ').toUpperCase()}</strong>
+                <span style="padding: 4px 12px; background: rgba(${riskColors[finding.risk_level] === '#ef4444' ? '239, 68, 68' : riskColors[finding.risk_level] === '#f59e0b' ? '245, 158, 11' : '234, 179, 8'}, 0.2); color: ${riskColors[finding.risk_level]}; border-radius: 12px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">${finding.risk_level}</span>
+            </div>
+            <p style="color: #cbd5e1; margin: 10px 0;">${finding.description}</p>
+            <div style="margin: 10px 0; padding: 10px; background: rgba(15, 23, 42, 0.6); border-radius: 6px; font-family: monospace; font-size: 0.85rem; color: #94a3b8;">${finding.principal}</div>
+            <div style="margin-top: 15px; padding: 15px; background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; border-radius: 6px;">
+                <strong style="color: #10b981;">💡 Remediation:</strong>
+                <p style="color: #cbd5e1; margin-top: 5px;">${finding.remediation}</p>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.style.color = '#94a3b8';
+        btn.style.borderBottom = 'none';
+    });
+    event.target.style.color = '#10b981';
+    event.target.style.borderBottom = '2px solid #10b981';
+    
+    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+    document.getElementById(tab + 'Tab').style.display = 'block';
+}
+</script>
+{% endblock %}

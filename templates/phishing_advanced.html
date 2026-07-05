@@ -1,0 +1,2271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Campaigns - Shadow Arsenal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --primary-dim: #00ff8840;
+            --primary-glow: #00ff8880;
+            --danger: #ff3366;
+            --danger-dim: #ff336640;
+            --warning: #ffaa00;
+            --warning-dim: #ffaa0040;
+            --info: #00d4ff;
+            --info-dim: #00d4ff40;
+            --gold: #ffd700;
+            --gold-dim: #ffd70040;
+            --gold-bright: #ffeb3b;
+            --purple: #b366ff;
+            --purple-dim: #b366ff40;
+            --cyan: #00ffff;
+            --pink: #ff66b2;
+            --bg-dark: #0a0a12;
+            --bg-sidebar: rgba(15, 15, 25, 0.98);
+            --bg-card: rgba(18, 18, 30, 0.95);
+            --text-primary: #f0f0f0;
+            --text-muted: #b0b0c0;
+            --text-bright: #ffffff;
+            --sidebar-width: 260px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: var(--gold) var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        *::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        
+        *::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 4px;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #0d0d1a 50%, #1a1a2e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(153, 51, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 170, 0, 0.02) 0%, transparent 50%);
+            animation: bgPulse 15s ease-in-out infinite;
+        }
+        
+        @keyframes bgPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+        }
+        
+        .layout-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid rgba(255, 215, 0, 0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        
+        .sidebar-brand i {
+            font-size: 1.8em;
+            color: var(--danger);
+            filter: drop-shadow(0 0 10px rgba(255, 51, 102, 0.5));
+        }
+        
+        .sidebar-brand span {
+            font-size: 1.4em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #ff3366, var(--purple), var(--info));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+        
+        .nav-item {
+            list-style: none;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 25px;
+            color: var(--text-primary) !important;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--gold) !important;
+            border-left-color: var(--gold);
+        }
+        
+        .nav-link.active {
+            background: rgba(255, 215, 0, 0.15);
+            color: var(--gold) !important;
+            border-left: 3px solid var(--gold);
+        }
+        
+        .nav-link i {
+            width: 24px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .nav-link.golden-link {
+            color: var(--gold) !important;
+        }
+        
+        .nav-link.golden-link:hover, .nav-link.golden-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--gold) !important;
+            border-left-color: var(--gold);
+        }
+        
+        .nav-link.attack-link {
+            color: var(--info) !important;
+        }
+        
+        .nav-link.attack-link:hover, .nav-link.attack-link.active {
+            background: rgba(0, 170, 255, 0.1);
+            color: var(--info) !important;
+            border-left-color: var(--info);
+        }
+        
+        .nav-link.c2-link {
+            color: var(--primary) !important;
+        }
+        
+        .nav-link.c2-link:hover, .nav-link.c2-link.active {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--primary) !important;
+            border-left-color: var(--primary);
+        }
+        
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .user-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .user-name i {
+            color: var(--primary);
+        }
+        
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            color: var(--gold);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 30px 40px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cyber-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        
+        .cyber-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.1);
+        }
+        
+        .card-header-cyber {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            padding: 15px 20px;
+        }
+        
+        .card-title-cyber {
+            color: var(--gold);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title-gold {
+            color: var(--gold);
+        }
+        
+        .card-title-purple {
+            color: var(--purple);
+        }
+        
+        .card-title-danger {
+            color: var(--danger);
+        }
+        
+        .card-title-info {
+            color: var(--info);
+        }
+        
+        .card-title-primary {
+            color: var(--primary);
+        }
+        
+        .stat-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: translateY(-5px);
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), #ffaa00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-value.success {
+            background: linear-gradient(135deg, var(--primary), #00cc6a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-value.danger {
+            background: linear-gradient(135deg, var(--danger), #ff3366);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+        }
+        
+        .form-control-cyber {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control-cyber:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        .form-control-cyber::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .form-label-cyber {
+            color: var(--gold);
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        
+        .cyber-label {
+            color: var(--gold-bright) !important;
+            font-weight: 700;
+            font-size: 0.95em;
+            margin-bottom: 10px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        
+        .cyber-label i {
+            color: var(--gold);
+            margin-right: 8px;
+        }
+        
+        .cyber-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 215, 0, 0.4);
+            color: var(--text-bright) !important;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .cyber-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.4), inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.8);
+            outline: none;
+        }
+        
+        .cyber-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .cyber-input option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        .btn-cyber {
+            border: none;
+            color: #000;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 10px;
+            padding: 12px 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-cyber-gold {
+            background: linear-gradient(135deg, var(--gold) 0%, #ffaa00 100%);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        .btn-cyber-gold:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.6);
+        }
+        
+        .btn-cyber-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+        }
+        
+        .btn-cyber-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.6);
+        }
+        
+        .btn-cyber-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #cc0033 100%);
+            box-shadow: 0 5px 20px rgba(255, 0, 68, 0.4);
+            color: #fff;
+        }
+        
+        .btn-cyber-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 0, 68, 0.6);
+        }
+        
+        .btn-cyber-info {
+            background: linear-gradient(135deg, var(--info) 0%, #0077cc 100%);
+            box-shadow: 0 5px 20px rgba(0, 170, 255, 0.4);
+        }
+        
+        .btn-cyber-info:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(0, 170, 255, 0.6);
+        }
+        
+        .btn-cyber-purple {
+            background: linear-gradient(135deg, var(--purple) 0%, #7a00cc 100%);
+            box-shadow: 0 5px 20px rgba(153, 51, 255, 0.4);
+            color: #fff;
+        }
+        
+        .btn-cyber-purple:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(153, 51, 255, 0.6);
+        }
+        
+        .btn-outline-gold {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+        }
+        
+        .btn-outline-gold:hover {
+            background: var(--gold);
+            color: #000;
+        }
+        
+        .btn-outline-purple {
+            background: transparent;
+            border: 2px solid var(--purple);
+            color: var(--purple);
+        }
+        
+        .btn-outline-purple:hover {
+            background: var(--purple);
+            color: #fff;
+        }
+        
+        .template-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .template-card:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: var(--gold);
+            transform: translateY(-3px);
+        }
+        
+        .template-card.selected {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .template-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .template-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .template-name i {
+            color: var(--gold);
+        }
+        
+        .template-type {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .type-email {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+        }
+        
+        .type-landing {
+            background: rgba(153, 51, 255, 0.2);
+            border: 1px solid var(--purple);
+            color: var(--purple);
+        }
+        
+        .template-description {
+            color: var(--text-muted);
+            font-size: 0.92em;
+            line-height: 1.5;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .campaign-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .campaign-card:hover {
+            border-color: var(--gold);
+        }
+        
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .campaign-id {
+            font-family: monospace;
+            color: var(--gold);
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .status-pending {
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+        
+        .status-completed {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+        }
+        
+        .campaign-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .campaign-stat {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+        
+        .campaign-stat-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        
+        .campaign-stat-label {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .progress-cyber {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-cyber {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), #ffaa00);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 12px 25px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: var(--gold);
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 170, 0, 0.2));
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        
+        /* Cyber Switch */
+        .cyber-switch {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        
+        .cyber-switch input {
+            display: none;
+        }
+        
+        .cyber-switch .slider {
+            width: 50px;
+            height: 26px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 13px;
+            position: relative;
+            transition: 0.3s;
+        }
+        
+        .cyber-switch .slider::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: 0.3s;
+        }
+        
+        .cyber-switch input:checked + .slider {
+            background: var(--gold);
+        }
+        
+        .cyber-switch input:checked + .slider::before {
+            transform: translateX(24px);
+        }
+        
+        .cyber-switch .switch-label {
+            color: var(--text-primary);
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+        
+        /* Notification animation */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .input-icon {
+            position: relative;
+        }
+        
+        .input-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold);
+        }
+        
+        .input-icon .form-control {
+            padding-left: 45px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-state i {
+            font-size: 3em;
+            color: rgba(255, 215, 0, 0.3);
+            margin-bottom: 15px;
+        }
+        
+        .empty-state p {
+            color: var(--text-muted);
+        }
+        
+        .credential-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .credential-table th {
+            text-align: left;
+            padding: 12px 15px;
+            color: var(--gold);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .credential-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .credential-table tr:hover {
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 80px;
+            }
+            
+            .sidebar-brand span,
+            .nav-link span,
+            .user-name span {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 80px;
+            }
+            
+            .nav-link {
+                justify-content: center;
+                padding: 14px;
+            }
+            
+            .nav-link i {
+                margin: 0;
+            }
+            
+            .campaign-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation"></div>
+    
+    <!-- Layout Container -->
+    <div class="layout-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="sidebar-brand">
+                    <i class="fas fa-skull-crossbones"></i>
+                    <span>SHADOW ARSENAL</span>
+                </a>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scans">
+                            <i class="fas fa-radar"></i>
+                            <span>Scans</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kerberos">
+                            <i class="fas fa-key"></i>
+                            <span>Kerberos</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/infra">
+                            <i class="fas fa-server"></i>
+                            <span>Infrastructure</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/exploits">
+                            <i class="fas fa-bug"></i>
+                            <span>Exploits</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active golden-link" href="/phishing">
+                            <i class="fas fa-envelope"></i>
+                            <span>Phishing</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/golden">
+                            <i class="fas fa-gem"></i>
+                            <span>Golden Ticket</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link attack-link" href="/attack-graph">
+                            <i class="fas fa-project-diagram"></i>
+                            <span>Attack Graph</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link c2-link" href="/c2">
+                            <i class="fas fa-microchip"></i>
+                            <span>C2 Implant</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/decentralized">
+                            <i class="fas fa-project-diagram"></i>
+                            <span>DeFi Pentest</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-name">
+                        <i class="fas fa-user-shield"></i>
+                        <span>{{ session.get('user') }}</span>
+                    </div>
+                </div>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="cyber-card p-4 fade-in">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                            <div>
+                                <h2 class="mb-2" style="display: flex; align-items: center; gap: 15px;">
+                                    <i class="fas fa-envelope-open-text" style="color: var(--gold); font-size: 1.5em;"></i>
+                                    <span style="background: linear-gradient(90deg, var(--gold), #ffaa00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">PHISHING CAMPAIGNS</span>
+                                </h2>
+                                <p class="mb-0" style="color: var(--text-primary); font-size: 1em;">
+                                    <i class="fas fa-robot me-2" style="color: var(--purple);"></i>AI-powered social engineering and credential harvesting
+                                </p>
+                            </div>
+                            <div class="d-flex gap-3 mt-3 mt-md-0">
+                                <button class="btn btn-outline-gold" onclick="exportCampaigns()">
+                                    <i class="fas fa-download me-2"></i>Export Report
+                                </button>
+                                <button class="btn-cyber btn-cyber-gold" onclick="showTab('new')">
+                                    <i class="fas fa-plus me-2"></i>New Campaign
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card fade-in">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Total Campaigns</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card fade-in">
+                        <div class="stat-value success">847</div>
+                        <div class="stat-label">Emails Sent</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card fade-in">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">Credentials</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card fade-in">
+                        <div class="stat-value" style="background: linear-gradient(135deg, var(--purple), #7a00cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">18.4%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="tab-container fade-in">
+                <button class="tab-btn active" onclick="showTab('campaigns', this)">
+                    <i class="fas fa-list"></i> Campaigns
+                </button>
+                <button class="tab-btn" onclick="showTab('new', this)">
+                    <i class="fas fa-plus-circle"></i> New Campaign
+                </button>
+                <button class="tab-btn" onclick="showTab('landing', this)">
+                    <i class="fas fa-globe"></i> Landing Pages
+                </button>
+                <button class="tab-btn" onclick="showTab('mfa', this)">
+                    <i class="fas fa-shield-alt"></i> MFA Bypass
+                </button>
+                <button class="tab-btn" onclick="showTab('bitb', this)">
+                    <i class="fas fa-window-restore"></i> BitB Attack
+                </button>
+                <button class="tab-btn" onclick="showTab('templates', this)">
+                    <i class="fas fa-envelope"></i> Email Templates
+                </button>
+                <button class="tab-btn" onclick="showTab('credentials', this)">
+                    <i class="fas fa-key"></i> Credentials
+                </button>
+            </div>
+            
+            <!-- Campaigns Tab -->
+            <div id="campaigns-tab" class="fade-in">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-chart-line"></i> ACTIVE CAMPAIGNS
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Campaign 1 -->
+                                <div class="campaign-card">
+                                    <div class="campaign-header">
+                                        <div>
+                                            <span class="campaign-id">#CAMP-001</span>
+                                            <span style="margin-left: 15px; color: var(--text-muted);">Office 365 Phishing</span>
+                                        </div>
+                                        <span class="status-badge status-active">
+                                            <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ACTIVE
+                                        </span>
+                                    </div>
+                                    <div class="campaign-stats">
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">245</div>
+                                            <div class="campaign-stat-label">Sent</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">89</div>
+                                            <div class="campaign-stat-label">Opened</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">42</div>
+                                            <div class="campaign-stat-label">Clicked</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">18</div>
+                                            <div class="campaign-stat-label">Creds</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <small style="color: var(--text-muted);">Overall Progress</small>
+                                            <small style="color: var(--gold);">36%</small>
+                                        </div>
+                                        <div class="progress-cyber">
+                                            <div class="progress-bar-cyber" style="width: 36%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Campaign 2 -->
+                                <div class="campaign-card">
+                                    <div class="campaign-header">
+                                        <div>
+                                            <span class="campaign-id">#CAMP-002</span>
+                                            <span style="margin-left: 15px; color: var(--text-muted);">LinkedIn Connection</span>
+                                        </div>
+                                        <span class="status-badge status-active">
+                                            <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i> ACTIVE
+                                        </span>
+                                    </div>
+                                    <div class="campaign-stats">
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">512</div>
+                                            <div class="campaign-stat-label">Sent</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">234</div>
+                                            <div class="campaign-stat-label">Opened</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">98</div>
+                                            <div class="campaign-stat-label">Clicked</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">45</div>
+                                            <div class="campaign-stat-label">Creds</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <small style="color: var(--text-muted);">Overall Progress</small>
+                                            <small style="color: var(--gold);">52%</small>
+                                        </div>
+                                        <div class="progress-cyber">
+                                            <div class="progress-bar-cyber" style="width: 52%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Campaign 3 -->
+                                <div class="campaign-card">
+                                    <div class="campaign-header">
+                                        <div>
+                                            <span class="campaign-id">#CAMP-003</span>
+                                            <span style="margin-left: 15px; color: var(--text-muted);">Password Reset</span>
+                                        </div>
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-clock me-1" style="font-size: 0.6em;"></i> PENDING
+                                        </span>
+                                    </div>
+                                    <div class="campaign-stats">
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">0</div>
+                                            <div class="campaign-stat-label">Sent</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">0</div>
+                                            <div class="campaign-stat-label">Opened</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">0</div>
+                                            <div class="campaign-stat-label">Clicked</div>
+                                        </div>
+                                        <div class="campaign-stat">
+                                            <div class="campaign-stat-value">0</div>
+                                            <div class="campaign-stat-label">Creds</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-chart-pie"></i> ANALYTICS
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="campaignChart" style="max-height: 200px;"></canvas>
+                                <div class="mt-4">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span><i class="fas fa-circle me-2" style="color: var(--gold);"></i>Opened</span>
+                                        <span style="color: var(--gold);">42%</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span><i class="fas fa-circle me-2" style="color: var(--primary);"></i>Clicked</span>
+                                        <span style="color: var(--primary);">28%</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span><i class="fas fa-circle me-2" style="color: var(--purple);"></i>Bounced</span>
+                                        <span style="color: var(--purple);">30%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- New Campaign Tab -->
+            <div id="new-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-robot"></i> AI-POWERED CAMPAIGN GENERATOR
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label-cyber">
+                                                <i class="fas fa-user me-2"></i>Target Name
+                                            </label>
+                                            <div class="input-icon">
+                                                <i class="fas fa-id-card"></i>
+                                                <input type="text" name="name" class="form-control-cyber" placeholder="John Doe" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label-cyber">
+                                                <i class="fas fa-envelope me-2"></i>Email Address
+                                            </label>
+                                            <div class="input-icon">
+                                                <i class="fas fa-at"></i>
+                                                <input type="email" name="email" class="form-control-cyber" placeholder="john@company.com" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label-cyber">
+                                                <i class="fas fa-building me-2"></i>Company
+                                            </label>
+                                            <div class="input-icon">
+                                                <i class="fas fa-city"></i>
+                                                <input type="text" name="company" class="form-control-cyber" placeholder="ACME Corp">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label-cyber">
+                                                <i class="fas fa-briefcase me-2"></i>Position
+                                            </label>
+                                            <div class="input-icon">
+                                                <i class="fas fa-user-tie"></i>
+                                                <input type="text" name="position" class="form-control-cyber" placeholder="IT Manager">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label-cyber">
+                                            <i class="fas fa-link me-2"></i>LinkedIn Profile URL (Optional)
+                                        </label>
+                                        <div class="input-icon">
+                                            <i class="fab fa-linkedin"></i>
+                                            <input type="url" name="linkedin" class="form-control-cyber" placeholder="https://linkedin.com/in/johndoe">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label-cyber">
+                                            <i class="fas fa-globe me-2"></i>Company Domain
+                                        </label>
+                                        <div class="input-icon">
+                                            <i class="fas fa-domain"></i>
+                                            <input type="text" name="company_domain" class="form-control-cyber" placeholder="acme.com">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label-cyber">
+                                            <i class="fas fa-magic me-2"></i>Campaign Type
+                                        </label>
+                                        <select class="form-control-cyber" name="campaign_type">
+                                            <option value="office365">Office 365 Login</option>
+                                            <option value="linkedin">LinkedIn Connection</option>
+                                            <option value="password_reset">Password Reset</option>
+                                            <option value="document_share">Document Share</option>
+                                            <option value="voicemail">Fake Voicemail</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn-cyber btn-cyber-gold w-100">
+                                        <i class="fas fa-rocket me-2"></i> Generate AI Phishing Campaign
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-info-circle"></i> CAMPAIGN INFO
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-4">
+                                    <h6 style="color: var(--gold-bright); margin-bottom: 12px; text-shadow: 0 0 10px rgba(255,215,0,0.4);">
+                                        <i class="fas fa-robot me-2"></i>AI Personalization
+                                    </h6>
+                                    <p style="color: var(--text-primary); font-size: 0.92em; line-height: 1.7;">
+                                        Our AI analyzes target's LinkedIn profile and company data to create <strong style="color: var(--primary);">highly personalized</strong> phishing emails that bypass security filters.
+                                    </p>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6 style="color: var(--gold-bright); margin-bottom: 12px; text-shadow: 0 0 10px rgba(255,215,0,0.4);">
+                                        <i class="fas fa-shield-alt me-2"></i>Template Features
+                                    </h6>
+                                    <ul style="color: var(--text-primary); font-size: 0.92em; list-style: none; padding: 0; line-height: 1.8;">
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>Dynamic content injection</li>
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>SPF/DKIM simulation</li>
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>Real-time credential harvesting</li>
+                                        <li style="margin: 10px 0;"><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 8px rgba(0,255,136,0.5);"></i>Multi-factor bypass ready</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Landing Page Generator Tab -->
+            <div id="landing-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-globe"></i> LANDING PAGE GENERATOR
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="landingPageForm">
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Target Platform</label>
+                                        <select id="landingPlatform" class="cyber-input">
+                                            <option value="office365">Microsoft 365 / Outlook</option>
+                                            <option value="google">Google Workspace</option>
+                                            <option value="linkedin">LinkedIn</option>
+                                            <option value="github">GitHub</option>
+                                            <option value="okta">Okta SSO</option>
+                                            <option value="aws">AWS Console</option>
+                                            <option value="custom">Custom Template</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Obfuscation Level</label>
+                                        <select id="landingObfuscation" class="cyber-input">
+                                            <option value="none">None (Debug)</option>
+                                            <option value="basic">Basic</option>
+                                            <option value="medium" selected>Medium (Recommended)</option>
+                                            <option value="advanced">Advanced</option>
+                                            <option value="paranoid">Paranoid (Anti-Analysis)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Custom Message (Optional)</label>
+                                        <input type="text" id="landingMessage" class="cyber-input" placeholder="Your session has expired. Please sign in again.">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Redirect URL (After Capture)</label>
+                                        <input type="text" id="landingRedirect" class="cyber-input" placeholder="https://login.microsoftonline.com">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-switch">
+                                            <input type="checkbox" id="landingMfa">
+                                            <span class="slider"></span>
+                                            <span class="switch-label">Enable MFA Token Capture</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" onclick="generateLandingPage()" class="btn btn-cyber-gold flex-grow-1">
+                                            <i class="fas fa-magic"></i> Generate Page
+                                        </button>
+                                        <button type="button" onclick="previewLandingPage()" class="btn btn-cyber-purple">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-code"></i> GENERATED HTML
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="landingCodeOutput" style="background: rgba(0,0,0,0.7); border: 1px solid rgba(0,255,136,0.3); border-radius: 10px; padding: 18px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px; color: #00ff88; max-height: 400px; overflow: auto; white-space: pre-wrap; text-shadow: 0 0 10px rgba(0,255,136,0.3);">
+Click "Generate Page" to create your phishing landing page...
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button onclick="copyLandingCode()" class="btn btn-outline-gold flex-grow-1">
+                                        <i class="fas fa-copy"></i> Copy HTML
+                                    </button>
+                                    <button onclick="downloadLandingPage()" class="btn btn-outline-purple">
+                                        <i class="fas fa-download"></i> Download
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6 style="color: var(--gold-bright); text-shadow: 0 0 10px rgba(255,215,0,0.4);"><i class="fas fa-info-circle me-2"></i>Features Included</h6>
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <div style="color: var(--text-primary); font-size: 0.9em; line-height: 2;">
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Credential Harvester</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Fingerprinting</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Anti-Detection</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div style="color: var(--text-primary); font-size: 0.9em; line-height: 2;">
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>JS Obfuscation</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Auto Redirect</p>
+                                                <p><i class="fas fa-check me-2" style="color: var(--primary); text-shadow: 0 0 10px rgba(0,255,136,0.5);"></i>Beacon Exfil</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MFA Bypass (AiTM) Tab -->
+            <div id="mfa-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-shield-alt"></i> MFA BYPASS (ADVERSARY-IN-THE-MIDDLE)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert" style="background: rgba(255,170,0,0.2); border: 2px solid var(--warning); border-radius: 10px; padding: 18px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,170,0,0.2);">
+                                    <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning); font-size: 1.2em;"></i>
+                                    <span style="color: #ffd966; font-weight: 500;">AiTM attacks capture session tokens in real-time, bypassing all forms of MFA including FIDO2.</span>
+                                </div>
+                                
+                                <form id="mfaBypassForm">
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Target Platform</label>
+                                        <select id="mfaPlatform" class="cyber-input">
+                                            <option value="office365">Microsoft 365</option>
+                                            <option value="google">Google Workspace</option>
+                                            <option value="okta">Okta</option>
+                                            <option value="github">GitHub</option>
+                                            <option value="aws">AWS</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Phishing Domain</label>
+                                        <input type="text" id="mfaDomain" class="cyber-input" placeholder="login.company-portal.com">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Redirect After Capture</label>
+                                        <input type="text" id="mfaRedirect" class="cyber-input" placeholder="https://portal.office.com">
+                                    </div>
+                                    
+                                    <button type="button" onclick="generateMfaConfig()" class="btn btn-cyber-gold w-100">
+                                        <i class="fas fa-cog"></i> Generate Phishlet Config
+                                    </button>
+                                </form>
+                                
+                                <hr style="border-color: rgba(255,215,0,0.2); margin: 20px 0;">
+                                
+                                <h6 style="color: var(--gold);"><i class="fas fa-list me-2"></i>Available Phishlets</h6>
+                                <div id="phishletList" class="mt-3" style="max-height: 200px; overflow-y: auto;">
+                                    <!-- Phishlets will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-terminal"></i> EVILGINX PHISHLET CONFIG
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="mfaConfigOutput" style="background: rgba(0,0,0,0.7); border: 1px solid rgba(0,212,255,0.3); border-radius: 10px; padding: 18px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 11px; color: #00d4ff; max-height: 350px; overflow: auto; white-space: pre-wrap; text-shadow: 0 0 8px rgba(0,212,255,0.3);">
+Select a platform and generate config...
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button onclick="copyMfaConfig()" class="btn btn-outline-gold flex-grow-1">
+                                        <i class="fas fa-copy"></i> Copy Config
+                                    </button>
+                                    <button onclick="downloadMfaConfig()" class="btn btn-outline-purple">
+                                        <i class="fas fa-download"></i> Download YAML
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6 style="color: var(--gold-bright); text-shadow: 0 0 10px rgba(255,215,0,0.4);"><i class="fas fa-lightbulb me-2"></i>How AiTM Works</h6>
+                                    <div style="color: var(--text-primary); font-size: 0.9em; margin-top: 12px; line-height: 1.8;">
+                                        <p><span style="color: var(--gold);">1.</span> Victim visits phishing domain</p>
+                                        <p><span style="color: var(--gold);">2.</span> Proxy forwards to legitimate login</p>
+                                        <p><span style="color: var(--gold);">3.</span> Victim enters credentials + MFA</p>
+                                        <p><span style="color: var(--gold);">4.</span> Session cookies captured in real-time</p>
+                                        <p><span style="color: var(--primary);">5.</span> Attacker replays session = <strong style="color: var(--primary);">Full Access</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Browser-in-Browser (BitB) Tab -->
+            <div id="bitb-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-window-restore"></i> BROWSER-IN-BROWSER ATTACK
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert" style="background: rgba(153,51,255,0.2); border: 2px solid var(--purple); border-radius: 10px; padding: 18px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(153,51,255,0.2);">
+                                    <i class="fas fa-info-circle me-2" style="color: var(--purple); font-size: 1.2em;"></i>
+                                    <span style="color: #d9a3ff; font-weight: 500;">BitB creates a fake browser popup that appears to be a legitimate OAuth window.</span>
+                                </div>
+                                
+                                <form id="bitbForm">
+                                    <div class="mb-3">
+                                        <label class="cyber-label">OAuth Provider</label>
+                                        <select id="bitbPlatform" class="cyber-input">
+                                            <option value="google">Sign in with Google</option>
+                                            <option value="microsoft">Sign in with Microsoft</option>
+                                            <option value="github">Sign in with GitHub</option>
+                                            <option value="apple">Sign in with Apple</option>
+                                            <option value="facebook">Sign in with Facebook</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Window Title</label>
+                                        <input type="text" id="bitbTitle" class="cyber-input" placeholder="Sign in - Google Accounts" value="Sign in - Google Accounts">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-label">Fake URL (Address Bar)</label>
+                                        <input type="text" id="bitbUrl" class="cyber-input" placeholder="accounts.google.com/signin/oauth" value="accounts.google.com/signin/oauth">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="cyber-switch">
+                                            <input type="checkbox" id="bitbHttps" checked>
+                                            <span class="slider"></span>
+                                            <span class="switch-label">Show HTTPS Lock Icon</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" onclick="generateBitbPage()" class="btn btn-cyber-gold flex-grow-1">
+                                            <i class="fas fa-window-restore"></i> Generate BitB
+                                        </button>
+                                        <button type="button" onclick="previewBitb()" class="btn btn-cyber-purple">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- QR Phishing -->
+                        <div class="cyber-card mt-4">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-qrcode"></i> QR PHISHING (QRISHING)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="cyber-label">Phishing URL</label>
+                                    <input type="text" id="qrUrl" class="cyber-input" placeholder="https://your-phishing-page.com/login">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="cyber-label">Message</label>
+                                    <input type="text" id="qrMessage" class="cyber-input" placeholder="Scan to verify your identity" value="Scan with your authenticator app">
+                                </div>
+                                <button type="button" onclick="generateQrPhishing()" class="btn btn-cyber-gold w-100">
+                                    <i class="fas fa-qrcode"></i> Generate QR Page
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-desktop"></i> PREVIEW
+                                </h5>
+                            </div>
+                            <div class="card-body" style="text-align: center;">
+                                <div id="bitbPreview" style="background: #f5f5f5; border-radius: 8px; padding: 20px; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                                    <div style="color: #666;">
+                                        <i class="fas fa-window-restore fa-3x mb-3"></i>
+                                        <p>Click "Generate BitB" to preview the attack</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button onclick="copyBitbCode()" class="btn btn-outline-gold flex-grow-1">
+                                        <i class="fas fa-copy"></i> Copy HTML
+                                    </button>
+                                    <button onclick="downloadBitbPage()" class="btn btn-outline-purple">
+                                        <i class="fas fa-download"></i> Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- HTML Smuggling -->
+                        <div class="cyber-card mt-4">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-file-archive"></i> HTML SMUGGLING
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p style="color: var(--text-primary); font-size: 0.9em; margin-bottom: 18px; line-height: 1.6;">
+                                    <i class="fas fa-magic me-2" style="color: var(--danger);"></i>
+                                    Embed payloads in HTML that <strong style="color: var(--danger);">auto-download</strong> on page load, bypassing email filters.
+                                </p>
+                                <div class="mb-3">
+                                    <label class="cyber-label">Payload File</label>
+                                    <input type="file" id="smugglingPayload" class="cyber-input" style="padding: 8px;">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="cyber-label">Download Filename</label>
+                                    <input type="text" id="smugglingFilename" class="cyber-input" placeholder="Invoice_2025.exe" value="Document.exe">
+                                </div>
+                                <button type="button" onclick="generateHtmlSmuggling()" class="btn btn-cyber-danger w-100">
+                                    <i class="fas fa-bomb"></i> Generate Smuggling Page
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Templates Tab -->
+            <div id="templates-tab" class="hidden fade-in">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-envelope"></i> EMAIL TEMPLATES
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="template-card selected" onclick="selectTemplate(this, 'office365')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fas fa-microsoft"></i> Office 365 Login
+                                        </div>
+                                        <span class="template-type type-email">Email</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Professional Microsoft 365 login page with full credential harvesting and 2FA collection.
+                                    </div>
+                                </div>
+                                
+                                <div class="template-card" onclick="selectTemplate(this, 'linkedin')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fab fa-linkedin"></i> LinkedIn Connection
+                                        </div>
+                                        <span class="template-type type-email">Email</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Fake LinkedIn connection request with malicious link to profile page.
+                                    </div>
+                                </div>
+                                
+                                <div class="template-card" onclick="selectTemplate(this, 'password_reset')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fas fa-key"></i> Password Reset
+                                        </div>
+                                        <span class="template-type type-email">Email</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Generic password reset email with urgency tactics and fake login portal.
+                                    </div>
+                                </div>
+                                
+                                <div class="template-card" onclick="selectTemplate(this, 'document_share')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fas fa-file-pdf"></i> Document Share
+                                        </div>
+                                        <span class="template-type type-email">Email</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Fake document sharing notification from popular cloud services.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="cyber-card">
+                            <div class="card-header-cyber">
+                                <h5 class="card-title-cyber mb-0">
+                                    <i class="fas fa-globe"></i> LANDING PAGES
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="template-card" onclick="selectTemplate(this, 'microsoft')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fab fa-microsoft"></i> Microsoft Login
+                                        </div>
+                                        <span class="template-type type-landing">Landing</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Pixel-perfect Microsoft login page with cookie harvesting and session token capture.
+                                    </div>
+                                </div>
+                                
+                                <div class="template-card" onclick="selectTemplate(this, 'google')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fab fa-google"></i> Google Login
+                                        </div>
+                                        <span class="template-type type-landing">Landing</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Google account login with OAuth token collection and cookie harvesting.
+                                    </div>
+                                </div>
+                                
+                                <div class="template-card" onclick="selectTemplate(this, 'apple')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fab fa-apple"></i> Apple ID
+                                        </div>
+                                        <span class="template-type type-landing">Landing</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Apple ID login page with 2FA bypass and session token capture.
+                                    </div>
+                                </div>
+                                
+                                <div class="template-card" onclick="selectTemplate(this, 'slack')">
+                                    <div class="template-header">
+                                        <div class="template-name">
+                                            <i class="fab fa-slack"></i> Slack Workspace
+                                        </div>
+                                        <span class="template-type type-landing">Landing</span>
+                                    </div>
+                                    <div class="template-description">
+                                        Slack workspace login with SSO credential harvesting.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Credentials Tab -->
+            <div id="credentials-tab" class="hidden fade-in">
+                <div class="cyber-card">
+                    <div class="card-header-cyber">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title-cyber mb-0">
+                                <i class="fas fa-key"></i> HARVESTED CREDENTIALS
+                            </h5>
+                            <button class="btn btn-outline-gold btn-sm">
+                                <i class="fas fa-download me-2"></i>Export All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="credential-table">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-hashtag me-2"></i>ID</th>
+                                        <th><i class="fas fa-envelope me-2"></i>Email</th>
+                                        <th><i class="fas fa-lock me-2"></i>Password</th>
+                                        <th><i class="fas fa-link me-2"></i>Campaign</th>
+                                        <th><i class="fas fa-clock me-2"></i>Timestamp</th>
+                                        <th><i class="fas fa-cogs me-2"></i>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code style="color: var(--gold);">#CREDS-001</code></td>
+                                        <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b5dfdadddb9bd1dad0f5d6dad8c5d4dbcc9bd6dad8">[email&#160;protected]</a></td>
+                                        <td><code>MyPass123!</code></td>
+                                        <td><span class="status-badge status-completed">CAMP-001</span></td>
+                                        <td>2024-01-15 14:23:45</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-gold" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><code style="color: var(--gold);">#CREDS-002</code></td>
+                                        <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c0aaa1aea5eeb3ada9b4a880a3afb2b0eea3afad">[email&#160;protected]</a></td>
+                                        <td><code>Corp2024#Sec</code></td>
+                                        <td><span class="status-badge status-active">CAMP-002</span></td>
+                                        <td>2024-01-15 14:21:12</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-gold" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><code style="color: var(--gold);">#CREDS-003</code></td>
+                                        <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="412c282a246f36282d322e2f01352422296f282e">[email&#160;protected]</a></td>
+                                        <td><code>Wilson@123</code></td>
+                                        <td><span class="status-badge status-completed">CAMP-001</span></td>
+                                        <td>2024-01-15 14:18:33</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-gold" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        let currentTab = 'campaigns';
+        let generatedLandingHtml = '';
+        let generatedMfaConfig = '';
+        let generatedBitbHtml = '';
+        
+        function showTab(tabName, btn) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Hide all tabs
+            const allTabs = ['campaigns', 'new', 'landing', 'mfa', 'bitb', 'templates', 'credentials'];
+            allTabs.forEach(tab => {
+                const el = document.getElementById(tab + '-tab');
+                if (el) el.classList.add('hidden');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + '-tab');
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+                selectedTab.style.animation = 'none';
+                selectedTab.offsetHeight;
+                selectedTab.style.animation = 'fadeIn 0.5s ease';
+            }
+            
+            // Load dynamic content
+            if (tabName === 'mfa') loadPhishlets();
+        }
+        
+        // ==================== Landing Page Functions ====================
+        
+        async function generateLandingPage() {
+            const platform = document.getElementById('landingPlatform').value;
+            const obfuscation = document.getElementById('landingObfuscation').value;
+            const message = document.getElementById('landingMessage').value;
+            const redirect = document.getElementById('landingRedirect').value;
+            const mfaBypass = document.getElementById('landingMfa').checked;
+            
+            try {
+                const response = await fetch('/api/phishing/landing/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        platform, obfuscation, message,
+                        redirect_url: redirect,
+                        mfa_bypass: mfaBypass
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedLandingHtml = data.html_content;
+                    document.getElementById('landingCodeOutput').textContent = 
+                        data.html_content.substring(0, 3000) + (data.html_content.length > 3000 ? '\n\n... (truncated)' : '');
+                    showNotification('Landing page generated!', 'success');
+                } else {
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        function previewLandingPage() {
+            const platform = document.getElementById('landingPlatform').value;
+            const mfa = document.getElementById('landingMfa').checked;
+            window.open(`/api/phishing/landing/preview/${platform}?mfa=${mfa}&obfuscation=none`, '_blank');
+        }
+        
+        function copyLandingCode() {
+            if (generatedLandingHtml) {
+                navigator.clipboard.writeText(generatedLandingHtml);
+                showNotification('HTML copied to clipboard!', 'success');
+            }
+        }
+        
+        function downloadLandingPage() {
+            if (generatedLandingHtml) {
+                const blob = new Blob([generatedLandingHtml], {type: 'text/html'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'phishing_page.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // ==================== MFA Bypass Functions ====================
+        
+        async function generateMfaConfig() {
+            const platform = document.getElementById('mfaPlatform').value;
+            
+            try {
+                const response = await fetch('/api/phishing/mfa/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ platform })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedMfaConfig = JSON.stringify(data.aitm_config, null, 2);
+                    document.getElementById('mfaConfigOutput').textContent = generatedMfaConfig;
+                    showNotification('Phishlet config generated!', 'success');
+                } else {
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        async function loadPhishlets() {
+            try {
+                const response = await fetch('/api/phishing/mfa/phishlets');
+                const data = await response.json();
+                
+                const container = document.getElementById('phishletList');
+                container.innerHTML = data.phishlets.map(p => `
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong style="color: var(--gold);">${p.name}</strong>
+                            <div style="font-size: 0.8em; color: var(--text-muted);">${p.domains.join(', ')}</div>
+                        </div>
+                        <span class="status-badge ${p.mfa_support ? 'status-active' : 'status-pending'}">
+                            ${p.mfa_support ? 'MFA Ready' : 'Basic'}
+                        </span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading phishlets:', e);
+            }
+        }
+        
+        function copyMfaConfig() {
+            if (generatedMfaConfig) {
+                navigator.clipboard.writeText(generatedMfaConfig);
+                showNotification('Config copied!', 'success');
+            }
+        }
+        
+        function downloadMfaConfig() {
+            if (generatedMfaConfig) {
+                const blob = new Blob([generatedMfaConfig], {type: 'application/x-yaml'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'phishlet.yaml';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // ==================== BitB Functions ====================
+        
+        async function generateBitbPage() {
+            const platform = document.getElementById('bitbPlatform').value;
+            
+            try {
+                const response = await fetch('/api/phishing/bitb/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ platform })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedBitbHtml = data.html_content;
+                    // Show preview in iframe
+                    const preview = document.getElementById('bitbPreview');
+                    preview.innerHTML = `<iframe srcdoc="${data.html_content.replace(/"/g, '&quot;')}" style="width:100%;height:400px;border:none;border-radius:8px;"></iframe>`;
+                    showNotification('BitB page generated!', 'success');
+                } else {
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        function previewBitb() {
+            window.open('/api/phishing/bitb/preview?platform=' + document.getElementById('bitbPlatform').value, '_blank');
+        }
+        
+        function copyBitbCode() {
+            if (generatedBitbHtml) {
+                navigator.clipboard.writeText(generatedBitbHtml);
+                showNotification('HTML copied!', 'success');
+            }
+        }
+        
+        function downloadBitbPage() {
+            if (generatedBitbHtml) {
+                const blob = new Blob([generatedBitbHtml], {type: 'text/html'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bitb_attack.html';
+                a.click();
+            }
+        }
+        
+        // ==================== QR Phishing ====================
+        
+        async function generateQrPhishing() {
+            const phishingUrl = document.getElementById('qrUrl').value;
+            const message = document.getElementById('qrMessage').value;
+            
+            if (!phishingUrl) {
+                showNotification('Please enter a phishing URL', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/phishing/qr/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ phishing_url: phishingUrl, message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const blob = new Blob([data.html_content], {type: 'text/html'});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'qr_phishing.html';
+                    a.click();
+                    showNotification('QR phishing page downloaded!', 'success');
+                }
+            } catch (e) {
+                showNotification('API Error: ' + e.message, 'error');
+            }
+        }
+        
+        // ==================== HTML Smuggling ====================
+        
+        async function generateHtmlSmuggling() {
+            const fileInput = document.getElementById('smugglingPayload');
+            const filename = document.getElementById('smugglingFilename').value || 'document.exe';
+            
+            if (!fileInput.files[0]) {
+                showNotification('Please select a payload file', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                const base64 = e.target.result.split(',')[1];
+                
+                try {
+                    const response = await fetch('/api/phishing/smuggling/generate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ payload_b64: base64, filename })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const blob = new Blob([data.html_content], {type: 'text/html'});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'smuggling_page.html';
+                        a.click();
+                        showNotification('HTML smuggling page downloaded!', 'success');
+                    }
+                } catch (e) {
+                    showNotification('API Error: ' + e.message, 'error');
+                }
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // ==================== Utility Functions ====================
+        
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'var(--primary)',
+                error: 'var(--danger)',
+                info: 'var(--gold)'
+            };
+            
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${colors[type]};
+                color: #000;
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.remove(), 3000);
+        }
+        
+        function selectTemplate(element, templateId) {
+            document.querySelectorAll('.template-card').forEach(card => card.classList.remove('selected'));
+            element.classList.add('selected');
+            console.log('Selected template:', templateId);
+        }
+        
+        function exportCampaigns() {
+            alert('Exporting campaign report...');
+        }
+        
+        // Initialize chart
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('campaignChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Opened', 'Clicked', 'Bounced'],
+                        datasets: [{
+                            data: [42, 28, 30],
+                            backgroundColor: [
+                                '#ffd700',
+                                '#00ff88',
+                                '#9933ff'
+                            ],
+                            borderColor: 'transparent',
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- Cross-Module Integration Panel -->
+    <div style="position: fixed; bottom: 20px; right: 20px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(168, 85, 247, 0.15)); backdrop-filter: blur(10px); border: 1px solid var(--gold-dim); border-radius: 15px; padding: 15px; max-width: 320px; z-index: 1000;">
+        <h4 style="color: var(--gold); margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            🔗 Chain with Other Modules
+        </h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <a href="/c2" target="_blank" style="display: flex; align-items: center; gap: 6px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; color: #fff; text-decoration: none; font-size: 12px; border: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='transparent'">
+                <span style="color: #3b82f6;">📡</span> C2 Implant
+            </a>
+            <a href="/payload" target="_blank" style="display: flex; align-items: center; gap: 6px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; color: #fff; text-decoration: none; font-size: 12px; border: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='transparent'">
+                <span style="color: #ef4444;">💉</span> Payload Gen
+            </a>
+            <a href="/social-engineering" target="_blank" style="display: flex; align-items: center; gap: 6px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; color: #fff; text-decoration: none; font-size: 12px; border: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='transparent'">
+                <span style="color: #f97316;">🎭</span> Social Eng
+            </a>
+            <a href="/bitb-phishing" target="_blank" style="display: flex; align-items: center; gap: 6px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; color: #fff; text-decoration: none; font-size: 12px; border: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='transparent'">
+                <span style="color: #10b981;">🪟</span> BITB
+            </a>
+            <a href="/deepfake-vishing" target="_blank" style="display: flex; align-items: center; gap: 6px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; color: #fff; text-decoration: none; font-size: 12px; border: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#ec4899'" onmouseout="this.style.borderColor='transparent'">
+                <span style="color: #ec4899;">🎤</span> Deepfake
+            </a>
+            <a href="/god-mode" target="_blank" style="display: flex; align-items: center; gap: 6px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; color: #fff; text-decoration: none; font-size: 12px; border: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#a855f7'" onmouseout="this.style.borderColor='transparent'">
+                <span style="color: #a855f7;">💀</span> God Mode
+            </a>
+        </div>
+    </div>
+</body>
+</html>

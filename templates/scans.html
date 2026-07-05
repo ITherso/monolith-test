@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="min-h-screen">
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-32 right-8 w-72 h-72 bg-cyber-secondary/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-cyber-primary/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <header class="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-cyber-secondary/15 flex items-center justify-center neon-border">
+                    <i class="fas fa-radar text-cyber-secondary text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-500">Scan Intelligence</p>
+                    <h1 class="text-2xl font-semibold text-white">All Scans</h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/" class="glass-light px-4 py-2 rounded-xl text-sm text-gray-200 hover:text-white hover:bg-white/10 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Dashboard
+                </a>
+                <div class="glass px-4 py-2 rounded-xl text-sm text-gray-300">
+                    <i class="fas fa-user-circle mr-2 text-cyber-primary"></i>{{ session.get('user', 'analyst') }}
+                </div>
+            </div>
+        </header>
+
+        <section class="glass rounded-2xl p-6 neon-border">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-white">Recent Activity</h2>
+                    <p class="text-sm text-gray-400">Track scan progress, status, and actions in one view.</p>
+                </div>
+                <div class="text-xs uppercase tracking-[0.2em] text-gray-500">v68.0</div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-gray-400 border-b border-white/10 text-xs uppercase tracking-widest">
+                        <tr>
+                            <th class="py-3 text-left">ID</th>
+                            <th class="py-3 text-left">Target</th>
+                            <th class="py-3 text-left">Date</th>
+                            <th class="py-3 text-left">Status</th>
+                            <th class="py-3 text-left">Owner</th>
+                            <th class="py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-200">
+                        {% for scan in scans %}
+                        <tr class="border-b border-white/5 hover:bg-white/5 transition">
+                            <td class="py-3 font-mono text-cyber-secondary">{{ scan[0] }}</td>
+                            <td class="py-3">
+                                <span class="font-mono text-sm text-gray-200">
+                                    {{ scan[1][:50] }}{% if scan[1]|length > 50 %}...{% endif %}
+                                </span>
+                            </td>
+                            <td class="py-3 text-gray-400">{{ scan[2][:19] }}</td>
+                            <td class="py-3">
+                                {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
+                                    <span class="px-3 py-1 rounded-full text-xs bg-green-500/15 text-green-300 border border-green-500/30">
+                                        {{ scan[3] }}
+                                    </span>
+                                {% elif 'FAILED' in scan[3] or 'HATA' in scan[3] %}
+                                    <span class="px-3 py-1 rounded-full text-xs bg-red-500/15 text-red-300 border border-red-500/30">
+                                        {{ scan[3] }}
+                                    </span>
+                                {% elif 'AÇIK VAR' in scan[3] %}
+                                    <span class="px-3 py-1 rounded-full text-xs bg-cyber-warning/20 text-cyber-warning border border-cyber-warning/40">
+                                        {{ scan[3] }}
+                                    </span>
+                                {% else %}
+                                    <span class="px-3 py-1 rounded-full text-xs bg-cyber-secondary/15 text-cyber-secondary border border-cyber-secondary/30">
+                                        {{ scan[3] }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-gray-400">{{ scan[4] }}</td>
+                            <td class="py-3 text-right space-x-2">
+                                <a href="/details/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-secondary/20 text-cyber-secondary hover:bg-cyber-secondary/30 transition">
+                                    <i class="fas fa-file-alt text-xs"></i>
+                                    <span class="text-xs">Details</span>
+                                </a>
+                                {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
+                                <a href="/report/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-primary/20 text-cyber-primary hover:bg-cyber-primary/30 transition">
+                                    <i class="fas fa-file-shield text-xs"></i>
+                                    <span class="text-xs">Report</span>
+                                </a>
+                                {% endif %}
+                                <a href="/delete/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-danger/20 text-cyber-danger hover:bg-cyber-danger/30 transition" onclick="return confirm('Delete this scan?')">
+                                    <i class="fas fa-trash text-xs"></i>
+                                    <span class="text-xs">Delete</span>
+                                </a>
+                                {% if 'AÇIK VAR' in scan[3] %}
+                                <a href="/autoexploit/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-warning/20 text-cyber-warning hover:bg-cyber-warning/30 transition">
+                                    <i class="fas fa-bolt text-xs"></i>
+                                    <span class="text-xs">AutoExploit</span>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="py-10 text-center text-gray-500">
+                                <i class="fas fa-inbox text-2xl mb-3"></i>
+                                <p>No scans found yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

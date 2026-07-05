@@ -1,0 +1,13 @@
+[run]
+source =
+    cyberapp/routes
+    cyberapp/services
+    cyberapp/models
+
+[report]
+show_missing = True
+skip_covered = True
+omit =
+    */tests/*
+    */cybermodules/*
+    */__pycache__/*

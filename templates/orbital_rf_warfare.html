@@ -1,0 +1,1531 @@
+{% extends "base.html" %}
+
+{% block title %}Orbital & RF Warfare - Yörünge ve Radyo Savaşları{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================
+       ORBITAL RF WARFARE - CUSTOM STYLES
+       ============================================ */
+    
+    /* Main Container */
+    .rf-warfare-container {
+        padding: 20px;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0a1628 100%);
+        min-height: 100vh;
+    }
+    
+    /* Header Section */
+    .rf-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 30px;
+        background: linear-gradient(135deg, rgba(138,43,226,0.2), rgba(0,255,136,0.1));
+        border-radius: 20px;
+        border: 1px solid rgba(138,43,226,0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .rf-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #8a2be2, #00ff88, #ff6b35);
+    }
+    
+    .rf-header h1 {
+        font-size: 2.5rem;
+        color: #fff;
+        text-shadow: 0 0 30px rgba(138,43,226,0.5);
+        margin-bottom: 10px;
+    }
+    
+    .rf-header h1 i {
+        color: #00ff88;
+        margin-right: 15px;
+    }
+    
+    /* Status Cards Row */
+    .status-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .status-card {
+        background: rgba(20,20,40,0.8);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid rgba(138,43,226,0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-5px);
+        border-color: #00ff88;
+        box-shadow: 0 10px 30px rgba(0,255,136,0.2);
+    }
+    
+    .status-card .icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    
+    .status-card.active .icon { color: #00ff88; }
+    .status-card.inactive .icon { color: #ff4757; }
+    .status-card.warning .icon { color: #ffc107; }
+    
+    .status-card h4 {
+        color: #fff;
+        margin-bottom: 5px;
+    }
+    
+    .status-card .value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #00ff88;
+    }
+    
+    /* Main Tabs */
+    .rf-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .rf-tab {
+        padding: 15px 30px;
+        background: rgba(138,43,226,0.2);
+        border: 1px solid rgba(138,43,226,0.4);
+        border-radius: 10px;
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .rf-tab:hover {
+        background: rgba(138,43,226,0.4);
+        transform: translateY(-2px);
+    }
+    
+    .rf-tab.active {
+        background: linear-gradient(135deg, #8a2be2, #00ff88);
+        border-color: #00ff88;
+        box-shadow: 0 5px 20px rgba(0,255,136,0.3);
+    }
+    
+    .rf-tab i {
+        font-size: 1.2rem;
+    }
+    
+    /* Tab Content */
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Panel Cards */
+    .rf-panel {
+        background: rgba(20,20,40,0.9);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(138,43,226,0.3);
+    }
+    
+    .rf-panel h3 {
+        color: #00ff88;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .rf-panel h3 i {
+        color: #8a2be2;
+    }
+    
+    /* ===========================================
+       SATCOM SECTION STYLES
+       =========================================== */
+    
+    .satellite-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .satellite-card {
+        background: rgba(30,30,60,0.8);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .satellite-card:hover {
+        border-color: #8a2be2;
+        transform: scale(1.02);
+    }
+    
+    .satellite-card.selected {
+        border-color: #00ff88;
+        background: rgba(0,255,136,0.1);
+    }
+    
+    .satellite-card .sat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        color: #8a2be2;
+    }
+    
+    .satellite-card h5 {
+        color: #fff;
+        margin-bottom: 5px;
+    }
+    
+    .satellite-card .freq {
+        color: #00ff88;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+    
+    /* Live Feed Container */
+    .live-feed {
+        background: #0a0a0a;
+        border-radius: 10px;
+        height: 400px;
+        overflow-y: auto;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        border: 1px solid rgba(0,255,136,0.3);
+    }
+    
+    .live-feed .entry {
+        padding: 10px;
+        margin-bottom: 10px;
+        background: rgba(20,20,40,0.8);
+        border-radius: 8px;
+        border-left: 3px solid #8a2be2;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .live-feed .entry.iridium { border-left-color: #00bfff; }
+    .live-feed .entry.inmarsat { border-left-color: #ff6b35; }
+    .live-feed .entry.noaa { border-left-color: #00ff88; }
+    .live-feed .entry.orbcomm { border-left-color: #ffc107; }
+    
+    .live-feed .timestamp {
+        color: #888;
+        font-size: 0.8rem;
+    }
+    
+    .live-feed .signal {
+        color: #00ff88;
+        float: right;
+    }
+    
+    .live-feed .content {
+        color: #fff;
+        margin-top: 5px;
+    }
+    
+    /* ===========================================
+       GPS SPOOFING SECTION STYLES
+       =========================================== */
+    
+    .gps-warning {
+        background: linear-gradient(135deg, rgba(255,75,75,0.2), rgba(255,107,53,0.2));
+        border: 2px solid #ff4b4b;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .gps-warning i {
+        font-size: 2rem;
+        color: #ff4b4b;
+        margin-bottom: 10px;
+    }
+    
+    .gps-warning h4 {
+        color: #ff4b4b;
+    }
+    
+    .gps-warning p {
+        color: #ffaa88;
+    }
+    
+    /* Location Grid */
+    .location-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .location-card {
+        background: rgba(30,30,60,0.8);
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .location-card:hover {
+        border-color: #ff6b35;
+        transform: scale(1.02);
+    }
+    
+    .location-card.selected {
+        border-color: #ff4b4b;
+        background: rgba(255,75,75,0.1);
+    }
+    
+    .location-card .loc-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #ff6b35;
+    }
+    
+    .location-card h5 {
+        color: #fff;
+        margin-bottom: 5px;
+    }
+    
+    .location-card .coords {
+        color: #888;
+        font-family: monospace;
+        font-size: 0.8rem;
+    }
+    
+    /* GPS Map Container */
+    .gps-map {
+        height: 400px;
+        background: #0a0a0a;
+        border-radius: 10px;
+        border: 1px solid rgba(255,107,53,0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .gps-map .map-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #888;
+    }
+    
+    .gps-map .map-placeholder i {
+        font-size: 4rem;
+        color: #ff6b35;
+        margin-bottom: 15px;
+    }
+    
+    /* Custom Coordinates Input */
+    .custom-coords {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .coord-input {
+        background: rgba(20,20,40,0.8);
+        border: 1px solid rgba(138,43,226,0.3);
+        border-radius: 8px;
+        padding: 12px;
+        color: #fff;
+        text-align: center;
+    }
+    
+    .coord-input:focus {
+        border-color: #00ff88;
+        outline: none;
+    }
+    
+    /* ===========================================
+       GSM IMSI SECTION STYLES
+       =========================================== */
+    
+    .gsm-bands {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .band-card {
+        background: rgba(30,30,60,0.8);
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .band-card:hover {
+        border-color: #ffc107;
+    }
+    
+    .band-card.selected {
+        border-color: #00ff88;
+        background: rgba(0,255,136,0.1);
+    }
+    
+    .band-card .band-name {
+        color: #fff;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .band-card .band-freq {
+        color: #00ff88;
+        font-family: monospace;
+        font-size: 0.85rem;
+    }
+    
+    /* IMSI Table */
+    .imsi-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    .imsi-table th {
+        background: rgba(138,43,226,0.3);
+        color: #fff;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 2px solid #8a2be2;
+    }
+    
+    .imsi-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        color: #ddd;
+    }
+    
+    .imsi-table tr:hover {
+        background: rgba(0,255,136,0.05);
+    }
+    
+    .imsi-table .imsi-value {
+        font-family: monospace;
+        color: #00ff88;
+    }
+    
+    .imsi-table .provider {
+        color: #ffc107;
+    }
+    
+    .imsi-table .signal {
+        color: #00bfff;
+    }
+    
+    /* IMSI Heatmap */
+    .imsi-heatmap {
+        height: 300px;
+        background: #0a0a0a;
+        border-radius: 10px;
+        border: 1px solid rgba(255,193,7,0.3);
+        padding: 20px;
+    }
+    
+    .heatmap-legend {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 15px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #888;
+    }
+    
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+    }
+    
+    .legend-color.high { background: #ff4b4b; }
+    .legend-color.medium { background: #ffc107; }
+    .legend-color.low { background: #00ff88; }
+    
+    /* ===========================================
+       CONTROL BUTTONS
+       =========================================== */
+    
+    .rf-btn {
+        padding: 12px 30px;
+        border-radius: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .rf-btn-primary {
+        background: linear-gradient(135deg, #8a2be2, #00ff88);
+        color: #fff;
+    }
+    
+    .rf-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0,255,136,0.3);
+    }
+    
+    .rf-btn-danger {
+        background: linear-gradient(135deg, #ff4b4b, #ff6b35);
+        color: #fff;
+    }
+    
+    .rf-btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(255,75,75,0.3);
+    }
+    
+    .rf-btn-warning {
+        background: linear-gradient(135deg, #ffc107, #ff6b35);
+        color: #000;
+    }
+    
+    .rf-btn-secondary {
+        background: rgba(100,100,120,0.5);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .control-row {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+    
+    /* Statistics Panel */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .stat-item {
+        background: rgba(30,30,60,0.8);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .stat-item .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #00ff88;
+    }
+    
+    .stat-item .stat-label {
+        color: #888;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    /* Cross Module Integration Panel */
+    .integration-panel {
+        position: fixed;
+        right: 20px;
+        top: 100px;
+        width: 250px;
+        background: rgba(20,20,40,0.95);
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid rgba(138,43,226,0.5);
+        z-index: 1000;
+    }
+    
+    .integration-panel h4 {
+        color: #00ff88;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .integration-link {
+        display: block;
+        padding: 10px 15px;
+        background: rgba(138,43,226,0.2);
+        border-radius: 8px;
+        color: #fff;
+        text-decoration: none;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .integration-link:hover {
+        background: rgba(0,255,136,0.2);
+        transform: translateX(5px);
+    }
+    
+    .integration-link i {
+        margin-right: 8px;
+        color: #8a2be2;
+    }
+    
+    /* TX Active Animation */
+    .tx-active {
+        animation: txPulse 1s infinite;
+    }
+    
+    @keyframes txPulse {
+        0%, 100% { box-shadow: 0 0 10px rgba(255,75,75,0.5); }
+        50% { box-shadow: 0 0 30px rgba(255,75,75,0.8); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .rf-header h1 { font-size: 1.8rem; }
+        .rf-tabs { flex-direction: column; }
+        .rf-tab { width: 100%; justify-content: center; }
+        .integration-panel { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rf-warfare-container">
+    <!-- Header -->
+    <div class="rf-header">
+        <h1><i class="fas fa-satellite"></i> Orbital & RF Warfare</h1>
+        <p class="text-muted">Yörünge ve Radyo Frekans Savaşları - Software Defined Radio Operations</p>
+    </div>
+    
+    <!-- Status Cards -->
+    <div class="status-cards">
+        <div class="status-card {% if status.hardware_ready %}active{% else %}inactive{% endif %}">
+            <div class="icon"><i class="fas fa-microchip"></i></div>
+            <h4>SDR Hardware</h4>
+            <div class="value">{{ status.sdr_devices|length }} Device(s)</div>
+        </div>
+        <div class="status-card {% if status.tx_ready %}active{% else %}warning{% endif %}">
+            <div class="icon"><i class="fas fa-broadcast-tower"></i></div>
+            <h4>TX Capable</h4>
+            <div class="value">{% if status.tx_ready %}Ready{% else %}No TX{% endif %}</div>
+        </div>
+        <div class="status-card {% if status.active_operations.satcom_capturing %}active{% else %}inactive{% endif %}">
+            <div class="icon"><i class="fas fa-satellite-dish"></i></div>
+            <h4>SatCom</h4>
+            <div class="value" id="satcom-status">{% if status.active_operations.satcom_capturing %}Capturing{% else %}Idle{% endif %}</div>
+        </div>
+        <div class="status-card {% if status.active_operations.gsm_monitoring %}active{% else %}inactive{% endif %}">
+            <div class="icon"><i class="fas fa-signal"></i></div>
+            <h4>GSM Monitor</h4>
+            <div class="value" id="gsm-status">{% if status.active_operations.gsm_monitoring %}Active{% else %}Idle{% endif %}</div>
+        </div>
+    </div>
+    
+    <!-- Main Tabs -->
+    <div class="rf-tabs">
+        <div class="rf-tab active" data-tab="satcom">
+            <i class="fas fa-satellite-dish"></i>
+            <span>SatCom Downlink Sniffer</span>
+        </div>
+        <div class="rf-tab" data-tab="gps">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>GPS Spoofing</span>
+        </div>
+        <div class="rf-tab" data-tab="gsm">
+            <i class="fas fa-mobile-alt"></i>
+            <span>GSM IMSI Catcher</span>
+        </div>
+        <div class="rf-tab" data-tab="devices">
+            <i class="fas fa-hdd"></i>
+            <span>SDR Devices</span>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         TAB 1: SATCOM DOWNLINK SNIFFER
+         ============================================ -->
+    <div class="tab-content active" id="tab-satcom">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="rf-panel">
+                    <h3><i class="fas fa-satellite"></i> Satellite System Selection</h3>
+                    <div class="satellite-selector">
+                        {% for sat in satellites %}
+                        <div class="satellite-card" data-system="{{ sat.id }}">
+                            <div class="sat-icon">
+                                {% if 'iridium' in sat.id %}
+                                <i class="fas fa-satellite"></i>
+                                {% elif 'inmarsat' in sat.id %}
+                                <i class="fas fa-broadcast-tower"></i>
+                                {% elif 'noaa' in sat.id or 'meteor' in sat.id or 'goes' in sat.id %}
+                                <i class="fas fa-cloud-sun"></i>
+                                {% else %}
+                                <i class="fas fa-satellite-dish"></i>
+                                {% endif %}
+                            </div>
+                            <h5>{{ sat.name }}</h5>
+                            <div class="freq">{{ sat.frequency_mhz }} MHz</div>
+                            <small class="text-muted">{{ sat.data_types|join(', ') }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="control-row">
+                        <button class="rf-btn rf-btn-primary" id="start-satcom">
+                            <i class="fas fa-play"></i> Start Capture
+                        </button>
+                        <button class="rf-btn rf-btn-danger" id="stop-satcom" disabled>
+                            <i class="fas fa-stop"></i> Stop Capture
+                        </button>
+                        <input type="number" class="coord-input" id="satcom-duration" 
+                               value="300" min="60" max="3600" style="width: 120px;">
+                        <span class="text-muted" style="align-self: center;">seconds</span>
+                    </div>
+                </div>
+                
+                <div class="rf-panel">
+                    <h3><i class="fas fa-stream"></i> Live Satellite Feed</h3>
+                    <div class="live-feed" id="satcom-feed">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-satellite fa-3x mb-3"></i>
+                            <p>Select a satellite system and start capture to see live data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="rf-panel">
+                    <h3><i class="fas fa-chart-bar"></i> Capture Statistics</h3>
+                    <div class="stats-grid" id="satcom-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-total">0</div>
+                            <div class="stat-label">Total Captures</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-pager">0</div>
+                            <div class="stat-label">Pager Messages</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-weather">0</div>
+                            <div class="stat-label">Weather Images</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-ais">0</div>
+                            <div class="stat-label">AIS/Ship Data</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rf-panel">
+                    <h3><i class="fas fa-info-circle"></i> System Info</h3>
+                    <div id="satcom-info">
+                        <p><strong>Iridium:</strong> Pager, Voice, ACARS data</p>
+                        <p><strong>Inmarsat:</strong> EGC SafetyNET, NAVTEX</p>
+                        <p><strong>NOAA APT:</strong> Weather imagery</p>
+                        <p><strong>ORBCOMM:</strong> AIS ship tracking</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         TAB 2: GPS SPOOFING
+         ============================================ -->
+    <div class="tab-content" id="tab-gps">
+        <div class="gps-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>⚠️ WARNING: GPS Spoofing is ILLEGAL</h4>
+            <p>This feature requires HackRF or similar TX-capable SDR. Use ONLY with proper authorization in controlled environments.</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="rf-panel">
+                    <h3><i class="fas fa-map-marked-alt"></i> Target Location Selection</h3>
+                    <div class="location-grid">
+                        {% for loc_id, coords in gps_locations.items() %}
+                        <div class="location-card" data-location="{{ loc_id }}" 
+                             data-lat="{{ coords[0] }}" data-lon="{{ coords[1] }}" data-alt="{{ coords[2] }}">
+                            <div class="loc-icon">
+                                {% if 'white_house' in loc_id or 'pentagon' in loc_id %}
+                                <i class="fas fa-flag-usa"></i>
+                                {% elif 'kremlin' in loc_id %}
+                                <i class="fas fa-landmark"></i>
+                                {% elif 'area_51' in loc_id %}
+                                <i class="fas fa-user-secret"></i>
+                                {% else %}
+                                <i class="fas fa-building"></i>
+                                {% endif %}
+                            </div>
+                            <h5>{{ loc_id.replace('_', ' ').title() }}</h5>
+                            <div class="coords">{{ "%.4f"|format(coords[0]) }}°N, {{ "%.4f"|format(coords[1]) }}°E</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <h4 class="mt-4 text-white">Or Enter Custom Coordinates:</h4>
+                    <div class="custom-coords">
+                        <input type="number" class="coord-input" id="gps-lat" placeholder="Latitude" step="0.0001">
+                        <input type="number" class="coord-input" id="gps-lon" placeholder="Longitude" step="0.0001">
+                        <input type="number" class="coord-input" id="gps-alt" placeholder="Altitude (m)" value="100">
+                    </div>
+                    
+                    <div class="control-row">
+                        <button class="rf-btn rf-btn-warning" id="configure-gps">
+                            <i class="fas fa-cog"></i> Configure Spoof
+                        </button>
+                        <button class="rf-btn rf-btn-danger" id="start-gps" disabled>
+                            <i class="fas fa-broadcast-tower"></i> Start TX
+                        </button>
+                        <button class="rf-btn rf-btn-secondary" id="stop-gps" disabled>
+                            <i class="fas fa-stop"></i> Stop TX
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="rf-panel">
+                    <h3><i class="fas fa-globe"></i> GPS Target Map</h3>
+                    <div class="gps-map" id="gps-map">
+                        <div class="map-placeholder">
+                            <i class="fas fa-crosshairs"></i>
+                            <p>Select a target location</p>
+                            <p id="gps-target-coords">--</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rf-panel">
+                    <h3><i class="fas fa-microchip"></i> Hardware Status</h3>
+                    <div id="gps-hardware-status">
+                        {% if status.tx_ready %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> TX-capable SDR detected
+                        </div>
+                        {% else %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle"></i> No TX-capable SDR found
+                            <p class="small mb-0">Connect HackRF or BladeRF for GPS spoofing</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         TAB 3: GSM IMSI CATCHER
+         ============================================ -->
+    <div class="tab-content" id="tab-gsm">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="rf-panel">
+                    <h3><i class="fas fa-signal"></i> GSM Band Selection</h3>
+                    <div class="gsm-bands">
+                        {% for band in gsm_bands %}
+                        <div class="band-card" data-band="{{ band.id }}">
+                            <div class="band-name">{{ band.name }}</div>
+                            <div class="band-freq">{{ band.freq_start_mhz }} - {{ band.freq_end_mhz }} MHz</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="control-row">
+                        <button class="rf-btn rf-btn-secondary" id="scan-gsm">
+                            <i class="fas fa-search"></i> Scan Bands
+                        </button>
+                        <button class="rf-btn rf-btn-primary" id="start-gsm">
+                            <i class="fas fa-play"></i> Start Monitor
+                        </button>
+                        <button class="rf-btn rf-btn-danger" id="stop-gsm" disabled>
+                            <i class="fas fa-stop"></i> Stop Monitor
+                        </button>
+                        <button class="rf-btn rf-btn-warning" id="export-imsi">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="rf-panel">
+                    <h3><i class="fas fa-list"></i> Captured IMSI Records</h3>
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <table class="imsi-table" id="imsi-table">
+                            <thead>
+                                <tr>
+                                    <th>IMSI</th>
+                                    <th>Country</th>
+                                    <th>Provider</th>
+                                    <th>Signal</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        No IMSI records captured yet. Start monitoring to collect data.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="rf-panel">
+                    <h3><i class="fas fa-chart-pie"></i> IMSI Analysis</h3>
+                    <div class="imsi-heatmap" id="imsi-heatmap">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-chart-area fa-3x mb-3"></i>
+                            <p>Density analysis will appear here</p>
+                        </div>
+                    </div>
+                    <div class="heatmap-legend">
+                        <div class="legend-item">
+                            <div class="legend-color high"></div>
+                            <span>High Density</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color medium"></div>
+                            <span>Medium</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color low"></div>
+                            <span>Low</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rf-panel">
+                    <h3><i class="fas fa-database"></i> Statistics</h3>
+                    <div class="stats-grid" id="gsm-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-imsi-total">0</div>
+                            <div class="stat-label">Total IMSI</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-imsi-unique">0</div>
+                            <div class="stat-label">Unique</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-providers">0</div>
+                            <div class="stat-label">Providers</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-cells">0</div>
+                            <div class="stat-label">Cell Towers</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         TAB 4: SDR DEVICES
+         ============================================ -->
+    <div class="tab-content" id="tab-devices">
+        <div class="rf-panel">
+            <h3><i class="fas fa-hdd"></i> Detected SDR Devices</h3>
+            <button class="rf-btn rf-btn-primary mb-4" id="refresh-devices">
+                <i class="fas fa-sync"></i> Refresh Devices
+            </button>
+            
+            <div class="row" id="device-list">
+                {% if status.sdr_devices %}
+                    {% for device in status.sdr_devices %}
+                    <div class="col-md-4">
+                        <div class="status-card active">
+                            <div class="icon"><i class="fas fa-microchip"></i></div>
+                            <h4>{{ device.name }}</h4>
+                            <p>{{ device.manufacturer }}</p>
+                            <p class="text-success">{{ device.freq_range_mhz[0] }} - {{ device.freq_range_mhz[1] }} MHz</p>
+                            {% if device.tx_capable %}
+                            <span class="badge bg-danger">TX Capable</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-plug fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No SDR Devices Detected</h4>
+                    <p class="text-muted">Connect RTL-SDR or HackRF dongle and click refresh</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="rf-panel">
+            <h3><i class="fas fa-book"></i> Supported Hardware</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <h5 class="text-success"><i class="fas fa-check"></i> RTL-SDR</h5>
+                    <p class="text-muted">RX Only: 24-1766 MHz</p>
+                    <small>Best for: SatCom capture, GSM monitoring</small>
+                </div>
+                <div class="col-md-4">
+                    <h5 class="text-danger"><i class="fas fa-broadcast-tower"></i> HackRF One</h5>
+                    <p class="text-muted">TX/RX: 1-6000 MHz</p>
+                    <small>Best for: GPS spoofing, all operations</small>
+                </div>
+                <div class="col-md-4">
+                    <h5 class="text-warning"><i class="fas fa-server"></i> BladeRF</h5>
+                    <p class="text-muted">TX/RX: 300-3800 MHz</p>
+                    <small>Best for: High bandwidth operations</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cross-Module Integration Panel -->
+    <div class="integration-panel">
+        <h4><i class="fas fa-link"></i> Chain with Modules</h4>
+        <a href="/c2" class="integration-link">
+            <i class="fas fa-network-wired"></i> C2 Implant
+        </a>
+        <a href="/lateral" class="integration-link">
+            <i class="fas fa-sitemap"></i> Lateral Movement
+        </a>
+        <a href="/stego-c2" class="integration-link">
+            <i class="fas fa-image"></i> Stego C2
+        </a>
+        <a href="/telegram-c2" class="integration-link">
+            <i class="fab fa-telegram"></i> Telegram C2
+        </a>
+        <a href="/god-mode" class="integration-link">
+            <i class="fas fa-skull"></i> God Mode
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================
+// ORBITAL RF WARFARE - JAVASCRIPT
+// ============================================
+
+// State
+let selectedSatellite = null;
+let selectedGpsLocation = null;
+let selectedGsmBand = null;
+let satcomEventSource = null;
+let gsmEventSource = null;
+
+// Tab Switching
+document.querySelectorAll('.rf-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        const tabId = this.dataset.tab;
+        
+        // Update active tab
+        document.querySelectorAll('.rf-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Show tab content
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+    });
+});
+
+// ============================================
+// SATCOM SECTION
+// ============================================
+
+// Satellite Selection
+document.querySelectorAll('.satellite-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.satellite-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedSatellite = this.dataset.system;
+    });
+});
+
+// Start SatCom Capture
+document.getElementById('start-satcom').addEventListener('click', async function() {
+    if (!selectedSatellite) {
+        showToast('Select a satellite system first', 'warning');
+        return;
+    }
+    
+    const duration = document.getElementById('satcom-duration').value;
+    
+    try {
+        const response = await fetch('/orbital-rf/api/satcom/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                system: selectedSatellite,
+                duration: parseInt(duration)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('start-satcom').disabled = true;
+            document.getElementById('stop-satcom').disabled = false;
+            document.getElementById('satcom-status').textContent = 'Capturing';
+            
+            // Clear feed
+            document.getElementById('satcom-feed').innerHTML = '';
+            
+            // Start SSE stream
+            startSatcomStream();
+            
+            showToast(`Started ${selectedSatellite} capture`, 'success');
+        } else {
+            showToast(result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Failed to start capture', 'error');
+    }
+});
+
+// Stop SatCom Capture
+document.getElementById('stop-satcom').addEventListener('click', async function() {
+    try {
+        const response = await fetch('/orbital-rf/api/satcom/stop', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('start-satcom').disabled = false;
+            document.getElementById('stop-satcom').disabled = true;
+            document.getElementById('satcom-status').textContent = 'Idle';
+            
+            // Stop SSE stream
+            if (satcomEventSource) {
+                satcomEventSource.close();
+                satcomEventSource = null;
+            }
+            
+            showToast(`Captured ${result.total_captures} items`, 'success');
+        }
+    } catch (error) {
+        showToast('Failed to stop capture', 'error');
+    }
+});
+
+// SSE Stream for SatCom
+function startSatcomStream() {
+    satcomEventSource = new EventSource('/orbital-rf/api/satcom/stream');
+    
+    satcomEventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'heartbeat') return;
+        
+        addSatcomEntry(data);
+        updateSatcomStats();
+    };
+    
+    satcomEventSource.onerror = function() {
+        console.error('SatCom stream error');
+    };
+}
+
+function addSatcomEntry(data) {
+    const feed = document.getElementById('satcom-feed');
+    const entry = document.createElement('div');
+    
+    let systemClass = data.satellite_system || 'default';
+    
+    entry.className = `entry ${systemClass}`;
+    entry.innerHTML = `
+        <div class="timestamp">${data.timestamp || new Date().toISOString()}</div>
+        <div class="signal">${data.signal_strength_db?.toFixed(1) || '-'} dB</div>
+        <div class="content">
+            <strong>[${data.data_type || 'UNKNOWN'}]</strong> ${data.decoded_content || 'No data'}
+        </div>
+    `;
+    
+    feed.insertBefore(entry, feed.firstChild);
+    
+    // Limit entries
+    while (feed.children.length > 100) {
+        feed.removeChild(feed.lastChild);
+    }
+}
+
+async function updateSatcomStats() {
+    try {
+        const response = await fetch('/orbital-rf/api/satcom/stats');
+        const stats = await response.json();
+        
+        document.getElementById('stat-total').textContent = stats.total_captures || 0;
+        document.getElementById('stat-pager').textContent = stats.by_type?.IMS || stats.by_type?.pager || 0;
+        document.getElementById('stat-weather').textContent = stats.by_type?.weather_image || 0;
+        document.getElementById('stat-ais').textContent = stats.by_type?.AIS || 0;
+    } catch (error) {
+        console.error('Stats update error:', error);
+    }
+}
+
+// ============================================
+// GPS SPOOFING SECTION
+// ============================================
+
+// Location Selection
+document.querySelectorAll('.location-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.location-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        
+        selectedGpsLocation = this.dataset.location;
+        
+        const lat = this.dataset.lat;
+        const lon = this.dataset.lon;
+        const alt = this.dataset.alt;
+        
+        document.getElementById('gps-lat').value = lat;
+        document.getElementById('gps-lon').value = lon;
+        document.getElementById('gps-alt').value = alt;
+        
+        document.getElementById('gps-target-coords').innerHTML = 
+            `Target: ${parseFloat(lat).toFixed(4)}°N, ${parseFloat(lon).toFixed(4)}°E, ${alt}m`;
+    });
+});
+
+// Configure GPS Spoof
+document.getElementById('configure-gps').addEventListener('click', async function() {
+    const lat = document.getElementById('gps-lat').value;
+    const lon = document.getElementById('gps-lon').value;
+    const alt = document.getElementById('gps-alt').value;
+    
+    if (!lat || !lon) {
+        showToast('Enter target coordinates', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/orbital-rf/api/gps/configure', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                location: selectedGpsLocation,
+                lat: parseFloat(lat),
+                lon: parseFloat(lon),
+                alt: parseFloat(alt),
+                duration: 60
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('start-gps').disabled = false;
+            showToast('GPS spoof configured', 'success');
+        } else {
+            showToast(result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Configuration failed', 'error');
+    }
+});
+
+// Start GPS Spoof
+document.getElementById('start-gps').addEventListener('click', async function() {
+    if (!confirm('⚠️ GPS spoofing is ILLEGAL without authorization. Continue?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/orbital-rf/api/gps/start', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('start-gps').disabled = true;
+            document.getElementById('stop-gps').disabled = false;
+            document.getElementById('start-gps').classList.add('tx-active');
+            
+            showToast('GPS spoofing ACTIVE!', 'warning');
+        } else {
+            showToast(result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Failed to start TX', 'error');
+    }
+});
+
+// Stop GPS Spoof
+document.getElementById('stop-gps').addEventListener('click', async function() {
+    try {
+        const response = await fetch('/orbital-rf/api/gps/stop', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('start-gps').disabled = false;
+            document.getElementById('stop-gps').disabled = true;
+            document.getElementById('start-gps').classList.remove('tx-active');
+            
+            showToast('GPS spoofing stopped', 'success');
+        }
+    } catch (error) {
+        showToast('Failed to stop TX', 'error');
+    }
+});
+
+// ============================================
+// GSM IMSI SECTION
+// ============================================
+
+// Band Selection
+document.querySelectorAll('.band-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.band-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedGsmBand = this.dataset.band;
+    });
+});
+
+// Scan GSM Bands
+document.getElementById('scan-gsm').addEventListener('click', async function() {
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
+    
+    try {
+        const response = await fetch('/orbital-rf/api/gsm/scan', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        showToast(`Found ${result.cells_found?.length || 0} cell towers`, 'success');
+    } catch (error) {
+        showToast('Scan failed', 'error');
+    } finally {
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-search"></i> Scan Bands';
+    }
+});
+
+// Start GSM Monitor
+document.getElementById('start-gsm').addEventListener('click', async function() {
+    if (!selectedGsmBand) {
+        showToast('Select a GSM band first', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/orbital-rf/api/gsm/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                band: selectedGsmBand,
+                duration: 300
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('start-gsm').disabled = true;
+            document.getElementById('stop-gsm').disabled = false;
+            document.getElementById('gsm-status').textContent = 'Active';
+            
+            // Start polling for records
+            startGsmPolling();
+            
+            showToast('GSM monitoring started', 'success');
+        } else {
+            showToast(result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Failed to start monitor', 'error');
+    }
+});
+
+// Stop GSM Monitor
+document.getElementById('stop-gsm').addEventListener('click', async function() {
+    try {
+        const response = await fetch('/orbital-rf/api/gsm/stop', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('start-gsm').disabled = false;
+            document.getElementById('stop-gsm').disabled = true;
+            document.getElementById('gsm-status').textContent = 'Idle';
+            
+            showToast(`Captured ${result.total_imsi_captured} IMSI records`, 'success');
+        }
+    } catch (error) {
+        showToast('Failed to stop monitor', 'error');
+    }
+});
+
+// Poll GSM Records
+let gsmPollingInterval = null;
+
+function startGsmPolling() {
+    gsmPollingInterval = setInterval(async () => {
+        try {
+            // Get records
+            const recordsResponse = await fetch('/orbital-rf/api/gsm/records?limit=50');
+            const records = await recordsResponse.json();
+            updateImsiTable(records);
+            
+            // Get analysis
+            const analysisResponse = await fetch('/orbital-rf/api/gsm/analysis');
+            const analysis = await analysisResponse.json();
+            updateGsmStats(analysis);
+        } catch (error) {
+            console.error('GSM polling error:', error);
+        }
+    }, 3000);
+}
+
+function updateImsiTable(records) {
+    const tbody = document.querySelector('#imsi-table tbody');
+    
+    if (records.length === 0) return;
+    
+    tbody.innerHTML = records.map(r => `
+        <tr>
+            <td class="imsi-value">${r.imsi}</td>
+            <td>${r.country}</td>
+            <td class="provider">${r.provider}</td>
+            <td class="signal">${r.signal_db} dB</td>
+            <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
+        </tr>
+    `).join('');
+}
+
+function updateGsmStats(analysis) {
+    document.getElementById('stat-imsi-total').textContent = 
+        Object.values(analysis.by_provider || {}).reduce((a, b) => a + b, 0);
+    document.getElementById('stat-imsi-unique').textContent = analysis.total_unique_imsi || 0;
+    document.getElementById('stat-providers').textContent = 
+        Object.keys(analysis.by_provider || {}).length;
+    document.getElementById('stat-cells').textContent = 
+        Object.keys(analysis.by_cell || {}).length;
+}
+
+// Export IMSI
+document.getElementById('export-imsi').addEventListener('click', async function() {
+    try {
+        const response = await fetch('/orbital-rf/api/gsm/export?format=json');
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Exported to ${result.filepath}`, 'success');
+        } else {
+            showToast(result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Export failed', 'error');
+    }
+});
+
+// ============================================
+// DEVICE SECTION
+// ============================================
+
+document.getElementById('refresh-devices').addEventListener('click', async function() {
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting...';
+    
+    try {
+        const response = await fetch('/orbital-rf/api/devices/detect', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Found ${result.devices.length} SDR device(s)`, 'success');
+            location.reload();
+        }
+    } catch (error) {
+        showToast('Detection failed', 'error');
+    } finally {
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-sync"></i> Refresh Devices';
+    }
+});
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+function showToast(message, type) {
+    // Use existing toast system if available
+    if (window.Toastify) {
+        Toastify({
+            text: message,
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: type === 'success' ? '#00ff88' : 
+                            type === 'error' ? '#ff4b4b' : 
+                            type === 'warning' ? '#ffc107' : '#8a2be2'
+        }).showToast();
+    } else {
+        console.log(`[${type}] ${message}`);
+    }
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (satcomEventSource) satcomEventSource.close();
+    if (gsmPollingInterval) clearInterval(gsmPollingInterval);
+});
+</script>
+{% endblock %}

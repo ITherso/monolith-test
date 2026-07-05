@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monolith-cyber"
+version = "0.1.0"
+description = "All-in-one offensive automation platform for red team engagements, adversary emulation, and security research. Includes web scanning, AD attacks, C2 implants, advanced evasion, cloud pivot, and exotic attack vectors."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "ITherso", email = "contact@monolith.example.com"}
+]
+keywords = [
+    "red-team",
+    "c2-framework",
+    "evasion",
+    "adversary-simulation",
+    "penetration-testing",
+    "offensive-security",
+    "active-directory",
+    "lateral-movement",
+    "edr-bypass",
+    "security-research"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Framework :: Flask",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+  "cyberapp",
+  "cyberapp.*",
+  "cybermodules",
+  "cybermodules.*",
+  "monolith",
+  "monolith.*",
+]

@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block title %}Living off the Forest - AD Exploitation - CyberPulse{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <span class="text-4xl">🌲</span>
+                Living off the Forest
+            </h1>
+            <p class="text-gray-400 mt-2">AD'nin kendi özelliklerini ona karşı kullanmak</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="px-3 py-1 text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full animate-pulse">
+                STEALTH
+            </span>
+            <span class="px-3 py-1 text-xs font-bold bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-full">
+                AD NATIVE
+            </span>
+        </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="glass rounded-xl p-4 border border-green-500/30 bg-green-500/5">
+        <div class="flex items-start gap-3">
+            <span class="text-2xl">🌳</span>
+            <div>
+                <h4 class="text-green-400 font-semibold">Ormanın İçinde Yaşamak</h4>
+                <p class="text-gray-400 text-sm mt-1">
+                    Bu modül Active Directory'nin kendi araçlarını (VSS, ACL) kullanarak 
+                    Mimikatz gibi harici araçlardan çok daha sessiz çalışır. 
+                    Antivirüsler ve EDR'ler genellikle bu teknikleri tespit edemez.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="glass rounded-xl border border-gray-700/50">
+        <div class="border-b border-gray-700/50">
+            <nav class="flex space-x-0">
+                <button onclick="switchTab('vss')" id="tab-vss" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-green-500 text-green-400 bg-green-500/10">
+                    <span class="mr-2">📀</span> Shadow Copy Raider
+                </button>
+                <button onclick="switchTab('acl')" id="tab-acl" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">
+                    <span class="mr-2">🔐</span> ACL Backdoor
+                </button>
+                <button onclick="switchTab('playbook')" id="tab-playbook" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white">
+                    <span class="mr-2">📋</span> Attack Playbooks
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- VSS Raider Tab -->
+            <div id="content-vss" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- VSS Generator -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📀</span> Volume Shadow Copy Raider
+                        </h3>
+                        
+                        <div class="glass rounded-xl p-4 border border-amber-500/30 mb-4">
+                            <p class="text-amber-400 text-sm">
+                                <strong>Neden VSS?</strong> ntds.dit dosyası kilitlidir, doğrudan kopyalayamazsın. 
+                                VSS ile sessizce anlık görüntü alınır ve oradan çalınır. 
+                                <span class="text-green-400">Mimikatz'dan çok daha sessiz!</span>
+                            </p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Method Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Extraction Method</label>
+                                <select id="vssMethod" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none">
+                                    <option value="diskshadow">⭐ Diskshadow (Recommended - Less Monitored)</option>
+                                    <option value="powershell">🔷 PowerShell WMI</option>
+                                    <option value="esentutl">🛠️ esentutl / ntdsutil (Most Stealthy)</option>
+                                    <option value="wmic">📟 WMIC Shadow Copy</option>
+                                    <option value="vssadmin">⚠️ vssadmin (May Trigger EDR)</option>
+                                </select>
+                            </div>
+
+                            <!-- Output Path -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Output Path</label>
+                                <input type="text" id="vssOutputPath" value="C:\Windows\Temp"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono focus:border-green-500 focus:outline-none">
+                            </div>
+
+                            <!-- Cleanup Option -->
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="vssCleanup" checked 
+                                       class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500">
+                                <label class="text-sm text-gray-400">Auto-cleanup shadow copies after extraction</label>
+                            </div>
+
+                            <!-- Generate Button -->
+                            <button onclick="generateVSSCommands()" 
+                                    class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>📀</span> Generate VSS Extraction Commands
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- VSS Output -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>💻</span> Generated Commands
+                        </h3>
+                        
+                        <div id="vssOutput" class="glass rounded-xl p-4 border border-gray-600/50 min-h-[300px]">
+                            <div class="flex flex-col items-center justify-center h-full text-gray-500 py-8">
+                                <span class="text-5xl mb-4">📀</span>
+                                <p>Select a method and generate commands</p>
+                            </div>
+                        </div>
+
+                        <div id="vssDownloads" class="hidden flex gap-2">
+                            <button onclick="downloadVSSScript()" 
+                                    class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <span>⬇️</span> Download Script
+                            </button>
+                            <button onclick="copyVSSCommands()" 
+                                    class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <span>📋</span> Copy Commands
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hash Extraction Section -->
+                <div class="mt-6 pt-6 border-t border-gray-700/50">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                        <span>🔓</span> Offline Hash Extraction
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="glass rounded-xl p-4 border border-gray-600/50">
+                            <h4 class="text-cyan-400 font-semibold mb-2 flex items-center gap-2">
+                                <span>🐍</span> impacket-secretsdump
+                            </h4>
+                            <pre class="bg-gray-900/50 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto">impacket-secretsdump -ntds ntds.dit -system SYSTEM LOCAL -outputfile hashes.txt</pre>
+                            <button onclick="copyToClipboard(this.previousElementSibling.textContent)" class="mt-2 text-xs text-cyan-400 hover:text-cyan-300">📋 Copy</button>
+                        </div>
+                        
+                        <div class="glass rounded-xl p-4 border border-gray-600/50">
+                            <h4 class="text-purple-400 font-semibold mb-2 flex items-center gap-2">
+                                <span>🔷</span> DSInternals (PowerShell)
+                            </h4>
+                            <button onclick="generateDSInternals()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm">
+                                Generate DSInternals Script
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACL Backdoor Tab -->
+            <div id="content-acl" class="tab-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- ACL Generator -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>🔐</span> ACL Backdoor Generator
+                        </h3>
+                        
+                        <div class="glass rounded-xl p-4 border border-red-500/30 mb-4">
+                            <p class="text-red-400 text-sm">
+                                <strong>Neden ACL?</strong> Domain Admin kullanıcısı yaratmak çok ses çıkarır. 
+                                Bunun yerine <span class="text-yellow-400">stajyer_ahmet</span> gibi normal bir kullanıcıya 
+                                gizli yetki verilir. Kimse fark etmez ama o hesap aslında <span class="text-green-400">gizli admin</span>!
+                            </p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Target User -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Backdoor User (Gizli Admin)</label>
+                                <input type="text" id="aclTargetUser" value="stajyer_ahmet"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-red-500 focus:outline-none"
+                                       placeholder="Normal görünen kullanıcı">
+                            </div>
+
+                            <!-- Target Object -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Target Object (Hedef)</label>
+                                <select id="aclTargetObject" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-red-500 focus:outline-none">
+                                    <option value="Domain Admins">👑 Domain Admins Group</option>
+                                    <option value="Enterprise Admins">🏢 Enterprise Admins Group</option>
+                                    <option value="AdminSDHolder">⭐ AdminSDHolder (Self-Healing Backdoor!)</option>
+                                    <option value="Domain Root">🌐 Domain Root (For DCSync)</option>
+                                    <option value="krbtgt">🎫 krbtgt Account</option>
+                                    <option value="Administrators">🔧 Administrators Group</option>
+                                </select>
+                            </div>
+
+                            <!-- ACL Right -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">ACL Right (Verilecek Yetki)</label>
+                                <select id="aclRight" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-red-500 focus:outline-none">
+                                    <option value="Self">➕ Self Membership (Gruba kendini ekle)</option>
+                                    <option value="User-Force-Change-Password">🔑 Force Change Password (Şifre sıfırla)</option>
+                                    <option value="GenericAll">👑 GenericAll (Full Control)</option>
+                                    <option value="WriteDacl">📝 WriteDacl (İzinleri değiştir)</option>
+                                    <option value="DS-Replication-Get-Changes">📡 DCSync Rights (Hash çek)</option>
+                                </select>
+                            </div>
+
+                            <!-- Domain -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Domain</label>
+                                <input type="text" id="aclDomain" value="corp.local"
+                                       class="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-red-500 focus:outline-none">
+                            </div>
+
+                            <!-- Generate Button -->
+                            <button onclick="generateACLBackdoor()" 
+                                    class="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>🔐</span> Generate ACL Backdoor
+                            </button>
+
+                            <!-- AdminSDHolder Special -->
+                            <button onclick="generateAdminSDHolder()" 
+                                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <span>⭐</span> Generate AdminSDHolder Backdoor (Most Persistent!)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ACL Output -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📜</span> Generated Script & Attack Path
+                        </h3>
+                        
+                        <div id="aclOutput" class="glass rounded-xl p-4 border border-gray-600/50 min-h-[400px] overflow-auto">
+                            <div class="flex flex-col items-center justify-center h-full text-gray-500 py-8">
+                                <span class="text-5xl mb-4">🔐</span>
+                                <p>Configure and generate ACL backdoor</p>
+                            </div>
+                        </div>
+
+                        <div id="aclDownloads" class="hidden flex gap-2">
+                            <button onclick="downloadACLScript()" 
+                                    class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <span>⬇️</span> Download Script
+                            </button>
+                            <button onclick="copyACLCommands()" 
+                                    class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <span>📋</span> Copy Commands
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attack Path Visualization -->
+                <div id="attackPathSection" class="hidden mt-6 pt-6 border-t border-gray-700/50">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                        <span>🗺️</span> Attack Path
+                    </h3>
+                    <div id="attackPathContainer" class="glass rounded-xl p-4 border border-cyan-500/30">
+                        <!-- Attack path will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playbook Tab -->
+            <div id="content-playbook" class="tab-content hidden">
+                <div class="space-y-6">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <span>📋</span> Attack Playbooks
+                    </h3>
+
+                    <!-- Full Domain Takeover -->
+                    <div class="glass rounded-xl border border-cyan-500/30 overflow-hidden">
+                        <div class="px-4 py-3 bg-cyan-500/10 border-b border-cyan-500/30 flex items-center justify-between">
+                            <h4 class="text-cyan-400 font-semibold flex items-center gap-2">
+                                <span>👑</span> Full Domain Takeover
+                            </h4>
+                            <button onclick="loadPlaybook('full_domain_takeover')" class="text-xs bg-cyan-600 hover:bg-cyan-500 px-3 py-1 rounded text-white">
+                                Load Playbook
+                            </button>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-gray-400 text-sm mb-4">Initial access'ten complete domain compromise'a kadar tüm adımlar.</p>
+                            <div id="playbook-full_domain_takeover" class="space-y-2">
+                                <!-- Loaded via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stealth Persistence -->
+                    <div class="glass rounded-xl border border-purple-500/30 overflow-hidden">
+                        <div class="px-4 py-3 bg-purple-500/10 border-b border-purple-500/30 flex items-center justify-between">
+                            <h4 class="text-purple-400 font-semibold flex items-center gap-2">
+                                <span>🥷</span> Stealth Persistence
+                            </h4>
+                            <button onclick="loadPlaybook('stealth_persistence')" class="text-xs bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded text-white">
+                                Load Playbook
+                            </button>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-gray-400 text-sm mb-4">Tespit edilmesi zor backdoor'lar. AdminSDHolder self-healing backdoor dahil.</p>
+                            <div id="playbook-stealth_persistence" class="space-y-2">
+                                <!-- Loaded via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Reference -->
+                <div class="mt-6 pt-6 border-t border-gray-700/50">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                        <span>📚</span> Quick Reference
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="glass rounded-xl p-4 border border-green-500/20">
+                            <h4 class="text-green-400 font-semibold mb-2">📀 VSS Raider</h4>
+                            <ul class="text-gray-400 text-sm space-y-1">
+                                <li>• ntds.dit kilitli olsa bile çalışır</li>
+                                <li>• Mimikatz'dan daha sessiz</li>
+                                <li>• Offline hash extraction</li>
+                                <li>• Tüm domain hash'leri</li>
+                            </ul>
+                        </div>
+                        <div class="glass rounded-xl p-4 border border-red-500/20">
+                            <h4 class="text-red-400 font-semibold mb-2">🔐 ACL Backdoor</h4>
+                            <ul class="text-gray-400 text-sm space-y-1">
+                                <li>• Gizli admin yetkisi</li>
+                                <li>• BloodHound bile kaçırabilir</li>
+                                <li>• AdminSDHolder = Self-healing</li>
+                                <li>• DCSync rights = Remote hash dump</li>
+                            </ul>
+                        </div>
+                        <div class="glass rounded-xl p-4 border border-amber-500/20">
+                            <h4 class="text-amber-400 font-semibold mb-2">⚠️ Detection</h4>
+                            <ul class="text-gray-400 text-sm space-y-1">
+                                <li>• Event ID 5136 (ACL changes)</li>
+                                <li>• Event ID 8222 (VSS creation)</li>
+                                <li>• Unusual replication requests</li>
+                                <li>• AdminSDHolder ACL review</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Code Modal -->
+<div id="codeModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
+    <div class="bg-gray-900 rounded-xl border border-gray-700 max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 class="text-white font-semibold" id="modalTitle">Code Preview</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <div class="p-4 overflow-auto max-h-[70vh]">
+            <pre id="modalCode" class="text-sm text-gray-300 font-mono whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentVSSResult = null;
+let currentACLResult = null;
+
+// Tab switching
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-green-500', 'text-green-400', 'bg-green-500/10');
+        btn.classList.add('border-transparent', 'text-gray-400');
+    });
+    
+    const activeTab = document.getElementById(`tab-${tabName}`);
+    activeTab.classList.remove('border-transparent', 'text-gray-400');
+    activeTab.classList.add('border-green-500', 'text-green-400', 'bg-green-500/10');
+    
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(`content-${tabName}`).classList.remove('hidden');
+}
+
+// Generate VSS Commands
+async function generateVSSCommands() {
+    const config = {
+        method: document.getElementById('vssMethod').value,
+        output_path: document.getElementById('vssOutputPath').value,
+        cleanup: document.getElementById('vssCleanup').checked
+    };
+    
+    try {
+        const response = await fetch('/lotf-ad/api/vss/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentVSSResult = data.result;
+            displayVSSResult(data.result);
+            document.getElementById('vssDownloads').classList.remove('hidden');
+        }
+    } catch (error) {
+        alert('Error generating commands: ' + error.message);
+    }
+}
+
+function displayVSSResult(result) {
+    const container = document.getElementById('vssOutput');
+    
+    let html = `
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <span class="text-green-400 font-semibold">${result.method.toUpperCase()}</span>
+                <span class="px-2 py-1 text-xs rounded ${getOpsecClass(result.opsec_rating)}">
+                    OPSEC: ${result.opsec_rating}
+                </span>
+            </div>
+            
+            <div class="text-sm text-amber-400 mb-2">
+                ⚠️ ${result.detection_notes}
+            </div>
+            
+            <div class="bg-gray-900/50 rounded-lg p-3 max-h-[300px] overflow-auto">
+                <pre class="text-xs text-gray-300 font-mono">${result.commands.join('\n')}</pre>
+            </div>
+            
+            <div class="text-sm text-gray-400">
+                <strong>Output Files:</strong>
+                <ul class="mt-1 space-y-1">
+                    <li>📄 ${result.output_files.ntds}</li>
+                    <li>📄 ${result.output_files.system}</li>
+                    <li>📄 ${result.output_files.security}</li>
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function getOpsecClass(rating) {
+    if (rating === 'high') return 'bg-green-500/20 text-green-400';
+    if (rating === 'medium-high') return 'bg-green-500/20 text-green-400';
+    if (rating === 'medium') return 'bg-yellow-500/20 text-yellow-400';
+    return 'bg-red-500/20 text-red-400';
+}
+
+// Generate ACL Backdoor
+async function generateACLBackdoor() {
+    const config = {
+        target_user: document.getElementById('aclTargetUser').value,
+        target_object: document.getElementById('aclTargetObject').value,
+        acl_right: document.getElementById('aclRight').value,
+        domain: document.getElementById('aclDomain').value
+    };
+    
+    try {
+        const response = await fetch('/lotf-ad/api/acl/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentACLResult = data.result;
+            displayACLResult(data.result);
+            document.getElementById('aclDownloads').classList.remove('hidden');
+            document.getElementById('attackPathSection').classList.remove('hidden');
+        }
+    } catch (error) {
+        alert('Error generating backdoor: ' + error.message);
+    }
+}
+
+async function generateAdminSDHolder() {
+    const config = {
+        target_user: document.getElementById('aclTargetUser').value,
+        domain: document.getElementById('aclDomain').value
+    };
+    
+    try {
+        const response = await fetch('/lotf-ad/api/acl/adminsd-holder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentACLResult = data.result;
+            displayAdminSDResult(data.result);
+            document.getElementById('aclDownloads').classList.remove('hidden');
+        }
+    } catch (error) {
+        alert('Error generating AdminSDHolder backdoor: ' + error.message);
+    }
+}
+
+function displayACLResult(result) {
+    const container = document.getElementById('aclOutput');
+    
+    let html = `
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <span class="text-red-400 font-semibold">${result.acl_right}</span>
+                <span class="px-2 py-1 text-xs rounded ${getDetectionClass(result.detection_risk)}">
+                    Risk: ${result.detection_risk}
+                </span>
+            </div>
+            
+            <div class="text-sm">
+                <span class="text-gray-400">Target:</span>
+                <span class="text-white ml-2">${result.target_object}</span>
+            </div>
+            
+            <div class="text-sm">
+                <span class="text-gray-400">Backdoor User:</span>
+                <span class="text-yellow-400 ml-2">${result.target_user}</span>
+            </div>
+            
+            <div class="bg-gray-900/50 rounded-lg p-3 max-h-[200px] overflow-auto">
+                <pre class="text-xs text-gray-300 font-mono">${result.powershell_commands.slice(0, 20).join('\n')}</pre>
+            </div>
+            
+            <div class="text-sm text-gray-400">
+                <strong>Persistence:</strong>
+                <p class="mt-1">${result.persistence_notes.substring(0, 200)}...</p>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    
+    // Display attack path
+    const pathContainer = document.getElementById('attackPathContainer');
+    pathContainer.innerHTML = result.attack_path.map((step, idx) => `
+        <div class="flex items-center gap-3 py-2 ${idx > 0 ? 'border-t border-gray-700/50' : ''}">
+            <span class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">${idx + 1}</span>
+            <span class="text-gray-300">${step}</span>
+        </div>
+    `).join('');
+}
+
+function displayAdminSDResult(result) {
+    const container = document.getElementById('aclOutput');
+    
+    let html = `
+        <div class="space-y-4">
+            <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                <h4 class="text-purple-400 font-semibold mb-2">⭐ AdminSDHolder Backdoor</h4>
+                <p class="text-gray-300 text-sm">${result.description.substring(0, 300)}...</p>
+            </div>
+            
+            <div class="text-sm text-green-400">
+                <strong>Persistence Level:</strong> ${result.persistence_level}
+            </div>
+            
+            <div class="bg-gray-900/50 rounded-lg p-3 max-h-[200px] overflow-auto">
+                <pre class="text-xs text-gray-300 font-mono">${result.exploitation.join('\n')}</pre>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function getDetectionClass(risk) {
+    if (risk === 'low') return 'bg-green-500/20 text-green-400';
+    if (risk === 'low-medium') return 'bg-green-500/20 text-green-400';
+    if (risk === 'medium') return 'bg-yellow-500/20 text-yellow-400';
+    return 'bg-red-500/20 text-red-400';
+}
+
+// Load Playbook
+async function loadPlaybook(scenario) {
+    try {
+        const response = await fetch(`/lotf-ad/api/playbook/${scenario}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const container = document.getElementById(`playbook-${scenario}`);
+            
+            container.innerHTML = data.playbook.steps.map((step, idx) => `
+                <div class="glass rounded-lg p-3 border border-gray-600/30">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs font-bold">${idx + 1}</span>
+                        <span class="text-white font-semibold">${step.phase}</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">${step.description}</p>
+                    ${step.command ? `<code class="text-xs text-green-400 mt-2 block">${step.command}</code>` : ''}
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading playbook:', error);
+    }
+}
+
+// DSInternals Script
+async function generateDSInternals() {
+    try {
+        const response = await fetch('/lotf-ad/api/vss/dsinternals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ntds_path: 'ntds.dit',
+                system_path: 'SYSTEM'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('modalTitle').textContent = 'DSInternals Script';
+            document.getElementById('modalCode').textContent = data.script;
+            document.getElementById('codeModal').classList.remove('hidden');
+            document.getElementById('codeModal').classList.add('flex');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Download functions
+async function downloadVSSScript() {
+    if (!currentVSSResult) return;
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/lotf-ad/api/download/vss-script';
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'data';
+    input.value = JSON.stringify({ method: currentVSSResult.method });
+    form.appendChild(input);
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+async function downloadACLScript() {
+    if (!currentACLResult) return;
+    
+    const config = {
+        target_user: document.getElementById('aclTargetUser').value,
+        target_object: document.getElementById('aclTargetObject').value,
+        acl_right: document.getElementById('aclRight').value,
+        domain: document.getElementById('aclDomain').value
+    };
+    
+    try {
+        const response = await fetch('/lotf-ad/api/download/acl-script', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'acl_backdoor.ps1';
+        a.click();
+    } catch (error) {
+        alert('Error downloading: ' + error.message);
+    }
+}
+
+function copyVSSCommands() {
+    if (!currentVSSResult) return;
+    navigator.clipboard.writeText(currentVSSResult.commands.join('\n'));
+    alert('Commands copied to clipboard!');
+}
+
+function copyACLCommands() {
+    if (!currentACLResult) return;
+    const commands = currentACLResult.powershell_commands || currentACLResult.exploitation;
+    navigator.clipboard.writeText(commands.join('\n'));
+    alert('Commands copied to clipboard!');
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text);
+}
+
+function closeModal() {
+    document.getElementById('codeModal').classList.add('hidden');
+    document.getElementById('codeModal').classList.remove('flex');
+}
+
+// Close modal on escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+{% endblock %}

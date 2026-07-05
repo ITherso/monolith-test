@@ -1,0 +1,842 @@
+{% extends "base.html" %}
+
+{% block title %}Deepfake Vishing - CEO Voice Cloning{% endblock %}
+
+{% block extra_css %}
+<style>
+    .vishing-header {
+        background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #4a1a6b 100%);
+        border: 1px solid #9d4edd;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .vishing-header h1 {
+        color: #e879f9;
+        text-shadow: 0 0 20px #c026d3;
+    }
+    
+    .voice-profile-card {
+        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+        border: 1px solid #6366f1;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .voice-profile-card:hover {
+        border-color: #a855f7;
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+    }
+    
+    .provider-badge {
+        background: linear-gradient(90deg, #7c3aed, #c026d3);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .emotion-btn {
+        background: transparent;
+        border: 2px solid #6366f1;
+        color: #a5b4fc;
+        padding: 8px 16px;
+        border-radius: 8px;
+        margin: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .emotion-btn:hover, .emotion-btn.active {
+        background: #6366f1;
+        color: white;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+    }
+    
+    .template-card {
+        background: #1a1a2e;
+        border: 1px solid #374151;
+        border-radius: 10px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .template-card:hover, .template-card.selected {
+        border-color: #c026d3;
+        background: #1f1f3a;
+    }
+    
+    .waveform-container {
+        background: #0a0a14;
+        border: 1px solid #4f46e5;
+        border-radius: 10px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    
+    .waveform-bar {
+        width: 4px;
+        margin: 0 2px;
+        background: linear-gradient(180deg, #c026d3, #7c3aed);
+        border-radius: 2px;
+        animation: wave 1s ease-in-out infinite;
+    }
+    
+    @keyframes wave {
+        0%, 100% { height: 20px; }
+        50% { height: 60px; }
+    }
+    
+    .call-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .call-status .pulse {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+    
+    .call-status.ringing .pulse { background: #fbbf24; }
+    .call-status.connected .pulse { background: #22c55e; }
+    .call-status.ended .pulse { background: #ef4444; }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 currentColor; }
+        70% { box-shadow: 0 0 0 10px transparent; }
+        100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    
+    .campaign-progress {
+        height: 8px;
+        background: #1f2937;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .campaign-progress .bar {
+        height: 100%;
+        background: linear-gradient(90deg, #c026d3, #7c3aed, #2563eb);
+        background-size: 200% 100%;
+        animation: shimmer 2s linear infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .script-editor {
+        background: #0a0a14;
+        border: 1px solid #4f46e5;
+        border-radius: 10px;
+        font-family: 'Fira Code', monospace;
+        color: #e879f9;
+        min-height: 150px;
+    }
+    
+    .variable-tag {
+        background: #7c3aed;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        margin: 2px;
+        display: inline-block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="vishing-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="fas fa-microphone-alt me-3"></i>Deepfake Vishing Module</h1>
+                <p class="text-muted mb-0">
+                    <span class="badge bg-danger me-2">PRO</span>
+                    CEO Voice Cloning • VoIP Integration • Caller ID Spoofing • Campaign Management
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-outline-purple me-2" data-bs-toggle="modal" data-bs-target="#configModal">
+                    <i class="fas fa-cog"></i> Config
+                </button>
+                <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#newProfileModal">
+                    <i class="fas fa-plus"></i> New Voice Profile
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Panel - Voice Profiles -->
+        <div class="col-lg-4">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>Voice Profiles</h5>
+                    <span class="badge bg-purple" id="profileCount">0</span>
+                </div>
+                <div class="card-body" id="voiceProfiles" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-microphone-slash fa-3x mb-3 opacity-50"></i>
+                        <p>No voice profiles yet</p>
+                        <button class="btn btn-sm btn-outline-purple" data-bs-toggle="modal" data-bs-target="#newProfileModal">
+                            Clone your first voice
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h3 class="text-purple mb-0" id="statCampaigns">0</h3>
+                            <small class="text-muted">Campaigns</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h3 class="text-info mb-0" id="statCalls">0</h3>
+                            <small class="text-muted">Total Calls</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-success mb-0" id="statAnswered">0</h3>
+                            <small class="text-muted">Answered</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-warning mb-0" id="statRate">0%</h3>
+                            <small class="text-muted">Answer Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Center Panel - Audio Generation -->
+        <div class="col-lg-5">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-waveform me-2"></i>Audio Generation</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Voice Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Voice Profile</label>
+                        <select class="form-select bg-dark text-light border-secondary" id="selectedProfile">
+                            <option value="">-- Select a profile --</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Script Templates -->
+                    <div class="mb-3">
+                        <label class="form-label">Script Template</label>
+                        <div class="row" id="templateGrid">
+                            <div class="col-6 mb-2">
+                                <div class="template-card selected" data-template="ceo_urgent_transfer">
+                                    <i class="fas fa-money-bill-wave text-success mb-2"></i>
+                                    <div class="small fw-bold">CEO Wire Transfer</div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="template-card" data-template="it_support_password">
+                                    <i class="fas fa-key text-warning mb-2"></i>
+                                    <div class="small fw-bold">IT Support</div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="template-card" data-template="vendor_invoice">
+                                    <i class="fas fa-file-invoice text-info mb-2"></i>
+                                    <div class="small fw-bold">Vendor Invoice</div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="template-card" data-template="custom">
+                                    <i class="fas fa-edit text-purple mb-2"></i>
+                                    <div class="small fw-bold">Custom Script</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Script Editor -->
+                    <div class="mb-3">
+                        <label class="form-label">Script Content</label>
+                        <textarea class="form-control script-editor" id="scriptContent" rows="5" 
+                            placeholder="Hi {target_name}, this is {ceo_name}. I need you to process an urgent wire transfer..."></textarea>
+                        <div class="mt-2" id="variableTags">
+                            <span class="variable-tag">{target_name}</span>
+                            <span class="variable-tag">{ceo_name}</span>
+                            <span class="variable-tag">{amount}</span>
+                            <span class="variable-tag">{recipient}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Voice Emotion -->
+                    <div class="mb-3">
+                        <label class="form-label">Voice Emotion</label>
+                        <div id="emotionButtons">
+                            <button class="emotion-btn active" data-emotion="urgent">😰 Urgent</button>
+                            <button class="emotion-btn" data-emotion="authoritative">👔 Authoritative</button>
+                            <button class="emotion-btn" data-emotion="calm">😌 Calm</button>
+                            <button class="emotion-btn" data-emotion="worried">😟 Worried</button>
+                            <button class="emotion-btn" data-emotion="friendly">😊 Friendly</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <button class="btn btn-purple btn-lg w-100" id="generateAudioBtn">
+                        <i class="fas fa-magic me-2"></i>Generate Deepfake Audio
+                    </button>
+                    
+                    <!-- Audio Preview -->
+                    <div class="mt-4" id="audioPreview" style="display: none;">
+                        <div class="waveform-container mb-3" id="waveform">
+                            <!-- Waveform bars will be generated here -->
+                        </div>
+                        <audio controls class="w-100" id="audioPlayer"></audio>
+                        <div class="mt-2 d-flex gap-2">
+                            <button class="btn btn-outline-success flex-grow-1" id="downloadAudioBtn">
+                                <i class="fas fa-download me-1"></i> Download
+                            </button>
+                            <button class="btn btn-outline-info flex-grow-1" id="callWithAudioBtn">
+                                <i class="fas fa-phone me-1"></i> Make Call
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Campaigns & Calls -->
+        <div class="col-lg-3">
+            <!-- Active Campaign -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Campaigns</h5>
+                    <button class="btn btn-sm btn-outline-purple" data-bs-toggle="modal" data-bs-target="#newCampaignModal">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="campaignsList" style="max-height: 250px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-bullhorn fa-2x mb-2 opacity-50"></i>
+                        <p class="small">No active campaigns</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Calls -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-phone-alt me-2"></i>Recent Calls</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="recentCalls" style="max-height: 300px; overflow-y: auto;">
+                        <div class="list-group-item bg-dark border-secondary text-center text-muted py-4">
+                            <i class="fas fa-phone-slash fa-2x mb-2 opacity-50"></i>
+                            <p class="small mb-0">No calls yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Voice Profile Modal -->
+<div class="modal fade" id="newProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border-purple">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-microphone me-2"></i>Create Voice Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Profile Name</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" id="profileName" placeholder="CEO John Smith">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Voice Provider</label>
+                            <select class="form-select bg-dark text-light border-secondary" id="voiceProvider">
+                                <option value="elevenlabs">ElevenLabs (Best Quality)</option>
+                                <option value="azure">Azure Cognitive Services</option>
+                                <option value="openai">OpenAI TTS</option>
+                                <option value="local_rvc">Local RVC (Self-hosted)</option>
+                                <option value="bark">Bark (Local)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Language</label>
+                            <select class="form-select bg-dark text-light border-secondary" id="profileLanguage">
+                                <option value="en-US">English (US)</option>
+                                <option value="en-GB">English (UK)</option>
+                                <option value="tr-TR">Turkish</option>
+                                <option value="de-DE">German</option>
+                                <option value="fr-FR">French</option>
+                                <option value="es-ES">Spanish</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Voice Sample</label>
+                            <div class="border border-secondary rounded p-4 text-center" id="voiceSampleDrop">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-purple mb-3"></i>
+                                <p class="mb-2">Drop audio file here or click to upload</p>
+                                <small class="text-muted">MP3, WAV, M4A - Min 30 seconds</small>
+                                <input type="file" class="d-none" id="voiceSampleFile" accept="audio/*">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Or Record Sample</label>
+                            <button class="btn btn-outline-danger w-100" id="recordSampleBtn">
+                                <i class="fas fa-circle me-2"></i>Start Recording
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-purple" id="createProfileBtn">
+                    <i class="fas fa-clone me-2"></i>Clone Voice
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Campaign Modal -->
+<div class="modal fade" id="newCampaignModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border-purple">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-bullhorn me-2"></i>Create Vishing Campaign</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Campaign Name</label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="campaignName" placeholder="Q4 Executive Phishing">
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Voice Profile</label>
+                            <select class="form-select bg-dark text-light border-secondary" id="campaignProfile">
+                                <option value="">Select profile...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Caller ID (Spoof)</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" id="campaignCallerId" placeholder="+1-555-CEO-0001">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Target Phone Numbers (one per line)</label>
+                    <textarea class="form-control bg-dark text-light border-secondary" id="campaignTargets" rows="4" placeholder="+1-555-123-4567&#10;+1-555-234-5678&#10;+1-555-345-6789"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-purple" id="createCampaignBtn">
+                    <i class="fas fa-rocket me-2"></i>Launch Campaign
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Config Modal -->
+<div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-cog me-2"></i>Vishing Configuration</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="text-purple mb-3">Voice Provider API Keys</h6>
+                <div class="mb-3">
+                    <label class="form-label">ElevenLabs API Key</label>
+                    <input type="password" class="form-control bg-dark text-light border-secondary" id="elevenlabsKey">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">OpenAI API Key</label>
+                    <input type="password" class="form-control bg-dark text-light border-secondary" id="openaiKey">
+                </div>
+                
+                <h6 class="text-purple mb-3 mt-4">VoIP Provider</h6>
+                <div class="mb-3">
+                    <label class="form-label">Twilio Account SID</label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="twilioSid">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Twilio Auth Token</label>
+                    <input type="password" class="form-control bg-dark text-light border-secondary" id="twilioToken">
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-purple" id="saveConfigBtn">Save Config</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    loadVoiceProfiles();
+    loadCampaigns();
+    loadStatistics();
+    loadRecentCalls();
+    
+    // Template selection
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            updateScriptTemplate(this.dataset.template);
+        });
+    });
+    
+    // Emotion buttons
+    document.querySelectorAll('.emotion-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.emotion-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    // Generate audio
+    document.getElementById('generateAudioBtn').addEventListener('click', generateAudio);
+    
+    // Voice sample upload
+    document.getElementById('voiceSampleDrop').addEventListener('click', () => {
+        document.getElementById('voiceSampleFile').click();
+    });
+    
+    // Create profile
+    document.getElementById('createProfileBtn').addEventListener('click', createVoiceProfile);
+    
+    // Create campaign
+    document.getElementById('createCampaignBtn').addEventListener('click', createCampaign);
+});
+
+async function loadVoiceProfiles() {
+    try {
+        const response = await fetch('/deepfake-vishing/api/profiles');
+        const data = await response.json();
+        
+        const container = document.getElementById('voiceProfiles');
+        const select = document.getElementById('selectedProfile');
+        const campaignSelect = document.getElementById('campaignProfile');
+        
+        document.getElementById('profileCount').textContent = data.profiles.length;
+        
+        if (data.profiles.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-microphone-slash fa-3x mb-3 opacity-50"></i>
+                    <p>No voice profiles yet</p>
+                    <button class="btn btn-sm btn-outline-purple" data-bs-toggle="modal" data-bs-target="#newProfileModal">
+                        Clone your first voice
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = data.profiles.map(profile => `
+            <div class="voice-profile-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">${profile.name}</h6>
+                        <small class="text-muted">${profile.language}</small>
+                    </div>
+                    <span class="provider-badge">${profile.provider}</span>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-light me-1" onclick="selectProfile('${profile.id}')">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProfile('${profile.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        
+        // Update selects
+        const options = data.profiles.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        select.innerHTML = '<option value="">-- Select a profile --</option>' + options;
+        campaignSelect.innerHTML = '<option value="">Select profile...</option>' + options;
+        
+    } catch (error) {
+        console.error('Error loading profiles:', error);
+    }
+}
+
+async function loadCampaigns() {
+    try {
+        const response = await fetch('/deepfake-vishing/api/campaigns');
+        const data = await response.json();
+        
+        const container = document.getElementById('campaignsList');
+        
+        if (data.campaigns.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-bullhorn fa-2x mb-2 opacity-50"></i>
+                    <p class="small">No active campaigns</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = data.campaigns.map(campaign => `
+            <div class="mb-3 p-2 border border-secondary rounded">
+                <div class="d-flex justify-content-between">
+                    <strong>${campaign.name}</strong>
+                    <span class="badge ${campaign.status === 'running' ? 'bg-success' : 'bg-secondary'}">${campaign.status}</span>
+                </div>
+                <div class="campaign-progress mt-2">
+                    <div class="bar" style="width: ${(campaign.completed_calls / campaign.total_targets * 100) || 0}%"></div>
+                </div>
+                <small class="text-muted">${campaign.completed_calls}/${campaign.total_targets} calls</small>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading campaigns:', error);
+    }
+}
+
+async function loadStatistics() {
+    try {
+        const response = await fetch('/deepfake-vishing/api/statistics');
+        const data = await response.json();
+        
+        document.getElementById('statCampaigns').textContent = data.statistics.total_campaigns;
+        document.getElementById('statCalls').textContent = data.statistics.total_calls;
+        document.getElementById('statAnswered').textContent = data.statistics.answered_calls;
+        document.getElementById('statRate').textContent = data.statistics.answer_rate.toFixed(1) + '%';
+        
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+}
+
+async function loadRecentCalls() {
+    try {
+        const response = await fetch('/deepfake-vishing/api/calls');
+        const data = await response.json();
+        
+        const container = document.getElementById('recentCalls');
+        
+        if (data.calls.length === 0) {
+            container.innerHTML = `
+                <div class="list-group-item bg-dark border-secondary text-center text-muted py-4">
+                    <i class="fas fa-phone-slash fa-2x mb-2 opacity-50"></i>
+                    <p class="small mb-0">No calls yet</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = data.calls.slice(0, 10).map(call => `
+            <div class="list-group-item bg-dark border-secondary">
+                <div class="d-flex justify-content-between">
+                    <span>${call.target}</span>
+                    <span class="badge ${call.answered ? 'bg-success' : 'bg-danger'}">
+                        ${call.answered ? 'Answered' : 'No Answer'}
+                    </span>
+                </div>
+                <small class="text-muted">${call.duration}s</small>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading calls:', error);
+    }
+}
+
+function updateScriptTemplate(template) {
+    const templates = {
+        'ceo_urgent_transfer': 'Hi {target_name}, this is {ceo_name}. I\'m in an urgent meeting and need you to process a wire transfer of {amount} to {recipient} immediately. This is time-sensitive and confidential. Please confirm once done.',
+        'it_support_password': 'Hello {target_name}, this is {it_name} from IT Support. We\'re seeing some unusual login attempts on your account. For security, I need to verify your identity. Can you confirm your current password so we can reset it?',
+        'vendor_invoice': 'Hi, this is {vendor_name} from {company}. We\'ve updated our banking details and need you to update our payment information for invoice {invoice_number}. The new account number is {new_account}.',
+        'custom': ''
+    };
+    
+    document.getElementById('scriptContent').value = templates[template] || '';
+}
+
+async function generateAudio() {
+    const profileId = document.getElementById('selectedProfile').value;
+    const text = document.getElementById('scriptContent').value;
+    const emotion = document.querySelector('.emotion-btn.active').dataset.emotion;
+    
+    if (!profileId || !text) {
+        alert('Please select a voice profile and enter script text');
+        return;
+    }
+    
+    const btn = document.getElementById('generateAudioBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+    
+    try {
+        const response = await fetch('/deepfake-vishing/api/generate-audio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                profile_id: profileId,
+                text: text,
+                emotion: emotion
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.audio.audio_base64) {
+            // Show audio preview
+            document.getElementById('audioPreview').style.display = 'block';
+            
+            // Set audio source
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.src = 'data:audio/mp3;base64,' + data.audio.audio_base64;
+            
+            // Generate waveform animation
+            generateWaveform();
+        }
+        
+    } catch (error) {
+        console.error('Error generating audio:', error);
+        alert('Error generating audio: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-magic me-2"></i>Generate Deepfake Audio';
+    }
+}
+
+function generateWaveform() {
+    const container = document.getElementById('waveform');
+    container.innerHTML = '';
+    
+    for (let i = 0; i < 50; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'waveform-bar';
+        bar.style.animationDelay = (i * 0.05) + 's';
+        container.appendChild(bar);
+    }
+}
+
+async function createVoiceProfile() {
+    const name = document.getElementById('profileName').value;
+    const provider = document.getElementById('voiceProvider').value;
+    const language = document.getElementById('profileLanguage').value;
+    
+    if (!name) {
+        alert('Please enter a profile name');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/deepfake-vishing/api/profiles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                provider: provider,
+                language: language
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('newProfileModal')).hide();
+            loadVoiceProfiles();
+        }
+        
+    } catch (error) {
+        console.error('Error creating profile:', error);
+    }
+}
+
+async function createCampaign() {
+    const name = document.getElementById('campaignName').value;
+    const profileId = document.getElementById('campaignProfile').value;
+    const callerId = document.getElementById('campaignCallerId').value;
+    const targets = document.getElementById('campaignTargets').value.split('\n').filter(t => t.trim());
+    
+    if (!name || !profileId || targets.length === 0) {
+        alert('Please fill all required fields');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/deepfake-vishing/api/campaigns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                profile_id: profileId,
+                caller_id: callerId,
+                targets: targets.map(t => ({ phone: t.trim(), name: '' }))
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('newCampaignModal')).hide();
+            loadCampaigns();
+        }
+        
+    } catch (error) {
+        console.error('Error creating campaign:', error);
+    }
+}
+
+function selectProfile(profileId) {
+    document.getElementById('selectedProfile').value = profileId;
+}
+
+async function deleteProfile(profileId) {
+    if (!confirm('Delete this voice profile?')) return;
+    
+    try {
+        await fetch(`/deepfake-vishing/api/profiles/${profileId}`, { method: 'DELETE' });
+        loadVoiceProfiles();
+    } catch (error) {
+        console.error('Error deleting profile:', error);
+    }
+}
+</script>
+{% endblock %}

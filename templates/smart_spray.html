@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Password Spraying - CyberPulse Pro{% endblock %}
+
+{% block head %}
+<style>
+    .pattern-card {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .candidate-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+    .candidate-row:hover {
+        background: rgba(255, 193, 7, 0.1);
+    }
+    .probability-bar {
+        width: 100px;
+        height: 8px;
+        border-radius: 4px;
+        background: #333;
+        overflow: hidden;
+    }
+    .probability-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+    .protocol-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 20px;
+        border-radius: 8px;
+        margin: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid #444;
+    }
+    .protocol-badge:hover, .protocol-badge.selected {
+        border-color: #ffc107;
+        background: rgba(255, 193, 7, 0.15);
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.3);
+    }
+    .job-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .job-progress {
+        height: 6px;
+        border-radius: 3px;
+        background: #333;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    .job-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ffc107, #ff9800);
+        transition: width 0.5s ease;
+    }
+    .credential-found {
+        background: rgba(0, 255, 136, 0.15);
+        border: 1px solid rgba(0, 255, 136, 0.4);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .policy-indicator {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+    .policy-indicator i {
+        width: 24px;
+    }
+    .ai-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    .spray-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .spray-stat {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    .spray-stat-number {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-gradient mb-2">
+                        <i class="fas fa-brain me-3"></i>Smart Password Spraying
+                        <span class="ai-badge ms-2">AI POWERED</span>
+                    </h1>
+                    <p class="text-muted mb-0">Intelligent credential testing with pattern analysis • Lockout-aware spraying 🧠</p>
+                </div>
+                <span class="badge bg-warning text-dark px-3 py-2">
+                    <i class="fas fa-spray-can me-2"></i>SMART SPRAY
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="spray-stats">
+        <div class="spray-stat">
+            <div class="spray-stat-number" id="totalJobs">0</div>
+            <small class="text-muted">Total Jobs</small>
+        </div>
+        <div class="spray-stat">
+            <div class="spray-stat-number" id="runningJobs">0</div>
+            <small class="text-muted">Running</small>
+        </div>
+        <div class="spray-stat">
+            <div class="spray-stat-number" id="foundCreds">0</div>
+            <small class="text-muted">Found</small>
+        </div>
+        <div class="spray-stat">
+            <div class="spray-stat-number" id="avgSuccess">0%</div>
+            <small class="text-muted">Success Rate</small>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Configuration -->
+        <div class="col-lg-5">
+            <!-- Company Analysis -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-warning bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-building me-2"></i>Target Company</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" class="form-control bg-dark text-white" id="companyName" 
+                               placeholder="Acme Corporation">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Domain</label>
+                        <input type="text" class="form-control bg-dark text-white" id="domain" 
+                               placeholder="acme.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sample Passwords (Optional - for pattern learning)</label>
+                        <textarea class="form-control bg-dark text-white" id="samplePasswords" rows="2" 
+                                  placeholder="Acme2024!&#10;Welcome2024"></textarea>
+                    </div>
+                    <button class="btn btn-outline-warning w-100" onclick="analyzePolicy()">
+                        <i class="fas fa-microscope me-2"></i>Analyze Password Policy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detected Policy -->
+            <div class="card bg-dark border-secondary mb-4" id="policyCard" style="display: none;">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Detected Policy</h5>
+                </div>
+                <div class="card-body" id="policyDetails">
+                    <!-- Policy details loaded here -->
+                </div>
+            </div>
+
+            <!-- Target Users -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Target Users</h5>
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control bg-dark text-white" id="usernames" rows="5" 
+                              placeholder="admin&#10;john.doe&#10;jane.smith&#10;svc_backup"></textarea>
+                    <small class="text-muted">One username per line</small>
+                </div>
+            </div>
+
+            <!-- Protocol Selection -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-network-wired me-2"></i>Authentication Protocol</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap" id="protocolContainer">
+                        <span class="protocol-badge selected" onclick="selectProtocol(this, 'ldap')">
+                            <i class="fas fa-folder me-2"></i>LDAP
+                        </span>
+                        <span class="protocol-badge" onclick="selectProtocol(this, 'smb')">
+                            <i class="fas fa-hdd me-2"></i>SMB
+                        </span>
+                        <span class="protocol-badge" onclick="selectProtocol(this, 'rdp')">
+                            <i class="fas fa-desktop me-2"></i>RDP
+                        </span>
+                        <span class="protocol-badge" onclick="selectProtocol(this, 'office365')">
+                            <i class="fas fa-cloud me-2"></i>O365
+                        </span>
+                        <span class="protocol-badge" onclick="selectProtocol(this, 'owa')">
+                            <i class="fas fa-envelope me-2"></i>OWA
+                        </span>
+                        <span class="protocol-badge" onclick="selectProtocol(this, 'kerberos')">
+                            <i class="fas fa-ticket-alt me-2"></i>Kerberos
+                        </span>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Target URL (if required)</label>
+                        <input type="url" class="form-control bg-dark text-white" id="targetUrl" 
+                               placeholder="https://mail.acme.com/owa">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Spray -->
+            <button class="btn btn-warning w-100 mb-3" onclick="previewCandidates()">
+                <i class="fas fa-eye me-2"></i>Preview Password Candidates
+            </button>
+            <button class="btn btn-danger w-100" onclick="startSpray()">
+                <i class="fas fa-rocket me-2"></i>Start Smart Spray
+            </button>
+        </div>
+
+        <!-- Right Column - Candidates & Results -->
+        <div class="col-lg-7">
+            <!-- Password Candidates -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-warning bg-opacity-25 d-flex justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-key me-2"></i>Generated Password Candidates</h5>
+                    <span class="ai-badge">AI Generated</span>
+                </div>
+                <div class="card-body" id="candidatesContainer" style="max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted text-center">Click "Analyze Password Policy" to generate candidates</p>
+                </div>
+            </div>
+
+            <!-- Active Jobs -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25 d-flex justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Active Jobs</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadJobs()">
+                        <i class="fas fa-sync me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body" id="jobsContainer">
+                    <p class="text-muted text-center">No active jobs</p>
+                </div>
+            </div>
+
+            <!-- Found Credentials -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-success bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Found Credentials</h5>
+                </div>
+                <div class="card-body" id="foundContainer" style="max-height: 300px; overflow-y: auto;">
+                    <p class="text-muted text-center">No credentials found yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedProtocol = 'ldap';
+let currentCandidates = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadJobs();
+});
+
+function selectProtocol(element, protocol) {
+    document.querySelectorAll('.protocol-badge').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedProtocol = protocol;
+}
+
+function analyzePolicy() {
+    const company = document.getElementById('companyName').value;
+    const samples = document.getElementById('samplePasswords').value.split('\n').filter(s => s.trim());
+
+    if (!company) {
+        alert('Please enter company name');
+        return;
+    }
+
+    fetch('/spray/api/analyze', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            company: company,
+            sample_passwords: samples,
+            domain: document.getElementById('domain').value
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        displayPolicy(data.policy);
+        previewCandidates();
+    });
+}
+
+function displayPolicy(policy) {
+    document.getElementById('policyCard').style.display = 'block';
+    const container = document.getElementById('policyDetails');
+    
+    container.innerHTML = `
+        <div class="policy-indicator">
+            <i class="fas fa-ruler text-info"></i>
+            <span>Min Length: ${policy.min_length}</span>
+        </div>
+        <div class="policy-indicator">
+            <i class="fas ${policy.require_uppercase ? 'fa-check text-success' : 'fa-times text-danger'}"></i>
+            <span>Uppercase Required</span>
+        </div>
+        <div class="policy-indicator">
+            <i class="fas ${policy.require_lowercase ? 'fa-check text-success' : 'fa-times text-danger'}"></i>
+            <span>Lowercase Required</span>
+        </div>
+        <div class="policy-indicator">
+            <i class="fas ${policy.require_number ? 'fa-check text-success' : 'fa-times text-danger'}"></i>
+            <span>Number Required</span>
+        </div>
+        <div class="policy-indicator">
+            <i class="fas ${policy.require_special ? 'fa-check text-success' : 'fa-times text-danger'}"></i>
+            <span>Special Char Required</span>
+        </div>
+        <div class="policy-indicator">
+            <i class="fas fa-lock text-warning"></i>
+            <span>Lockout Threshold: ${policy.lockout_threshold}</span>
+        </div>
+        <div class="mt-3">
+            <strong>Detected Patterns:</strong>
+            <div class="mt-2">
+                ${policy.common_patterns.map(p => `<span class="badge bg-info me-1">${p}</span>`).join('') || '<span class="text-muted">None detected</span>'}
+            </div>
+        </div>
+        <div class="mt-3">
+            <strong>Confidence: ${(policy.confidence * 100).toFixed(0)}%</strong>
+            <div class="probability-bar mt-1">
+                <div class="probability-fill" style="width: ${policy.confidence * 100}%; background: ${policy.confidence > 0.7 ? '#00ff88' : policy.confidence > 0.4 ? '#ffc107' : '#dc3545'};"></div>
+            </div>
+        </div>
+    `;
+}
+
+function previewCandidates() {
+    const company = document.getElementById('companyName').value;
+    const samples = document.getElementById('samplePasswords').value.split('\n').filter(s => s.trim());
+
+    if (!company) {
+        alert('Please enter company name');
+        return;
+    }
+
+    fetch('/spray/api/preview', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            company: company,
+            sample_passwords: samples
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        currentCandidates = data.candidates;
+        displayCandidates(data.candidates);
+    });
+}
+
+function displayCandidates(candidates) {
+    const container = document.getElementById('candidatesContainer');
+    
+    if (candidates.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">No candidates generated</p>';
+        return;
+    }
+
+    container.innerHTML = candidates.map((c, i) => `
+        <div class="candidate-row">
+            <div>
+                <span class="badge bg-secondary me-2">#${i + 1}</span>
+                <code class="text-warning">${c.password}</code>
+            </div>
+            <div class="d-flex align-items-center">
+                <small class="text-muted me-3">${c.pattern}</small>
+                <div class="probability-bar">
+                    <div class="probability-fill" style="width: ${c.probability * 100}%; background: ${c.probability > 0.6 ? '#00ff88' : c.probability > 0.3 ? '#ffc107' : '#dc3545'};"></div>
+                </div>
+                <small class="text-muted ms-2">${(c.probability * 100).toFixed(0)}%</small>
+            </div>
+        </div>
+    `).join('');
+}
+
+function startSpray() {
+    const company = document.getElementById('companyName').value;
+    const domain = document.getElementById('domain').value;
+    const usernames = document.getElementById('usernames').value.split('\n').filter(u => u.trim());
+    const samples = document.getElementById('samplePasswords').value.split('\n').filter(s => s.trim());
+    const targetUrl = document.getElementById('targetUrl').value;
+
+    if (!company || !domain || usernames.length === 0) {
+        alert('Please enter company, domain, and usernames');
+        return;
+    }
+
+    if (!confirm(`⚠️ This will spray ${usernames.length} users with ${currentCandidates.length || 10} passwords. Continue?`)) {
+        return;
+    }
+
+    fetch('/spray/api/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            company: company,
+            domain: domain,
+            usernames: usernames,
+            protocol: selectedProtocol,
+            sample_passwords: samples,
+            target_url: targetUrl || null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.job_id) {
+            alert('Spray started: ' + data.job_id);
+            loadJobs();
+            // Start polling for updates
+            pollJob(data.job_id);
+        } else {
+            alert('Failed: ' + data.error);
+        }
+    });
+}
+
+function pollJob(jobId) {
+    const interval = setInterval(() => {
+        fetch(`/spray/api/job/${jobId}`)
+            .then(r => r.json())
+            .then(data => {
+                updateJobDisplay(data);
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    loadJobs();
+                    loadStats();
+                }
+            });
+    }, 2000);
+}
+
+function updateJobDisplay(job) {
+    // Update job card if exists
+    const card = document.querySelector(`[data-job-id="${job.job_id}"]`);
+    if (card) {
+        const progress = card.querySelector('.job-progress-fill');
+        if (progress) {
+            progress.style.width = job.progress + '%';
+        }
+        const status = card.querySelector('.job-status');
+        if (status) {
+            status.textContent = job.status;
+        }
+    }
+}
+
+function loadJobs() {
+    fetch('/spray/api/jobs')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('jobsContainer');
+            
+            if (data.jobs && data.jobs.length > 0) {
+                container.innerHTML = data.jobs.map(j => `
+                    <div class="job-card" data-job-id="${j.job_id}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${j.company}</strong>
+                                <p class="text-muted mb-0 small">${j.domain} • ${j.protocol}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge ${j.status === 'completed' ? 'bg-success' : j.status === 'running' ? 'bg-warning' : 'bg-secondary'} job-status">${j.status}</span>
+                                <span class="badge bg-info ms-1">${j.found_credentials} found</span>
+                            </div>
+                        </div>
+                        <div class="job-progress">
+                            <div class="job-progress-fill" style="width: ${j.progress}%;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <small class="text-muted">${j.total_targets} users • ${j.total_passwords} passwords</small>
+                            <small class="text-muted">${j.progress}%</small>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-muted text-center">No active jobs</p>';
+            }
+        });
+}
+
+function loadStats() {
+    fetch('/spray/api/stats')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('totalJobs').textContent = data.total_jobs || 0;
+            document.getElementById('runningJobs').textContent = data.running_jobs || 0;
+            document.getElementById('foundCreds').textContent = data.total_credentials_found || 0;
+            document.getElementById('avgSuccess').textContent = (data.success_rate || 0) + '%';
+        });
+}
+</script>
+{% endblock %}

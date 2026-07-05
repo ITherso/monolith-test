@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+{% block head %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <style>
+        :root {
+            --primary: #00ff00;
+            --danger: #ff3333;
+            --warning: #ffaa00;
+            --info: #00aaff;
+            --purple: #9933ff;
+        }
+        body {
+            background: #0f0f23;
+            color: #eee;
+        }
+        .card {
+            background: rgba(30, 30, 46, 0.95);
+            border: 1px solid rgba(0, 170, 255, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            color: var(--info);
+            border-bottom: 1px solid rgba(0, 170, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        .form-control {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 170, 255, 0.5);
+            color: #fff;
+        }
+        .form-control:focus {
+            border-color: var(--info);
+            box-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
+        }
+        .btn-graph {
+            background: linear-gradient(90deg, #00aaff, #0066cc);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-graph:hover {
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.5);
+        }
+        .btn-ai {
+            background: linear-gradient(90deg, #9933ff, #6600cc);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-ai:hover {
+            box-shadow: 0 0 20px rgba(153, 51, 255, 0.5);
+        }
+        #cy {
+            width: 100%;
+            height: 500px;
+            background: #1a1a2e;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 170, 255, 0.3);
+        }
+        .ai-panel {
+            background: rgba(153, 51, 255, 0.1);
+            border: 1px solid var(--purple);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .ai-title {
+            color: var(--purple);
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .ai-response {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--purple);
+            border-radius: 5px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .path-highlight {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid var(--primary);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .step-box {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .node-info {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--info);
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <nav class="navbar navbar-expand-lg sticky-top" style="background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--info);">
+        <div class="container-fluid">
+            <a class="navbar-brand" style="color: var(--info); font-weight: bold;" href="/">
+                <i class="bi bi-diagram-3-fill"></i> AI ATTACK PATH GRAPH
+            </a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-house"></i> Dashboard</a>
+                <span class="navbar-text text-white"><i class="bi bi-person-circle"></i> {{ session.get('user') }}</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- GRAPH ALANI -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-diagram-3"></i> Ağ Saldırı Haritası
+                        </h4>
+                        <div id="cy"></div>
+                        
+                        <!-- GRAPH KONTROLLERİ -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-info btn-sm me-2" onclick="fitGraph()">
+                                    <i class="bi bi-aspect-ratio"></i> Fit
+                                </button>
+                                <button class="btn btn-outline-info btn-sm me-2" onclick="randomLayout()">
+                                    <i class="bi bi-shuffle"></i> Random
+                                </button>
+                                <button class="btn btn-outline-info btn-sm" onclick="coseLayout()">
+                                    <i class="bi bi-grid"></i> Grid
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <span class="me-3">
+                                    <span class="legend-color" style="background: #ff3333;"></span> DC
+                                </span>
+                                <span class="me-3">
+                                    <span class="legend-color" style="background: #ffaa00;"></span> Server
+                                </span>
+                                <span class="me-3">
+                                    <span class="legend-color" style="background: #00aaff;"></span> Workstation
+                                </span>
+                                <span class="me-3">
+                                    <span class="legend-color" style="background: #00ff00;"></span> Database
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DÜĞÜM DETAYLARI -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-info-circle"></i> Seçili Düğüm Bilgileri
+                        </h4>
+                        <div id="nodeDetails">
+                            <div class="text-muted text-center py-4">
+                                <i class="bi bi-cursor" style="font-size: 2em; opacity: 0.3;"></i>
+                                <p class="mt-2">Haritadan bir düğüm seçin</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- AI ANALİZ PANELİ -->
+                <div class="ai-panel">
+                    <h5 class="ai-title">
+                        <i class="bi bi-cpu-fill"></i> AI Attack Path Analizi
+                    </h5>
+                    <p class="text-muted">Tüm scan + session + loot verilerini analiz edip en kritik saldırı yolunu bulur.</p>
+                    
+                    <button class="btn btn-ai w-100 mb-3" onclick="runAIAnalysis()">
+                        <i class="bi bi-lightning"></i> AI İLE ANALİZ ET
+                    </button>
+                    
+                    <div id="aiResponse" class="ai-response" style="display: none;">
+                        <div class="text-center py-3">
+                            <i class="bi bi-gear fa-spin" style="font-size: 1.5em; color: var(--purple);"></i>
+                            <p>AI analiz yapıyor...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KRİTİK PATH GÖSTERGESİ -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-exclamation-triangle"></i> Kritik Saldırı Yolu
+                        </h4>
+                        <div id="criticalPath">
+                            <div class="text-muted text-center py-4">
+                                <i class="bi bi-arrow-right-circle" style="font-size: 2em; opacity: 0.3;"></i>
+                                <p class="mt-2">AI analizi çalıştırın</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VERİ KAYNAKLARI -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-database"></i> Veri Kaynakları
+                        </h4>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="includeScans" checked>
+                            <label class="form-check-label" for="includeScans">Scan Sonuçları</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="includeSessions" checked>
+                            <label class="form-check-label" for="includeSessions">Session Verileri</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="includeLoot" checked>
+                            <label class="form-check-label" for="includeLoot">Loot Verileri</label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="includeVulns" checked>
+                            <label class="form-check-label" for="includeVulns">Vulnerability Verileri</label>
+                        </div>
+                        
+                        <button class="btn btn-graph w-100" onclick="generateGraph()">
+                            <i class="bi bi-diagram-3"></i> GRAPH OLUŞTUR
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KULLANIM KILAVUZU -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-info-circle"></i> Nasıl Kullanılır?
+                        </h4>
+                        <div class="step-box">
+                            <h6>1. Verileri Topla</h6>
+                            <p>Scan, session ve loot verilerini topla</p>
+                        </div>
+                        <div class="step-box">
+                            <h6>2. Graph Oluştur</h6>
+                            <p>Ağ haritasını görselleştir</p>
+                        </div>
+                        <div class="step-box">
+                            <h6>3. AI Analizi Çalıştır</h6>
+                            <p>LLM ile en kritik yolu bul</p>
+                        </div>
+                        <div class="step-box">
+                            <h6>4. Path'i Vurgula</h6>
+                            <p>Kritik yolu haritada göster</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        let cy;
+        let allNodes = [];
+        let allEdges = [];
+
+        // Graph başlatma
+        document.addEventListener('DOMContentLoaded', function() {
+            initCytoscape();
+            loadNetworkData();
+        });
+
+        function initCytoscape() {
+            cy = cytoscape({
+                container: document.getElementById('cy'),
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#00aaff',
+                            'label': 'data(label)',
+                            'color': '#fff',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'font-size': '12px',
+                            'width': '40px',
+                            'height': '40px',
+                            'border-width': 2,
+                            'border-color': '#fff'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 3,
+                            'line-color': '#666',
+                            'target-arrow-color': '#666',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier'
+                        }
+                    },
+                    {
+                        selector: 'node[type="DC"]',
+                        style: {
+                            'background-color': '#ff3333',
+                            'width': '60px',
+                            'height': '60px'
+                        }
+                    },
+                    {
+                        selector: 'node[type="Server"]',
+                        style: {
+                            'background-color': '#ffaa00'
+                        }
+                    },
+                    {
+                        selector: 'node[type="Database"]',
+                        style: {
+                            'background-color': '#00ff00'
+                        }
+                    },
+                    {
+                        selector: 'node[type="Workstation"]',
+                        style: {
+                            'background-color': '#00aaff'
+                        }
+                    },
+                    {
+                        selector: 'node:selected',
+                        style: {
+                            'border-width': 4,
+                            'border-color': '#ffd700'
+                        }
+                    },
+                    {
+                        selector: '.highlighted',
+                        style: {
+                            'background-color': '#ffd700',
+                            'line-color': '#ffd700',
+                            'target-arrow-color': '#ffd700',
+                            'width': 5,
+                            'transition-property': 'background-color, line-color, target-arrow-color, width',
+                            'transition-duration': '0.5s'
+                        }
+                    },
+                    {
+                        selector: '.critical-path',
+                        style: {
+                            'background-color': '#ff3333',
+                            'line-color': '#ff3333',
+                            'target-arrow-color': '#ff3333',
+                            'width': 5
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'grid',
+                    rows: 3,
+                    cols: 3
+                }
+            });
+
+            // Düğüm tıklama olayı
+            cy.on('tap', 'node', function(evt){
+                const node = evt.target;
+                showNodeDetails(node.data());
+            });
+
+            // Boş alan tıklama
+            cy.on('tap', function(evt){
+                if (evt.target === cy) {
+                    document.getElementById('nodeDetails').innerHTML = `
+                        <div class="text-muted text-center py-4">
+                            <i class="bi bi-cursor" style="font-size: 2em; opacity: 0.3;"></i>
+                            <p class="mt-2">Haritadan bir düğüm seçin</p>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function showNodeDetails(nodeData) {
+            const html = `
+                <div class="node-info">
+                    <h6><i class="bi bi-pc-display"></i> ${nodeData.label}</h6>
+                    <p><strong>Tip:</strong> ${nodeData.type}</p>
+                    <p><strong>IP:</strong> ${nodeData.ip || 'Bilinmiyor'}</p>
+                    <p><strong>OS:</strong> ${nodeData.os || 'Bilinmiyor'}</p>
+                    <p><strong>Vulnerabilities:</strong> ${nodeData.vulns || 0}</p>
+                    <p><strong>Status:</strong> ${nodeData.status || 'Unknown'}</p>
+                </div>
+            `;
+            document.getElementById('nodeDetails').innerHTML = html;
+        }
+
+        function loadNetworkData() {
+            // Örnek ağ verileri - gerçek veritabanından yüklenecek
+            allNodes = [
+                { data: { id: 'dc01', label: 'DC01', type: 'DC', ip: '192.168.1.10', os: 'Windows Server 2019', vulns: 2, status: 'Owned' } },
+                { data: { id: 'web01', label: 'WEB01', type: 'Server', ip: '192.168.1.20', os: 'Ubuntu 22.04', vulns: 5, status: 'Compromised' } },
+                { data: { id: 'db01', label: 'DB01', type: 'Database', ip: '192.168.1.30', os: 'Windows Server 2019', vulns: 1, status: 'Compromised' } },
+                { data: { id: 'ws01', label: 'WS01', type: 'Workstation', ip: '192.168.1.100', os: 'Windows 10', vulns: 3, status: 'Access' } },
+                { data: { id: 'ws02', label: 'WS02', type: 'Workstation', ip: '192.168.1.101', os: 'Windows 10', vulns: 2, status: 'Access' } },
+                { data: { id: 'file01', label: 'FILE01', type: 'Server', ip: '192.168.1.40', os: 'Windows Server 2019', vulns: 1, status: 'Access' } }
+            ];
+
+            allEdges = [
+                { data: { source: 'web01', target: 'db01' } },
+                { data: { source: 'web01', target: 'dc01' } },
+                { data: { source: 'db01', target: 'dc01' } },
+                { data: { source: 'ws01', target: 'dc01' } },
+                { data: { source: 'ws02', target: 'dc01' } },
+                { data: { source: 'file01', target: 'dc01' } },
+                { data: { source: 'ws01', target: 'file01' } }
+            ];
+
+            // Graph'a ekle
+            cy.add(allNodes);
+            cy.add(allEdges);
+            
+            // Layout uygula
+            randomLayout();
+        }
+
+        function generateGraph() {
+            // Mevcut graph'ı temizle
+            cy.elements().remove();
+            
+            // Yeni verilerle graph oluştur
+            loadNetworkData();
+            
+            // Yeni layout uygula
+            coseLayout();
+        }
+
+        function fitGraph() {
+            cy.fit(50);
+        }
+
+        function randomLayout() {
+            cy.layout({
+                name: 'random',
+                animate: true,
+                animationDuration: 500
+            }).run();
+        }
+
+        function coseLayout() {
+            cy.layout({
+                name: 'grid',
+                rows: 2,
+                cols: 3,
+                animate: true,
+                animationDuration: 500
+            }).run();
+        }
+
+        async function runAIAnalysis() {
+            const aiResponse = document.getElementById('aiResponse');
+            const criticalPath = document.getElementById('criticalPath');
+            
+            aiResponse.style.display = 'block';
+            aiResponse.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="bi bi-gear fa-spin" style="font-size: 1.5em; color: var(--purple);"></i>
+                    <p>AI analiz yapıyor...</p>
+                    <small class="text-muted">Scan, session ve loot verileri işleniyor</small>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/attack-graph/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        include_scans: document.getElementById('includeScans').checked,
+                        include_sessions: document.getElementById('includeSessions').checked,
+                        include_loot: document.getElementById('includeLoot').checked
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    // AI yanıtını göster
+                    aiResponse.innerHTML = `
+                        <h6 class="text-purple mb-3">
+                            <i class="bi bi-cpu"></i> AI Analiz Sonucu:
+                        </h6>
+                        <p>${data.analysis}</p>
+                        <hr style="border-color: var(--purple);">
+                        <h6>Kritik Path:</h6>
+                        <p>${data.critical_path}</p>
+                    `;
+                    
+                    // Kritik path'i vurgula
+                    highlightCriticalPath(data.path_nodes);
+                    
+                    // Kritik path panelini güncelle
+                    criticalPath.innerHTML = `
+                        <div class="path-highlight">
+                            <h6 class="text-danger">
+                                <i class="bi bi-exclamation-triangle"></i> En Kritik Saldırı Yolu:
+                            </h6>
+                            <p class="text-warning">${data.critical_path}</p>
+                            <hr>
+                            <p><strong>Düğümler:</strong> ${data.path_nodes.join(' → ')}</p>
+                            <p><strong>Risk Seviyesi:</strong> ${data.risk_level}</p>
+                            <p><strong>Önerilen Aksiyon:</strong> ${data.recommended_action}</p>
+                        </div>
+                    `;
+                } else {
+                    aiResponse.innerHTML = `
+                        <div class="text-danger">
+                            <i class="bi bi-x-circle"></i> Hata: ${data.error}
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                aiResponse.innerHTML = `
+                    <div class="text-danger">
+                        <i class="bi bi-x-circle"></i> Hata: ${e}
+                    </div>
+                `;
+            }
+        }
+
+        function highlightCriticalPath(pathNodes) {
+            // Önceki vurgulamaları kaldır
+            cy.elements().removeClass('highlighted critical-path');
+            
+            if (!pathNodes || pathNodes.length < 2) return;
+            
+            // Path düğümlerini vurgula
+            for (let i = 0; i < pathNodes.length; i++) {
+                const nodeId = pathNodes[i];
+                const node = cy.getElementById(nodeId);
+                if (node.length > 0) {
+                    node.addClass('critical-path');
+                }
+            }
+            
+            // Path kenarlarını vurgula
+            for (let i = 0; i < pathNodes.length - 1; i++) {
+                const source = pathNodes[i];
+                const target = pathNodes[i + 1];
+                
+                const edge = cy.edges(`[source="${source}"][target="${target}"]`);
+                if (edge.length > 0) {
+                    edge.addClass('critical-path');
+                }
+            }
+            
+            // Graph'ı path'e odakla
+            cy.elements().unselect();
+            cy.fit(50);
+        }
+    </script>
+{% endblock %}

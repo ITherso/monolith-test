@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}WiFi Grabber - PRO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-3xl font-bold text-white">WiFi Password Grabber</h1>
+                <span class="px-3 py-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-bold rounded-full">PRO</span>
+            </div>
+            <p class="text-gray-400 mt-2">Kayıtlı tüm WiFi şifrelerini çıkar ve pattern analizi yap</p>
+        </div>
+        <a href="/" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            ← Dashboard
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-cyan-600 to-blue-700 rounded-xl p-6">
+            <h3 class="text-cyan-200 text-sm font-medium">Toplam Ağ</h3>
+            <p id="statTotal" class="text-3xl font-bold text-white mt-2">0</p>
+        </div>
+        <div class="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl p-6">
+            <h3 class="text-green-200 text-sm font-medium">Şifre Çözülen</h3>
+            <p id="statWithPassword" class="text-3xl font-bold text-white mt-2">0</p>
+        </div>
+        <div class="bg-gradient-to-br from-red-600 to-orange-700 rounded-xl p-6">
+            <h3 class="text-red-200 text-sm font-medium">Zayıf Şifreler</h3>
+            <p id="statWeak" class="text-3xl font-bold text-white mt-2">0</p>
+        </div>
+        <div class="bg-gradient-to-br from-purple-600 to-pink-700 rounded-xl p-6">
+            <h3 class="text-purple-200 text-sm font-medium">Güvenlik Skoru</h3>
+            <p id="statScore" class="text-3xl font-bold text-white mt-2">0%</p>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <button onclick="extractAll()" class="px-6 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            📡 Tümünü Çıkar
+        </button>
+        <button onclick="analyzePatterns()" class="px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            🔍 Pattern Analizi
+        </button>
+        <button onclick="analyzeBranches()" class="px-6 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            🏢 Şube Analizi
+        </button>
+        <button onclick="searchNetworks()" class="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            🔎 Ara
+        </button>
+        <button onclick="showExportOptions()" class="px-6 py-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            📤 Export
+        </button>
+    </div>
+
+    <!-- Search Box -->
+    <div class="bg-gray-800 rounded-xl p-4 mb-6 border border-gray-700">
+        <div class="flex space-x-4">
+            <input type="text" id="searchKeywords" placeholder="Aranacak anahtar kelimeler (virgülle ayırın): corp, branch, guest..." 
+                   class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400">
+            <button onclick="searchNetworks()" class="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition-colors">
+                Ara
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Tabs -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <div class="flex border-b border-gray-700">
+            <button onclick="showTab('networks')" id="tabNetworks" class="tab-btn px-6 py-3 text-white bg-gray-700 font-semibold">
+                📡 Ağlar
+            </button>
+            <button onclick="showTab('patterns')" id="tabPatterns" class="tab-btn px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                🔍 Patterns
+            </button>
+            <button onclick="showTab('branches')" id="tabBranches" class="tab-btn px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                🏢 Şubeler
+            </button>
+            <button onclick="showTab('export')" id="tabExport" class="tab-btn px-6 py-3 text-gray-400 hover:text-white transition-colors">
+                📤 Export
+            </button>
+        </div>
+
+        <!-- Networks Tab -->
+        <div id="panelNetworks" class="tab-panel p-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700">
+                            <th class="pb-3 pr-4">SSID</th>
+                            <th class="pb-3 pr-4">Şifre</th>
+                            <th class="pb-3 pr-4">Auth Type</th>
+                            <th class="pb-3 pr-4">Cipher</th>
+                            <th class="pb-3">Security</th>
+                        </tr>
+                    </thead>
+                    <tbody id="networksTable" class="text-gray-300">
+                        <tr><td colspan="5" class="py-4 text-center text-gray-500">Henüz veri yok. "Tümünü Çıkar" butonuna tıklayın.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Patterns Tab -->
+        <div id="panelPatterns" class="tab-panel p-6 hidden">
+            <div id="patternsContent">
+                <p class="text-gray-500 text-center py-8">Pattern analizi yapılmadı. "Pattern Analizi" butonuna tıklayın.</p>
+            </div>
+        </div>
+
+        <!-- Branches Tab -->
+        <div id="panelBranches" class="tab-panel p-6 hidden">
+            <div id="branchesContent">
+                <p class="text-gray-500 text-center py-8">Şube analizi yapılmadı. "Şube Analizi" butonuna tıklayın.</p>
+            </div>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="panelExport" class="tab-panel p-6 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-white font-semibold mb-3">📄 Data Export</h4>
+                    <div class="space-y-2">
+                        <a href="/wifi-grabber/api/export/json" class="block px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors text-center">
+                            JSON Format
+                        </a>
+                        <a href="/wifi-grabber/api/export/csv" class="block px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors text-center">
+                            CSV Format
+                        </a>
+                        <a href="/wifi-grabber/api/export/wpa-supplicant" class="block px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors text-center">
+                            wpa_supplicant.conf
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-white font-semibold mb-3">📜 Script Generation</h4>
+                    <div class="space-y-2">
+                        <a href="/wifi-grabber/api/generate/powershell" class="block px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 transition-colors text-center">
+                            PowerShell Script
+                        </a>
+                        <a href="/wifi-grabber/api/generate/batch" class="block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors text-center">
+                            Batch Script (.bat)
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-white font-semibold mb-3">📊 İstatistikler</h4>
+                    <div id="exportStats" class="text-gray-300 text-sm space-y-1">
+                        <p>Toplam Ağ: <span id="expStatTotal">0</span></p>
+                        <p>Şifre Bulunan: <span id="expStatPassword">0</span></p>
+                        <p>Pattern Sayısı: <span id="expStatPatterns">0</span></p>
+                        <p>Yüksek Risk: <span id="expStatHighRisk" class="text-red-400">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="mt-8 bg-gradient-to-r from-cyan-900/50 to-blue-900/50 rounded-xl p-6 border border-cyan-700/50">
+        <h3 class="text-lg font-semibold text-white mb-3">📡 WiFi Grabber Özellikleri</h3>
+        <ul class="text-gray-300 space-y-2 text-sm">
+            <li>• <span class="text-cyan-400">Windows:</span> netsh wlan show profile key=clear komutu ile çıkarım</li>
+            <li>• <span class="text-cyan-400">Linux:</span> NetworkManager ve wpa_supplicant config dosyaları</li>
+            <li>• <span class="text-yellow-400">Pattern Detection:</span> Yıl, şirket adı, zayıf diziler (12345, qwerty)</li>
+            <li>• <span class="text-orange-400">Branch Analysis:</span> Aynı/benzer şifre kullanan şubeler tespit edilir</li>
+            <li>• <span class="text-green-400">Security Score:</span> Her ağ için 0-100 arası güvenlik puanı</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .tab-btn.active { background-color: rgb(55, 65, 81); color: white; }
+    .tab-panel.hidden { display: none; }
+</style>
+
+<script>
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'bg-gray-700');
+            b.classList.add('text-gray-400');
+        });
+
+        document.getElementById('panel' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.remove('hidden');
+        const btn = document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+        btn.classList.add('active', 'bg-gray-700');
+        btn.classList.remove('text-gray-400');
+    }
+
+    async function extractAll() {
+        try {
+            const response = await fetch('/wifi-grabber/api/extract/all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updateNetworksTable(data.networks);
+                await updateStatistics();
+                showTab('networks');
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function analyzePatterns() {
+        try {
+            const response = await fetch('/wifi-grabber/api/analyze/patterns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updatePatternsDisplay(data.patterns);
+                showTab('patterns');
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function analyzeBranches() {
+        try {
+            const response = await fetch('/wifi-grabber/api/analyze/branches', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updateBranchesDisplay(data.branches);
+                showTab('branches');
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function searchNetworks() {
+        const input = document.getElementById('searchKeywords').value;
+        const keywords = input.split(',').map(k => k.trim()).filter(k => k);
+        
+        if (keywords.length === 0) {
+            alert('Lütfen aranacak anahtar kelime girin');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/wifi-grabber/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keywords })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                updateNetworksTable(data.networks);
+                alert(`${data.count} ağ bulundu!`);
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası: ' + error.message);
+        }
+    }
+
+    async function updateStatistics() {
+        try {
+            const response = await fetch('/wifi-grabber/api/statistics');
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                const stats = data.statistics;
+                document.getElementById('statTotal').textContent = stats.total_networks;
+                document.getElementById('statWithPassword').textContent = stats.with_password;
+                document.getElementById('statWeak').textContent = stats.weak_passwords;
+                document.getElementById('statScore').textContent = stats.average_security_score + '%';
+                
+                document.getElementById('expStatTotal').textContent = stats.total_networks;
+                document.getElementById('expStatPassword').textContent = stats.with_password;
+                document.getElementById('expStatPatterns').textContent = stats.patterns_detected;
+                document.getElementById('expStatHighRisk').textContent = stats.high_risk_patterns;
+            }
+        } catch (error) {
+            console.error('Stats error:', error);
+        }
+    }
+
+    function updateNetworksTable(networks) {
+        const tbody = document.getElementById('networksTable');
+        
+        if (!networks || networks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Ağ bulunamadı</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = networks.map(n => `
+            <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                <td class="py-3 pr-4 font-semibold text-white">${escapeHtml(n.ssid)}</td>
+                <td class="py-3 pr-4 font-mono ${n.password ? 'text-green-400' : 'text-gray-500'}">${n.password ? escapeHtml(n.password) : '[Yok]'}</td>
+                <td class="py-3 pr-4">${escapeHtml(n.auth_type)}</td>
+                <td class="py-3 pr-4">${escapeHtml(n.cipher)}</td>
+                <td class="py-3">
+                    <div class="flex items-center">
+                        <div class="w-16 bg-gray-600 rounded-full h-2 mr-2">
+                            <div class="h-2 rounded-full ${getScoreColor(n.security_score)}" style="width: ${n.security_score}%"></div>
+                        </div>
+                        <span class="text-sm">${n.security_score}%</span>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function updatePatternsDisplay(patterns) {
+        const container = document.getElementById('patternsContent');
+        
+        if (!patterns || patterns.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">Pattern bulunamadı.</p>';
+            return;
+        }
+        
+        const html = patterns.map(p => `
+            <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-white">${escapeHtml(p.type)}: ${escapeHtml(p.value)}</span>
+                    <span class="px-2 py-1 rounded text-xs ${p.risk_level === 'high' ? 'bg-red-600' : p.risk_level === 'medium' ? 'bg-yellow-600' : 'bg-green-600'}">
+                        ${p.risk_level.toUpperCase()}
+                    </span>
+                </div>
+                <p class="text-gray-400 text-sm">Etkilenen ağlar: ${p.affected_networks.join(', ')}</p>
+                <p class="text-gray-500 text-xs mt-1">Tekrar sayısı: ${p.occurrences}</p>
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+
+    function updateBranchesDisplay(branches) {
+        const container = document.getElementById('branchesContent');
+        
+        if (!branches || branches.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">Şube grubu bulunamadı.</p>';
+            return;
+        }
+        
+        const html = branches.map(b => `
+            <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="font-semibold text-white text-lg">🏢 ${escapeHtml(b.branch)}</span>
+                    <div class="flex items-center">
+                        <span class="text-gray-400 mr-2">Security:</span>
+                        <div class="w-24 bg-gray-600 rounded-full h-2 mr-2">
+                            <div class="h-2 rounded-full ${getScoreColor(b.security_score)}" style="width: ${b.security_score}%"></div>
+                        </div>
+                        <span class="text-sm">${b.security_score}%</span>
+                    </div>
+                </div>
+                <p class="text-gray-400 mb-2">Ağ sayısı: ${b.network_count}</p>
+                ${b.common_patterns.length > 0 ? `
+                    <div class="bg-red-900/30 border border-red-700/50 rounded p-2 mb-2">
+                        <p class="text-red-400 text-sm font-semibold">⚠️ Tespit edilen sorunlar:</p>
+                        <ul class="text-red-300 text-sm list-disc list-inside">
+                            ${b.common_patterns.map(p => `<li>${escapeHtml(p)}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                ${b.recommendations.length > 0 ? `
+                    <div class="bg-blue-900/30 border border-blue-700/50 rounded p-2">
+                        <p class="text-blue-400 text-sm font-semibold">💡 Öneriler:</p>
+                        <ul class="text-blue-300 text-sm list-disc list-inside">
+                            ${b.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+
+    function getScoreColor(score) {
+        if (score >= 70) return 'bg-green-500';
+        if (score >= 40) return 'bg-yellow-500';
+        return 'bg-red-500';
+    }
+
+    function showExportOptions() {
+        showTab('export');
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize
+    showTab('networks');
+</script>
+{% endblock %}

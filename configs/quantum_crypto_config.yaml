@@ -1,0 +1,264 @@
+# =============================================================================
+# QUANTUM-RESISTANT CRYPTOGRAPHY CONFIGURATION
+# Post-Quantum Security for C2 Communications
+# Version: 1.0.0 (Endgame Release)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ENCRYPTION MODE
+# -----------------------------------------------------------------------------
+# Available modes:
+#   - classical: Traditional RSA/ECDH only (NOT recommended)
+#   - pq: Post-quantum only (Kyber/Dilithium)
+#   - hybrid: PQ + Classical combined (RECOMMENDED)
+#   - auto: Automatically select based on threat level
+
+encryption_mode: hybrid
+
+# Auto-upgrade to higher security when threat increases
+auto_upgrade: true
+
+# -----------------------------------------------------------------------------
+# POST-QUANTUM ALGORITHMS
+# -----------------------------------------------------------------------------
+
+# Key Encapsulation Mechanism (KEM)
+# NIST Winner: ML-KEM (Kyber)
+kem:
+  algorithm: kyber768  # kyber512, kyber768, kyber1024
+  
+  # Security levels (NIST):
+  # - kyber512:  Level 1 (AES-128 equivalent) - Fast, lower security
+  # - kyber768:  Level 3 (AES-192 equivalent) - Balanced (RECOMMENDED)
+  # - kyber1024: Level 5 (AES-256 equivalent) - Maximum security, slower
+  
+  # Key sizes (approximate):
+  # - kyber512:  Public: 800 bytes, Secret: 1632 bytes, Ciphertext: 768 bytes
+  # - kyber768:  Public: 1184 bytes, Secret: 2400 bytes, Ciphertext: 1088 bytes
+  # - kyber1024: Public: 1568 bytes, Secret: 3168 bytes, Ciphertext: 1568 bytes
+
+# Digital Signatures
+# NIST Winner: Dilithium
+signatures:
+  algorithm: dilithium3  # dilithium2, dilithium3, dilithium5
+  
+  # Security levels:
+  # - dilithium2: Level 2 (collision resistance ~128-bit)
+  # - dilithium3: Level 3 (collision resistance ~192-bit) (RECOMMENDED)
+  # - dilithium5: Level 5 (collision resistance ~256-bit)
+  
+  # Signature sizes (approximate):
+  # - dilithium2: Public: 1312 bytes, Signature: 2420 bytes
+  # - dilithium3: Public: 1952 bytes, Signature: 3293 bytes
+  # - dilithium5: Public: 2592 bytes, Signature: 4595 bytes
+
+# Alternative algorithms (research/backup)
+alternative_algorithms:
+  ntru_enabled: false
+  saber_enabled: false
+
+# -----------------------------------------------------------------------------
+# HYBRID MODE CONFIGURATION
+# -----------------------------------------------------------------------------
+
+hybrid:
+  # Classical algorithm to combine with PQ
+  classical_algorithm: ecdh  # ecdh, rsa
+  
+  # ECDH curve (if using ECDH)
+  ecdh_curve: secp384r1  # secp256r1, secp384r1, secp521r1
+  
+  # RSA key size (if using RSA)
+  rsa_key_size: 4096
+  
+  # Key derivation
+  kdf: hkdf_sha256
+  kdf_salt_length: 32
+  
+  # Combined secret handling
+  # pq_first: Kyber secret | Classical secret
+  # classical_first: Classical secret | Kyber secret
+  secret_order: pq_first
+
+# -----------------------------------------------------------------------------
+# SESSION MANAGEMENT
+# -----------------------------------------------------------------------------
+
+session:
+  # Re-key interval (seconds)
+  # Lower = more secure, higher = less overhead
+  rekey_interval: 3600  # 1 hour
+  
+  # Maximum session lifetime
+  max_session_time: 86400  # 24 hours
+  
+  # Enable perfect forward secrecy
+  perfect_forward_secrecy: true
+  
+  # Session key derivation rounds
+  kdf_rounds: 100000
+
+# -----------------------------------------------------------------------------
+# SYMMETRIC ENCRYPTION
+# -----------------------------------------------------------------------------
+
+symmetric:
+  algorithm: aes_256_gcm  # aes_128_gcm, aes_256_gcm, chacha20_poly1305
+  
+  # Nonce/IV length
+  nonce_length: 12
+  
+  # Authentication tag length
+  tag_length: 16
+  
+  # Key derivation for AES key
+  derive_from_shared_secret: true
+
+# -----------------------------------------------------------------------------
+# QUANTUM RISK ANALYSIS
+# -----------------------------------------------------------------------------
+
+risk_analysis:
+  # Enable risk analysis
+  enabled: true
+  
+  # Include in final reports
+  include_in_reports: true
+  
+  # AI-powered recommendations
+  ai_recommendations: true
+  
+  # Current year for timeline calculations
+  current_year: 2026
+  
+  # Harvest-now-decrypt-later protection
+  harvest_now_protection: true
+  
+  # Threat level thresholds
+  thresholds:
+    low: 0.2
+    medium: 0.4
+    high: 0.6
+    critical: 0.8
+
+# -----------------------------------------------------------------------------
+# PERFORMANCE TUNING
+# -----------------------------------------------------------------------------
+
+performance:
+  # Enable caching of computed values
+  enable_caching: true
+  
+  # Cache size (number of entries)
+  cache_size: 1000
+  
+  # Parallel operations (for batch encryption)
+  parallel_operations: true
+  max_workers: 4
+  
+  # Pre-compute NTT tables at startup
+  precompute_ntt: true
+  
+  # Batch encryption threshold
+  batch_threshold: 10
+
+# -----------------------------------------------------------------------------
+# LOGGING & DEBUGGING
+# -----------------------------------------------------------------------------
+
+logging:
+  # Log level: debug, info, warning, error
+  level: info
+  
+  # Log encryption operations
+  log_operations: true
+  
+  # Include key sizes in logs (not actual keys!)
+  log_key_sizes: true
+  
+  # Log performance metrics
+  log_performance: true
+
+# -----------------------------------------------------------------------------
+# C2 INTEGRATION
+# -----------------------------------------------------------------------------
+
+c2_integration:
+  # Encrypt all C2 traffic
+  encrypt_all_traffic: true
+  
+  # Include quantum signature in headers
+  include_signature: true
+  
+  # Public key exchange protocol
+  key_exchange:
+    method: initial_handshake  # initial_handshake, dns_txt, http_header
+    retry_on_failure: true
+    max_retries: 3
+  
+  # Fallback to classical if PQ fails
+  classical_fallback: true
+  fallback_algorithm: aes_256_gcm
+
+# -----------------------------------------------------------------------------
+# EDR-SPECIFIC PROFILES
+# -----------------------------------------------------------------------------
+
+edr_profiles:
+  sentinelone:
+    recommended_mode: hybrid
+    extra_padding: true
+    timing_jitter: true
+    
+  crowdstrike:
+    recommended_mode: hybrid
+    extra_padding: true
+    timing_jitter: true
+    
+  defender_atp:
+    recommended_mode: pq
+    extra_padding: false
+    timing_jitter: true
+    
+  carbonblack:
+    recommended_mode: hybrid
+    extra_padding: true
+    timing_jitter: false
+
+# -----------------------------------------------------------------------------
+# COMPLIANCE
+# -----------------------------------------------------------------------------
+
+compliance:
+  # NIST Post-Quantum Cryptography Standards
+  nist_pqc_compliant: true
+  
+  # CNSA 2.0 (NSA) compliance
+  cnsa_2_compliant: true
+  
+  # Export controls
+  export_controlled: false
+  
+  # Audit logging
+  audit_logging: true
+
+# -----------------------------------------------------------------------------
+# EMERGENCY PROCEDURES
+# -----------------------------------------------------------------------------
+
+emergency:
+  # Quantum computer detected
+  on_quantum_threat:
+    action: upgrade_immediately
+    notify: true
+    
+  # Key compromise
+  on_key_compromise:
+    action: immediate_rekey
+    invalidate_sessions: true
+    
+  # Decryption failure
+  on_decryption_failure:
+    action: rekey_and_retry
+    max_retries: 3
+    fallback_to_classical: true

