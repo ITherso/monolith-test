@@ -46,7 +46,11 @@ from typing import Optional, Dict, List, Any
 from dataclasses import dataclass
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+try:
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+except ImportError:
+    PBKDF2 = PBKDF2HMAC
 import base64
 
 @dataclass

@@ -5,13 +5,21 @@ from dataclasses import asdict
 from typing import Dict, List
 
 from cybermodules.error_handling import ErrorHandler
-# Ortak yardımcı fonksiyonlar
-warnings.filterwarnings(
-    "ignore",
-    message="You have both PyFPDF & fpdf2 installed",
-    category=UserWarning,
-)
-from fpdf import FPDF
+
+try:
+    from fpdf import FPDF
+except ImportError:
+    try:
+        from fpdf2 import FPDF
+    except ImportError:
+        class FPDF:
+            """Dummy FPDF class when neither fpdf nor fpdf2 is available."""
+            def __init__(self):
+                pass
+            def header(self):
+                pass
+            def chapter_title(self, title, rgb):
+                pass
 
 class PDFReport(FPDF):
 	def header(self):

@@ -18,6 +18,13 @@ def strip_stealth_padding(raw_data: bytes) -> tuple:
     First 4 bytes = actual payload length (little-endian).
     Remaining = garbage padding to bypass NGFW size profiling.
     """
+    if not raw_data:
+        return None, 0
+    
+    # If data looks like JSON/text, assume no stealth padding
+    if raw_data[:1] in (b'{', b'['):
+        return raw_data, len(raw_data)
+    
     if len(raw_data) < 4:
         return None, len(raw_data)
     
@@ -25,6 +32,8 @@ def strip_stealth_padding(raw_data: bytes) -> tuple:
         actual_len = struct.unpack("<I", raw_data[:4])[0]
         if actual_len > len(raw_data) - 4:
             actual_len = len(raw_data) - 4
+        if actual_len < 0:
+            return None, len(raw_data)
         payload = raw_data[4:4 + actual_len]
         return payload, actual_len
     except:

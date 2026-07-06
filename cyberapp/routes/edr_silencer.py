@@ -7,11 +7,24 @@ from flask import Blueprint, request, jsonify, send_file
 from functools import wraps
 import json
 import os
+import sys
 from io import BytesIO
 
-from cybermodules.elite_ring03_orchestrator import EliteRing0Ring3Orchestrator
-from evasion.stack_spoofer import ThreadCallStackSpoofer
-from tools.code_signer import EliteCodeSigner
+try:
+    from cybermodules.elite_ring03_orchestrator import EliteRing0Ring3Orchestrator
+except Exception:
+    EliteRing0Ring3Orchestrator = None
+
+try:
+    from evasion.stack_spoofer import ThreadCallStackSpoofer
+except Exception:
+    ThreadCallStackSpoofer = None
+
+try:
+    from tools.code_signer import EliteCodeSigner
+except Exception:
+    EliteCodeSigner = None
+
 from cyberapp.services.logger import get_logger
 
 logger = get_logger("edr_silencer")

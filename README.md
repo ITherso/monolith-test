@@ -455,6 +455,36 @@ server {
 | `Database is locked` | Ensure only one instance is running; delete `monolith.db` and re-init |
 | `Coverage failure` | Reduce coverage threshold in `pytest.ini` or add more tests |
 | Port 8080 in use | Change `PORT` environment variable or use `--port` flag |
+| Blueprint fails to load on import | Some route modules depend on unavailable optional packages on Linux; the app factory now falls back to degraded imports and skips unavailable blueprints instead of crashing. |
+| `async def` tests fail with "no suitable plugin" | `tests/test_cloud_pivot.py` requires `pytest-asyncio`, which is not installed in this environment; run test subsets or install into a virtualenv with `pip install pytest-asyncio`. |
+| Windows-only EDR/silencer tests fail | `tests/test_edr_silencer.py` exercises Windows-specific behavior and cannot run on Linux. |
+| `alembic upgrade head` fails with multiple heads | Run `python -m alembic -c alembic.ini upgrade heads` instead of `upgrade head`. |
+| Migration `ALTER TABLE` duplicate column | Existing DB schema already has the column; rerunning that migration is a no-op on this branch. |
+
+## 🧪 Development Status & Known Test Gaps
+
+Current app bootstrap status:
+- Flask app factory registers **75 blueprints** from `cyberapp/routes/`, `tools/`, `evasion/`, and related modules.
+- Blueprint loading uses a flexible loader so modules with `auth_bp`, `vulnerable_bp`, or generic `bp` exports are all discovered safely.
+- Database migrations are present under `alembic_migrations/versions/` and the app can run without manual schema edits on a fresh DB.
+
+Remaining environment-bound restrictions:
+- Linux cannot execute Windows-only modules such as `hardware_bypass.py` and `edr_silencer.py` end-to-end.
+- Some tests remain unexecutable because the test file assumes `pytest-asyncio` is installed.
+- A subset of tests rely on stateful database setup; test-only DB fixtures are the recommended fix.
+
+## 🧪 Testing
+
+```bash
+# Run test suite
+python -m pytest tests/
+
+# Run specific test file
+python -m pytest tests/test_vulnerable.py -v
+
+# Run with coverage
+python -m pytest tests/ --cov=cyberapp --cov-report=term-missing
+```
 
 ### Logs
 

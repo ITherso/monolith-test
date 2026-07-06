@@ -14,12 +14,13 @@ from datetime import datetime
 import uuid
 import json
 
-macos_bp = Blueprint('macos_evasion', __name__)
+macos_evasion_bp = Blueprint('macos_evasion', __name__)
 
 # Global sessions tracker
 macos_sessions: dict = {}
 
-@macos_bp.route('/api/elite/macos/esf-blind', methods=['POST'])
+
+@macos_evasion_bp.route('/api/elite/macos/esf-blind', methods=['POST'])
 def esf_blind_endpoint():
     """
     Blind macOS Endpoint Security Framework (ESF) telemetry
@@ -73,7 +74,7 @@ def esf_blind_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@macos_bp.route('/api/elite/macos/dyld-inject', methods=['POST'])
+@macos_evasion_bp.route('/api/elite/macos/dyld-inject', methods=['POST'])
 def dyld_inject_endpoint():
     """
     Inject DYLD library via Task Port Hijacking
@@ -125,7 +126,7 @@ def dyld_inject_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@macos_bp.route('/api/elite/macos/status/<scan_id>', methods=['GET'])
+@macos_evasion_bp.route('/api/elite/macos/status/<scan_id>', methods=['GET'])
 def macos_status_endpoint(scan_id):
     """Get session status"""
     if scan_id not in macos_sessions:
@@ -146,7 +147,7 @@ def macos_status_endpoint(scan_id):
         }
     }), 200
 
-@macos_bp.route('/api/elite/macos/cleanup/<scan_id>', methods=['POST'])
+@macos_evasion_bp.route('/api/elite/macos/cleanup/<scan_id>', methods=['POST'])
 def macos_cleanup_endpoint(scan_id):
     """Cleanup session"""
     if scan_id not in macos_sessions:

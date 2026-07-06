@@ -131,3 +131,8 @@ class AdaptiveJA4Validator:
                         "<body><h1>404 - Not Found</h1><p>The requested page could not be found.</p></body></html>",
             },
         )
+
+
+JA4Profile = ThreatIntelProfile
+JA4MatchResult = JA4RiskResult
+JA4Validator = AdaptiveJA4Validator

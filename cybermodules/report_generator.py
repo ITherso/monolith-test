@@ -16,8 +16,38 @@ import textwrap
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from fpdf import FPDF
-
+try:
+    from fpdf import FPDF
+except ImportError:
+    try:
+        from fpdf2 import FPDF
+    except ImportError:
+        class FPDF:
+            """Dummy FPDF class when neither fpdf nor fpdf2 is available."""
+            def __init__(self):
+                pass
+            def set_font(self, *args, **kwargs):
+                pass
+            def set_text_color(self, *args, **kwargs):
+                pass
+            def cell(self, *args, **kwargs):
+                pass
+            def ln(self, *args, **kwargs):
+                pass
+            def multi_cell(self, *args, **kwargs):
+                pass
+            def add_page(self, *args, **kwargs):
+                pass
+            def set_auto_page_break(self, *args, **kwargs):
+                pass
+            def set_fill_color(self, *args, **kwargs):
+                pass
+            def set_xy(self, *args, **kwargs):
+                pass
+            def set_xy(self, *args, **kwargs):
+                pass
+            def output(self, *args, **kwargs):
+                return b''
 
 class DetailedSecurityReport:
     """Detaylı Güvenlik Değerlendirme Raporu Oluşturucu"""

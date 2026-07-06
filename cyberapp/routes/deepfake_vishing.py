@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tools'))
 
 from deepfake_vishing import get_vishing_engine, VishingScriptTemplate, VoiceEmotion
 
-bp = Blueprint('deepfake_vishing', __name__, url_prefix='/deepfake-vishing')
+deepfake_vishing_bp = Blueprint('deepfake_vishing', __name__, url_prefix='/deepfake-vishing')
 
 
 def handle_errors(f):
@@ -32,13 +32,13 @@ def handle_errors(f):
     return wrapper
 
 
-@bp.route('/')
+@deepfake_vishing_bp.route('/')
 def index():
     """Deepfake Vishing Dashboard"""
     return render_template('deepfake_vishing.html')
 
 
-@bp.route('/api/providers', methods=['GET'])
+@deepfake_vishing_bp.route('/api/providers', methods=['GET'])
 @handle_errors
 def get_providers():
     """Get available voice and call providers"""
@@ -69,7 +69,7 @@ def get_providers():
     })
 
 
-@bp.route('/api/templates', methods=['GET'])
+@deepfake_vishing_bp.route('/api/templates', methods=['GET'])
 @handle_errors
 def get_templates():
     """Get available script templates"""
@@ -124,7 +124,7 @@ def get_templates():
     })
 
 
-@bp.route('/api/emotions', methods=['GET'])
+@deepfake_vishing_bp.route('/api/emotions', methods=['GET'])
 @handle_errors
 def get_emotions():
     """Get available voice emotions"""
@@ -142,7 +142,7 @@ def get_emotions():
     })
 
 
-@bp.route('/api/profiles', methods=['GET'])
+@deepfake_vishing_bp.route('/api/profiles', methods=['GET'])
 @handle_errors
 def list_profiles():
     """List all voice profiles"""
@@ -165,7 +165,7 @@ def list_profiles():
     })
 
 
-@bp.route('/api/profiles', methods=['POST'])
+@deepfake_vishing_bp.route('/api/profiles', methods=['POST'])
 @handle_errors
 def create_profile():
     """Create new voice profile"""
@@ -197,7 +197,7 @@ def create_profile():
     })
 
 
-@bp.route('/api/profiles/<profile_id>', methods=['DELETE'])
+@deepfake_vishing_bp.route('/api/profiles/<profile_id>', methods=['DELETE'])
 @handle_errors
 def delete_profile(profile_id):
     """Delete voice profile"""
@@ -210,7 +210,7 @@ def delete_profile(profile_id):
         return jsonify({"success": False, "error": "Profile not found"}), 404
 
 
-@bp.route('/api/generate-audio', methods=['POST'])
+@deepfake_vishing_bp.route('/api/generate-audio', methods=['POST'])
 @handle_errors
 def generate_audio():
     """Generate deepfake audio from text"""
@@ -250,7 +250,7 @@ def generate_audio():
     })
 
 
-@bp.route('/api/render-script', methods=['POST'])
+@deepfake_vishing_bp.route('/api/render-script', methods=['POST'])
 @handle_errors
 def render_script():
     """Render a script template with variables"""
@@ -269,7 +269,7 @@ def render_script():
     })
 
 
-@bp.route('/api/campaigns', methods=['GET'])
+@deepfake_vishing_bp.route('/api/campaigns', methods=['GET'])
 @handle_errors
 def list_campaigns():
     """List all vishing campaigns"""
@@ -294,7 +294,7 @@ def list_campaigns():
     })
 
 
-@bp.route('/api/campaigns', methods=['POST'])
+@deepfake_vishing_bp.route('/api/campaigns', methods=['POST'])
 @handle_errors
 def create_campaign():
     """Create new vishing campaign"""
@@ -320,7 +320,7 @@ def create_campaign():
     })
 
 
-@bp.route('/api/campaigns/<campaign_id>/start', methods=['POST'])
+@deepfake_vishing_bp.route('/api/campaigns/<campaign_id>/start', methods=['POST'])
 @handle_errors
 def start_campaign(campaign_id):
     """Start a vishing campaign"""
@@ -340,7 +340,7 @@ def start_campaign(campaign_id):
     })
 
 
-@bp.route('/api/campaigns/<campaign_id>/stop', methods=['POST'])
+@deepfake_vishing_bp.route('/api/campaigns/<campaign_id>/stop', methods=['POST'])
 @handle_errors
 def stop_campaign(campaign_id):
     """Stop a running campaign"""
@@ -358,7 +358,7 @@ def stop_campaign(campaign_id):
     })
 
 
-@bp.route('/api/campaigns/<campaign_id>', methods=['DELETE'])
+@deepfake_vishing_bp.route('/api/campaigns/<campaign_id>', methods=['DELETE'])
 @handle_errors
 def delete_campaign(campaign_id):
     """Delete a campaign"""
@@ -371,7 +371,7 @@ def delete_campaign(campaign_id):
         return jsonify({"success": False, "error": "Campaign not found"}), 404
 
 
-@bp.route('/api/call', methods=['POST'])
+@deepfake_vishing_bp.route('/api/call', methods=['POST'])
 @handle_errors
 def initiate_call():
     """Initiate a single vishing call"""
@@ -398,7 +398,7 @@ def initiate_call():
     })
 
 
-@bp.route('/api/calls', methods=['GET'])
+@deepfake_vishing_bp.route('/api/calls', methods=['GET'])
 @handle_errors
 def list_calls():
     """List recent calls"""
@@ -427,7 +427,7 @@ def list_calls():
     })
 
 
-@bp.route('/api/implants', methods=['GET'])
+@deepfake_vishing_bp.route('/api/implants', methods=['GET'])
 @handle_errors
 def get_implants():
     """Get voice sample collection implants"""
@@ -441,7 +441,7 @@ def get_implants():
     })
 
 
-@bp.route('/api/statistics', methods=['GET'])
+@deepfake_vishing_bp.route('/api/statistics', methods=['GET'])
 @handle_errors
 def get_statistics():
     """Get vishing statistics"""
@@ -467,7 +467,7 @@ def get_statistics():
     })
 
 
-@bp.route('/api/config', methods=['GET'])
+@deepfake_vishing_bp.route('/api/config', methods=['GET'])
 @handle_errors
 def get_config():
     """Get current configuration"""
@@ -485,7 +485,7 @@ def get_config():
     })
 
 
-@bp.route('/api/config', methods=['POST'])
+@deepfake_vishing_bp.route('/api/config', methods=['POST'])
 @handle_errors
 def update_config():
     """Update configuration"""
