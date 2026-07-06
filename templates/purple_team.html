@@ -705,17 +705,94 @@
     </div>
     
     <!-- Tabs Navigation -->
-    <div class="purple-tabs">
-        <button class="purple-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
-        <button class="purple-tab" onclick="switchTab('campaign')">🎯 New Campaign</button>
-        <button class="purple-tab" onclick="switchTab('tests')">🧪 Test Library</button>
-        <button class="purple-tab" onclick="switchTab('results')">📋 Results</button>
-        <button class="purple-tab" onclick="switchTab('gaps')">⚠️ Detection Gaps</button>
-        <button class="purple-tab" onclick="switchTab('recommendations')">💡 AI Recommendations</button>
-        <button class="purple-tab" onclick="switchTab('reports')">📄 Reports</button>
-    </div>
-    
-    <!-- Dashboard Tab -->
+<div class="purple-tabs">
+             <button class="purple-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+             <button class="purple-tab" onclick="switchTab('stealth-loader')">🎯 Stealth Loader</button>
+             <button class="purple-tab" onclick="switchTab('stego-exfil')">🖼️ Stego Exfil</button>
+             <button class="purple-tab" onclick="switchTab('campaign')">🎯 New Campaign</button>
+             <button class="purple-tab" onclick="switchTab('tests')">🧪 Test Library</button>
+             <button class="purple-tab" onclick="switchTab('results')">📋 Results</button>
+             <button class="purple-tab" onclick="switchTab('gaps')">⚠️ Detection Gaps</button>
+             <button class="purple-tab" onclick="switchTab('recommendations')">💡 AI Recommendations</button>
+             <button class="purple-tab" onclick="switchTab('reports')">📄 Reports</button>
+</div>
+     
+     <!-- Stealth Loader Tab -->
+     <div id="tab-stealth-loader" class="tab-content">
+         <div class="purple-card">
+             <h3>🎯 Stealth Loader Engine</h3>
+             <p style="color: #888; margin-bottom: 20px;">Hash-based API resolution for EDR evasion - eliminates plaintext API strings in memory.</p>
+             
+             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                 <div class="form-group">
+                     <label>dbg2_hash Bytes (u32) - Compile-Time API Hashing</label>
+                     <textarea id="api-hash-input" rows="8" style="font-family: monospace; font-size: 0.9em;" placeholder="0x... (hash values for NtProtectVirtualMemory, NtAllocateVirtualMemory, etc.)"></textarea>
+                 </div>
+                 <div class="form-group">
+                     <label>Output: covert_get_proc_address</label>
+                     <textarea id="stealth-output" rows="8" readonly style="background: rgba(0,0,0,0.5); font-family: monospace;"></textarea>
+                 </div>
+             </div>
+             
+             <div style="margin-top: 20px;">
+                 <h4 style="color: var(--cyan-accent); margin-bottom: 10px;">Key Features:</h4>
+                 <ul style="color: #aaa; line-height: 1.8;">
+                     <li><strong>covert_get_proc_address</strong> - Hash-based EAT walking, no plaintext strings</li>
+                     <li><strong>resolve_ssn_by_hash</strong> - DJB2 syscall resolution, no plaintext API names</li>
+                     <li><strong>PEB Unlinking</strong> - Module removal from all 3 PEB lists</li>
+                     <li><strong>Phantom DLL Overload</strong> - VAD tree spoofing for process hollowing</li>
+                 </ul>
+             </div>
+             
+             <div style="margin-top: 20px; padding: 15px; background: rgba(255,68,68,0.1); border: 1px solid var(--red-evaded); border-radius: 10px;">
+                 <strong style="color: var(--red-evaded);">EDR Detection Risk:</strong>
+                 <span style="color: #aaa;"> CrowdStrike Falcon & SentinelOne Heuristic ML - Neutralized via hash-based IAT resolution</span>
+             </div>
+         </div>
+     </div>
+     
+     <!-- Stego Exfil Tab -->
+     <div id="tab-stego-exfil" class="tab-content">
+         <div class="purple-card">
+             <h3>🖼️ Safe LSB Spread-Spectrum Stego Exfil</h3>
+             <p style="color: #888; margin-bottom: 20px;">Multi-image chunking with boundary checks to prevent buffer overflow during exfiltration.</p>
+             
+             <div class="form-group">
+                 <label>Upload Cover Images (multiple for chunking)</label>
+                 <input type="file" id="cover-images" multiple accept="image/*" style="padding: 10px;">
+             </div>
+             
+             <div class="form-group">
+                 <label>Data to Exfiltrate</label>
+                 <textarea id="exfil-data" rows="4" placeholder="Large data (LSASS dump, SAM, etc.) - will auto-chunk to avoid overflow"></textarea>
+             </div>
+             
+             <div class="form-group">
+                 <label>Chunk Size (bytes)</label>
+                 <input type="number" id="chunk-size" value="32768" min="1024" max="1048576">
+             </div>
+             
+             <div style="margin-top: 20px;">
+                 <button class="btn-purple" onclick="encodeSpreadSpectrum()">
+                     <span>🔐</span> Encode with Spread Spectrum
+                 </button>
+                 <button class="btn-cyan" onclick="encodeChunked()" style="margin-left: 10px;">
+                     <span>📦</span> Chunked Encode (Multi-Image)
+                 </button>
+             </div>
+             
+             <div id="stego-preview" style="margin-top: 20px; display: none;">
+                 <img id="preview-image" style="max-width: 100%; border-radius: 10px;">
+             </div>
+             
+             <div style="margin-top: 20px; padding: 15px; background: rgba(0,255,136,0.1); border: 1px solid var(--green-detected); border-radius: 10px;">
+                 <strong style="color: var(--green-detected);">Safety Features:</strong>
+                 <span style="color: #aaa;"> Max 10% of image capacity per chunk, boundary overflow protection, Gaussian noise distribution for entropy masking</span>
+             </div>
+         </div>
+     </div>
+     
+     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-content active">
         <!-- Metrics -->
         <div class="metrics-grid">
@@ -1372,5 +1449,92 @@ function showToast(message, type = 'info') {
 
 // Initial test preview
 setTimeout(updateSelectedTests, 500);
+
+// Stego Exfil functions
+async function encodeSpreadSpectrum() {
+    const imageFile = document.getElementById('cover-images').files[0];
+    const message = document.getElementById('exfil-data').value;
+    
+    if (!imageFile || !message) {
+        showToast('Image and message required', 'error');
+        return;
+    }
+    
+    showLoading('Encoding with spread spectrum...');
+    
+    try {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const image_b64 = e.target.result.split(',')[1];
+            const response = await fetch('/api/stego/spread-spectrum', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: image_b64, message: message })
+            });
+            
+            const data = await response.json();
+            hideLoading();
+            
+            if (data.status === 'encoded') {
+                document.getElementById('stego-preview').style.display = 'block';
+                document.getElementById('preview-image').src = 'data:image/png;base64,' + data.image_b64;
+                showToast('Encoded successfully - ' + data.size + ' bytes');
+            } else {
+                showToast(data.error || 'Encode failed', 'error');
+            }
+        };
+        reader.readAsDataURL(imageFile);
+    } catch (error) {
+        hideLoading();
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+async function encodeChunked() {
+    const imageFiles = document.getElementById('cover-images').files;
+    const message = document.getElementById('exfil-data').value;
+    const chunkSize = parseInt(document.getElementById('chunk-size').value) || 32768;
+    
+    if (!imageFiles.length || !message) {
+        showToast('Images and message required', 'error');
+        return;
+    }
+    
+    showLoading('Encoding chunked multi-image...');
+    
+    try {
+        const images_b64 = [];
+        for (let i = 0; i < Math.min(imageFiles.length, 10); i++) {
+            const b64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(imageFiles[i]);
+            });
+            images_b64.push(b64);
+        }
+        
+        const response = await fetch('/api/stego/chunked', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ images: images_b64, message: message, chunk_size: chunkSize })
+        });
+        
+        const data = await response.json();
+        hideLoading();
+        
+        if (data.status === 'encoded') {
+            showToast(`Encoded into ${data.chunks} chunks - ${data.total_size} bytes`);
+            // Show first chunk as preview
+            document.getElementById('stego-preview').style.display = 'block';
+            document.getElementById('preview-image').src = 'data:image/png;base64,' + data.images_b64[0];
+        } else {
+            showToast(data.error || 'Encode failed', 'error');
+        }
+    } catch (error) {
+        hideLoading();
+        showToast('Error: ' + error.message, 'error');
+    }
+}
 </script>
 {% endblock %}

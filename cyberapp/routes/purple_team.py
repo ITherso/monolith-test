@@ -185,3 +185,77 @@ def stego_create():
 @login_required
 def list_stego_payloads():
     return jsonify({"payloads": stego_exfil.list_payloads()})
+
+
+@purple_bp.route('/api/stego/spread-spectrum', methods=['POST'])
+@login_required
+def stego_spread_spectrum():
+    data = request.get_json()
+    image_b64 = data.get('image')
+    message = data.get('message', '')
+
+    if not image_b64 or not message:
+        return jsonify({"error": "image and message required"}), 400
+
+    try:
+        image_bytes = base64.b64decode(image_b64)
+        message_bytes = message.encode('utf-8')
+        result = stego_exfil.encode_lsb_spread_spectrum(image_bytes, message_bytes)
+
+        if result:
+            payload = StegoPayload(
+                payload_id=__import__('uuid').uuid4().hex,
+                data=result,
+                filename="exfil.png",
+                status=ExfilStatus.ENCODED,
+            )
+            stego_exfil.register_payload(payload)
+            return jsonify({
+                "status": "encoded",
+                "payload_id": payload.payload_id,
+                "size": len(result),
+                "image_b64": base64.b64encode(result).decode('utf-8'),
+            })
+        return jsonify({"error": "encode failed - data too large or image too small"}), 500
+    except Exception as exc:
+        logger.error(f"Stego spread spectrum error: {exc}")
+        return jsonify({"error": str(exc)}), 500
+
+
+@purple_bp.route('/api/stego/chunked', methods=['POST'])
+@login_required
+def stego_chunked():
+    data = request.get_json()
+    images_b64 = data.get('images', [])
+    message = data.get('message', '')
+    chunk_size = data.get('chunk_size', 32768)
+
+    if not images_b64 or not message:
+        return jsonify({"error": "images list and message required"}), 400
+
+    try:
+        image_bytes_list = [base64.b64decode(img) for img in images_b64]
+        message_bytes = message.encode('utf-8')
+        results = stego_exfil.chunk_and_encode_spectrum(message_bytes, image_bytes_list, chunk_size)
+
+        payload = StegoPayload(
+            payload_id=__import__('uuid').uuid4().hex,
+            data=message_bytes,
+            filename="chunked_exfil.zip",
+            status=ExfilStatus.ENCODED,
+        )
+        stego_exfil.register_payload(payload)
+        return jsonify({
+            "status": "encoded",
+            "payload_id": payload.payload_id,
+            "chunks": len(results),
+            "chunk_size": chunk_size,
+            "total_size": len(message_bytes),
+            "images_b64": [base64.b64encode(img).decode('utf-8') for img in results],
+        })
+    except ValueError as exc:
+        logger.error(f"Stego chunked error: {exc}")
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        logger.error(f"Stego chunked error: {exc}")
+        return jsonify({"error": str(exc)}), 500

