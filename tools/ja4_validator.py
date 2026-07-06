@@ -83,15 +83,8 @@ class AdaptiveJA4Validator:
 
     def evaluate_risk(self, ja4: str, ja4h: str, user_agent: str) -> JA4RiskResult:
         if ja4 not in self.FINGERPRINT_DB:
-            score = 100
-            return JA4RiskResult(
-                status=RiskStatus.CRITICAL,
-                score=score,
-                action="DROP_CONNECTION",
-                reason="Unknown/Anomalous JA4 Raw Fingerprint! Potential EDR scanning probe!",
-                details={"ja4": ja4, "ja4h": ja4h, "user_agent": user_agent},
-            )
-
+            return self._deception_response("Unknown/Anomalous JA4 fingerprint")
+        
         profile = self.FINGERPRINT_DB[ja4]
         score = profile.risk_weight
         reasons = []
@@ -110,22 +103,31 @@ class AdaptiveJA4Validator:
             reasons.append("Unknown JA4H HTTP/2 fingerprint")
 
         if score >= 75:
-            status = RiskStatus.CRITICAL
-            action = "DROP_CONNECTION"
+            return self._deception_response("; ".join(reasons) if reasons else "Suspicious fingerprint")
         elif score >= 50:
-            status = RiskStatus.MALICIOUS
-            action = "ALERT_SOC_DECEPTION"
+            return self._deception_response("; ".join(reasons) if reasons else "Anomalous TLS pattern")
         elif score >= 25:
-            status = RiskStatus.SUSPICIOUS
-            action = "ADD_OBSERVATION"
-        else:
-            status = RiskStatus.CLEAN
-            action = "ALLOW_POLLING"
+            return self._deception_response("; ".join(reasons) if reasons else "Minor anomaly detected")
 
         return JA4RiskResult(
-            status=status,
+            status=RiskStatus.CLEAN,
             score=score,
-            action=action,
+            action="ALLOW_POLLING",
             reason="; ".join(reasons) if reasons else "Clean fingerprint match",
             details={"ja4": ja4, "ja4h": ja4h, "user_agent": user_agent, "profile": profile.browser},
+        )
+
+    def _deception_response(self, reason: str) -> JA4RiskResult:
+        """Return deception response - appear as legitimate IIS server to avoid detection"""
+        return JA4RiskResult(
+            status=RiskStatus.SUSPICIOUS,
+            score=0,
+            action="DECEPTION_404",
+            reason=reason,
+            details={
+                "http_status": 404,
+                "headers": {"Server": "Microsoft-IIS/10.0", "Content-Type": "text/html"},
+                "body": "<!DOCTYPE html><html><head><title>404 - Not Found</title></head>"
+                        "<body><h1>404 - Not Found</h1><p>The requested page could not be found.</p></body></html>",
+            },
         )
