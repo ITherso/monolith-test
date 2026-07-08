@@ -37,768 +37,759 @@
             </div>
         </header>
 
-        <!-- Quick Access Grid -->
+                        <!-- Quick Access Grid -->
         <div class="mb-8">
             <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <i class="fas fa-bolt text-cyber-warning"></i>
                 QUICK ACCESS
             </h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <a href="/evasion/advanced-waf-bypass" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/50 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
-                        <i class="fas fa-shield-virus text-orange-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">WAF Bypass</span>
-                    <span class="absolute bottom-1 right-1 px-1.5 py-0.5 text-[10px] bg-orange-500/30 text-orange-200 rounded-full font-bold">NEW</span>
-                </a>
-                <a href="/kerberos" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-warning/20 hover:border-cyber-warning/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-warning/10 flex items-center justify-center group-hover:bg-cyber-warning/20 transition-colors">
-                        <i class="fas fa-key text-cyber-warning text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Kerberos</span>
-                </a>
-                
-                <a href="/distributed/0" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
+            <!-- Recon & Core Ops -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-cyber-primary mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-crosshairs"></i>
+                    Recon & Core Ops
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">10</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/distributed/0" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
                         <i class="fas fa-sitemap text-cyber-secondary text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Distributed Agents</span>
-                </a>
-                
-                <a href="/infra" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Distributed Agents</span>
+                    </a>
+                    <a href="/infra" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
                         <i class="fas fa-network-wired text-cyber-secondary text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Infrastructure</span>
-                </a>
-                
-                <a href="/exploits" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-purple/20 hover:border-cyber-purple/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-purple/10 flex items-center justify-center group-hover:bg-cyber-purple/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Infrastructure</span>
+                    </a>
+                    <a href="/exploits" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-purple/20 hover:border-cyber-purple/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-purple/10 flex items-center justify-center group-hover:bg-cyber-purple/20 transition-colors">
                         <i class="fas fa-bug text-cyber-purple text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Exploits</span>
-                </a>
-                
-                <a href="/phishing" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-primary/20 hover:border-cyber-primary/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-primary/10 flex items-center justify-center group-hover:bg-cyber-primary/20 transition-colors">
-                        <i class="fas fa-envelope text-cyber-primary text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Phishing</span>
-                </a>
-                
-                <a href="/golden" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-yellow-500/20 hover:border-yellow-500/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-yellow-500/10 flex items-center justify-center group-hover:bg-yellow-500/20 transition-colors">
-                        <i class="fas fa-gem text-yellow-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Golden Ticket</span>
-                </a>
-                
-                <a href="/attack-graph" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Exploits</span>
+                    </a>
+                    <a href="/attack-graph" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
                         <i class="fas fa-project-diagram text-cyber-secondary text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Attack Graph</span>
-                </a>
-                
-                <a href="/c2" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-purple/20 hover:border-cyber-purple/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-purple/10 flex items-center justify-center group-hover:bg-cyber-purple/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Attack Graph</span>
+                    </a>
+                    <a href="/c2" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-purple/20 hover:border-cyber-purple/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-purple/10 flex items-center justify-center group-hover:bg-cyber-purple/20 transition-colors">
                         <i class="fas fa-microchip text-cyber-purple text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">C2 Implant</span>
-                </a>
-                
-                <a href="/payloads" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-primary/20 hover:border-cyber-primary/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-primary/10 flex items-center justify-center group-hover:bg-cyber-primary/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">C2 Implant</span>
+                    </a>
+                    <a href="/payloads" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-primary/20 hover:border-cyber-primary/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-primary/10 flex items-center justify-center group-hover:bg-cyber-primary/20 transition-colors">
                         <i class="fas fa-terminal text-cyber-primary text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Payloads</span>
-                </a>
-                
-                <a href="/scans" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Payloads</span>
+                    </a>
+                    <a href="/scans" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-secondary/20 hover:border-cyber-secondary/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-secondary/10 flex items-center justify-center group-hover:bg-cyber-secondary/20 transition-colors">
                         <i class="fas fa-list-check text-cyber-secondary text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Scans</span>
-                </a>
-                
-                <a href="/autoexploit" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-danger/20 hover:border-cyber-danger/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-danger/10 flex items-center justify-center group-hover:bg-cyber-danger/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Scans</span>
+                    </a>
+                    <a href="/autoexploit" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-danger/20 hover:border-cyber-danger/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-danger/10 flex items-center justify-center group-hover:bg-cyber-danger/20 transition-colors">
                         <i class="fas fa-bolt text-cyber-danger text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">AutoExploit</span>
-                </a>
-                
-                <a href="/evasion/opsec/" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-purple/20 hover:border-cyber-purple/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-purple/10 flex items-center justify-center group-hover:bg-cyber-purple/20 transition-colors">
-                        <i class="fas fa-shield-alt text-cyber-purple text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">OpSec</span>
-                </a>
-                
-                <a href="/decentralized" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-primary/20 hover:border-cyber-primary/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-primary/10 flex items-center justify-center group-hover:bg-cyber-primary/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">AutoExploit</span>
+                    </a>
+                    <a href="/decentralized" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-primary/20 hover:border-cyber-primary/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-primary/10 flex items-center justify-center group-hover:bg-cyber-primary/20 transition-colors">
                         <i class="fas fa-link text-cyber-primary text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">DeFi</span>
-                </a>
-                
-                <a href="/attack-playground" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/20 hover:border-red-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">DeFi</span>
+                    </a>
+                    <a href="/attack-playground" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/20 hover:border-red-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
                         <i class="fas fa-skull-crossbones text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Attack Lab</span>
-                </a>
-                
-                <a href="/relay" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/20 hover:border-orange-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
-                        <i class="fas fa-exchange-alt text-orange-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">NTLM Relay</span>
-                </a>
-                
-                <a href="/evasion" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/20 hover:border-cyan-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
-                        <i class="fas fa-shield-virus text-cyan-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Evasion Test</span>
-                </a>
-                
-                <a href="/lateral" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-pink-500/20 hover:border-pink-500/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-pink-500/10 flex items-center justify-center group-hover:bg-pink-500/20 transition-colors">
-                        <i class="fas fa-arrows-alt text-pink-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Lateral Move</span>
-                </a>
-                
-                <a href="/quantum" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-violet-500/20 hover:border-violet-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-violet-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                        <i class="fas fa-atom text-violet-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Quantum Crypto</span>
-                </a>
-                
-                <a href="/cloud" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-sky-500/20 hover:border-sky-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-sky-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                        <i class="fas fa-cloud text-sky-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Cloud Pivot</span>
-                </a>
-                
-                <a href="/tools/vuln-scanner" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/20 hover:border-blue-500/40 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-blue-500 rounded text-xs font-bold text-white">NEW</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Attack Lab</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Web & WAF -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-orange-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-globe"></i>
+                    Web & WAF
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">9</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/evasion/advanced-waf-bypass" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/50 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                        <i class="fas fa-shield-virus text-orange-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">WAF Bypass</span>
+                        <span class="absolute bottom-1 right-1 px-1.5 py-0.5 text-[10px] bg-orange-500/30 text-orange-200 rounded-full font-bold">NEW</span>
+                    </a>
+                    <a href="/tools/vuln-scanner" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/20 hover:border-blue-500/40 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-blue-500 rounded text-xs font-bold text-white">NEW</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                         <i class="fas fa-shield-virus text-blue-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Vuln Scanner</span>
-                </a>
-                
-                <a href="/tools/service-fingerprinter" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-indigo-500/20 hover:border-indigo-500/40 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-indigo-500 rounded text-xs font-bold text-white">NEW</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Vuln Scanner</span>
+                    </a>
+                    <a href="/tools/service-fingerprinter" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-indigo-500/20 hover:border-indigo-500/40 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-indigo-500 rounded text-xs font-bold text-white">NEW</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
                         <i class="fas fa-fingerprint text-indigo-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Service Fingerprinting</span>
-                </a>
-                
-                <a href="/tools/web-app-scanner" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-rose-500/20 hover:border-rose-500/40 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-rose-500 rounded text-xs font-bold text-white">NEW</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-rose-500/10 flex items-center justify-center group-hover:bg-rose-500/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Service Fingerprinting</span>
+                    </a>
+                    <a href="/tools/web-app-scanner" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-rose-500/20 hover:border-rose-500/40 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-rose-500 rounded text-xs font-bold text-white">NEW</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-rose-500/10 flex items-center justify-center group-hover:bg-rose-500/20 transition-colors">
                         <i class="fas fa-spider text-rose-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Web App Scanner</span>
-                </a>
-                
-                <a href="/tools/cloud-assets" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-emerald-500/20 hover:border-emerald-500/40 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 rounded text-xs font-bold text-white">NEW</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Web App Scanner</span>
+                    </a>
+                    <a href="/tools/cloud-assets" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-emerald-500/20 hover:border-emerald-500/40 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 rounded text-xs font-bold text-white">NEW</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
                         <i class="fas fa-cloud text-emerald-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Cloud Assets</span>
-                </a>
-                
-                <a href="/privesc" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/20 hover:border-red-600/40 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-red-600 rounded text-xs font-bold text-white">NEW</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-red-600/10 flex items-center justify-center group-hover:bg-red-600/20 transition-colors">
-                        <i class="fas fa-unlock text-red-600 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Privesc Toolkit</span>
-                </a>
-                
-                <!-- NEW PRO MODULES -->
-                <a href="/cicd" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-600/30 hover:border-orange-600/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-orange-600 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-600 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-600/20 to-red-600/20 flex items-center justify-center group-hover:from-orange-600/30 group-hover:to-red-600/30 transition-colors">
-                        <i class="fas fa-code-branch text-orange-600 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">CI/CD Jacker</span>
-                </a>
-                
-                <a href="/byovd" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-700/30 hover:border-red-700/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-red-700 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-700 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-700/20 to-black/20 flex items-center justify-center group-hover:from-red-700/30 group-hover:to-black/30 transition-colors">
-                        <i class="fas fa-skull text-red-700 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">BYOVD EDR Killer</span>
-                </a>
-                
-                <a href="/stego" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-emerald-500/30 hover:border-emerald-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center group-hover:from-emerald-500/30 group-hover:to-teal-500/30 transition-colors">
-                        <i class="fas fa-image text-emerald-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Stego C2</span>
-                </a>
-                
-                <a href="/bitb" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-purple-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <i class="fas fa-window-restore text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">BitB Phishing</span>
-                </a>
-                
-                <a href="/spray" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-yellow-500/30 hover:border-yellow-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-yellow-500 rounded text-xs font-bold text-black">AI</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center group-hover:from-yellow-500/30 group-hover:to-amber-500/30 transition-colors">
-                        <i class="fas fa-brain text-yellow-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Smart Spray</span>
-                </a>
-                
-                <!-- Advanced Persistence Modules -->
-                <a href="/dll-sideload" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <i class="fas fa-industry text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">DLL Sideload</span>
-                </a>
-                
-                <a href="/wmi-persistence" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
-                        <i class="fas fa-ghost text-cyan-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">WMI Fileless</span>
-                </a>
-                
-                <a href="/office-template" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
-                        <i class="fas fa-file-word text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Office Inject</span>
-                </a>
-                
-                <!-- Cloud Warfare Modules -->
-                <a href="/aws-lambda" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-yellow-500/30 transition-colors">
-                        <i class="fab fa-aws text-orange-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">AWS Lambda</span>
-                </a>
-                
-                <a href="/s3-marauder" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
-                        <i class="fas fa-database text-green-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">S3 Marauder</span>
-                </a>
-                
-                <a href="/azure-runcommand" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/30 hover:border-blue-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-colors">
-                        <i class="fab fa-microsoft text-blue-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Azure RCE</span>
-                </a>
-                
-                <!-- Post-Exploitation Modules -->
-                <a href="/dpapi-extractor" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <i class="fas fa-key text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">DPAPI Extract</span>
-                </a>
-                
-                <a href="/wifi-grabber" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
-                        <i class="fas fa-wifi text-cyan-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">WiFi Grabber</span>
-                </a>
-                
-                <a href="/mail-sniper" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <i class="fas fa-envelope-open-text text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Mail Sniper</span>
-                </a>
-                
-                <!-- Exotic Exfiltration Modules -->
-                <a href="/doh-c2" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
-                        <i class="fas fa-globe text-green-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">DoH C2</span>
-                </a>
-                
-                <a href="/icmp-tunnel" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
-                        <i class="fas fa-satellite-dish text-cyan-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">ICMP Tunnel</span>
-                </a>
-                
-                <a href="/telegram-c2" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/30 hover:border-blue-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-indigo-500/30 transition-colors">
-                        <i class="fab fa-telegram text-blue-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Telegram C2</span>
-                </a>
-                
-                <!-- Lateral Movement Modules -->
-                <a href="/sccm-hunter" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
-                        <i class="fas fa-server text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">SCCM Hunter</span>
-                </a>
-                
-                <a href="/rdp-hijack" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-indigo-500/30 transition-colors">
-                        <i class="fas fa-desktop text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">RDP Hijack</span>
-                </a>
-                
-                <a href="/wsus-spoof" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-600/30 hover:border-blue-600/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-600/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-600/30 group-hover:to-cyan-500/30 transition-colors">
-                        <i class="fab fa-windows text-blue-600 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">WSUS Spoof</span>
-                </a>
-                
-                <!-- AI & Automation Modules -->
-                <a href="/deepfake-vishing" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-fuchsia-500/30 hover:border-fuchsia-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-fuchsia-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-fuchsia-500/30 group-hover:to-purple-500/30 transition-colors">
-                        <i class="fas fa-microphone-alt text-fuchsia-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Deepfake Vishing</span>
-                </a>
-                
-                <a href="/autopwn" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/30 hover:border-red-600/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded text-xs font-bold text-white">PRO</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-600/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-600/30 group-hover:to-orange-500/30 transition-colors">
-                        <i class="fas fa-crosshairs text-red-600 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">AutoPwn Scanner</span>
-                </a>
-                
-                <a href="/evasion/adversarial" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/20 hover:border-red-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
-                        <i class="fas fa-brain text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">AI Adversarial</span>
-                </a>
-                
-                <a href="/zeroday" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/20 hover:border-purple-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <i class="fas fa-bug text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Zero-Day</span>
-                </a>
-                
-                <a href="/vr" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/20 hover:border-cyan-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-purple-500/30 transition-colors">
-                        <i class="fas fa-vr-cardboard text-cyan-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">VR/AR Viz</span>
-                </a>
-                
-                <a href="/vuln/webshell" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/20 hover:border-red-600/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-600/20 to-orange-600/20 flex items-center justify-center group-hover:from-red-600/30 group-hover:to-orange-600/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Cloud Assets</span>
+                    </a>
+                    <a href="/vuln/webshell" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/20 hover:border-red-600/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-600/20 to-orange-600/20 flex items-center justify-center group-hover:from-red-600/30 group-hover:to-orange-600/30 transition-colors">
                         <i class="fas fa-terminal text-red-600 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Web Shell</span>
-                </a>
-                
-                <a href="/waf" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/20 hover:border-orange-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-yellow-500/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Web Shell</span>
+                    </a>
+                    <a href="/waf" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/20 hover:border-orange-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-yellow-500/30 transition-colors">
                         <i class="fas fa-shield-alt text-orange-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">WAF Bypass</span>
-                </a>
-                
-                <a href="/evasion/amsi/" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/20 hover:border-red-500/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
-                        <i class="fas fa-virus-slash text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">AMSI Bypass</span>
-                </a>
-                
-                <a href="/evasion/sleep/" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-amber-500/20 hover:border-amber-500/40">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
-                        <i class="fas fa-moon text-amber-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Sleepmask</span>
-                </a>
-                
-                <a href="/evasion/edr-poison" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-pink-500/20 hover:border-pink-500/40 relative">
-                    <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-pink-500 animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-pink-500/10 flex items-center justify-center group-hover:bg-pink-500/20 transition-colors">
-                        <i class="fas fa-biohazard text-pink-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">EDR Poison</span>
-                </a>
-                
-                <a href="/evasion/purple-team" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/20 hover:border-purple-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-600/20 to-cyan-500/20 flex items-center justify-center group-hover:from-purple-600/30 group-hover:to-cyan-500/30 transition-colors">
-                        <i class="fas fa-shield-alt text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Purple Team</span>
-                    <span class="text-xs text-purple-400">PRO</span>
-                </a>
-                
-                <a href="/evasion/webshell-enhancer" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/20 hover:border-orange-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-red-500/30 transition-colors">
-                        <i class="fas fa-spider text-orange-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">WebShell PRO</span>
-                    <span class="text-xs text-orange-400">NEW</span>
-                </a>
-                
-                <a href="/tools/vuln-scanner" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/20 hover:border-blue-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-colors">
-                        <i class="fas fa-search text-blue-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Vuln Scanner</span>
-                    <span class="text-xs text-blue-400">NEW</span>
-                </a>
-                
-                <a href="/web-c2" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/20 hover:border-green-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">WAF Bypass</span>
+                    </a>
+                    <a href="/web-c2" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/20 hover:border-green-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
                         <i class="fas fa-satellite-dish text-green-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Web C2</span>
-                    <span class="text-xs text-green-400">NEW</span>
-                </a>
-                
-                <a href="/tools/exfil" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-rose-500/20 hover:border-rose-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-rose-500/30 group-hover:to-pink-500/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Web C2</span>
+                        <span class="text-xs text-green-400">NEW</span>
+                    </a>
+                    <a href="/tools/exfil" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-rose-500/20 hover:border-rose-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-rose-500/30 group-hover:to-pink-500/30 transition-colors">
                         <i class="fas fa-file-export text-rose-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Web Exfil</span>
-                    <span class="text-xs text-rose-400">NEW</span>
-                </a>
-                
-                <a href="/evasion/web-obfuscator" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-violet-500/20 hover:border-violet-500/40 relative">
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-violet-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-violet-500/30 group-hover:to-purple-500/30 transition-colors">
-                        <i class="fas fa-mask text-violet-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Obfuscator</span>
-                    <span class="text-xs text-violet-400">NEW</span>
-                </a>
-                
-                <!-- Memory Forensics Evasion -->
-                <a href="/memory-evasion" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-cyan-500 rounded text-xs font-bold text-white">GHOST</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-cyan-500/30 transition-colors">
-                        <i class="fas fa-ghost text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Memory Evasion</span>
-                    <span class="text-xs text-cyan-400">PRO</span>
-                </a>
-                
-                <!-- Linux Infrastructure Domination -->
-                <a href="/ebpf-rootkit" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/30 hover:border-red-600/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded text-xs font-bold text-white">KERNEL</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-600/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-600/30 group-hover:to-orange-500/30 transition-colors">
-                        <i class="fas fa-ghost text-red-600 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">eBPF Rootkit</span>
-                    <span class="text-xs text-red-400">NEW</span>
-                </a>
-                
-                <a href="/ssh-worm" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">WORM</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
-                        <i class="fas fa-key text-green-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">SSH Worm</span>
-                    <span class="text-xs text-green-400">NEW</span>
-                </a>
-                
-                <a href="/docker-escape" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/30 hover:border-blue-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded text-xs font-bold text-white">ESCAPE</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-colors">
-                        <i class="fab fa-docker text-blue-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Docker Escape</span>
-                    <span class="text-xs text-blue-400">NEW</span>
-                </a>
-                
-                <!-- Supply Chain Attack -->
-                <a href="/supply-chain" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">CHAIN</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <i class="fas fa-link text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Supply Chain</span>
-                    <span class="text-xs text-purple-400">NEW</span>
-                </a>
-                
-                <!-- Hardware & Network Infrastructure -->
-                <a href="/hardware-infra" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">HW</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
-                        <i class="fas fa-microchip text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Hardware Infra</span>
-                    <span class="text-xs text-red-400">NEW</span>
-                </a>
-                
-                <!-- Mobile & IoT -->
-                <a href="/mobile-iot" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-teal-500 rounded text-xs font-bold text-white">MOB</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-teal-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-teal-500/30 transition-colors">
-                        <i class="fas fa-mobile-alt text-green-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Mobile & IoT</span>
-                    <span class="text-xs text-green-400">NEW</span>
-                </a>
-                
-                <!-- Social Engineering Ops -->
-                <a href="/social-eng" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-pink-500/30 hover:border-pink-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded text-xs font-bold text-white">PSY</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-pink-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-pink-500/30 group-hover:to-purple-500/30 transition-colors">
-                        <i class="fas fa-brain text-pink-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Social Eng Ops</span>
-                    <span class="text-xs text-pink-400">NEW</span>
-                </a>
-                
-                <!-- DDexec - Fileless Linux Execution -->
-                <a href="/ddexec" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">GHOST</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
-                        <i class="fas fa-ghost text-red-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">DDexec Ghost</span>
-                    <span class="text-xs text-red-400">NEW</span>
-</a>
-                 
-                 <!-- Hash-Based EDR Evasion Engine -->
-                 <a href="/purple/stealth-loader" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
-                     <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">EDR</div>
-                     <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                     <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
-                         <i class="fas fa-fingerprint text-cyan-500 text-xl"></i>
-                     </div>
-                     <span class="text-gray-300 font-medium text-sm">Stealth Loader</span>
-                     <span class="text-xs text-cyan-400">PRO</span>
-                 </a>
-                 
-                 <!-- Safe Stego Exfil with Chunking -->
-                 <a href="/purple/stego-exfil" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-emerald-500/30 hover:border-emerald-500/60 relative">
-                     <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded text-xs font-bold text-white">SAFE</span>
-                     <div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                     <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center group-hover:from-emerald-500/30 group-hover:to-teal-500/30 transition-colors">
-                         <i class="fas fa-shield text-emerald-500 text-xl"></i>
-                     </div>
-                     <span class="text-gray-300 font-medium text-sm">Safe Stego Exfil</span>
-                     <span class="text-xs text-emerald-400">PRO</span>
-                 </a>
-                 
-                 <!-- K8s Kraken - Kubernetes Warfare -->
-                <a href="/k8s-kraken" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">KRAKEN</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
-                        <i class="fas fa-dharmachakra text-cyan-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">K8s Kraken</span>
-                    <span class="text-xs text-cyan-400">NEW</span>
-                </a>
-                
-                <!-- Browser Persistence & Extension Ops -->
-                <a href="/browser-persistence" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">STEALTH</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <i class="fas fa-puzzle-piece text-purple-500 text-xl"></i>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Browser Persist</span>
-                    <span class="text-xs text-purple-400">NEW</span>
-                </a>
-                
-                <!-- Living off the Forest - AD Exploitation -->
-                <a href="/lotf-ad" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">AD</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Web Exfil</span>
+                        <span class="text-xs text-rose-400">NEW</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Active Directory & Kerberos -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-yellow-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-key"></i>
+                    Active Directory & Kerberos
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">11</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/kerberos" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-warning/20 hover:border-cyber-warning/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-warning/10 flex items-center justify-center group-hover:bg-cyber-warning/20 transition-colors">
+                        <i class="fas fa-key text-cyber-warning text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Kerberos</span>
+                    </a>
+                    <a href="/golden" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-yellow-500/20 hover:border-yellow-500/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-yellow-500/10 flex items-center justify-center group-hover:bg-yellow-500/20 transition-colors">
+                        <i class="fas fa-gem text-yellow-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Golden Ticket</span>
+                    </a>
+                    <a href="/relay" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/20 hover:border-orange-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                        <i class="fas fa-exchange-alt text-orange-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">NTLM Relay</span>
+                    </a>
+                    <a href="/dll-sideload" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <i class="fas fa-industry text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">DLL Sideload</span>
+                    </a>
+                    <a href="/wmi-persistence" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
+                        <i class="fas fa-ghost text-cyan-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">WMI Fileless</span>
+                    </a>
+                    <a href="/office-template" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
+                        <i class="fas fa-file-word text-red-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Office Inject</span>
+                    </a>
+                    <a href="/dpapi-extractor" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <i class="fas fa-key text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">DPAPI Extract</span>
+                    </a>
+                    <a href="/sccm-hunter" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
+                        <i class="fas fa-server text-red-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">SCCM Hunter</span>
+                    </a>
+                    <a href="/rdp-hijack" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-indigo-500/30 transition-colors">
+                        <i class="fas fa-desktop text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">RDP Hijack</span>
+                    </a>
+                    <a href="/wsus-spoof" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-600/30 hover:border-blue-600/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-600/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-600/30 group-hover:to-cyan-500/30 transition-colors">
+                        <i class="fab fa-windows text-blue-600 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">WSUS Spoof</span>
+                    </a>
+                    <a href="/lotf-ad" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">AD</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
                         <span class="text-2xl">🌲</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">LOTF AD</span>
-                    <span class="text-xs text-green-400">NEW</span>
-                </a>
-                
-                <!-- IoT & OT Espionage -->
-                <a href="/iot-espionage" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">ICS</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
-                        <span class="text-2xl">🏭</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">IoT/OT Spy</span>
-                    <span class="text-xs text-red-400">NEW</span>
-                </a>
-                
-                <!-- God Mode Anti-Forensics -->
-                <a href="/god-mode" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-red-500 rounded text-xs font-bold text-white">💀</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-red-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-red-500/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">LOTF AD</span>
+                        <span class="text-xs text-green-400">NEW</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Evasion & OpSec -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-cyan-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-user-secret"></i>
+                    Evasion & OpSec
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">13</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/evasion/opsec/" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-purple/20 hover:border-cyber-purple/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-purple/10 flex items-center justify-center group-hover:bg-cyber-purple/20 transition-colors">
+                        <i class="fas fa-shield-alt text-cyber-purple text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">OpSec</span>
+                    </a>
+                    <a href="/evasion" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/20 hover:border-cyan-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
+                        <i class="fas fa-shield-virus text-cyan-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Evasion Test</span>
+                    </a>
+                    <a href="/evasion/adversarial" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/20 hover:border-red-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
+                        <i class="fas fa-brain text-red-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">AI Adversarial</span>
+                    </a>
+                    <a href="/evasion/amsi/" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/20 hover:border-red-500/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
+                        <i class="fas fa-virus-slash text-red-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">AMSI Bypass</span>
+                    </a>
+                    <a href="/evasion/sleep/" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-amber-500/20 hover:border-amber-500/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+                        <i class="fas fa-moon text-amber-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Sleepmask</span>
+                    </a>
+                    <a href="/evasion/edr-poison" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-pink-500/20 hover:border-pink-500/40 relative">
+                        <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-pink-500 animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-pink-500/10 flex items-center justify-center group-hover:bg-pink-500/20 transition-colors">
+                        <i class="fas fa-biohazard text-pink-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">EDR Poison</span>
+                    </a>
+                    <a href="/evasion/purple-team" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/20 hover:border-purple-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-600/20 to-cyan-500/20 flex items-center justify-center group-hover:from-purple-600/30 group-hover:to-cyan-500/30 transition-colors">
+                        <i class="fas fa-shield-alt text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Purple Team</span>
+                        <span class="text-xs text-purple-400">PRO</span>
+                    </a>
+                    <a href="/evasion/webshell-enhancer" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/20 hover:border-orange-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-red-500/30 transition-colors">
+                        <i class="fas fa-spider text-orange-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">WebShell PRO</span>
+                        <span class="text-xs text-orange-400">NEW</span>
+                    </a>
+                    <a href="/evasion/web-obfuscator" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-violet-500/20 hover:border-violet-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-violet-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-violet-500/30 group-hover:to-purple-500/30 transition-colors">
+                        <i class="fas fa-mask text-violet-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Obfuscator</span>
+                        <span class="text-xs text-violet-400">NEW</span>
+                    </a>
+                    <a href="/memory-evasion" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-cyan-500 rounded text-xs font-bold text-white">GHOST</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-cyan-500/30 transition-colors">
+                        <i class="fas fa-ghost text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Memory Evasion</span>
+                        <span class="text-xs text-cyan-400">PRO</span>
+                    </a>
+                    <a href="/purple/stealth-loader" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">EDR</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
+                        <i class="fas fa-fingerprint text-cyan-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Stealth Loader</span>
+                        <span class="text-xs text-cyan-400">PRO</span>
+                    </a>
+                    <a href="/purple/stego-exfil" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-emerald-500/30 hover:border-emerald-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded text-xs font-bold text-white">SAFE</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center group-hover:from-emerald-500/30 group-hover:to-teal-500/30 transition-colors">
+                        <i class="fas fa-shield text-emerald-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Safe Stego Exfil</span>
+                        <span class="text-xs text-emerald-400">PRO</span>
+                    </a>
+                    <a href="/god-mode" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-red-500 rounded text-xs font-bold text-white">💀</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-red-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-red-500/30 transition-colors">
                         <span class="text-2xl">👻</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">God Mode</span>
-                    <span class="text-xs text-purple-400">NEW</span>
-                </a>
-                
-                <!-- Orbital & RF Warfare -->
-                <a href="/orbital-rf" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">📡</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
-                        <span class="text-2xl">🛰️</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Orbital RF</span>
-                    <span class="text-xs text-cyan-400">NEW</span>
-                </a>
-                
-                <!-- SCADA & ICS Hunter -->
-                <a href="/scada" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-red-500 rounded text-xs font-bold text-white">⚡</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-red-500/30 transition-colors">
-                        <span class="text-2xl">🏭</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">SCADA Hunter</span>
-                    <span class="text-xs text-orange-400">NEW</span>
-                </a>
-                
-                <!-- Automotive & CAN Bus Hacking -->
-                <a href="/vehicle-ops" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-500 rounded text-xs font-bold text-white">🔧</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <span class="text-2xl">🚗</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Vehicle Ops</span>
-                    <span class="text-xs text-red-400">NEW</span>
-                </a>
-                
-                <!-- Air-Gap Jumper -->
-                <a href="/airgap" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">🔇</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
-                        <span class="text-2xl">🔌</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Air-Gap Jump</span>
-                    <span class="text-xs text-purple-400">NEW</span>
-                </a>
-                
-                <!-- Blockchain C2 -->
-                <a href="/blockchain-c2" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded text-xs font-bold text-white">₿</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-yellow-500/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">God Mode</span>
+                        <span class="text-xs text-purple-400">NEW</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Cloud Warfare -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-sky-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-cloud"></i>
+                    Cloud Warfare
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">4</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/cloud" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-sky-500/20 hover:border-sky-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-sky-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
+                        <i class="fas fa-cloud text-sky-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Cloud Pivot</span>
+                    </a>
+                    <a href="/aws-lambda" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-yellow-500/30 transition-colors">
+                        <i class="fab fa-aws text-orange-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">AWS Lambda</span>
+                    </a>
+                    <a href="/s3-marauder" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
+                        <i class="fas fa-database text-green-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">S3 Marauder</span>
+                    </a>
+                    <a href="/azure-runcommand" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/30 hover:border-blue-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-colors">
+                        <i class="fab fa-microsoft text-blue-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Azure RCE</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Post-Exploitation -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-red-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-skull-crossbones"></i>
+                    Post-Exploitation
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">12</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/lateral" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-pink-500/20 hover:border-pink-500/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-pink-500/10 flex items-center justify-center group-hover:bg-pink-500/20 transition-colors">
+                        <i class="fas fa-arrows-alt text-pink-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Lateral Move</span>
+                    </a>
+                    <a href="/privesc" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/20 hover:border-red-600/40 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-red-600 rounded text-xs font-bold text-white">NEW</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-red-600/10 flex items-center justify-center group-hover:bg-red-600/20 transition-colors">
+                        <i class="fas fa-unlock text-red-600 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Privesc Toolkit</span>
+                    </a>
+                    <a href="/cicd" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-600/30 hover:border-orange-600/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-orange-600 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-600 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-600/20 to-red-600/20 flex items-center justify-center group-hover:from-orange-600/30 group-hover:to-red-600/30 transition-colors">
+                        <i class="fas fa-code-branch text-orange-600 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">CI/CD Jacker</span>
+                    </a>
+                    <a href="/byovd" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-700/30 hover:border-red-700/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-red-700 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-700 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-700/20 to-black/20 flex items-center justify-center group-hover:from-red-700/30 group-hover:to-black/30 transition-colors">
+                        <i class="fas fa-skull text-red-700 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">BYOVD EDR Killer</span>
+                    </a>
+                    <a href="/wifi-grabber" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
+                        <i class="fas fa-wifi text-cyan-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">WiFi Grabber</span>
+                    </a>
+                    <a href="/mail-sniper" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <i class="fas fa-envelope-open-text text-red-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Mail Sniper</span>
+                    </a>
+                    <a href="/autopwn" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/30 hover:border-red-600/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-600/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-600/30 group-hover:to-orange-500/30 transition-colors">
+                        <i class="fas fa-crosshairs text-red-600 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">AutoPwn Scanner</span>
+                    </a>
+                    <a href="/ebpf-rootkit" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-600/30 hover:border-red-600/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded text-xs font-bold text-white">KERNEL</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-600/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-600/30 group-hover:to-orange-500/30 transition-colors">
+                        <i class="fas fa-ghost text-red-600 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">eBPF Rootkit</span>
+                        <span class="text-xs text-red-400">NEW</span>
+                    </a>
+                    <a href="/ssh-worm" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">WORM</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
+                        <i class="fas fa-key text-green-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">SSH Worm</span>
+                        <span class="text-xs text-green-400">NEW</span>
+                    </a>
+                    <a href="/docker-escape" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/30 hover:border-blue-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded text-xs font-bold text-white">ESCAPE</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-colors">
+                        <i class="fab fa-docker text-blue-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Docker Escape</span>
+                        <span class="text-xs text-blue-400">NEW</span>
+                    </a>
+                    <a href="/k8s-kraken" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">KRAKEN</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
+                        <i class="fas fa-dharmachakra text-cyan-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">K8s Kraken</span>
+                        <span class="text-xs text-cyan-400">NEW</span>
+                    </a>
+                    <a href="/browser-persistence" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">STEALTH</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <i class="fas fa-puzzle-piece text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Browser Persist</span>
+                        <span class="text-xs text-purple-400">NEW</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Exfiltration & C2 -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-green-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-network-wired"></i>
+                    Exfiltration & C2
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">6</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/stego" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-emerald-500/30 hover:border-emerald-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center group-hover:from-emerald-500/30 group-hover:to-teal-500/30 transition-colors">
+                        <i class="fas fa-image text-emerald-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Stego C2</span>
+                    </a>
+                    <a href="/doh-c2" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
+                        <i class="fas fa-globe text-green-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">DoH C2</span>
+                    </a>
+                    <a href="/icmp-tunnel" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
+                        <i class="fas fa-satellite-dish text-cyan-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">ICMP Tunnel</span>
+                    </a>
+                    <a href="/telegram-c2" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-blue-500/30 hover:border-blue-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-indigo-500/30 transition-colors">
+                        <i class="fab fa-telegram text-blue-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Telegram C2</span>
+                    </a>
+                    <a href="/ddexec" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">GHOST</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
+                        <i class="fas fa-ghost text-red-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">DDexec Ghost</span>
+                        <span class="text-xs text-red-400">NEW</span>
+                    </a>
+                    <a href="/blockchain-c2" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded text-xs font-bold text-white">₿</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-yellow-500/30 transition-colors">
                         <span class="text-2xl">⛓️</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Blockchain C2</span>
-                    <span class="text-xs text-orange-400">NEW</span>
-                </a>
-                
-                <!-- Apple Orchard - MacOS -->
-                <a href="/apple-orchard" class="glass rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-gray-400/30 hover:border-gray-300/60 relative">
-                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-gray-400 to-gray-500 rounded text-xs font-bold text-white">🍎</div>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-gray-400 rounded-full animate-pulse"></div>
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-gray-400/20 to-gray-500/20 flex items-center justify-center group-hover:from-gray-400/30 group-hover:to-gray-500/30 transition-colors">
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Blockchain C2</span>
+                        <span class="text-xs text-orange-400">NEW</span>
+                    </a>
+                </div>
+            </div>
+            <!-- AI & Zero-Day -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-purple-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-brain"></i>
+                    AI & Zero-Day
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">5</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/quantum" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-violet-500/20 hover:border-violet-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-violet-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                        <i class="fas fa-atom text-violet-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Quantum Crypto</span>
+                    </a>
+                    <a href="/spray" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-yellow-500/30 hover:border-yellow-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-yellow-500 rounded text-xs font-bold text-black">AI</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center group-hover:from-yellow-500/30 group-hover:to-amber-500/30 transition-colors">
+                        <i class="fas fa-brain text-yellow-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Smart Spray</span>
+                    </a>
+                    <a href="/deepfake-vishing" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-fuchsia-500/30 hover:border-fuchsia-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-fuchsia-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-fuchsia-500/30 group-hover:to-purple-500/30 transition-colors">
+                        <i class="fas fa-microphone-alt text-fuchsia-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Deepfake Vishing</span>
+                    </a>
+                    <a href="/zeroday" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/20 hover:border-purple-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <i class="fas fa-bug text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Zero-Day</span>
+                    </a>
+                    <a href="/vr" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/20 hover:border-cyan-500/40 relative">
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-purple-500/30 transition-colors">
+                        <i class="fas fa-vr-cardboard text-cyan-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">VR/AR Viz</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Supply Chain -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-fuchsia-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-link"></i>
+                    Supply Chain
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">1</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/supply-chain" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">CHAIN</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <i class="fas fa-link text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Supply Chain</span>
+                        <span class="text-xs text-purple-400">NEW</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Social Engineering -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-pink-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-comments"></i>
+                    Social Engineering
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">3</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/phishing" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyber-primary/20 hover:border-cyber-primary/40">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-cyber-primary/10 flex items-center justify-center group-hover:bg-cyber-primary/20 transition-colors">
+                        <i class="fas fa-envelope text-cyber-primary text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Phishing</span>
+                    </a>
+                    <a href="/bitb" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-purple-500 rounded text-xs font-bold text-white">PRO</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <i class="fas fa-window-restore text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">BitB Phishing</span>
+                    </a>
+                    <a href="/social-eng" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-pink-500/30 hover:border-pink-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded text-xs font-bold text-white">PSY</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-pink-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-pink-500/30 group-hover:to-purple-500/30 transition-colors">
+                        <i class="fas fa-brain text-pink-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Social Eng Ops</span>
+                        <span class="text-xs text-pink-400">NEW</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Hardware / IoT / Mobile -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-rose-500 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fas fa-microchip"></i>
+                    Hardware / IoT / Mobile
+                    <span class="text-[10px] text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">8</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <a href="/hardware-infra" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">HW</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
+                        <i class="fas fa-microchip text-red-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Hardware Infra</span>
+                        <span class="text-xs text-red-400">NEW</span>
+                    </a>
+                    <a href="/mobile-iot" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-green-500/30 hover:border-green-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-green-500 to-teal-500 rounded text-xs font-bold text-white">MOB</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-green-500/20 to-teal-500/20 flex items-center justify-center group-hover:from-green-500/30 group-hover:to-teal-500/30 transition-colors">
+                        <i class="fas fa-mobile-alt text-green-500 text-xl"></i>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Mobile & IoT</span>
+                        <span class="text-xs text-green-400">NEW</span>
+                    </a>
+                    <a href="/iot-espionage" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-xs font-bold text-white">ICS</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-orange-500/30 transition-colors">
+                        <span class="text-2xl">🏭</span>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">IoT/OT Spy</span>
+                        <span class="text-xs text-red-400">NEW</span>
+                    </a>
+                    <a href="/orbital-rf" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-cyan-500/30 hover:border-cyan-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded text-xs font-bold text-white">📡</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
+                        <span class="text-2xl">🛰️</span>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Orbital RF</span>
+                        <span class="text-xs text-cyan-400">NEW</span>
+                    </a>
+                    <a href="/scada" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-orange-500/30 hover:border-orange-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-red-500 rounded text-xs font-bold text-white">⚡</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center group-hover:from-orange-500/30 group-hover:to-red-500/30 transition-colors">
+                        <span class="text-2xl">🏭</span>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">SCADA Hunter</span>
+                        <span class="text-xs text-orange-400">NEW</span>
+                    </a>
+                    <a href="/vehicle-ops" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-red-500/30 hover:border-red-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-500 rounded text-xs font-bold text-white">🔧</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-red-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-red-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <span class="text-2xl">🚗</span>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Vehicle Ops</span>
+                        <span class="text-xs text-red-400">NEW</span>
+                    </a>
+                    <a href="/airgap" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-purple-500/30 hover:border-purple-500/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded text-xs font-bold text-white">🔇</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                        <span class="text-2xl">🔌</span>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Air-Gap Jump</span>
+                        <span class="text-xs text-purple-400">NEW</span>
+                    </a>
+                    <a href="/apple-orchard" class="glass dash-card rounded-xl p-4 hover-lift transition-all duration-300 text-center group border border-gray-400/30 hover:border-gray-300/60 relative">
+                        <div class="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-gray-400 to-gray-500 rounded text-xs font-bold text-white">🍎</div>
+                        <div class="absolute top-2 left-2 w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-lg bg-gradient-to-br from-gray-400/20 to-gray-500/20 flex items-center justify-center group-hover:from-gray-400/30 group-hover:to-gray-500/30 transition-colors">
                         <span class="text-2xl">🍎</span>
-                    </div>
-                    <span class="text-gray-300 font-medium text-sm">Apple Orchard</span>
-                    <span class="text-xs text-gray-400">NEW</span>
-                </a>
+                        </div>
+                        <span class="text-gray-300 font-medium text-sm">Apple Orchard</span>
+                        <span class="text-xs text-gray-400">NEW</span>
+                    </a>
+                </div>
             </div>
         </div>
-
-        <!-- Quick WAF Scanner -->
+<!-- Quick WAF Scanner -->
         <div class="mb-8">
             <div class="glass rounded-2xl overflow-hidden" style="border: 1px solid rgba(255, 102, 0, 0.3);">
                 <div class="px-6 py-4 border-b border-orange-500/20 bg-orange-500/5">

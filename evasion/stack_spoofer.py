@@ -17,6 +17,7 @@ TECHNIQUE:
 import ctypes
 import struct
 import threading
+import sys
 from typing import Dict, Optional, List, Tuple
 from dataclasses import dataclass
 from datetime import datetime
@@ -113,18 +114,26 @@ class ThreadCallStackSpoofer:
     EDR taraması unbacked shellcode göremez
     """
     
-    VEH_HANDLER_TYPE = ctypes.WINFUNCTYPE(
-        ctypes.c_long,
-        ctypes.POINTER(EXCEPTION_POINTERS)
-    )
+    if sys.platform == "win32":
+        VEH_HANDLER_TYPE = ctypes.WINFUNCTYPE(
+            ctypes.c_long,
+            ctypes.POINTER(EXCEPTION_POINTERS)
+        )
+    else:
+        VEH_HANDLER_TYPE = None
     
     def __init__(self, logger=None):
-        self.kernel32 = ctypes.windll.kernel32
-        self.ntdll = ctypes.windll.ntdll
+        self._is_windows = sys.platform == "win32"
+        if self._is_windows:
+            self.kernel32 = ctypes.windll.kernel32
+            self.ntdll = ctypes.windll.ntdll
+        else:
+            self.kernel32 = None
+            self.ntdll = None
         
         self.logger = logger
         self.veh_handle: Optional[int] = None
-        self.handler_callback: Optional[self.VEH_HANDLER_TYPE] = None
+        self.handler_callback = None
         self.lock = threading.Lock()
         
         # Spoofed frame'ler cache

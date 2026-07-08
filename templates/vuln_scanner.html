@@ -207,6 +207,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- Recent Scans -->
+        <div class="glass rounded-2xl p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-history text-cyan-500"></i>
+                    Recent Scans
+                </h2>
+                <button onclick="loadScanHistory()" class="px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 transition-all text-sm">
+                    <i class="fas fa-sync-alt mr-1"></i>Refresh
+                </button>
+            </div>
+            <div id="recentScansList" class="space-y-3">
+                <div class="text-center text-gray-400 py-6">Loading scan history...</div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -234,8 +251,9 @@ document.getElementById('scanForm').addEventListener('submit', async (e) => {
         
         if (data.success) {
             currentJobId = data.job_id;
+            localStorage.setItem('vulnScannerCurrentJobId', data.job_id);
             startTime = Date.now();
-            
+
             // Show progress
             document.getElementById('scanProgress').classList.remove('hidden');
             document.getElementById('resultsSection').classList.add('hidden');
@@ -275,7 +293,11 @@ async function checkScanStatus() {
             if (data.status === 'completed') {
                 clearInterval(pollInterval);
                 loadResults();
-                
+
+                // Persisted job is done: refresh history and forget it
+                localStorage.removeItem('vulnScannerCurrentJobId');
+                loadScanHistory();
+
                 // Update status indicator
                 document.getElementById('statusIndicator').innerHTML = `
                     <div class="w-2 h-2 rounded-full bg-green-500"></div>
@@ -283,8 +305,9 @@ async function checkScanStatus() {
                 `;
             } else if (data.status === 'failed') {
                 clearInterval(pollInterval);
+                localStorage.removeItem('vulnScannerCurrentJobId');
                 alert('Scan failed!');
-                
+
                 // Update status indicator
                 document.getElementById('statusIndicator').innerHTML = `
                     <div class="w-2 h-2 rounded-full bg-red-500"></div>
@@ -464,6 +487,106 @@ function exportReport(format) {
     if (!currentJobId) return;
     window.open(`/tools/api/vuln-scanner/report/${currentJobId}?format=${format}`, '_blank');
 }
+
+// --- Scan History ---
+const HISTORY_KEY = 'vulnScannerCurrentJobId';
+
+async function loadScanHistory() {
+    try {
+        const response = await fetch('/tools/api/vuln-scanner/scans');
+        const data = await response.json();
+        if (data.success) {
+            renderScanHistory(data.scans || []);
+        }
+    } catch (error) {
+        console.error('Error loading scan history:', error);
+    }
+}
+
+function renderScanHistory(scans) {
+    const container = document.getElementById('recentScansList');
+    if (!container) return;
+
+    if (!scans.length) {
+        container.innerHTML = '<div class="text-center text-gray-400 py-6">No previous scans</div>';
+        return;
+    }
+
+    container.innerHTML = scans.map(s => {
+        const statusColor = s.status === 'completed' ? 'green'
+                          : s.status === 'failed' ? 'red' : 'yellow';
+        const created = s.created_at ? new Date(s.created_at).toLocaleString() : '';
+        return `
+            <div class="glass rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer border border-white/10"
+                 onclick="viewScan('${s.job_id}')">
+                <div class="flex-1 min-w-0">
+                    <div class="text-white font-mono text-sm truncate">${s.target}</div>
+                    <div class="text-gray-500 text-xs mt-1">
+                        ${created} &bull; <span class="text-${statusColor}-400 capitalize">${s.status}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 ml-4">
+                    <div class="text-center">
+                        <div class="text-red-400 font-bold text-lg">${s.critical_vulns}</div>
+                        <div class="text-xs text-gray-500">Crit</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-orange-400 font-bold text-lg">${s.high_vulns}</div>
+                        <div class="text-xs text-gray-500">High</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-white font-bold text-lg">${s.total_vulns}</div>
+                        <div class="text-xs text-gray-500">Total</div>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-500 ml-2"></i>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function viewScan(jobId) {
+    currentJobId = jobId;
+    loadResults();
+}
+
+async function initPage() {
+    await loadScanHistory();
+
+    const savedJobId = localStorage.getItem(HISTORY_KEY);
+    if (!savedJobId) return;
+
+    currentJobId = savedJobId;
+    try {
+        const response = await fetch(`/tools/api/vuln-scanner/status/${savedJobId}`);
+        const data = await response.json();
+        if (!data.success) {
+            localStorage.removeItem(HISTORY_KEY);
+            return;
+        }
+
+        if (data.status === 'running') {
+            startTime = Date.now() - (data.duration_seconds ? data.duration_seconds * 1000 : 0);
+            document.getElementById('scanProgress').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('progressTarget').textContent = data.target;
+            document.getElementById('progressJobId').textContent = savedJobId;
+            document.getElementById('statusIndicator').innerHTML = `
+                <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                <span class="text-blue-400 text-sm">Scanning</span>
+            `;
+            pollInterval = setInterval(checkScanStatus, 3000);
+        } else {
+            loadResults();
+            localStorage.removeItem(HISTORY_KEY);
+            loadScanHistory();
+        }
+    } catch (error) {
+        console.error('Error resuming scan:', error);
+    }
+}
+
+initPage();
 </script>
 
 {% endblock %}

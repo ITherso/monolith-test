@@ -37,6 +37,16 @@ class ThreatIntelProfile:
 
 
 @dataclass
+class JA4Profile:
+    name: str
+    ja4: str
+    ja4h: str
+    user_agent: str
+    source: str = "manual"
+    tags: List[str] = field(default_factory=list)
+
+
+@dataclass
 class JA4RiskResult:
     status: RiskStatus
     score: int
@@ -74,6 +84,33 @@ class AdaptiveJA4Validator:
             user_agent_patterns=["Safari/", "Safari"],
             risk_weight=0,
             tags=["windows", "safari", "legitimate"],
+        ),
+    }
+
+    LEGITIMATE_PROFILES: Dict[str, JA4Profile] = {
+        "edge_windows_11": JA4Profile(
+            name="edge_windows_11",
+            ja4="t13d211221_c02b_0364",
+            ja4h="t13d211221_c02b_0364",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edge/122.0.0.0",
+            source="threat_intel",
+            tags=["windows", "edge", "legitimate"],
+        ),
+        "firefox_windows_11": JA4Profile(
+            name="firefox_windows_11",
+            ja4="t13d311221_c030_0364",
+            ja4h="t13d311221_c030_0364",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+            source="threat_intel",
+            tags=["windows", "firefox", "legitimate"],
+        ),
+        "safari_macos": JA4Profile(
+            name="safari_macos",
+            ja4="t13d411221_c036_0364",
+            ja4h="t13d411221_c036_0364",
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+            source="threat_intel",
+            tags=["macos", "safari", "legitimate"],
         ),
     }
 
@@ -132,7 +169,22 @@ class AdaptiveJA4Validator:
             },
         )
 
+    def combined_check(self, ja4: str, ja4h: str, user_agent: str) -> Dict[str, Any]:
+        """Combined JA4/JA4H validation check for API usage."""
+        result = self.evaluate_risk(ja4, ja4h, user_agent)
+        return {
+            "status": result.status.value,
+            "score": result.score,
+            "action": result.action,
+            "reason": result.reason,
+            "details": result.details,
+        }
 
-JA4Profile = ThreatIntelProfile
+    def add_profile(self, profile: JA4Profile) -> None:
+        """Add a new JA4 profile to the legitimate profiles database."""
+        self.LEGITIMATE_PROFILES[profile.name] = profile
+
+
+JA4Profile = JA4Profile
 JA4MatchResult = JA4RiskResult
 JA4Validator = AdaptiveJA4Validator

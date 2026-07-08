@@ -38,6 +38,8 @@ import time
 from bs4 import BeautifulSoup
 import base64
 
+from tools.soft404 import Soft404Detector
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -177,6 +179,11 @@ class WebApplicationScanner:
         self.db_path = Path("/tmp/web_app_scanner.db")
         self.jobs: Dict[str, ScanJob] = {}
         self._init_database()
+        
+        # Soft-404 (sahte 200) tespiti: gercekte olmayan sayfalara payload
+        # yazilmasini ve yanlis pozitif "giris basarili" raporlarini engeller.
+        self.soft404 = Soft404Detector(self.session, verify=False)
+        self._soft404_cache: Dict[str, bool] = {}
         
         # Payloads
         self.sql_payloads = self._load_sql_payloads()
@@ -384,6 +391,11 @@ class WebApplicationScanner:
         job.status = "running"
         
         try:
+            # Soft-404 on bellegi ve imzasi tarama basina sifirlanir
+            self._soft404_cache = {}
+            self.soft404.cache = {}
+            self.soft404.build_baseline(job.target_url)
+            
             # Phase 1: Spider/crawl (20%)
             logger.info(f"[{job_id}] Phase 1: Crawling target")
             urls = self._crawl_target(job.target_url, job.scan_depth, job)
@@ -460,6 +472,15 @@ class WebApplicationScanner:
                     job.requests_sent += 1
                     crawled.add(url)
                     
+                    # Soft-404 kontrolu: gercekte olmayan sayfaya 200 donen
+                    # "sahte" sayfalar taramadan cikarilir, linkleri toplanmaz.
+                    is_soft = self.soft404.is_soft_404(response, base_url)
+                    self._soft404_cache[url] = is_soft
+                    if is_soft:
+                        logger.debug(f"Soft-404 atlandi: {url}")
+                        discovered.discard(url)
+                        continue
+                    
                     # Parse HTML for links
                     soup = BeautifulSoup(response.text, 'html.parser')
                     for link in soup.find_all('a', href=True):
@@ -482,7 +503,9 @@ class WebApplicationScanner:
                 except Exception as e:
                     logger.debug(f"Failed to crawl {url}: {e}")
         
-        return list(discovered)
+        # Soft-404 olarak isaretlenenleri sonuc listesinden ele
+        valid_urls = [u for u in discovered if not self._soft404_cache.get(u, False)]
+        return valid_urls
     
     def _test_sql_injection(self, urls: List[str], job: ScanJob):
         """Test for SQL injection vulnerabilities"""

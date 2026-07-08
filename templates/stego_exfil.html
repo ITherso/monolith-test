@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Safe Stego Exfil - Purple Team{% endblock %}
+
+{% block body %}
+<div class="min-h-screen">
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <a href="/purple" class="w-12 h-12 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                    <i class="fas fa-arrow-left text-gray-400"></i>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-shield text-emerald-400"></i>
+                        SAFE STEGO EXFIL
+                        <span class="px-3 py-1 text-sm bg-emerald-500/20 text-emerald-400 rounded-full">SAFE</span>
+                    </h1>
+                    <p class="text-gray-400 mt-1">LSB / spread-spectrum image steganography for covert exfiltration</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="stegoError" class="hidden mb-4 text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg p-3"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Encode -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-lock text-emerald-400"></i> Encode Message
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Carrier Image</label>
+                        <input type="file" id="encodeImage" accept="image/*" class="w-full text-sm text-gray-300">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Secret Message</label>
+                        <textarea id="encodeMessage" rows="3" placeholder="secret data..." class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm focus:outline-none focus:border-emerald-500/50"></textarea>
+                    </div>
+                    <button onclick="encodeMessage()" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold hover:from-emerald-500/80 hover:to-teal-500/80 transition-all">
+                        <i class="fas fa-lock"></i> Encode into Image
+                    </button>
+                    <div id="encodeResult" class="hidden">
+                        <a id="encodeDownload" href="#" download="exfil.png" class="block text-center px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-sm">Download Encoded Image</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decode -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-unlock text-cyan-400"></i> Decode Message
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Encoded Image</label>
+                        <input type="file" id="decodeImage" accept="image/*" class="w-full text-sm text-gray-300">
+                    </div>
+                    <button onclick="decodeMessage()" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:from-cyan-500/80 hover:to-blue-500/80 transition-all">
+                        <i class="fas fa-unlock"></i> Decode Image
+                    </button>
+                    <textarea id="decodeResult" readonly rows="4" class="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-cyan-300 font-mono text-sm"></textarea>
+                </div>
+            </div>
+
+            <!-- Create from scratch -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-emerald-400"></i> Generate Carrier
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                        <textarea id="createMessage" rows="3" placeholder="secret data..." class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm focus:outline-none focus:border-emerald-500/50"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="createWidth" value="256" class="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono focus:outline-none focus:border-emerald-500/50">
+                        <input type="number" id="createHeight" value="256" class="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono focus:outline-none focus:border-emerald-500/50">
+                    </div>
+                    <button onclick="createCarrier()" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold hover:from-emerald-500/80 hover:to-teal-500/80 transition-all">
+                        <i class="fas fa-plus-circle"></i> Create Carrier Image
+                    </button>
+                    <div id="createResult" class="hidden">
+                        <a id="createDownload" href="#" download="exfil.png" class="block text-center px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-sm">Download Carrier</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payloads -->
+            <div class="glass rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-box text-purple-400"></i> Stored Payloads
+                    </h2>
+                    <button onclick="loadPayloads()" class="px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">Refresh</button>
+                </div>
+                <div id="payloadList" class="space-y-2 text-sm text-gray-300">Click refresh to load...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showError(msg) {
+    const box = document.getElementById('stegoError');
+    box.textContent = msg;
+    box.classList.remove('hidden');
+}
+async function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function encodeMessage() {
+    showError('');
+    const file = document.getElementById('encodeImage').files[0];
+    const message = document.getElementById('encodeMessage').value;
+    if (!file || !message) { showError('Image and message required'); return; }
+    const image = await fileToBase64(file);
+    try {
+        const res = await fetch('/purple/api/stego/encode', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({image, message, filename: 'exfil.png'})
+        });
+        const data = await res.json();
+        if (data.error) { showError(data.error); return; }
+        const link = document.getElementById('encodeDownload');
+        link.href = 'data:image/png;base64,' + data.image_b64;
+        document.getElementById('encodeResult').classList.remove('hidden');
+    } catch (e) { showError('Request failed: ' + e); }
+}
+
+async function decodeMessage() {
+    showError('');
+    const file = document.getElementById('decodeImage').files[0];
+    if (!file) { showError('Encoded image required'); return; }
+    const image = await fileToBase64(file);
+    try {
+        const res = await fetch('/purple/api/stego/decode', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({image})
+        });
+        const data = await res.json();
+        document.getElementById('decodeResult').value = data.error ? ('Error: ' + data.error) : (data.message || '');
+    } catch (e) { showError('Request failed: ' + e); }
+}
+
+async function createCarrier() {
+    showError('');
+    const message = document.getElementById('createMessage').value;
+    if (!message) { showError('Message required'); return; }
+    try {
+        const res = await fetch('/purple/api/stego/create', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message,
+                width: parseInt(document.getElementById('createWidth').value),
+                height: parseInt(document.getElementById('createHeight').value)
+            })
+        });
+        const data = await res.json();
+        if (data.error) { showError(data.error); return; }
+        const link = document.getElementById('createDownload');
+        link.href = 'data:image/png;base64,' + data.image_b64;
+        document.getElementById('createResult').classList.remove('hidden');
+    } catch (e) { showError('Request failed: ' + e); }
+}
+
+async function loadPayloads() {
+    showError('');
+    try {
+        const res = await fetch('/purple/api/stego/payloads');
+        const data = await res.json();
+        const list = document.getElementById('payloadList');
+        const payloads = data.payloads || [];
+        if (!payloads.length) { list.innerHTML = '<div class="text-gray-500">No payloads stored</div>'; return; }
+        list.innerHTML = payloads.map(p =>
+            `<div class="glass rounded-lg px-3 py-2 flex items-center justify-between">
+                <span class="font-mono text-xs">${p.payload_id || p.filename || 'unknown'}</span>
+                <span class="text-xs text-emerald-400">${(p.status || '').toUpperCase()}</span>
+            </div>`).join('');
+    } catch (e) { showError('Request failed: ' + e); }
+}
+
+loadPayloads();
+</script>
+{% endblock %}

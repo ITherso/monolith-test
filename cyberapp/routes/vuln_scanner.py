@@ -79,6 +79,17 @@ def start_scan():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@vuln_scanner_bp.route("/api/vuln-scanner/scans")
+def scan_history():
+    """List recent scans (persists across navigation and restarts)"""
+    try:
+        scanner = get_vuln_scanner()
+        scans = scanner.get_recent_scans()
+        return jsonify({"success": True, "scans": scans})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @vuln_scanner_bp.route("/api/vuln-scanner/status/<job_id>")
 def scan_status(job_id):
     """Get scan status"""

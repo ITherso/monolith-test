@@ -18,6 +18,7 @@ import ctypes
 import struct
 import os
 import subprocess
+import sys
 from typing import Optional, Dict
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,9 +53,15 @@ class BYOVDSilencer:
     SERVICE_RUNNING = 4
     
     def __init__(self, driver_path: str = None, logger=None):
-        self.kernel32 = ctypes.windll.kernel32
-        self.advapi32 = ctypes.windll.advapi32
-        self.ntdll = ctypes.windll.ntdll
+        self._is_windows = sys.platform == "win32"
+        if self._is_windows:
+            self.kernel32 = ctypes.windll.kernel32
+            self.advapi32 = ctypes.windll.advapi32
+            self.ntdll = ctypes.windll.ntdll
+        else:
+            self.kernel32 = None
+            self.advapi32 = None
+            self.ntdll = None
         
         self.logger = logger
         self.device_handle = None

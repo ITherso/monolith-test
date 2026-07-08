@@ -168,8 +168,88 @@ cursor.execute('''
     )
 ''')
 
+# Create exploits table (surum -> exploit eslestirmesi icin)
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS exploits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cve TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    product_key TEXT,
+                    product_name TEXT,
+        version_range TEXT,
+        severity TEXT DEFAULT 'HIGH',
+        exploit_type TEXT,
+        description TEXT,
+        "references" TEXT,
+        extra_urls TEXT,
+        source TEXT DEFAULT 'seed'
+    )
+''')
+
+# Create scan_fingerprints table (tespit edilen teknoloji/surum)
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS scan_fingerprints (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_id INTEGER NOT NULL,
+        product_key TEXT NOT NULL,
+        product_name TEXT,
+        version TEXT,
+        detected_via TEXT,
+        evidence TEXT,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (scan_id) REFERENCES scans (id) ON DELETE CASCADE
+    )
+''')
+
+# Create matched_exploits table (surume gore eslesen oto-exploit sonuclari)
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS matched_exploits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_id INTEGER NOT NULL,
+        exploit_id INTEGER,
+        cve TEXT,
+        name TEXT,
+        product_key TEXT,
+        version TEXT,
+        severity TEXT,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (scan_id) REFERENCES scans (id) ON DELETE CASCADE,
+        FOREIGN KEY (exploit_id) REFERENCES exploits (id) ON DELETE CASCADE
+    )
+''')
+
+# Create feed_state table (besleme senkron durum takibi)
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS feed_state (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source TEXT UNIQUE NOT NULL,
+        last_sync TEXT,
+        last_count INTEGER DEFAULT 0,
+        last_status TEXT,
+        etag TEXT,
+        lastmod TEXT,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+''')
+
+# Create authorized_targets table (oto-exploit kapsam kapisi)
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS authorized_targets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        target TEXT UNIQUE NOT NULL,
+        authorized_by TEXT,
+        note TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+''')
+
 # Create indexes
 cursor.execute("CREATE INDEX IF NOT EXISTS idx_scans_status ON scans(status)")
+cursor.execute("CREATE INDEX IF NOT EXISTS idx_exploits_product ON exploits(product_key)")
+cursor.execute("CREATE INDEX IF NOT EXISTS idx_exploits_cve ON exploits(cve)")
+cursor.execute("CREATE INDEX IF NOT EXISTS idx_exploits_source ON exploits(source)")
+cursor.execute("CREATE INDEX IF NOT EXISTS idx_fingerprints_scan ON scan_fingerprints(scan_id)")
+cursor.execute("CREATE INDEX IF NOT EXISTS idx_matched_scan ON matched_exploits(scan_id)")
 cursor.execute("CREATE INDEX IF NOT EXISTS idx_vulns_scan_id ON vulns(scan_id)")
 cursor.execute("CREATE INDEX IF NOT EXISTS idx_vulns_severity ON vulns(severity)")
 cursor.execute("CREATE INDEX IF NOT EXISTS idx_tool_logs_scan_id ON tool_logs(scan_id)")

@@ -218,7 +218,7 @@ class ScannerConfig:
     args: List[str] = field(default_factory=list)
     env_vars: Dict[str, str] = field(default_factory=dict)
     enabled: bool = True
-    timeout: int = 1800
+    timeout: int = 600
     rate_limit: Optional[int] = None
 
 
@@ -954,9 +954,14 @@ class VulnerabilityScannerIntegrator:
             host, port = self._extract_host_port(target)
             
             # Nmap command with NSE scripts
+            # NOTE: --script vuln is slow; aggressive timing + host-timeout
+            # keeps the scan from hanging for minutes on a single host.
             cmd = [
                 config.binary_path,
                 "-sV",
+                "-T4",
+                "--max-rtt-timeout", "500ms",
+                "--host-timeout", "90s",
                 "--script", "vuln",
                 "-oX", output_file,
                 host
@@ -1483,19 +1488,8 @@ Output as JSON: {{"priority_score": 85, "impact": "...", "exploitable": true, "s
     # ========================================================================
     
     def get_scan_status(self, job_id: str) -> Dict[str, Any]:
-        """Get scan job status"""
+        """Get scan job status (in-memory first, then database)"""
         job = self.active_scans.get(job_id)
-        if not job:
-            # Try loading from database
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM scan_jobs WHERE job_id = ?", (job_id,))
-            row = cursor.fetchone()
-            conn.close()
-            
-            if not row:
-                return {"success": False, "error": "Scan job not found"}
-        
         if job:
             return {
                 "success": True,
@@ -1509,9 +1503,69 @@ Output as JSON: {{"priority_score": 85, "impact": "...", "exploitable": true, "s
                 "completed_at": job.completed_at.isoformat() if job.completed_at else None,
                 "duration_seconds": job.duration_seconds
             }
-        
-        return {"success": False, "error": "Failed to load job"}
+
+        # Fallback: load completed/persisted job from database
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT job_id, target, status, results, started_at, completed_at "
+                "FROM scan_jobs WHERE job_id = ?",
+                (job_id,)
+            )
+            row = cursor.fetchone()
+            conn.close()
+
+            if row:
+                results = json.loads(row[3]) if row[3] else {}
+                return {
+                    "success": True,
+                    "job_id": row[0],
+                    "target": row[1],
+                    "status": row[2],
+                    "total_vulns": results.get("total_vulns", 0),
+                    "critical_vulns": results.get("critical_vulns", 0),
+                    "high_vulns": results.get("high_vulns", 0),
+                    "started_at": row[4],
+                    "completed_at": row[5],
+                    "duration_seconds": None
+                }
+        except Exception as e:
+            logger.error(f"Failed to load scan status from DB: {e}")
+
+        return {"success": False, "error": "Scan job not found"}
     
+    def get_recent_scans(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """List recent scan jobs from the database (survives navigation/restarts)"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT job_id, target, status, results, created_at, completed_at "
+                "FROM scan_jobs ORDER BY created_at DESC LIMIT ?",
+                (limit,)
+            )
+            rows = cursor.fetchall()
+            conn.close()
+
+            scans = []
+            for row in rows:
+                results = json.loads(row[3]) if row[3] else {}
+                scans.append({
+                    "job_id": row[0],
+                    "target": row[1],
+                    "status": row[2],
+                    "total_vulns": results.get("total_vulns", 0),
+                    "critical_vulns": results.get("critical_vulns", 0),
+                    "high_vulns": results.get("high_vulns", 0),
+                    "created_at": row[4],
+                    "completed_at": row[5],
+                })
+            return scans
+        except Exception as e:
+            logger.error(f"Failed to list scans: {e}")
+            return []
+
     def get_vulnerabilities(self, job_id: str, severity: Optional[SeverityLevel] = None) -> List[Dict]:
         """Get vulnerabilities for scan job"""
         conn = sqlite3.connect(self.db_path)

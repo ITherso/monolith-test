@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Stealth Loader - EDR Evasion{% endblock %}
+
+{% block body %}
+<div class="min-h-screen">
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-cyber-purple/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyber-primary/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <a href="/purple" class="w-12 h-12 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                    <i class="fas fa-arrow-left text-gray-400"></i>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-fingerprint text-cyber-purple"></i>
+                        EDR STEALTH LOADER
+                        <span class="px-3 py-1 text-sm bg-cyber-purple/20 text-cyber-purple rounded-full">PRO</span>
+                    </h1>
+                    <p class="text-gray-400 mt-1">Generate in-memory stageless loaders (Reflective / Donut)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Config -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <i class="fas fa-cog text-cyber-purple"></i>
+                    Loader Config
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">C2 Host</label>
+                        <input type="text" id="c2Host" value="127.0.0.1"
+                               class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyber-purple/50 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">C2 Port</label>
+                        <input type="number" id="c2Port" value="443"
+                               class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyber-purple/50 font-mono">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Sleep (s)</label>
+                            <input type="number" id="sleepTime" value="30"
+                                   class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono focus:outline-none focus:border-cyber-purple/50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Jitter (%)</label>
+                            <input type="number" id="jitter" value="10"
+                                   class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono focus:outline-none focus:border-cyber-purple/50">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Architecture</label>
+                        <select id="arch" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyber-purple/50">
+                            <option value="x64">x64</option>
+                            <option value="x86">x86</option>
+                        </select>
+                    </div>
+                    <button onclick="generateLoader()" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-cyber-purple to-cyan-500 text-white font-bold hover:from-cyber-purple/80 hover:to-cyan-500/80 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-bolt"></i>
+                        Generate Loader
+                    </button>
+                    <div id="loaderError" class="hidden text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg p-3"></div>
+                </div>
+            </div>
+
+            <!-- Output -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fab fa-windows text-cyan-400"></i> PowerShell
+                        </h3>
+                        <button onclick="copyCode('psCode')" class="px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">Copy</button>
+                    </div>
+                    <textarea id="psCode" readonly class="w-full h-40 px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-green-300 font-mono text-sm"></textarea>
+                </div>
+                <div class="glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-code text-purple-400"></i> C#
+                        </h3>
+                        <button onclick="copyCode('csCode')" class="px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">Copy</button>
+                    </div>
+                    <textarea id="csCode" readonly class="w-full h-40 px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-purple-300 font-mono text-sm"></textarea>
+                </div>
+                <div class="glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fab fa-python text-yellow-400"></i> Python
+                        </h3>
+                        <button onclick="copyCode('pyCode')" class="px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 text-sm">Copy</button>
+                    </div>
+                    <textarea id="pyCode" readonly class="w-full h-40 px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-yellow-300 font-mono text-sm"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function generateLoader() {
+    const errorBox = document.getElementById('loaderError');
+    errorBox.classList.add('hidden');
+    const body = {
+        c2_host: document.getElementById('c2Host').value,
+        c2_port: document.getElementById('c2Port').value,
+        sleep_time: document.getElementById('sleepTime').value,
+        jitter: document.getElementById('jitter').value,
+        arch: document.getElementById('arch').value
+    };
+    try {
+        const res = await fetch('/purple/api/stealth-loader/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!data.status) {
+            errorBox.textContent = 'Error: ' + (data.error || 'unknown');
+            errorBox.classList.remove('hidden');
+            return;
+        }
+        document.getElementById('psCode').value = data.powershell || '';
+        document.getElementById('csCode').value = data.csharp || '';
+        document.getElementById('pyCode').value = data.python || '';
+    } catch (e) {
+        errorBox.textContent = 'Request failed: ' + e;
+        errorBox.classList.remove('hidden');
+    }
+}
+
+function copyCode(id) {
+    const el = document.getElementById(id);
+    el.select();
+    navigator.clipboard.writeText(el.value);
+}
+</script>
+{% endblock %}

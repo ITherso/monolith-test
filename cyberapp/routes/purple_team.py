@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tools'))
 
 from ja4_validator import JA4Validator, JA4Profile, JA4MatchResult
 from stego_exfil import LSBStegoExfil, StegoPayload, ExfilStatus
+from evasion.reflective_loader import StagelessPayload
 
 logger = logging.getLogger("purple_team_routes")
 
@@ -39,6 +40,55 @@ purple_bp = Blueprint('purple_team', __name__, url_prefix='/purple')
 @login_required
 def index():
     return render_template('purple_team.html')
+
+
+@purple_bp.route('/stealth-loader')
+@login_required
+def stealth_loader_page():
+    return render_template('stealth_loader.html')
+
+
+@purple_bp.route('/stego-exfil')
+@login_required
+def stego_exfil_page():
+    return render_template('stego_exfil.html')
+
+
+@purple_bp.route('/api/stealth-loader/generate', methods=['POST'])
+@login_required
+def generate_stealth_loader():
+    data = request.get_json() or {}
+    c2_host = data.get('c2_host', '127.0.0.1')
+    try:
+        c2_port = int(data.get('c2_port', 443))
+        sleep_time = int(data.get('sleep_time', 30))
+        jitter = int(data.get('jitter', 10))
+    except (TypeError, ValueError):
+        return jsonify({"error": "c2_port, sleep_time and jitter must be integers"}), 400
+
+    arch = data.get('arch', 'x64')
+    if arch not in ('x64', 'x86'):
+        return jsonify({"error": "arch must be 'x64' or 'x86'"}), 400
+
+    try:
+        payload = StagelessPayload()
+        result = payload.generate_stageless_beacon(
+            c2_host=c2_host,
+            c2_port=c2_port,
+            sleep_time=sleep_time,
+            jitter=jitter,
+            arch=arch,
+        )
+        return jsonify({
+            "status": "generated",
+            "arch": arch,
+            "powershell": result.get("powershell", ""),
+            "csharp": result.get("csharp", ""),
+            "python": result.get("python", ""),
+        })
+    except Exception as exc:
+        logger.error(f"Stealth loader generation error: {exc}")
+        return jsonify({"error": str(exc)}), 500
 
 
 @purple_bp.route('/api/ja4/validate', methods=['POST'])

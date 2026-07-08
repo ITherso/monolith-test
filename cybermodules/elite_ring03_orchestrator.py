@@ -178,12 +178,12 @@ Overall Status: {self.state.status_message}
         """EDR silencing'i devre dışı bırak"""
         try:
             self.logger("[SHUTDOWN] EDR silencing shutdown ediliyor...")
-            
+            self.active = False
             with self.lock:
-                self.hw_evasion.deactivate()
-                self.kernel_silencer.deactivate()
-                self.active = False
-            
+                if hasattr(self.hw_evasion, 'deactivate'):
+                    self.hw_evasion.deactivate()
+                if hasattr(self.kernel_silencer, 'deactivate'):
+                    self.kernel_silencer.deactivate()
             self.logger("[SHUTDOWN] Tamamlandı")
         
         except Exception as e:
