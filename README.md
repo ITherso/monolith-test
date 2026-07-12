@@ -62,6 +62,13 @@ MONOLITH is an all-in-one offensive automation platform for authorized red team 
 - [AI/ML Features](#-aiml-powered-features)
 - [Web Interface](#-web-interface)
 - [API Reference](#-api-reference)
+- [Web Ghost Logic Hijacking](#️-web-ghost-logic-hijacking---transparent-proxy-interceptor)
+- [K8s Kraken v3 - C2 Traffic Injection](#️-k8s-kraken-v3---c2-traffic-injection-noise-generator)
+- [AiTM Proxy - Adversary-in-the-Middle Phishing](#️-aitm-proxy---adversary-in-the-middle-phishing)
+- [HTML Smuggling Engine](#️-html-smuggling-engine---seg-evasion-payload-delivery)
+- [SMB/RPC Cloaker](#️-smbrpc-cloaker---wire-level-evasion-for-impacket-lateral-movement)
+- [Automated Reporting](#️-automated-reporting---red-team-assessment-report-generator)
+- [Autonomous Hunter](#️-autonomous-hunter---worm-like-lateral-movement)
 - [Screenshots](#-screenshots)
 - [God Mode Anti-Forensics](#-god-mode-anti-forensics-february-2026)
 - [Cross-Module Integration](#-cross-module-integration)
@@ -5019,7 +5026,16 @@ in `evasion/` and `agents/evasive_beacon.py` and covered by
   ├── API Sequence Spoofing          evasion/api_sequence_spoofing.py (behavioral n-gram break)
   ├── Anti-Forensics Rotation        evasion/anti_forensics_rotation.py (24h key + ID rotation)
   ├── Fileless WebShell              evasion/fileless_webshell.py (FastCGI in-memory, no disk)
-  └── In-Request Exfil               evasion/in_request_exfil.py (WebSocket / HTTP2 smuggling)
+  ├── In-Request Exfil               evasion/in_request_exfil.py (WebSocket / HTTP2 smuggling)
+  ├── Ghost WebShell Watchdog       evasion/ghost_watchdog.py (eBPF / poll re-inject)
+  ├── K8s Kraken v2 Ghost Pivot     evasion/k8s_ghost_pivot.py (ephemeral-storage worm)
+  ├── Web Logic Hijacking           evasion/web_logic_hijacker.py (transparent proxy / MITM)
+  ├── K8s Kraken v3 C2 Noise        evasion/k8s_kraken_v3.py (Isolation Forest evasion)
+  ├── Automated Reporting           evasion/auto_reporting.py (zero-touch Red Team report)
+  ├── Autonomous Hunter             evasion/autonomous_hunter.py (worm-like lateral movement)
+  ├── AiTM Proxy                     evasion/aitm_proxy.py (reverse-proxy session hijacking)
+  ├── HTML Smuggling Engine          evasion/html_smuggler.py (SEG-evasion payload delivery)
+  └── SMB/RPC Cloaker                evasion/smb_rpc_cloaker.py (Impacket wire-level evasion)
 ```
 
 ### 🧵 Thread-Ghosting (Module-Overwriting Detour)
@@ -5094,6 +5110,263 @@ instead of an "Outbound Data Anomaly":
   (same idea carries onto HTTP/3 QUIC streams).
 Both provide lossless `exfiltrate()` / `recover()` round-trips and raw-frame
 encode/decode for the socket layer.
+
+### 🕸️ WEB GHOST - Persistence & Pivot
+The web server is no longer just an egress bridge - it becomes a **shadow
+agent**. Two features keep the ghost alive and moving:
+
+- **Ghost WebShell Watchdog** (`evasion/ghost_watchdog.py`): an
+  `FastCGIWatchdog` that re-arms the in-memory FastCGI hook whenever the web
+  server restarts/crashes. In **eBPF mode** a BPF program on the
+  `sched_process_exit` tracepoint emits an event the moment the watched
+  worker exits, and userspace instantly re-injects; a **polling fallback**
+  (`kill(pid,0)` liveness probe) is used where eBPF/CAP_BPF is unavailable.
+  Re-injection reuses `FastCGIInjection`, so persistence stays fully fileless.
+- **K8s Kraken v2 Ghost Pivot** (`evasion/k8s_ghost_pivot.py`): when a pod is
+  deleted, the ghost jumps to the next pod via **ephemeral storage**. The
+  pivot drops a tiny propagation trigger into a volume the pod shares with
+  its siblings (`emptyDir` / `hostPath` / `PVC`), so any pod that mounts it
+  re-arms the hook on start (worm-like). `plan_pivot()` picks the next pod(s)
+  by shared volume, and `generate_daemonset_yaml()` spreads the watchdog to
+  every node for cluster-wide coverage.
+
+### 🕸️ WEB GHOST LOGIC HIJACKING - Transparent Proxy Interceptor
+The web server is no longer just an egress bridge - it becomes a **shadow
+agent** that intercepts the application's own backend logic without modifying
+the source. `WebLogicHijacker` (`evasion/web_logic_hijacker.py`) sits between
+the web server and the PHP-FPM backend over the same FastCGI channel and:
+
+- **Monitors the input stream** for sensitive application-logic patterns:
+  - **Login** — `user` / `pass` fields
+  - **Password Change** — `current_password` / `new_password` / `confirm_password`
+  - **2FA/OTP** — `otp` / `code` / `totp` submissions
+  - **Payment Update** — `card_number` / `cvv` / `exp_date`
+  - **PII Upload** — `ssn` / `passport` / `address`
+- **Captures the sensitive fields** and forwards them to the Monolith C2 via
+  `MonolithC2Forwarder` (HTTP POST, HMAC-signed, offline-safe for testing).
+- **Passes the original request through unchanged** to the real backend so
+  the user experience is identical (transparent proxy).
+
+`process_request()` is the full pipeline: inspect → forward → return.  The
+operator gets clean credential / PII events in the C2 dashboard while the
+target user sees a perfectly normal password change / login flow.
+
+### 🕸️ K8s Kraken v3 - C2 Traffic Injection (Noise Generator)
+K8s Kraken v3 defeats ML-based anomaly detection (Isolation Forest, JA4/JA3
+classifiers) by generating **large volumes of C2-shaped traffic that blends
+into the cluster's normal ingress baseline**.  `C2NoiseGenerator`
+(`evasion/k8s_kraken_v3.py`) profiles a target cluster's ingress traffic
+(endpoints, User-Agent, TLS fingerprints, size distributions) and forges
+requests that mimic those profiles exactly:
+
+- **HTTP GET/POST noise** — paths like `/healthz`, `/metrics`, `/api/v1/...`
+  with the same Host, SNI, and User-Agent as real probes.
+- **DNS TXT queries** — subdomains of the cluster's domain carrying C2
+  payload fragments inside TXT RDATA.
+- **TLS heartbeat frames** — Client Hellos shaped like normal ingress probes.
+
+`generate_batch()` produces a configurable mix of these events, and
+`generate_schedule()` interleaves them with real-traffic ticks using the same
+jitter profile as the cluster.  The result is a single blended stream where
+Isolation Forest cannot separate real C2 beaconing from background noise.
+
+`generate_evasion_stats()` reports the statistical properties of the injected
+stream (size, interval, entropy) so the operator can verify it sits inside
+the cluster's normal distributions before deployment.
+
+### 📋 Automated Reporting - Red Team Assessment Report Generator
+Zero-touch professional report generation from raw operation telemetry.
+`AutoReporter` (`evasion/auto_reporting.py`) ingests data from all Monolith
+modules—lateral movement results, credential dumps, web logic hijack events,
+C2 beacon activity, operator notes—and normalises it into the `ChainLog`
+schema used by `tools/report_generator.py`.  One call produces a complete,
+customer-ready Red Team Assessment Report:
+
+- **Executive Summary** — success rate, MITRE coverage, EDR bypass stats,
+  AI-generated recommendations.
+- **Technical Details** — per-technique breakdown, artifacts, evasion scores.
+- **MITRE ATT&CK Heat Map** — interactive coverage visualisation.
+- **Sigma / YARA Rules** — auto-generated detection rules for every
+  successful technique.
+- **HTML / PDF / JSON / Markdown** output with OPSEC anonymisation.
+
+The operator populates an `OperationPackage` incrementally during the
+engagement:
+
+    from evasion.auto_reporting import AutoReporter, OperationPackage
+
+    pkg = OperationPackage(scan_id="op-ghost", target_domain="corp.local")
+    pkg.add_lateral_result("DC01", "psexec", "ADMIN\\svc", success=True)
+    pkg.add_credential("admin", "hash", domain="CORP", cred_type="nt_hash")
+    pkg.add_web_hijack_event("login", "https://mail.corp.local", {...})
+
+    reporter = AutoReporter()
+    result = reporter.generate(pkg, output_dir="reports")
+
+No manual stitching, no copy-paste.  Everything flows from the modules into
+the report automatically.
+
+### 🐛 Autonomous Hunter - Worm-like Lateral Movement & Credential Dumper
+"Artık yoruldum la" modu.  `AutonomousHunter` (`evasion/autonomous_hunter.py`)
+extends `AILateralGuide` and `LateralMovementEngine` into a self-driving worm
+that owns the entire domain without further operator input:
+
+1. **Domain Scanner** — enumerates AD computers and sweeps subnets for
+   open SMB / WinRM / RDP ports.
+2. **Autonomous Decision Engine** — ranks targets by value (DC first, then
+   admin workstations), picks the best untested credential for each host,
+   and decides pivot order automatically.
+3. **Credential Vault** — encrypted in-memory store for harvested credentials
+   (AES-256-GCM, XOR fallback).  Tracks which creds have been tested against
+   which hosts.
+4. **Auto Pivot Chain** — iterative loop: attack → harvest creds → add to
+   vault → pivot to next host → repeat until no new credentials or no new
+   reachable hosts remain.
+5. **Credential Exfiltration** — `exfiltrate_credentials()` dumps the full
+   vault in a Monolith-friendly JSON format ready for C2 forwarding or
+   report inclusion.
+
+Typical usage:
+
+    from evasion.autonomous_hunter import run_autonomous_hunt
+
+    hunter, report = run_autonomous_hunt(
+        scan_id="hunt-1",
+        initial_target="10.10.10.1",
+        credentials=[{"username": "svc", "password": "x", "domain": "CORP"}],
+        domain="corp.local",
+        mode="worm",
+        max_depth=10,
+        offline=True,   # set False for real targets
+    )
+    print(hunter.summary())
+    pkg = hunter.generate_operation_package()   # feed directly into AutoReporter
+
+The hunter supports four modes: `stealth` (slow, low-and-slow), `aggressive`
+(fast, multi-threaded), `stealth_full` (maximum evasion, single-threaded),
+and `worm` (fully autonomous, no stopping).  All network operations are
+guarded by `offline=True` testing paths so the module can be exercised
+without a real target.
+
+`generate_operation_package()` converts hunt results into an
+`OperationPackage` that can be fed directly into `AutoReporter` for
+zero-touch end-to-end reporting: hunt → credentials → report.
+
+### 🎣 AiTM Proxy - Adversary-in-the-Middle Phishing
+Static fake login pages are amateur hour.  `AiTM Proxy`
+(`evasion/aitm_proxy.py`) implements a **transparent reverse proxy** that
+sits between the victim and the real identity provider (Microsoft 365,
+Google Workspace, Okta, Azure AD).  The user thinks they are signing into
+the legitimate portal; every credential, session cookie, and MFA token is
+captured in transit.
+
+Key components:
+
+- **ReverseProxyEngine** — URL rewriting, cookie interception, request
+  logging, and JavaScript injection.
+- **SessionHijacker** — replay captured cookies / bearer tokens against the
+  real origin to establish an authenticated session without knowing the
+  password.
+- **AiTMJavaScriptInjector** — generates the JavaScript injected into
+  proxied pages that hooks `XMLHttpRequest`, `fetch`, and cookie changes
+  to exfiltrate session cookies and MFA tokens in real time.
+- **Phishlet profiles** — pre-built URL-rewrite and cookie-capture rules
+  for Office 365 (`ESTSAUTH`, `ESTSAUTHPERSISTENT`), Google (`SID`,
+  `HSID`, `GAPS`), Okta (`sid`, `oktaSessionToken`), and Azure AD.
+
+Usage:
+
+    from evasion.aitm_proxy import create_aitm_proxy
+
+    proxy = create_aitm_proxy(platform="office365", phish_domain="login.office365-update.com")
+    proxy.capture_credential(username="admin@corp.local", password="...", mfa_code="123456")
+    print(proxy.summary())
+
+    # Generate session replay script
+    print(proxy.generate_replay_script("https://outlook.office365.com"))
+
+The proxy is fully offline-safe for testing; all network I/O is guarded by
+`offline=True` paths.
+
+### 📧 HTML Smuggling Engine - SEG Evasion Payload Delivery
+Secure Email Gateways flag `.exe`, `.ps1`, `.lnk`, and even `.iso`
+attachments instantly.  `HTMLSmuggler` (`evasion/html_smuggler.py`) embeds
+the evasive beacon binary inside a **legitimate-looking HTML attachment**
+and uses client-side JavaScript (Blob + `URL.createObjectURL`) to assemble
+and download the payload from the user's own browser memory.
+
+Features:
+
+- **Template wrappers** — DocuSign, SharePoint, OneDrive, Google Drive,
+  and generic Secure Portal decoys that look legitimate in any email client.
+- **JavaScript fragment obfuscation** — base64 payload is split into
+  multiple variables, shuffled, and reassembled at runtime so static
+  analysis cannot trivially reconstruct the blob.
+- **MOTW bypass** — payload is assembled client-side, so the only file the
+  OS sees is the HTML attachment (which carries no Mark-of-the-Web for the
+  embedded binary).
+- **Four obfuscation levels** — `none`, `basic`, `advanced` (random
+  variable names + split strings), and `paranoid` (charCode reconstruction
+  + randomised identifiers).
+
+Usage:
+
+    from evasion.html_smuggler import HTMLSmuggler, SmuggleTemplate
+
+    smuggler = HTMLSmuggler(beacon_path="dist/beacon.exe")
+    result = smuggler.smuggle(
+        template=SmuggleTemplate.DOCUSIGN,
+        filename="Quarterly_Report_2026.exe",
+        obfuscation_level="advanced",
+    )
+    print(result["sha256"], result["html_path"])
+
+The operator delivers the generated HTML as an email attachment.  When the
+target opens it in a browser, the payload assembles silently and triggers
+a download to `%USERPROFILE%\\Downloads`.  No external network request,
+no file on the mail gateway, no macro, no LNK.
+
+`tools/phishing_kit_gen.py` has been updated to delegate HTML smuggling and
+AiTM config generation to these dedicated evasion modules.
+
+### 🛡️ SMB/RPC Cloaker - Wire-Level Evasion for Impacket Lateral Movement
+Corporate EDR/NDR sensors flag Impacket tools (`wmiexec`, `psexec`,
+`smbexec`, `dcomexec`) almost instantly because their wire-level
+fingerprints are well-known: specific WMI DCOM/RPC call sequences,
+service control manager pipe writes, and named-pipe batch script drops.
+
+`SMBRPCCloaker` (`evasion/smb_rpc_cloaker.py`) cloaks those fingerprints
+at the **packet level** without changing the operator's workflow.  It sits
+between `LateralMovementEngine` and the Impacket subprocess, mutating raw
+SMB/RPC traffic so that:
+
+- **SMB packets** are fragmented into sub-chunks and reassembled at the
+  target, breaking the signature of the original Impacket SMB2/SMB3
+  negotiate + session setup + tree connect + create request chain.
+- **RPC calls** are padded, re-ordered, and interleaved with benign RPCs
+  (`srvsvc` / `wkssvc` heartbeats) so the behavioral sequence no longer
+  matches the "classic lateral movement" n-gram.
+- **Pipe names** (`\\pipe\\srvsvc`, `\\pipe\\lsass`, etc.) are replaced
+  with randomised aliases, defeating EDR string signatures.
+- **Timing jitter** is injected between Impacket's internal RPC calls so
+  the traffic pattern no longer matches the tight "burst then exit"
+  signature of automated tools.
+
+Usage:
+
+    from evasion.smb_rpc_cloaker import create_smb_rpc_cloaker
+
+    cloaker = create_smb_rpc_cloaker(offline=True)
+    cloaked_cmd, report = cloaker.cloak_impacket_command(
+        cmd=["python3", "/opt/impacket/examples/smbexec.py", "DOMAIN\\user:pass@target"],
+        method="smbexec",
+    )
+    # Run cloaked_cmd via subprocess.run(...)
+    print(report.pipe_renames)
+
+The module also generates benign SMB2 negotiate junk traffic
+(`generate_smb_junk_traffic()`) to mix with real traffic, further
+blurring the wire-level signal.
 
 ## 📸 Screenshots
 
