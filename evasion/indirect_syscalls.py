@@ -877,6 +877,18 @@ class SyscallManager:
         
         return self.executor.call("NtClose", handle)
     
+    def unmap_view_of_section(self, process_handle: int, base_address: int) -> SyscallResult:
+        """NtUnmapViewOfSection wrapper"""
+        if not self._is_windows:
+            return SyscallResult(success=False, status=SyscallStatus.NOT_FOUND,
+                               syscall_name="NtUnmapViewOfSection", error="Windows only")
+        
+        return self.executor.call(
+            "NtUnmapViewOfSection",
+            process_handle,
+            base_address
+        )
+    
     def get_detection_risk_summary(self) -> Dict[str, Any]:
         """Get summary of detection risk for cached syscalls"""
         summary = {

