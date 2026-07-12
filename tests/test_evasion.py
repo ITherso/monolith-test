@@ -164,6 +164,75 @@ class TestProcessInjection:
         assert hasattr(injector, 'classic_injection')
         assert hasattr(injector, 'get_injection_techniques')
 
+    def test_thread_ghosting_registered(self):
+        """Thread-Ghosting technique is registered and described"""
+        from evasion.process_injection import (
+            ProcessInjector, InjectionTechnique,
+        )
+
+        assert InjectionTechnique.THREAD_GHOSTING.value == "thread_ghosting"
+
+        injector = ProcessInjector()
+        techniques = injector.get_injection_techniques()
+        names = {t["name"] for t in techniques}
+        assert "thread_ghosting" in names
+
+        # Fallback chain should include the new technique
+        assert InjectionTechnique.THREAD_GHOSTING in injector.config.fallback_chain
+        # The executor should know how to dispatch it
+        assert hasattr(injector, '_thread_ghosting_injection')
+        assert hasattr(injector, 'generate_thread_ghosting_code')
+
+    def test_thread_ghosting_codegen(self):
+        """Thread-Ghosting code generation produces a non-empty string"""
+        from evasion.process_injection import ProcessInjector
+
+        injector = ProcessInjector()
+        code = injector.generate_thread_ghosting_code(b'\x90\x90\x90\x90')
+        assert isinstance(code, str)
+        assert len(code) > 0
+        assert "thread_ghost" in code
+
+
+class TestC2TrafficEntropy:
+    """Test C2 traffic entropy obfuscation (stego / decoy carriers)"""
+
+    def test_import(self):
+        from evasion.c2_traffic_entropy import C2TrafficEntropy
+        assert C2TrafficEntropy is not None
+
+    def test_html_roundtrip(self):
+        from evasion.c2_traffic_entropy import C2TrafficEntropy
+
+        e = C2TrafficEntropy(beacon_id="test", carrier="html")
+        payload = os.urandom(64)
+        carrier, ctype = e.embed(payload)
+        assert isinstance(carrier, bytes)
+        assert ctype == "text/html"
+        recovered = e.extract(carrier, ctype)
+        assert recovered == payload
+
+    def test_png_roundtrip_when_pil(self):
+        from evasion.c2_traffic_entropy import C2TrafficEntropy, PIL_AVAILABLE
+
+        e = C2TrafficEntropy(beacon_id="test", carrier="auto")
+        payload = os.urandom(48)
+        carrier, ctype = e.embed(payload)
+        if PIL_AVAILABLE and ctype == "image/png":
+            recovered = e.extract(carrier, ctype)
+            assert recovered == payload
+        else:
+            # Falls back to HTML carrier; still round-trips
+            recovered = e.extract(carrier, ctype)
+            assert recovered == payload
+
+    def test_extract_passthrough_on_plaintext(self):
+        from evasion.c2_traffic_entropy import C2TrafficEntropy
+
+        e = C2TrafficEntropy(carrier="html")
+        plain = b"not-a-carrier"
+        assert e.extract(plain, "text/html") == plain
+
 
 class TestAMSIBypass:
     """Test AMSI bypass module"""
