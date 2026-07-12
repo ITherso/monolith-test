@@ -247,11 +247,11 @@ class LSBStegoExfil:
             return None
 
     def chunk_and_encode_spectrum(self, exfil_data: bytes, cover_images_list: List[bytes],
-                                     chunk_size: int = 32768) -> List[bytes]:
+                                     chunk_size: Optional[int] = None) -> List[bytes]:
         """
         Safe spread-spectrum multi-image chunking engine.
         Prevents buffer overflow by splitting large payloads across multiple cover images.
-        Each chunk uses max 10% of image capacity (Gaussian noise ratio).
+        Each chunk respects the cover image's 10% safe capacity limit.
         """
         if not cover_images_list:
             raise ValueError("Need at least one cover image for chunking")
@@ -262,14 +262,19 @@ class LSBStegoExfil:
 
         while offset < len(exfil_data):
             if image_idx >= len(cover_images_list):
+                needed = math.ceil(len(exfil_data) / chunk_size) if chunk_size else "?"
                 raise ValueError(f"La eldeki resim sayısı exfil datasına yetmiyor! "
-                                   f"İhtiyacımız: {math.ceil(len(exfil_data) / chunk_size)}, "
+                                   f"İhtiyacımız: {needed}, "
                                    f"Mevcut: {len(cover_images_list)}")
 
-            end = min(offset + chunk_size, len(exfil_data))
+            cover = cover_images_list[image_idx]
+            max_capacity = self._get_max_capacity(cover, 0.1)
+            effective_chunk = chunk_size if chunk_size is not None and chunk_size > 0 else max_capacity
+            safe_chunk = min(effective_chunk, max_capacity)
+            end = min(offset + safe_chunk, len(exfil_data))
             chunk = exfil_data[offset:end]
 
-            encoded = self.encode_lsb_spread_spectrum(cover_images_list[image_idx], chunk)
+            encoded = self.encode_lsb_spread_spectrum(cover, chunk)
             if encoded is None:
                 raise ValueError(f"Chunk {image_idx} encoding failed - image too small")
 
