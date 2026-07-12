@@ -623,6 +623,122 @@ if __name__ == '__main__':
     pytest.main([__file__, '-v'])
 
 
+class TestAntiForensicsRotation:
+    """Test anti-forensics key / beacon-ID rotation"""
+
+    def test_import(self):
+        from evasion.anti_forensics_rotation import (
+            AntiForensicsRotator, secure_wipe, RotationReport,
+        )
+        assert AntiForensicsRotator is not None
+
+    def test_secure_wipe_zeroes_buffer(self):
+        from evasion.anti_forensics_rotation import secure_wipe
+
+        buf = bytearray(b"SECRET_KEY_MATERIAL_1234567890")
+        secure_wipe(buf)
+        assert buf == bytearray(len(buf))  # fully zeroed
+
+    def test_rotate_changes_id_and_keys(self):
+        from evasion.anti_forensics_rotation import AntiForensicsRotator
+
+        class FakeNetCrypto:
+            def __init__(self):
+                self.beacon_id = "oldid"
+                self.key = b"\x01" * 32
+            def rotate(self, new_id=None):
+                self.beacon_id = new_id or "newid"
+                self.key = b"\x02" * 32
+                return self.beacon_id
+
+        class FakeConfig:
+            beacon_id = "oldid"
+            enable_anti_forensics_rotation = True
+            rotation_interval = 86400
+
+        net = FakeNetCrypto()
+        cfg = FakeConfig()
+        rotated = []
+        rot = AntiForensicsRotator(net, cfg, extra_key_rotators=[lambda: rotated.append(1)])
+
+        report = rot.rotate()
+        assert report.old_beacon_id == "oldid"
+        assert report.new_beacon_id != "oldid"
+        assert report.new_beacon_id == cfg.beacon_id
+        assert report.rotated_keys >= 2  # network + extra
+        assert report.envelope["type"] == "anti_forensics_rotation"
+        assert rot.verify_envelope(report.envelope)
+
+    def test_maybe_rotate_respects_interval(self):
+        from evasion.anti_forensics_rotation import AntiForensicsRotator
+
+        class FakeNetCrypto:
+            def rotate(self, new_id=None):
+                return new_id or "x"
+        class FakeConfig:
+            beacon_id = "a"
+            enable_anti_forensics_rotation = True
+            rotation_interval = 86400
+
+        rot = AntiForensicsRotator(FakeNetCrypto(), FakeConfig())
+        # First call stamps baseline, no rotation.
+        assert rot.maybe_rotate(now=1000) is None
+        # Within interval: still None.
+        assert rot.maybe_rotate(now=1000 + 3600) is None
+        # Past interval: rotates.
+        rep = rot.maybe_rotate(now=1000 + 86400)
+        assert rep is not None
+
+    def test_disabled_does_not_rotate(self):
+        from evasion.anti_forensics_rotation import AntiForensicsRotator
+
+        class FakeNetCrypto:
+            def rotate(self, new_id=None):
+                return new_id or "x"
+        class FakeConfig:
+            beacon_id = "a"
+            enable_anti_forensics_rotation = False
+            rotation_interval = 86400
+
+        rot = AntiForensicsRotator(FakeNetCrypto(), FakeConfig())
+        assert rot.maybe_rotate(now=0) is None
+        assert rot.maybe_rotate(now=10 ** 9) is None
+
+
+class TestBeaconAntiForensicsIntegration:
+    """Test rotation wired into the beacon crypto classes"""
+
+    def test_transient_crypto_rotate_wipes_old(self):
+        from agents.evasive_beacon import TransientNetworkCrypto
+
+        c = TransientNetworkCrypto(beacon_id="id1")
+        old_key_id = c._key
+        new_id = c.rotate("id2")
+        assert new_id == "id2"
+        # Key object replaced (old one wiped via secure_wipe).
+        assert c._key != old_key_id or bytes(c._key) != bytes(old_key_id)
+
+    def test_task_crypto_rotate(self):
+        from agents.evasive_beacon import TaskCrypto
+
+        t = TaskCrypto()
+        before = bytes(t._key)
+        t.rotate()
+        assert bytes(t._key) != before
+
+    def test_rotation_roundtrip(self):
+        from agents.evasive_beacon import TransientNetworkCrypto
+
+        c = TransientNetworkCrypto(beacon_id="id1")
+        pt = b"hello-forensics"
+        ct = c.encrypt(pt)
+        # Before rotation, decrypt works.
+        assert c.decrypt(ct) == pt
+        c.rotate("id2")
+        # Old ciphertext can no longer be decrypted with the new key.
+        assert c.decrypt(ct) != pt
+
+
 class TestAPISequenceSpoofing:
     """Test API sequence spoofing (behavioral analysis evasion)"""
 
