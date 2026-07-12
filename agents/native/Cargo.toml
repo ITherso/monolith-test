@@ -11,6 +11,14 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
+[lib]
+name = "monolith_agent"
+path = "src/loader.rs"
+
+[[bin]]
+name = "monolith_dropper"
+path = "src/main.rs"
+
 [dependencies]
 aes = "0.8"
 base64 = "0.22"
