@@ -3,6 +3,36 @@
 ## [Unreleased]
 
 ### Added
+
+## [2.6.0] - 2026-07-12 — "The Ghost Protocol"
+
+### Added
+- **Thread-Ghosting injection** (`evasion/process_injection.py`): `THREAD_GHOSTING`
+  technique that detours a legitimately-loaded module export to an in-module
+  shellcode trampoline; export-RVA resolver + in-module region allocation;
+  registered in the fallback chain.
+- **C2 Traffic Entropy obfuscation** (`evasion/c2_traffic_entropy.py`):
+  embeds AES-encrypted C2 into benign carriers (PNG LSB stego or HTML decoy
+  page) to defeat entropy / ML traffic analysis; wired into
+  `WinHTTPNetworkStack` via `enable_traffic_entropy`.
+- **Kernel Callback Unhooking / Snitch-Killer** (`tools/byovd_module.py`):
+  `KernelCallbackUnhooker` enumerates EDR callbacks in
+  `PspCreateProcessNotifyRoutine` / thread / load-image / `CmRegisterCallback`
+  and neutralises them (nop / null / redirect); exposed via
+  `BYOVDModule.unhook_kernel_callbacks()`.
+- **API Sequence Spoofing** (`evasion/api_sequence_spoofing.py`):
+  `APISequenceSpoofer` interleaves beacon API calls with benign svchost /
+  explorer "heartbeat" chaff to break behavioural injection n-grams; wired
+  into `BehavioralMimicryEngine.plan_api_sequence()` / `score_api_sequence()`.
+- **Anti-Forensics Rotation** (`evasion/anti_forensics_rotation.py`):
+  `AntiForensicsRotator` rotates beacon ID + all in-memory keys every 24h,
+  securely wipes old key material, and emits a signed HMAC re-enrollment
+  envelope; keys held in mutable `bytearray`s in `TransientNetworkCrypto` /
+  `TaskCrypto` for in-place wipe.
+
+### Changed
+- Bumped version to 2.6.0 ("The Ghost Protocol") in README and CHANGELOG.
+
 - Cloud Redirector + High-Reputation Egress module (`tools/cloud/redirector.py`) with AWS CloudFront, Azure Front Door, and Cloudflare Worker IaC templates
 - Adaptive Timing module (`evasion/adaptive_timing.py`) with Gaussian, Fibonacci, and SIEM-aware profiles
 - Volume Obfuscation module (`evasion/volume_obfuscation.py`) for exfiltration shaping and channel rate limiting

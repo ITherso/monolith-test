@@ -7,8 +7,8 @@
 ██║╚██╔╝██║██║   ██║██║╚██╗██║██║   ██║██║     ██║   ██║   ██╔══██║
 ██║ ╚═╝ ██║╚██████╔╝██║ ╚████║╚██████╔╝███████╗██║   ██║   ██║  ██║
 ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚═╝   ╚═╝   ╚═╝  ╚═╝
-                    Elite Red Team Automation Platform
-                           v2.5 - February 2026
+                     Elite Red Team Automation Platform
+                       v2.6 - "The Ghost Protocol" (July 2026)
 ```
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
@@ -17,8 +17,8 @@
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](https://github.com/ITherso/monolith)
 
 > **👤 Author:** ITherso  
-> **📅 Last Updated:** February 2, 2026  
-> **🔧 Version:** 2.5.0
+> **📅 Last Updated:** July 12, 2026  
+> **🔧 Version:** 2.6.0
 
 > ⚠️ **DISCLAIMER**: This framework is designed for authorized security testing and educational purposes only. Unauthorized access to computer systems is illegal. Always obtain proper authorization before testing.
 
@@ -36,7 +36,7 @@ MONOLITH is an all-in-one offensive automation platform for authorized red team 
 | **Exploitation** | Auto-exploit engine, SQLi/XSS/SSRF/SSTI/IDOR/CORS detection |
 | **Active Directory** | Kerberos tickets, NTLM Relay, DCShadow, DCSync |
 | **C2 & Implants** | HTTP/S, DoH, Telegram, Discord, Steganography, Blockchain (ETH/BTC), Python/Go/Rust beacons |
-| **Evasion** | AMSI/ETW bypass, indirect syscalls, process injection, sleep masking, behavioral mimicry, GAN/ML evasion |
+| **Evasion** | AMSI/ETW bypass, indirect syscalls, process injection, sleep masking, behavioral mimicry, GAN/ML evasion, **The Ghost Protocol** (Thread-Ghosting, C2 traffic entropy, kernel callback unhooking, API-sequence spoofing, 24h anti-forensics rotation) |
 | **Persistence** | WMI, COM, Registry, BITS, DLL sideloading |
 | **Lateral Movement** | WMIExec, SMB, RDP hijack, SCCM hunter, WSUS spoof |
 | **Cloud Pivot** | Azure, AWS, GCP lateral movement modules |
@@ -4998,9 +4998,74 @@ API Endpoints:
   ├── AutoExploit          → PrivEsc → DPAPI Extract
   ├── Phishing             → Payload Gen → WebShell
   ├── Cloud Pivot          → K8s Warfare → Container Escape
-  ├── Orbital RF           → SIGINT → GPS/IMSI Collection
-  └── All modules          → God Mode Anti-Forensics
+   ├── Orbital RF           → SIGINT → GPS/IMSI Collection
+   └── All modules          → God Mode Anti-Forensics
 ```
+
+---
+
+## 👻 THE GHOST PROTOCOL — NEW in v2.6.0 (July 2026)
+
+v2.6.0 codenamed **"The Ghost Protocol"** burns the bridge between the
+beacon and the forensic record. Every Ghost Protocol feature is implemented
+in `evasion/` and `agents/evasive_beacon.py` and covered by
+`tests/test_evasion.py`.
+
+```
+  NEW in v2.6.0 — "The Ghost Protocol":
+  ├── Thread-Ghosting Injection      evasion/process_injection.py (THREAD_GHOSTING)
+  ├── C2 Traffic Entropy             evasion/c2_traffic_entropy.py (stego / decoy carriers)
+  ├── Kernel Callback Unhooking      tools/byovd_module.py (KernelCallbackUnhooker / Snitch-Killer)
+  ├── API Sequence Spoofing          evasion/api_sequence_spoofing.py (behavioral n-gram break)
+  └── Anti-Forensics Rotation        evasion/anti_forensics_rotation.py (24h key + ID rotation)
+```
+
+### 🧵 Thread-Ghosting (Module-Overwriting Detour)
+A new `THREAD_GHOSTING` injection technique (`ProcessInjector`). Instead of
+overwriting a `.text` section, it locates an *exported* function inside a
+legitimately-loaded module, writes the shellcode into an RWX region inside
+that module's own address range, patches the export prologue with a relative
+`JMP` to the shellcode, then starts the thread at the genuine export address —
+so execution appears to originate from signed, trusted code. Registered in
+the fallback chain and exposed via `generate_thread_ghosting_code()`.
+
+### 🌐 C2 Traffic Entropy Obfuscation
+`C2TrafficEntropy` wraps already-encrypted (AES-256-GCM) C2 payloads into a
+benign carrier so on-wire bytes mimic ordinary web traffic and defeat
+entropy / ML traffic analysis:
+- **PNG LSB steganography** — payload hidden inside a generated image.
+- **HTML decoy page** — payload embedded as base64 inside realistic page
+  content with randomized padding to normalize length/entropy.
+Wired into `WinHTTPNetworkStack` via the `enable_traffic_entropy` flag.
+
+### 🔫 Kernel Callback Unhooking (The Snitch-Killer)
+`KernelCallbackUnhooker` (exposed via `BYOVDModule.unhook_kernel_callbacks()`)
+enumerates EDR kernel callbacks in `PspCreateProcessNotifyRoutine`,
+`PspCreateThreadNotifyRoutine`, `PspLoadImageNotifyRoutine` and
+`CmRegisterCallback` and neutralises them so the EDR can no longer observe
+process / thread / image / registry activity:
+- `nop`      — overwrite the callback prologue with `RET` (silent return)
+- `null`     — clear the callback pointer in the array
+- `redirect` — point the callback at a benign Microsoft driver callback
+Runs through the loaded vulnerable driver's R/W primitive; simulation mode
+off-target for testing.
+
+### 🎭 API Sequence Spoofing (Behavioral Analysis Evasion)
+`APISequenceSpoofer` breaks EDR behavioural n-grams (e.g.
+`NtAllocateVirtualMemory → NtWriteVirtualMemory → NtCreateThreadEx`) by
+interleaving the beacon's real API calls with benign "heartbeat" chaff drawn
+from `svchost` / `explorer` templates. A `score()` estimates how
+"injection-like" a sequence still looks (lower = safer). Wired into
+`BehavioralMimicryEngine.plan_api_sequence()` / `score_api_sequence()`.
+
+### 🧹 Anti-Forensics Rotation (24h)
+`AntiForensicsRotator` rotates the beacon ID **and every in-memory key** on a
+configurable interval (default 24h). Old key material is securely wiped
+(random fill → zero via `ctypes.memset`) before the new identity is adopted,
+and a signed HMAC re-enrollment envelope lets the C2 server re-link the new
+ID without ever persisting the old one. Keys are held in mutable `bytearray`s
+in `TransientNetworkCrypto` / `TaskCrypto` so they can be wiped in place.
+Driven from the beacon check-in loop via `enable_anti_forensics_rotation`.
 
 ---
 
@@ -5050,7 +5115,7 @@ This tool is provided for **educational and authorized security testing purposes
 │                                                                 │
 │   🔴 MONOLITH - Elite Red Team Framework                        │
 │   Built with ❤️ by ITherso                                      │
-│   v2.5 - February 2026                                          │
+│   v2.6 - "The Ghost Protocol" (July 2026)                       │
 │                                                                 │
 │   "Knowledge is power. Use it responsibly."                     │
 │                                                                 │
