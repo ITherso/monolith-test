@@ -29,6 +29,16 @@
   securely wipes old key material, and emits a signed HMAC re-enrollment
   envelope; keys held in mutable `bytearray`s in `TransientNetworkCrypto` /
   `TaskCrypto` for in-place wipe.
+- **Fileless WebShell** (`evasion/fileless_webshell.py`): `FastCGIInjection`
+  performs an in-memory PHP-FPM webshell over FastCGI by setting
+  `auto_prepend_file = php://input` + `allow_url_include = On`; the request
+  body is executed in memory with no on-disk artifact. `generate_ghost_shell()`
+  returns a self-decrypting (AES-256-GCM) payload delivered as the POST body.
+- **In-Request Data Exfiltration** (`evasion/in_request_exfil.py`):
+  `ProtocolExfil` smuggles loot inside benign WebSocket frames (with ping/pong
+  heartbeat chaff) or across HTTP/2 streams hidden in `x-trace` trailers,
+  defeating "Outbound Data Anomaly" detection. Lossless exfiltrate/recover
+  round-trips plus raw frame encode/decode for the socket layer.
 
 ### Changed
 - Bumped version to 2.6.0 ("The Ghost Protocol") in README and CHANGELOG.

