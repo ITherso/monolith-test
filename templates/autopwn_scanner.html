@@ -1,404 +1,919 @@
 {% extends "base.html" %}
 
-{% block title %}AutoPwn Scanner - N-Day Exploiter{% endblock %}
+{% block title %}AutoPwn Scanner - Weaponized Exploit Orchestrator{% endblock %}
 
 {% block extra_css %}
 <style>
-    .autopwn-header {
-        background: linear-gradient(135deg, #0a1628 0%, #1a0a0a 50%, #2d1b1b 100%);
-        border: 1px solid #dc2626;
-        border-radius: 15px;
-        padding: 30px;
-        margin-bottom: 30px;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .autopwn-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(220, 38, 38, 0.1) 0%, transparent 70%);
-        animation: pulse-bg 4s ease-in-out infinite;
-    }
-    
-    @keyframes pulse-bg {
-        0%, 100% { transform: scale(1); opacity: 0.5; }
-        50% { transform: scale(1.1); opacity: 0.3; }
-    }
-    
-    .autopwn-header h1 {
-        color: #f87171;
-        text-shadow: 0 0 20px #dc2626;
-        position: relative;
-        z-index: 1;
-    }
-    
-    .vuln-card {
-        background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
-        border: 1px solid #374151;
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 10px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-    
-    .vuln-card:hover {
-        border-color: #ef4444;
-        box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
-    }
-    
-    .vuln-card.critical {
-        border-left: 4px solid #dc2626;
-    }
-    
-    .vuln-card.high {
-        border-left: 4px solid #f97316;
-    }
-    
-    .vuln-card.medium {
-        border-left: 4px solid #eab308;
-    }
-    
-    .severity-badge {
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-    
-    .severity-critical { background: #dc2626; color: white; }
-    .severity-high { background: #f97316; color: white; }
-    .severity-medium { background: #eab308; color: black; }
-    .severity-low { background: #22c55e; color: white; }
-    
-    .target-card {
-        background: #111;
-        border: 1px solid #333;
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-    
-    .target-card.pwned {
-        border-color: #22c55e;
-        box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-    }
-    
-    .target-card.pwned::before {
-        content: '🎯 PWNED';
-        position: absolute;
-        top: -10px;
-        right: 10px;
-        background: #22c55e;
-        color: black;
-        padding: 2px 10px;
-        border-radius: 4px;
-        font-weight: bold;
-        font-size: 0.75rem;
-    }
-    
-    .port-badge {
-        background: #1f2937;
-        border: 1px solid #374151;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 0.8rem;
-        margin: 2px;
-        display: inline-block;
-    }
-    
-    .port-badge.open { border-color: #22c55e; color: #22c55e; }
-    
-    .scan-progress {
-        background: #1f1f1f;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    
-    .scan-progress .progress {
-        height: 20px;
-        background: #2d2d2d;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    
-    .scan-progress .progress-bar {
-        background: linear-gradient(90deg, #dc2626, #f97316, #eab308);
-        background-size: 200% 100%;
-        animation: progress-shimmer 2s linear infinite;
-    }
-    
-    @keyframes progress-shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-    }
-    
-    .shell-indicator {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        background: linear-gradient(90deg, #22c55e, #16a34a);
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: bold;
-        animation: shell-pulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes shell-pulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-        50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-    }
-    
-    .exploit-output {
-        background: #0a0a0a;
-        border: 1px solid #333;
-        border-radius: 8px;
-        padding: 15px;
-        font-family: 'Fira Code', monospace;
-        font-size: 0.85rem;
-        max-height: 300px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        color: #22c55e;
-    }
-    
-    .cve-tag {
-        background: #1e3a5f;
-        color: #60a5fa;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 0.8rem;
-    }
-    
-    .stats-card {
-        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
-        border: 1px solid #374151;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-    }
-    
-    .stats-card .value {
-        font-size: 2.5rem;
-        font-weight: bold;
-        background: linear-gradient(90deg, #dc2626, #f97316);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    
-    .target-input {
-        background: #0a0a14;
-        border: 2px dashed #374151;
-        border-radius: 12px;
-        padding: 30px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    
-    .target-input:hover, .target-input:focus-within {
-        border-color: #dc2626;
-        box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
-    }
-    
-    .quick-scan-btn {
-        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-        border: none;
-        padding: 15px 40px;
-        font-size: 1.2rem;
-        font-weight: bold;
-        border-radius: 10px;
-        color: white;
-        transition: all 0.3s ease;
-    }
-    
-    .quick-scan-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
-    }
-    
-    .autopwn-toggle {
-        position: relative;
-        width: 60px;
-        height: 30px;
-    }
-    
-    .autopwn-toggle input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    
-    .autopwn-toggle .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: #333;
-        border-radius: 30px;
-        transition: 0.4s;
-    }
-    
-    .autopwn-toggle .slider::before {
-        position: absolute;
-        content: "";
-        height: 22px;
-        width: 22px;
-        left: 4px;
-        bottom: 4px;
-        background: white;
-        border-radius: 50%;
-        transition: 0.4s;
-    }
-    
-    .autopwn-toggle input:checked + .slider {
-        background: linear-gradient(90deg, #dc2626, #f97316);
-    }
-    
-    .autopwn-toggle input:checked + .slider::before {
-        transform: translateX(30px);
-    }
+:root {
+    --orch-primary: #dc2626;
+    --orch-glow: rgba(220, 38, 38, 0.35);
+    --orch-bg: #0a0e14;
+    --orch-panel: #0f1419;
+    --orch-border: #1f2937;
+    --orch-text: #e5e7eb;
+    --orch-muted: #9ca3af;
+    --orch-green: #22c55e;
+    --orch-amber: #f59e0b;
+    --orch-cyan: #06b6d4;
+    --orch-purple: #8b5cf6;
+    --orch-orange: #f97316;
+}
+body { background: var(--orch-bg); color: var(--orch-text); }
+
+.orch-header {
+    background: linear-gradient(135deg, #0a1628 0%, #1a0505 50%, #2d1b1b 100%);
+    border: 1px solid var(--orch-primary);
+    border-radius: 16px;
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+.orch-header::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: radial-gradient(circle, rgba(220, 38, 38, 0.12) 0%, transparent 70%);
+    animation: pulse-bg 4s ease-in-out infinite;
+}
+@keyframes pulse-bg {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.3; }
+}
+.orch-header h1 {
+    color: #f87171;
+    text-shadow: 0 0 24px #dc2626;
+    position: relative;
+    z-index: 1;
+    font-size: 1.9rem;
+    letter-spacing: 0.04em;
+}
+.orch-subtitle {
+    color: var(--orch-muted);
+    position: relative;
+    z-index: 1;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.capability-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #4ade80;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    margin: 3px 3px 0 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.capability-chip.orch {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.5);
+    color: #f87171;
+}
+.capability-chip.probe {
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    color: #22d3ee;
+}
+.capability-chip.chain {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    color: #a78bfa;
+}
+
+.stats-card {
+    background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+    border: 1px solid var(--orch-border);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.stats-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--orch-primary), var(--orch-orange), var(--orch-amber));
+}
+.stats-card .value {
+    font-size: 2.6rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #dc2626, #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+}
+.stats-card .label {
+    color: var(--orch-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+}
+
+.orch-panel {
+    background: var(--orch-panel);
+    border: 1px solid var(--orch-border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+.orch-panel .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--orch-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0,0,0,0.3);
+}
+.orch-panel .panel-header h5 {
+    margin: 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--orch-text);
+}
+.orch-panel .panel-body {
+    padding: 16px;
+}
+
+.target-input {
+    background: rgba(10, 10, 20, 0.6);
+    border: 2px dashed #374151;
+    border-radius: 14px;
+    padding: 28px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.target-input:hover, .target-input:focus-within {
+    border-color: var(--orch-primary);
+    box-shadow: 0 0 24px var(--orch-glow);
+}
+.target-input textarea {
+    background: transparent;
+    border: none;
+    color: var(--orch-text);
+    text-align: center;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+.target-input textarea:focus { box-shadow: none; color: var(--orch-text); }
+.target-input textarea::placeholder { color: #4b5563; }
+
+.orch-toggle {
+    position: relative;
+    width: 56px;
+    height: 28px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.orch-toggle input { opacity: 0; width: 0; height: 0; }
+.orch-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #333;
+    border-radius: 28px;
+    transition: 0.4s;
+}
+.orch-toggle .slider::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.4s;
+}
+.orch-toggle input:checked + .slider {
+    background: linear-gradient(90deg, #dc2626, #f97316);
+}
+.orch-toggle input:checked + .slider::before {
+    transform: translateX(28px);
+}
+
+.btn-launch {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    border: none;
+    padding: 14px 40px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 10px;
+    color: white;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.btn-launch:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(220, 38, 38, 0.45);
+}
+.btn-launch:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.target-card {
+    background: #111111;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+.target-card:hover { border-color: #3a3a3a; }
+.target-card.pwned {
+    border-color: var(--orch-green);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.2);
+}
+.target-card.pwned::before {
+    content: '◉ PWNED';
+    position: absolute;
+    top: -11px;
+    right: 12px;
+    background: var(--orch-green);
+    color: black;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+}
+
+.port-badge {
+    background: #1f2937;
+    border: 1px solid #374151;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    margin: 2px;
+    display: inline-block;
+    color: var(--orch-muted);
+}
+.port-badge.open { border-color: var(--orch-green); color: var(--orch-green); }
+.version-badge {
+    background: #1e1b4b;
+    border: 1px solid #4338ca;
+    color: #c7d2fe;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72rem;
+    margin: 2px;
+    display: inline-block;
+}
+.cve-tag {
+    background: #0c1e3a;
+    color: #60a5fa;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    margin: 2px;
+    display: inline-block;
+    border: 1px solid rgba(96, 165, 250, 0.2);
+}
+.cve-tag.version-based { background: #2e1065; color: #c4b5fd; border: 1px solid rgba(124, 58, 237, 0.4); }
+.cve-tag.orchestrated {
+    background: #450a0a;
+    color: #fca5a5;
+    border: 1px solid rgba(220, 38, 38, 0.5);
+    animation: cve-pulse 2s ease-in-out infinite;
+}
+@keyframes cve-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    50% { box-shadow: 0 0 8px 2px rgba(220, 38, 38, 0.3); }
+}
+
+.severity-badge {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.severity-critical { background: #dc2626; color: white; }
+.severity-high { background: #f97316; color: white; }
+.severity-medium { background: #eab308; color: black; }
+.severity-low { background: #22c55e; color: white; }
+
+.finding-card {
+    background: #0f0a0a;
+    border: 1px solid #3b1111;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 6px 0;
+    transition: all 0.2s ease;
+}
+.finding-card:hover { border-color: #7f1d1d; }
+.finding-card .finding-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.stager-card {
+    background: linear-gradient(135deg, #0f1419 0%, #1a0f0f 100%);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    border-radius: 10px;
+    padding: 12px;
+    margin: 6px 0;
+    position: relative;
+    overflow: hidden;
+}
+.stager-card::before {
+    content: 'STAGER';
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: rgba(220, 38, 38, 0.2);
+    color: #f87171;
+    padding: 2px 8px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    border-bottom-left-radius: 8px;
+}
+.stager-vector {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(220, 38, 38, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    color: #fca5a5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.stager-shell {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.shell-mem_resident { background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); color: #a78bfa; }
+.shell-reverse_shell { background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.4); color: #fca5a5; }
+.shell-webshell { background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; }
+.shell-rce { background: rgba(249, 115, 22, 0.15); border: 1px solid rgba(249, 115, 22, 0.4); color: #fdba74; }
+.shell-unknown { background: rgba(107, 114, 128, 0.15); border: 1px solid rgba(107, 114, 128, 0.3); color: #9ca3af; }
+
+.stager-trigger {
+    background: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72rem;
+    color: #d1d5db;
+    word-break: break-all;
+    max-height: 80px;
+    overflow-y: auto;
+    margin-top: 6px;
+}
+.stager-expected {
+    font-size: 0.75rem;
+    color: var(--orch-muted);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.chain-pipe {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+}
+.chain-step {
+    background: #1f1f2e;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    color: var(--orch-cyan);
+    letter-spacing: 0.03em;
+}
+.chain-arrow { color: #4b5563; font-size: 0.8rem; }
+
+.probe-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.probe-high { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; }
+.probe-medium { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; }
+.probe-low { background: rgba(107, 114, 128, 0.12); border: 1px solid rgba(107, 114, 128, 0.3); color: #9ca3af; }
+.probe-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.probe-high .probe-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.probe-medium .probe-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.probe-low .probe-dot { background: #6b7280; }
+
+.shell-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.shell-indicator .pulse {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    animation: shell-pulse 1.5s ease-in-out infinite;
+}
+@keyframes shell-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.exploit-source {
+    background: #0a1628;
+    border: 1px solid #1e3a8a;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin: 4px 0;
+    font-size: 0.78rem;
+}
+.exploit-source a { color: #93c5fd; text-decoration: none; }
+.exploit-source a:hover { text-decoration: underline; }
+.source-badge {
+    font-size: 0.62rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.source-searchsploit { background: #065f46; color: #a7f3d0; }
+.source-builtin { background: #1e3a8a; color: #bfdbfe; }
+
+.exploit-output {
+    background: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.82rem;
+    max-height: 280px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    color: #22c55e;
+}
+
+.scan-progress {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #2a2a2a;
+}
+.scan-progress .progress {
+    height: 18px;
+    background: #2d2d2d;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.scan-progress .progress-bar {
+    background: linear-gradient(90deg, #dc2626, #f97316, #eab308);
+    background-size: 200% 100%;
+    animation: progress-shimmer 2s linear infinite;
+}
+@keyframes progress-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.session-item {
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.session-item:hover {
+    border-color: #4b5563;
+    background: #1a1a1a;
+}
+
+.qs-port {
+    display: inline-block;
+    background: #1f2937;
+    border: 1px solid #374151;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    margin: 2px;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0f0f0f; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+.option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid #1a1a1a;
+}
+.option-row:last-child { border-bottom: none; }
+
+.pivot-hop {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1f1f2e;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin: 3px;
+}
+.pivot-hop .hop-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+.pivot-hop.dc .hop-icon { background: #dc2626; color: white; }
+.pivot-hop.server .hop-icon { background: #f97316; color: white; }
+.pivot-hop.workstation .hop-icon { background: #3b82f6; color: white; }
+.pivot-arrow { color: #6b7280; font-size: 1.2rem; }
+
+.beacon-card {
+    background: #0f1419;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.beacon-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+    animation: shell-pulse 1.5s ease-in-out infinite;
+}
+.beacon-info { flex: 1; }
+.beacon-ip {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+.beacon-meta {
+    font-size: 0.7rem;
+    color: var(--orch-muted);
+    margin-top: 2px;
+}
+
+.cred-card {
+    background: #1a1510;
+    border: 1px solid #3b2f1f;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+}
+.cred-user {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: #fbbf24;
+    font-weight: 600;
+}
+.cred-domain {
+    font-size: 0.7rem;
+    color: var(--orch-muted);
+}
+.cred-type {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.cred-type.password { background: #065f46; color: #a7f3d0; }
+.cred-type.nt_hash { background: #1e3a8a; color: #bfdbfe; }
+
+.console-line { margin-bottom: 2px; }
+.console-time { color: #6b7280; }
+.console-info { color: #22d3ee; }
+.console-warn { color: #fbbf24; }
+.console-error { color: #f87171; }
+.console-success { color: #4ade80; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Header -->
-    <div class="autopwn-header">
+    <!-- ═══════════════════════════════════════════════════ HEADER -->
+    <div class="orch-header">
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h1><i class="fas fa-crosshairs me-3"></i>AutoPwn Scanner</h1>
-                <p class="text-muted mb-0">
-                    <span class="badge bg-danger me-2">PRO</span>
-                    N-Day Vulnerability Scanner • Automatic Exploitation • Log4j • ProxyShell • ZeroLogon • EternalBlue
+                <p class="orch-subtitle mb-2">
+                    <span class="badge bg-danger me-2">WEAPONIZED</span>
+                    Exploit Orchestrator &bull; Behavioral Probe Engine &bull; Fileless Stager Injection &bull; Chain Piping
                 </p>
+                <div>
+                    <span class="capability-chip probe"><i class="fas fa-fingerprint"></i> Behavioral Probe</span>
+                    <span class="capability-chip orch"><i class="fas fa-project-diagram"></i> ExploitOrchestrator</span>
+                    <span class="capability-chip chain"><i class="fas fa-link"></i> Chain Piping</span>
+                    <span class="capability-chip"><i class="fas fa-database"></i> ExploitDB / searchsploit</span>
+                    <span class="capability-chip"><i class="fas fa-shield-alt"></i> EDR Evasion Payloads</span>
+                    <span class="capability-chip"><i class="fas fa-memory"></i> Fileless Beacon Inject</span>
+                </div>
             </div>
             <div class="col-md-4 text-end">
-                <div class="d-flex align-items-center justify-content-end gap-3">
-                    <span class="text-light">Auto-Exploit</span>
-                    <label class="autopwn-toggle">
+                <div class="d-flex align-items-center justify-content-end gap-3 mb-2">
+                    <span class="text-light small">AUTO-EXPLOIT</span>
+                    <label class="orch-toggle">
                         <input type="checkbox" id="autoExploitToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="d-flex align-items-center justify-content-end gap-3 mb-2">
+                    <span class="text-light small">VERSION SCAN</span>
+                    <label class="orch-toggle">
+                        <input type="checkbox" id="versionScanToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="d-flex align-items-center justify-content-end gap-3">
+                    <span class="text-light small">BEHAVIORAL PROBE</span>
+                    <label class="orch-toggle">
+                        <input type="checkbox" id="probeToggle" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Stats Row -->
+
+    <!-- ═══════════════════════════════════════════════════ STATS ROW 1 -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-lg-3">
             <div class="stats-card">
                 <div class="value" id="statVulns">25+</div>
-                <div class="text-muted">Supported Vulns</div>
+                <div class="label">Supported CVEs</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3">
             <div class="stats-card">
                 <div class="value" id="statScanned">0</div>
-                <div class="text-muted">Targets Scanned</div>
+                <div class="label">Targets Scanned</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3">
             <div class="stats-card">
-                <div class="value text-danger" id="statCritical">0</div>
-                <div class="text-muted">Critical Vulns</div>
+                <div class="value" style="color:#f87171" id="statCritical">0</div>
+                <div class="label">Critical Findings</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3">
             <div class="stats-card">
-                <div class="value text-success" id="statPwned">0</div>
-                <div class="text-muted">Targets PWNED</div>
+                <div class="value" style="color:#22c55e" id="statPwned">0</div>
+                <div class="label">Beacons Injected</div>
             </div>
         </div>
     </div>
-    
+
+    <!-- ═══════════════════════════════════════════════════ STATS ROW 2 -->
+    <div class="row mb-4">
+        <div class="col-lg-3">
+            <div class="stats-card">
+                <div class="value" style="color:#7c3aed" id="statStagers">0</div>
+                <div class="label">Stagers Ready</div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="stats-card">
+                <div class="value" style="color:#f59e0b" id="statHunterState">IDLE</div>
+                <div class="label">Hunter State</div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="stats-card">
+                <div class="value" style="color:#06b6d4" id="statPivotChain">0</div>
+                <div class="label">Pivot Hops</div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="stats-card">
+                <div class="value" style="color:#f97316" id="statCreds">0</div>
+                <div class="label">Credentials Harvested</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ MAIN GRID -->
     <div class="row">
-        <!-- Left Panel - Target Input & Sessions -->
+        <!-- ── LEFT: Target Config + Sessions + Hunter + Arsenal ─── -->
         <div class="col-lg-4">
-            <!-- Target Input -->
-            <div class="card bg-dark border-secondary mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-bullseye me-2"></i>Target Configuration</h5>
+            <div class="orch-panel mb-4">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-bullseye me-2 text-danger"></i>Target Configuration</h5>
+                    <span class="badge bg-dark text-muted small">RECON</span>
                 </div>
-                <div class="card-body">
+                <div class="panel-body">
                     <div class="target-input mb-3">
-                        <i class="fas fa-network-wired fa-3x text-danger mb-3"></i>
-                        <textarea class="form-control bg-transparent border-0 text-light text-center" 
-                            id="targetInput" rows="4" 
+                        <i class="fas fa-network-wired fa-2x text-danger mb-2"></i>
+                        <textarea class="form-control bg-transparent border-0 text-light text-center"
+                            id="targetInput" rows="4"
                             placeholder="Enter targets:&#10;192.168.1.0/24&#10;10.0.0.1-50&#10;target.com"></textarea>
                     </div>
-                    
                     <div class="mb-3">
-                        <label class="form-label small">Quick Presets</label>
+                        <label class="form-label small text-muted">Quick Presets</label>
                         <div class="d-flex flex-wrap gap-2">
                             <button class="btn btn-sm btn-outline-secondary" onclick="setPreset('local')">Local Network</button>
                             <button class="btn btn-sm btn-outline-secondary" onclick="setPreset('dc')">Domain Controllers</button>
                             <button class="btn btn-sm btn-outline-secondary" onclick="setPreset('web')">Web Servers</button>
                         </div>
                     </div>
-                    
-                    <button class="quick-scan-btn w-100" id="startScanBtn">
+                    <div class="mb-3">
+                        <div class="option-row">
+                            <span class="small text-muted"><i class="fas fa-microchip me-1"></i> Threads</span>
+                            <input type="number" id="threadsInput" class="form-control form-control-sm bg-dark text-light border-secondary" style="width:90px;" value="50" min="1" max="500">
+                        </div>
+                        <div class="option-row">
+                            <span class="small text-muted"><i class="fas fa-fingerprint me-1"></i> Behavioral Probe</span>
+                            <span class="text-success small" id="probeStatus">active</span>
+                        </div>
+                        <div class="option-row">
+                            <span class="small text-muted"><i class="fas fa-project-diagram me-1"></i> Orchestrator</span>
+                            <span class="text-success small" id="orchStatus">armed</span>
+                        </div>
+                        <div class="option-row">
+                            <span class="small text-muted"><i class="fas fa-database me-1"></i> Exploit Feed</span>
+                            <span class="text-success small" id="feedStatus">searchsploit</span>
+                        </div>
+                    </div>
+                    <button class="btn-launch w-100" id="startScanBtn">
                         <i class="fas fa-rocket me-2"></i>Launch AutoPwn
                     </button>
+                    <button class="w-100 mt-2" id="startAutonomousPwnBtn"
+                        style="background:linear-gradient(135deg,#7c3aed,#4c1d95);border:none;padding:12px 40px;font-size:1rem;font-weight:700;border-radius:10px;color:white;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;transition:all 0.3s ease;">
+                        <i class="fas fa-skull-crossbones me-2"></i>Launch Autonomous Pwn
+                    </button>
+                    <div class="mt-3 d-flex flex-wrap gap-3 justify-content-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small text-purple">Enable Ring 0 HW-Unhooking</span>
+                            <label class="orch-toggle">
+                                <input type="checkbox" id="hwUnhookToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small text-warning">Enable Anti-HoneyToken Pacing</span>
+                            <label class="orch-toggle">
+                                <input type="checkbox" id="pacingToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Recent Sessions -->
-            <div class="card bg-dark border-secondary">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Scan Sessions</h5>
-                    <span class="badge bg-secondary" id="sessionCount">0</span>
+
+            <!-- Scan Sessions -->
+            <div class="orch-panel mb-4">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2 text-warning"></i>Scan Sessions</h5>
+                    <span class="badge bg-dark text-muted" id="sessionCount">0</span>
                 </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush" id="sessionsList" style="max-height: 300px; overflow-y: auto;">
-                        <div class="list-group-item bg-dark border-secondary text-center text-muted py-4">
+                <div class="panel-body" style="max-height: 300px; overflow-y: auto;">
+                    <div id="sessionsList">
+                        <div class="text-center text-muted py-4">
                             <i class="fas fa-search fa-2x mb-2 opacity-50"></i>
                             <p class="small mb-0">No scan sessions yet</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Hunter Status -->
+            <div class="orch-panel mb-4">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-crosshairs me-2 text-warning"></i>Hunter Status</h5>
+                    <span class="badge bg-dark text-muted small" id="hunterStateBadge">IDLE</span>
+                </div>
+                <div class="panel-body">
+                    <div class="option-row">
+                        <span class="small text-muted">State</span>
+                        <span class="text-warning small" id="hunterState">idle</span>
+                    </div>
+                    <div class="option-row">
+                        <span class="small text-muted">Targets</span>
+                        <span class="small text-light" id="hunterTargets">0</span>
+                    </div>
+                    <div class="option-row">
+                        <span class="small text-muted">Compromised</span>
+                        <span class="small text-success" id="hunterCompromised">0</span>
+                    </div>
+                    <div class="option-row">
+                        <span class="small text-muted">Credentials</span>
+                        <span class="small text-info" id="hunterCreds">0</span>
+                    </div>
+                    <div class="option-row">
+                        <span class="small text-muted">Pivot Chain</span>
+                        <span class="small text-light" id="hunterPivotChain" style="font-size:0.65rem;word-break:break-all;">N/A</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stager Arsenal -->
+            <div class="orch-panel mb-4">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-box-open me-2 text-danger"></i>Stager Arsenal</h5>
+                    <span class="badge bg-dark text-muted small" id="stagerCount">0</span>
+                </div>
+                <div class="panel-body p-2" id="stagerArsenal" style="max-height: 260px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-box-open fa-2x mb-2 opacity-50"></i>
+                        <p class="small mb-0">No stagers prepared</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <!-- Center Panel - Scan Results -->
+
+        <!-- ── CENTER: Scan Results ───────────────────────────── -->
         <div class="col-lg-5">
-            <!-- Scan Progress -->
             <div class="scan-progress" id="scanProgress" style="display: none;">
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Scanning...</span>
-                    <span id="scanPercent">0%</span>
+                    <span class="small text-muted" id="scanStatus">Initializing...</span>
+                    <span class="small text-danger fw-bold" id="scanPercent">0%</span>
                 </div>
                 <div class="progress">
                     <div class="progress-bar" id="scanProgressBar" style="width: 0%"></div>
                 </div>
-                <div class="mt-2 small text-muted">
-                    <span id="scanStatus">Initializing...</span>
-                </div>
             </div>
-            
-            <!-- Discovered Targets -->
-            <div class="card bg-dark border-secondary">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-desktop me-2"></i>Discovered Targets</h5>
-                    <div>
-                        <button class="btn btn-sm btn-outline-success" id="exportReportBtn" style="display: none;">
-                            <i class="fas fa-file-export"></i> Export
-                        </button>
-                    </div>
+
+            <div class="orch-panel mb-4">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-desktop me-2 text-info"></i>Discovered Targets</h5>
+                    <button class="btn btn-sm btn-outline-success" id="exportReportBtn" style="display: none;">
+                        <i class="fas fa-file-export me-1"></i>Export
+                    </button>
                 </div>
-                <div class="card-body" id="targetsContainer" style="max-height: 500px; overflow-y: auto;">
+                <div class="panel-body" id="targetsContainer" style="max-height: 640px; overflow-y: auto;">
                     <div class="text-center text-muted py-5">
                         <i class="fas fa-crosshairs fa-4x mb-3 opacity-25"></i>
                         <h5>No targets discovered</h5>
@@ -407,17 +922,143 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Right Panel - Vulnerability Database -->
+
+        <!-- ── RIGHT: Vuln DB + Lookup + C2 Config ────────────── -->
         <div class="col-lg-3">
-            <div class="card bg-dark border-secondary">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-bug me-2"></i>Vulnerability Database</h5>
+            <div class="orch-panel mb-3">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-bug me-2 text-danger"></i>Vulnerability Database</h5>
+                    <span class="badge bg-dark text-muted small" id="vulnCount">0</span>
                 </div>
-                <div class="card-body p-2" id="vulnDatabase" style="max-height: 600px; overflow-y: auto;">
-                    <!-- Vulnerabilities will be loaded here -->
+                <div class="panel-body p-2" id="vulnDatabase" style="max-height: 340px; overflow-y: auto;">
                     <div class="text-center py-3">
                         <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="orch-panel mb-3">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-project-diagram me-2 text-purple"></i>Version &rarr; CVE Map</h5>
+                    <span class="badge bg-dark text-muted small">N-DAY</span>
+                </div>
+                <div class="panel-body p-2" id="versionVulnDB" style="max-height: 280px; overflow-y: auto;">
+                    <div class="text-center py-3">
+                        <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="orch-panel mb-3">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-search me-2 text-info"></i>Exploit Source Lookup</h5>
+                </div>
+                <div class="panel-body">
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" class="form-control bg-dark text-light border-secondary" id="cveLookup" placeholder="CVE-2021-44228">
+                        <button class="btn btn-danger" id="cveLookupBtn" type="button"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div id="cveLookupResults" class="small"></div>
+                </div>
+            </div>
+
+            <div class="orch-panel">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-satellite-dish me-2 text-warning"></i>C2 Beacon Config</h5>
+                </div>
+                <div class="panel-body">
+                    <div class="option-row">
+                        <span class="small text-muted">Callback Host</span>
+                        <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" style="width:140px;" id="c2Host" value="10.10.10.10">
+                    </div>
+                    <div class="option-row">
+                        <span class="small text-muted">Callback Port</span>
+                        <input type="number" class="form-control form-control-sm bg-dark text-light border-secondary" style="width:90px;" id="c2Port" value="9001">
+                    </div>
+                    <button class="btn btn-sm btn-outline-warning w-100 mt-2" id="updateC2Btn">
+                        <i class="fas fa-save me-1"></i>Update C2 Endpoint
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ OPERATION CONSOLE + PIVOT CHAIN -->
+    <div class="row mb-4">
+        <div class="col-lg-4">
+            <div class="orch-panel">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-terminal me-2 text-success"></i>Operation Console</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearConsole()">Clear</button>
+                </div>
+                <div class="panel-body">
+                    <div id="operationConsole" style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:12px;font-family:'Fira Code',monospace;font-size:0.78rem;max-height:300px;overflow-y:auto;white-space:pre-wrap;color:#22c55e;">
+                        <span class="text-muted">[SYSTEM] Operation console initialized. Launch scan or autonomous pwn to begin.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="orch-panel">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-route me-2 text-info"></i>Pivot Chain</h5>
+                    <span class="badge bg-dark text-muted small" id="pivotChainLength">0 hops</span>
+                </div>
+                <div class="panel-body">
+                    <div id="pivotChainContainer" style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;min-height:120px;">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-route fa-2x mb-2 opacity-50"></i>
+                            <p class="small mb-0">No pivot chain established yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="orch-panel">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt me-2 text-warning"></i>Pacer Live Feed</h5>
+                    <span class="badge bg-dark text-muted small" id="pacerStatusBadge">IDLE</span>
+                </div>
+                <div class="panel-body">
+                    <div id="pacerLiveFeed" style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:10px;font-family:'Fira Code',monospace;font-size:0.72rem;max-height:300px;overflow-y:auto;white-space:pre-wrap;color:#fbbf24;">
+                        <span class="text-muted">[SYSTEM] Pacer feed waiting. Enable Anti-HoneyToken Pacing and launch autonomous pwn.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ BEACON STATUS + CREDENTIAL VAULT -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="orch-panel">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-satellite-dish me-2 text-success"></i>Beacon Status</h5>
+                    <span class="badge bg-dark text-muted small" id="beaconCount">0 active</span>
+                </div>
+                <div class="panel-body">
+                    <div id="beaconStatusContainer">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-satellite-dish fa-2x mb-2 opacity-50"></i>
+                            <p class="small mb-0">No active beacons</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="orch-panel">
+                <div class="panel-header">
+                    <h5 class="mb-0"><i class="fas fa-key me-2 text-warning"></i>Credential Vault</h5>
+                    <span class="badge bg-dark text-muted small" id="credCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <div id="credentialVaultContainer" style="max-height:250px;overflow-y:auto;">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-key fa-2x mb-2 opacity-50"></i>
+                            <p class="small mb-0">No credentials harvested yet</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -425,43 +1066,67 @@
     </div>
 </div>
 
-<!-- Exploit Details Modal -->
+<!-- ═══════════════════════════════════════════════════ EXPLOIT MODAL -->
 <div class="modal fade" id="exploitModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content bg-dark border-danger">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title"><i class="fas fa-skull-crossbones me-2"></i>Exploit Details</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-skull-crossbones me-2 text-danger"></i>Exploit Orchestration Details
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label text-muted">Target</label>
+                        <label class="form-label text-muted small">TARGET</label>
                         <div id="exploitTarget" class="h5 text-danger">-</div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label text-muted">Vulnerability</label>
+                        <label class="form-label text-muted small">VULNERABILITY</label>
                         <div id="exploitVuln" class="h5">-</div>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label text-muted">CVE</label>
+                    <label class="form-label text-muted small">CVE</label>
                     <div id="exploitCVE">-</div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted">Exploit Output</label>
-                    <div class="exploit-output" id="exploitOutput">
-                        Waiting for exploit...
+                <div class="mb-3" id="stagerDetails" style="display:none;">
+                    <label class="form-label text-muted small">STAGER PAYLOAD</label>
+                    <div class="stager-card">
+                        <div class="d-flex gap-2 mb-2 flex-wrap">
+                            <span class="stager-vector" id="stagerVector">-</span>
+                            <span class="stager-shell" id="stagerShell">-</span>
+                            <span class="probe-badge probe-high" id="stagerConfidence">
+                                <span class="probe-dot"></span>CONFIDENCE: HIGH
+                            </span>
+                        </div>
+                        <div class="stager-trigger" id="stagerTrigger">-</div>
+                        <div class="stager-expected" id="stagerExpected">-</div>
                     </div>
                 </div>
+                <div class="mb-3" id="chainPipe" style="display:none;">
+                    <label class="form-label text-muted small">EXPLOIT CHAIN PIPELINE</label>
+                    <div class="chain-pipe" id="chainSteps"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">EXPLOIT SOURCES</label>
+                    <div id="exploitSources"><span class="text-muted">Resolving exploit sources...</span></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">OUTPUT</label>
+                    <div class="exploit-output" id="exploitOutput">Waiting for exploit...</div>
+                </div>
                 <div id="shellInfo" style="display: none;">
-                    <div class="alert alert-success">
-                        <i class="fas fa-terminal me-2"></i>
-                        <strong>Shell Established!</strong>
-                        <div class="mt-2">
-                            <span class="shell-indicator">
-                                <i class="fas fa-circle"></i> Active Shell
-                            </span>
+                    <div class="alert alert-success d-flex align-items-center gap-3">
+                        <i class="fas fa-terminal fa-lg"></i>
+                        <div>
+                            <strong>Beacon Established!</strong>
+                            <div class="mt-1">
+                                <span class="shell-indicator">
+                                    <span class="pulse"></span> Active Shell
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -476,7 +1141,7 @@
     </div>
 </div>
 
-<!-- Quick Scan Modal -->
+<!-- ═══════════════════════════════════════════════════ QUICK SCAN MODAL -->
 <div class="modal fade" id="quickScanModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
@@ -486,11 +1151,11 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Target IP</label>
+                    <label class="form-label text-muted small">TARGET IP</label>
                     <input type="text" class="form-control bg-dark text-light border-secondary" id="quickScanTarget" placeholder="192.168.1.100">
                 </div>
                 <div id="quickScanResults" style="display: none;">
-                    <h6 class="text-muted mt-4">Results</h6>
+                    <h6 class="text-muted mt-3 small text-uppercase">Results</h6>
                     <div id="quickScanOutput"></div>
                 </div>
             </div>
@@ -514,352 +1179,784 @@ document.addEventListener('DOMContentLoaded', function() {
     loadVulnerabilities();
     loadSessions();
     loadStatistics();
-    
+    loadVersionVulns();
+
     document.getElementById('startScanBtn').addEventListener('click', startScan);
+    document.getElementById('startAutonomousPwnBtn').addEventListener('click', startAutonomousPwn);
     document.getElementById('runQuickScanBtn').addEventListener('click', runQuickScan);
     document.getElementById('exportReportBtn').addEventListener('click', exportReport);
+    document.getElementById('cveLookupBtn').addEventListener('click', lookupCve);
+    document.getElementById('cveLookup').addEventListener('keydown', function(e){
+        if (e.key === 'Enter') lookupCve();
+    });
+    document.getElementById('updateC2Btn').addEventListener('click', updateC2Config);
+
+    // Live status polling
+    setInterval(pollLiveStatus, 2000);
 });
 
-async function loadVulnerabilities() {
+/* ── Live Status Polling ─────────────────────────────── */
+async function pollLiveStatus() {
     try {
-        const response = await fetch('/autopwn/api/vulnerabilities');
-        const data = await response.json();
-        
-        const container = document.getElementById('vulnDatabase');
-        
-        // Group by severity
-        const critical = data.vulnerabilities.filter(v => v.severity === 'critical');
-        const high = data.vulnerabilities.filter(v => v.severity === 'high');
-        const medium = data.vulnerabilities.filter(v => v.severity === 'medium');
-        
-        let html = '';
-        
-        // Critical
-        html += '<div class="mb-2"><small class="text-danger fw-bold">CRITICAL</small></div>';
-        critical.forEach(v => {
-            html += createVulnCard(v, 'critical');
-        });
-        
-        // High
-        html += '<div class="mb-2 mt-3"><small class="text-warning fw-bold">HIGH</small></div>';
-        high.forEach(v => {
-            html += createVulnCard(v, 'high');
-        });
-        
-        // Medium
-        if (medium.length > 0) {
-            html += '<div class="mb-2 mt-3"><small class="text-info fw-bold">MEDIUM</small></div>';
-            medium.forEach(v => {
-                html += createVulnCard(v, 'medium');
-            });
+        const [sessionsRes, statsRes, paceRes] = await Promise.all([
+            fetch('/autopwn/api/sessions'),
+            fetch('/autopwn/api/statistics'),
+            fetch('/autopwn/api/hunter/pacing'),
+        ]);
+        const sessionsData = await sessionsRes.json();
+        const statsData = await statsRes.json();
+        const paceData = await paceRes.json();
+
+        // Update stats
+        if (statsData.statistics) {
+            document.getElementById('statScanned').textContent = statsData.statistics.total_sessions || 0;
+            document.getElementById('statPwned').textContent = statsData.statistics.total_targets_pwned || 0;
+            document.getElementById('statCreds').textContent = statsData.statistics.total_targets_pwned || 0;
         }
-        
-        container.innerHTML = html;
-        
-        document.getElementById('statVulns').textContent = data.total + '+';
-        
-    } catch (error) {
-        console.error('Error loading vulnerabilities:', error);
+
+        // Update hunter status if we have a current session
+        if (currentSessionId && sessionsData.sessions) {
+            const session = sessionsData.sessions.find(s => s.id === currentSessionId);
+            if (session) {
+                updateHunterStatus(session);
+                updateStagerArsenal(session);
+                updatePivotChain(session);
+                updateBeaconStatus(session);
+                updateCredentialVault(session);
+            }
+        }
+
+        // Update pacer live feed
+        updatePacerLiveFeed(paceData);
+    } catch (e) {
+        // Silent fail for polling
     }
 }
 
+function updatePacerLiveFeed(paceData) {
+    const feedEl = document.getElementById('pacerLiveFeed');
+    const badgeEl = document.getElementById('pacerStatusBadge');
+    if (!feedEl) return;
+
+    const log = paceData.pace_log || [];
+    if (!log.length) {
+        feedEl.innerHTML = '<span class="text-muted">[SYSTEM] No pacing events yet.</span>';
+        if (badgeEl) { badgeEl.textContent = 'IDLE'; badgeEl.className = 'badge bg-dark text-muted small'; }
+        return;
+    }
+
+    if (badgeEl) { badgeEl.textContent = 'ACTIVE'; badgeEl.className = 'badge bg-success small'; }
+
+    let html = '';
+    log.slice(-20).forEach(entry => {
+        const ts = new Date(entry.timestamp * 1000).toLocaleTimeString();
+        const actionColor = entry.action === 'skip' ? 'text-danger' : entry.action === 'execute' ? 'text-success' : 'text-warning';
+        const icon = entry.action === 'skip' ? '[!]' : entry.action === 'execute' ? '[+]' : '[~]';
+        html += `<div class="console-line"><span class="console-time">[${ts}]</span> <span class="${actionColor}">${icon} PACER: ${entry.reason || entry.action} → ${entry.target || 'N/A'}</span></div>`;
+    });
+    feedEl.innerHTML = html;
+    feedEl.scrollTop = feedEl.scrollHeight;
+}
+
+function updateHunterStatus(session) {
+    const state = session.status || 'idle';
+    const badge = document.getElementById('hunterStateBadge');
+    const stateEl = document.getElementById('hunterState');
+    if (badge) {
+        badge.textContent = state.toUpperCase();
+        badge.className = 'badge ' + (state === 'completed' ? 'bg-success' : state === 'scanning' ? 'bg-warning' : 'bg-dark text-muted') + ' small';
+    }
+    if (stateEl) stateEl.textContent = state;
+    if (document.getElementById('hunterTargets')) {
+        document.getElementById('hunterTargets').textContent = session.discovered || 0;
+    }
+    if (document.getElementById('hunterCompromised')) {
+        document.getElementById('hunterCompromised').textContent = session.pwned || 0;
+    }
+    document.getElementById('statHunterState').textContent = state.toUpperCase();
+}
+
+function updateStagerArsenal(session) {
+    const container = document.getElementById('stagerArsenal');
+    const countEl = document.getElementById('stagerCount');
+    if (!container) return;
+
+    let html = '';
+    let count = 0;
+
+    if (session.results) {
+        session.results.forEach(r => {
+            if (r.status === 'pwned' || r.status === 'exploiting') {
+                count++;
+                const stager = r.shell_data || {};
+                html += `
+                <div class="stager-card">
+                    <div class="d-flex gap-2 mb-2 flex-wrap">
+                        <span class="stager-vector">${stager.method || r.vuln_id || 'UNKNOWN'}</span>
+                        <span class="stager-shell shell-${stager.type || 'unknown'}">${(stager.type || 'unknown').toUpperCase()}</span>
+                        <span class="severity-badge severity-critical">${r.vuln_id}</span>
+                    </div>
+                    <div class="stager-trigger">${(stager.output || r.output || '').substring(0, 100)}</div>
+                </div>`;
+            }
+        });
+    }
+
+    if (!html) {
+        html = '<div class="text-center text-muted py-3"><i class="fas fa-box-open fa-2x mb-2 opacity-50"></i><p class="small mb-0">No stagers prepared</p></div>';
+    }
+
+    container.innerHTML = html;
+    if (countEl) countEl.textContent = count;
+    document.getElementById('statStagers').textContent = count;
+}
+
+function updatePivotChain(session) {
+    const container = document.getElementById('pivotChainContainer');
+    const lengthEl = document.getElementById('pivotChainLength');
+    if (!container) return;
+
+    const targets = session.discovered_targets || {};
+    const compromised = Object.values(targets).filter(t => t.exploited || t.compromised);
+
+    if (!compromised.length) {
+        container.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-route fa-2x mb-2 opacity-50"></i><p class="small mb-0">No pivot chain established yet</p></div>';
+        if (lengthEl) lengthEl.textContent = '0 hops';
+        document.getElementById('statPivotChain').textContent = '0';
+        return;
+    }
+
+    let html = '<div class="d-flex flex-wrap align-items-center">';
+    compromised.forEach((t, i) => {
+        const isDC = t.hostname && t.hostname.toLowerCase().includes('dc');
+        const hopClass = isDC ? 'dc' : t.os_fingerprint && t.os_fingerprint.toLowerCase().includes('windows') ? 'workstation' : 'server';
+        html += `
+            <div class="pivot-hop ${hopClass}">
+                <span class="hop-icon">${i + 1}</span>
+                <span style="font-size:0.8rem;font-weight:600;">${t.ip}</span>
+            </div>`;
+        if (i < compromised.length - 1) {
+            html += '<span class="pivot-arrow">→</span>';
+        }
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+    if (lengthEl) lengthEl.textContent = compromised.length + ' hop' + (compromised.length > 1 ? 's' : '');
+    document.getElementById('statPivotChain').textContent = compromised.length;
+}
+
+function updateBeaconStatus(session) {
+    const container = document.getElementById('beaconStatusContainer');
+    const countEl = document.getElementById('beaconCount');
+    if (!container) return;
+
+    const targets = session.discovered_targets || {};
+    const pwned = Object.values(targets).filter(t => t.exploited);
+
+    if (!pwned.length) {
+        container.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-satellite-dish fa-2x mb-2 opacity-50"></i><p class="small mb-0">No active beacons</p></div>';
+        if (countEl) countEl.textContent = '0 active';
+        return;
+    }
+
+    let html = '';
+    pwned.forEach(t => {
+        html += `
+        <div class="beacon-card">
+            <span class="beacon-dot"></span>
+            <div class="beacon-info">
+                <div class="beacon-ip">${t.ip}</div>
+                <div class="beacon-meta">${t.hostname || 'Unknown'} &bull; ${t.shells ? t.shells.length : 0} shell(s) &bull; ${t.vulnerabilities ? t.vulnerabilities.join(', ') : 'N/A'}</div>
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+    if (countEl) countEl.textContent = pwned.length + ' active';
+}
+
+function updateCredentialVault(session) {
+    const container = document.getElementById('credentialVaultContainer');
+    const countEl = document.getElementById('credredCount');
+    if (!container) return;
+
+    const targets = session.discovered_targets || {};
+    const allCreds = [];
+    Object.values(targets).forEach(t => {
+        if (t.shells) {
+            t.shells.forEach(s => {
+                if (s.credentials) allCreds.push(...s.credentials);
+            });
+        }
+    });
+
+    if (!allCreds.length) {
+        // Also check hunter results
+        container.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-key fa-2x mb-2 opacity-50"></i><p class="small mb-0">No credentials harvested yet</p></div>';
+        if (countEl) countEl.textContent = '0';
+        return;
+    }
+
+    let html = '';
+    allCreds.forEach(c => {
+        html += `
+        <div class="cred-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="cred-user">${c.username || 'unknown'}</span>
+                    <span class="cred-domain">@${c.domain || 'WORKGROUP'}</span>
+                </div>
+                <span class="cred-type ${c.cred_type || 'password'}">${c.cred_type || 'password'}</span>
+            </div>
+            ${c.source_host ? `<div class="small text-muted mt-1" style="font-size:0.65rem;">Source: ${c.source_host} via ${c.source_tool || 'unknown'}</div>` : ''}
+        </div>`;
+    });
+
+    container.innerHTML = html;
+    if (countEl) countEl.textContent = allCreds.length;
+    document.getElementById('statCreds').textContent = allCreds.length;
+}
+
+/* ── Vulnerability Database ──────────────────────────── */
+async function loadVulnerabilities() {
+    try {
+        const data = await (await fetch('/autopwn/api/vulnerabilities')).json();
+        const container = document.getElementById('vulnDatabase');
+        const critical = data.vulnerabilities.filter(v => v.severity === 'critical');
+        const high = data.vulnerabilities.filter(v => v.severity === 'high');
+        const medium = data.vulnerabilities.filter(v => v.severity === 'medium');
+
+        let html = '';
+        html += '<div class="mb-2"><small class="text-danger fw-bold small text-uppercase" style="letter-spacing:0.06em">Critical</small></div>';
+        critical.forEach(v => html += createVulnCard(v, 'critical'));
+        html += '<div class="mb-2 mt-3"><small class="text-warning fw-bold small text-uppercase" style="letter-spacing:0.06em">High</small></div>';
+        high.forEach(v => html += createVulnCard(v, 'high'));
+        if (medium.length) {
+            html += '<div class="mb-2 mt-3"><small class="text-info fw-bold small text-uppercase" style="letter-spacing:0.06em">Medium</small></div>';
+            medium.forEach(v => html += createVulnCard(v, 'medium'));
+        }
+        container.innerHTML = html;
+        document.getElementById('statVulns').textContent = data.total + '+';
+        document.getElementById('vulnCount').textContent = data.total;
+    } catch (e) { console.error('vulns', e); }
+}
+
 function createVulnCard(vuln, severity) {
+    const ports = ('ports' in vuln && vuln.ports) ? vuln.ports.slice(0, 4).map(p => `<span class="port-badge">${p}</span>`).join('') : '';
     return `
-        <div class="vuln-card ${severity}" onclick="showVulnDetails('${vuln.id}')">
+        <div class="vuln-card ${severity}" style="background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer;border-left:3px solid ${severity==='critical'?'#dc2626':severity==='high'?'#f97316':'#eab308'};" onclick="showVulnDetails('${vuln.id}')">
             <div class="d-flex justify-content-between align-items-start mb-1">
                 <strong class="small">${vuln.name}</strong>
                 <span class="severity-badge severity-${severity}">${severity}</span>
             </div>
-            <div class="small text-muted">${vuln.cve}</div>
-            <div class="mt-1">
-                ${vuln.ports.slice(0, 4).map(p => `<span class="port-badge">${p}</span>`).join('')}
-            </div>
-        </div>
-    `;
+            <div class="small text-muted" style="font-family:'Fira Code',monospace;font-size:0.7rem;">${vuln.cve}</div>
+            <div class="mt-1">${ports}</div>
+        </div>`;
 }
 
+/* ── Version → CVE Map ──────────────────────────────── */
+async function loadVersionVulns() {
+    try {
+        const data = await (await fetch('/autopwn/api/version-vulns')).json();
+        const container = document.getElementById('versionVulnDB');
+        let html = '';
+        for (const [product, info] of Object.entries(data.version_vuln_db)) {
+            html += `<div class="small fw-bold text-info mt-2" style="color:#22d3ee;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em;">${info.name}</div>`;
+            info.cves.forEach(c => {
+                html += `
+                    <div class="finding-card">
+                        <div class="finding-header">
+                            <span class="cve-tag version-based">${c.cve}</span>
+                            <span class="severity-badge severity-${c.severity}">${c.severity}</span>
+                        </div>
+                        <div class="small text-muted mt-1">${c.name}</div>
+                        <div class="small" style="font-size:0.7rem;color:#6b7280;">vulnerable: &lt; ${c.fixed || '?'} &nbsp;|&nbsp; type: ${c.type || 'unknown'}</div>
+                    </div>`;
+            });
+        }
+        container.innerHTML = html;
+    } catch (e) { console.error('version-vulns', e); }
+}
+
+/* ── Sessions ───────────────────────────────────────── */
 async function loadSessions() {
     try {
-        const response = await fetch('/autopwn/api/sessions');
-        const data = await response.json();
-        
+        const data = await (await fetch('/autopwn/api/sessions')).json();
         const container = document.getElementById('sessionsList');
         document.getElementById('sessionCount').textContent = data.sessions.length;
-        
-        if (data.sessions.length === 0) {
-            container.innerHTML = `
-                <div class="list-group-item bg-dark border-secondary text-center text-muted py-4">
-                    <i class="fas fa-search fa-2x mb-2 opacity-50"></i>
-                    <p class="small mb-0">No scan sessions yet</p>
-                </div>
-            `;
+        if (!data.sessions.length) {
+            container.innerHTML = `<div class="text-center text-muted py-4">
+                <i class="fas fa-search fa-2x mb-2 opacity-50"></i><p class="small mb-0">No scan sessions yet</p></div>`;
             return;
         }
-        
-        container.innerHTML = data.sessions.map(session => `
-            <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary" 
-               onclick="loadSession('${session.id}')">
+        container.innerHTML = data.sessions.map(s => `
+            <div class="session-item" onclick="loadSession('${s.id}')">
                 <div class="d-flex justify-content-between">
-                    <span class="small">${session.targets.join(', ').substring(0, 30)}...</span>
-                    <span class="badge ${session.status === 'completed' ? 'bg-success' : 'bg-warning'}">${session.status}</span>
+                    <span class="small text-light">${(s.targets || []).slice(0,2).join(', ')}${(s.targets||[]).length>2?'...':''}</span>
+                    <span class="badge ${s.status==='completed'?'bg-success':'bg-warning'} small">${s.status}</span>
                 </div>
                 <div class="small text-muted mt-1">
-                    <i class="fas fa-desktop me-1"></i>${session.discovered} discovered
-                    <i class="fas fa-skull-crossbones ms-2 me-1 text-danger"></i>${session.pwned} pwned
+                    <i class="fas fa-desktop me-1"></i>${s.discovered} discovered
+                    <i class="fas fa-skull-crossbones ms-2 me-1 text-danger"></i>${s.pwned} beacons
                 </div>
-            </a>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error loading sessions:', error);
-    }
+                <div class="small text-muted" style="font-size:0.65rem;">
+                    <i class="fas fa-clock me-1"></i>${new Date(s.created_at).toLocaleTimeString()}
+                </div>
+            </div>`).join('');
+    } catch (e) { console.error('sessions', e); }
 }
 
+/* ── Statistics ─────────────────────────────────────── */
 async function loadStatistics() {
     try {
-        const response = await fetch('/autopwn/api/statistics');
-        const data = await response.json();
-        
+        const data = await (await fetch('/autopwn/api/statistics')).json();
         document.getElementById('statScanned').textContent = data.statistics.total_sessions;
         document.getElementById('statPwned').textContent = data.statistics.total_targets_pwned;
-        
-    } catch (error) {
-        console.error('Error loading statistics:', error);
-    }
+    } catch (e) { console.error('stats', e); }
 }
 
+/* ── Scan Flow ──────────────────────────────────────── */
 async function startScan() {
     const targets = document.getElementById('targetInput').value;
     const autoExploit = document.getElementById('autoExploitToggle').checked;
-    
-    if (!targets.trim()) {
-        alert('Please enter target IP addresses');
-        return;
-    }
-    
+    const threads = parseInt(document.getElementById('threadsInput').value) || 50;
+    if (!targets.trim()) { alert('Please enter target IP addresses'); return; }
+
     const btn = document.getElementById('startScanBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Initializing...';
-    
+
     try {
-        // Create session
-        const createResponse = await fetch('/autopwn/api/sessions', {
+        const createData = await (await fetch('/autopwn/api/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                targets: targets,
-                auto_exploit: autoExploit
-            })
-        });
-        
-        const createData = await createResponse.json();
+            body: JSON.stringify({ targets, auto_exploit: autoExploit })
+        })).json();
         currentSessionId = createData.session.id;
-        
-        // Show progress
-        document.getElementById('scanProgress').style.display = 'block';
-        
-        // Start scan
-        const startResponse = await fetch(`/autopwn/api/sessions/${currentSessionId}/start`, {
+
+        const progressEl = document.getElementById('scanProgress');
+        progressEl.style.display = 'block';
+        document.getElementById('scanStatus').textContent = 'Behavioral probe + port scan + version fingerprint...';
+        animateProgress(0, 30, 1500, () => {
+            document.getElementById('scanStatus').textContent = 'Running version-based N-Day CVE mapping...';
+        });
+        animateProgress(30, 70, 1500, () => {
+            document.getElementById('scanStatus').textContent = autoExploit ? 'Orchestrator: weaponizing stagers...' : 'Scan complete';
+        });
+        animateProgress(70, 100, 1200, () => {
+            document.getElementById('scanStatus').textContent = 'Finalizing report...';
+        });
+
+        const startData = await (await fetch(`/autopwn/api/sessions/${currentSessionId}/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ max_threads: 50 })
-        });
-        
-        const startData = await startResponse.json();
-        
-        // Update UI with results
+            body: JSON.stringify({ max_threads: threads })
+        })).json();
+
+        setTimeout(() => {
+            progressEl.style.display = 'none';
+            document.getElementById('scanProgressBar').style.width = '0%';
+        }, 800);
+
         updateScanResults(startData.session);
-        
-        // Hide progress
-        document.getElementById('scanProgress').style.display = 'none';
         document.getElementById('exportReportBtn').style.display = 'inline-block';
-        
-        // Reload sessions
         loadSessions();
         loadStatistics();
-        
-    } catch (error) {
-        console.error('Error starting scan:', error);
-        alert('Error starting scan: ' + error.message);
+        appendConsole('SCAN_COMPLETE', `Session ${currentSessionId} finished. ${startData.session.discovered} targets discovered.`);
+    } catch (e) {
+        console.error(e);
+        alert('Error starting scan: ' + e.message);
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-rocket me-2"></i>Launch AutoPwn';
     }
 }
 
-async function loadSession(sessionId) {
-    try {
-        const response = await fetch(`/autopwn/api/sessions/${sessionId}`);
-        const data = await response.json();
-        
-        currentSessionId = sessionId;
-        updateScanResults(data);
-        document.getElementById('exportReportBtn').style.display = 'inline-block';
-        
-    } catch (error) {
-        console.error('Error loading session:', error);
-    }
-}
+/* ── Autonomous Pwn Flow ────────────────────────────── */
+async function startAutonomousPwn() {
+    const targets = document.getElementById('targetInput').value;
+    if (!targets.trim()) { alert('Please enter target IP addresses'); return; }
 
-function updateScanResults(data) {
-    const container = document.getElementById('targetsContainer');
-    const targets = data.discovered_targets || [];
-    
-    if (targets.length === 0) {
-        container.innerHTML = `
-            <div class="text-center text-muted py-5">
-                <i class="fas fa-search fa-4x mb-3 opacity-25"></i>
-                <h5>No targets discovered</h5>
-                <p class="small">No vulnerable hosts found in the scan range</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Update stats
-    document.getElementById('statScanned').textContent = targets.length;
-    const pwned = targets.filter(t => t.exploited).length;
-    document.getElementById('statPwned').textContent = pwned;
-    const critical = targets.reduce((sum, t) => sum + t.vulnerabilities.length, 0);
-    document.getElementById('statCritical').textContent = critical;
-    
-    container.innerHTML = targets.map(target => `
-        <div class="target-card position-relative ${target.exploited ? 'pwned' : ''}">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                    <h5 class="mb-0 text-danger">${target.ip}</h5>
-                    <small class="text-muted">${target.hostname || 'Unknown'}</small>
-                </div>
-                ${target.shells > 0 ? '<span class="shell-indicator"><i class="fas fa-terminal"></i> Shell</span>' : ''}
-            </div>
-            
-            <div class="mb-2">
-                <small class="text-muted d-block mb-1">Open Ports:</small>
-                ${Object.entries(target.ports).map(([port, service]) => 
-                    `<span class="port-badge open">${port}/${service}</span>`
-                ).join('')}
-            </div>
-            
-            ${target.vulnerabilities.length > 0 ? `
-                <div>
-                    <small class="text-muted d-block mb-1">Vulnerabilities:</small>
-                    ${target.vulnerabilities.map(v => `
-                        <span class="cve-tag me-1 mb-1">${v}</span>
-                    `).join('')}
-                </div>
-            ` : ''}
-            
-            <div class="mt-3">
-                <button class="btn btn-sm btn-outline-danger" onclick="exploitTarget('${target.ip}', '${target.vulnerabilities[0] || ''}')">
-                    <i class="fas fa-bolt me-1"></i>Exploit
-                </button>
-                <button class="btn btn-sm btn-outline-secondary ms-1" onclick="showQuickScan('${target.ip}')">
-                    <i class="fas fa-search me-1"></i>Rescan
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
+    const hwUnhookEnabled = document.getElementById('hwUnhookToggle').checked;
+    const pacingEnabled = document.getElementById('pacingToggle').checked;
 
-async function runQuickScan() {
-    const target = document.getElementById('quickScanTarget').value;
-    
-    if (!target) {
-        alert('Please enter a target IP');
-        return;
-    }
-    
-    const btn = document.getElementById('runQuickScanBtn');
+    const btn = document.getElementById('startAutonomousPwnBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Scanning...';
-    
-    try {
-        const response = await fetch('/autopwn/api/quick-scan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ target_ip: target })
-        });
-        
-        const data = await response.json();
-        
-        document.getElementById('quickScanResults').style.display = 'block';
-        
-        let html = `
-            <div class="mb-2">
-                <strong>Open Ports:</strong>
-                ${Object.entries(data.open_ports).map(([p, s]) => `<span class="port-badge open">${p}</span>`).join('')}
-            </div>
-        `;
-        
-        if (data.vulnerabilities.length > 0) {
-            html += `
-                <div class="alert alert-danger mt-3">
-                    <strong><i class="fas fa-exclamation-triangle me-2"></i>Vulnerabilities Found!</strong>
-                    <ul class="mb-0 mt-2">
-                        ${data.vulnerabilities.map(v => `
-                            <li>${v.name} <span class="cve-tag">${v.cve}</span></li>
-                        `).join('')}
-                    </ul>
-                </div>
-            `;
-        } else {
-            html += `<div class="alert alert-success mt-3">No known vulnerabilities detected</div>`;
-        }
-        
-        document.getElementById('quickScanOutput').innerHTML = html;
-        
-    } catch (error) {
-        console.error('Error running quick scan:', error);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-search me-2"></i>Scan';
-    }
-}
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Autonomous Pwn Running...';
 
-async function exploitTarget(targetIp, vulnId) {
-    document.getElementById('exploitTarget').textContent = targetIp;
-    document.getElementById('exploitVuln').textContent = vulnId || 'Auto-detect';
-    document.getElementById('exploitCVE').textContent = 'Loading...';
-    document.getElementById('exploitOutput').textContent = 'Initializing exploit...';
-    document.getElementById('shellInfo').style.display = 'none';
-    
-    const modal = new bootstrap.Modal(document.getElementById('exploitModal'));
-    modal.show();
-    
-    // Auto-run exploit
+    const container = document.getElementById('targetsContainer');
+    container.innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-skull-crossbones fa-4x mb-3" style="color:#7c3aed;animation:pulse-bg 2s ease-in-out infinite;"></i>
+            <h5 style="color:#a78bfa;">Autonomous Pwn in Progress</h5>
+            <p class="small text-muted">Scanning → Weaponizing → Arming Hunter → Triggering Stagers</p>
+            <div class="scan-progress" style="display:block;margin-top:20px;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="small text-muted">Initializing autonomous pipeline...</span>
+                    <span class="small text-danger fw-bold" id="autoPwnPercent">0%</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" id="autoPwnBar" style="width:0%;background:linear-gradient(90deg,#7c3aed,#4c1d95);"></div>
+                </div>
+            </div>
+        </div>`;
+
     try {
-        const response = await fetch('/autopwn/api/exploit', {
+        const data = await (await fetch('/autopwn/api/autonomous-pwn', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                target_ip: targetIp,
-                vuln_id: vulnId || 'log4shell'
+                targets,
+                auto_exploit: true,
+                hunter_mode: 'worm',
+                max_threads: 50,
+                max_depth: 10,
+                enable_hw_unhook: hwUnhookEnabled,
+                enable_pacing: pacingEnabled,
             })
-        });
-        
-        const data = await response.json();
-        
-        document.getElementById('exploitOutput').textContent = data.result.output || 'No output';
-        
-        if (data.success) {
-            document.getElementById('shellInfo').style.display = 'block';
+        })).json();
+
+        if (!data.success) {
+            container.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${data.error || 'Autonomous pwn failed'}</div>`;
+            appendConsole('ERROR', data.error || 'Autonomous pwn failed');
+            return;
         }
-        
-    } catch (error) {
-        document.getElementById('exploitOutput').textContent = 'Error: ' + error.message;
+
+        const bridge = data.bridge_report || {};
+        const hunter = data.hunter_report || {};
+
+        appendConsole('AUTO_PWN_COMPLETE', `Beacons: ${bridge.beacons_confirmed || 0} | Stagers: ${bridge.stagers_triggered || 0} | Pivot: ${(bridge.pivot_chain || []).join(' -> ') || 'N/A'}`);
+
+        if (hwUnhookEnabled) {
+            appendConsole('HW_UNHOOK', 'Ring 0 HW-Unhooking enabled. DR0/DR1 breakpoints injected into stager chain.');
+        }
+        if (pacingEnabled) {
+            appendConsole('PACING', 'Anti-HoneyToken Pacing enabled. Gaussian jitter active.');
+        }
+
+        let html = `
+        <div class="alert alert-success d-flex align-items-center gap-3 mb-3">
+            <i class="fas fa-check-circle fa-2x"></i>
+            <div>
+                <strong>Autonomous Pwn Complete</strong>
+                <div class="small text-muted mt-1">
+                    Beacons Confirmed: <strong class="text-success">${bridge.beacons_confirmed || 0}</strong> |
+                    Stagers Triggered: <strong class="text-danger">${bridge.stagers_triggered || 0}</strong> |
+                    Pivot Chain: ${(bridge.pivot_chain || []).join(' → ') || 'N/A'}
+                </div>
+            </div>
+        </div>`;
+
+        if (bridge.stager_details && bridge.stager_details.length) {
+            html += '<div class="mb-3"><small class="text-muted d-block mb-2 small text-uppercase" style="letter-spacing:0.06em;">Stager Deployment Log</small>';
+            bridge.stager_details.forEach(s => {
+                const resultColor = s.result === 'PWNED' ? 'text-success' : s.result === 'FAILED' ? 'text-danger' : 'text-muted';
+                html += `
+                <div class="stager-card">
+                    <div class="d-flex gap-2 mb-2 flex-wrap">
+                        <span class="stager-vector">${s.vector}</span>
+                        <span class="stager-shell shell-${s.shell_type}">${s.shell_type.toUpperCase()}</span>
+                        <span class="severity-badge severity-critical">${s.cve}</span>
+                        <span class="severity-badge severity-high ${resultColor}">${s.result || 'PENDING'}</span>
+                    </div>
+                    <div class="stager-trigger">${s.trigger_payload_preview}</div>
+                    <div class="stager-expected">${s.expected_result}</div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+
+        if (data.pwned_targets && data.pwned_targets.length) {
+            html += '<div class="mb-3"><small class="text-muted d-block mb-2 small text-uppercase" style="letter-spacing:0.06em;">Compromised Hosts</small>';
+            html += '<div class="row">';
+            data.pwned_targets.forEach(pt => {
+                html += `
+                <div class="col-md-6 mb-2">
+                    <div class="target-card pwned" style="padding:10px;">
+                        <div class="d-flex justify-content-between">
+                            <strong class="text-danger" style="font-family:monospace;">${pt.ip}</strong>
+                            <span class="shell-indicator"><span class="pulse"></span> ACTIVE</span>
+                        </div>
+                        <div class="small text-muted mt-1">Method: ${pt.method}</div>
+                    </div>
+                </div>`;
+            });
+            html += '</div></div>';
+        }
+
+        container.innerHTML = html;
+        document.getElementById('statPwned').textContent = bridge.beacons_confirmed || 0;
+        document.getElementById('statCritical').textContent = bridge.stagers_triggered || 0;
+        document.getElementById('exportReportBtn').style.display = 'inline-block';
+
+        updateHunterStatus({ status: 'completed', discovered: data.pwned_targets ? data.pwned_targets.length : 0, pwned: bridge.beacons_confirmed || 0 });
+        updateStagerArsenal({ results: (bridge.stager_details || []).map(s => ({ vuln_id: s.cve, status: s.result === 'PWNED' ? 'pwned' : 'exploiting', shell_data: { method: s.vector, type: s.shell_type, output: s.expected_result } })) });
+        updatePivotChain({ discovered_targets: (data.pwned_targets || []).reduce((acc, pt) => { acc[pt.ip] = { ip: pt.ip, hostname: pt.ip, exploited: true, compromised: true, vulnerabilities: pt.cves || [], shells: [] }; return acc; }, {}) });
+        updateBeaconStatus({ discovered_targets: (data.pwned_targets || []).reduce((acc, pt) => { acc[pt.ip] = { ip: pt.ip, hostname: pt.ip, exploited: true, shells: [{ method: pt.method }] }; return acc; }, {}) });
+
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Error: ${e.message}</div>`;
+        appendConsole('ERROR', e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-skull-crossbones me-2"></i>Launch Autonomous Pwn';
     }
 }
 
-function showVulnDetails(vulnId) {
-    // Could open a modal with full vulnerability details
-    console.log('Show details for:', vulnId);
+/* ── Session Load ───────────────────────────────────── */
+async function loadSession(sessionId) {
+    try {
+        const data = await (await fetch(`/autopwn/api/sessions/${sessionId}`)).json();
+        currentSessionId = sessionId;
+        updateScanResults(data);
+        document.getElementById('exportReportBtn').style.display = 'inline-block';
+        appendConsole('SESSION_LOADED', `Session ${sessionId} loaded. ${data.discovered_targets ? data.discovered_targets.length : 0} targets.`);
+    } catch (e) { console.error(e); }
 }
 
+/* ── Update Results ─────────────────────────────────── */
+function updateScanResults(data) {
+    const container = document.getElementById('targetsContainer');
+    const targets = data.discovered_targets || [];
+    if (!targets.length) {
+        container.innerHTML = `<div class="text-center text-muted py-5">
+            <i class="fas fa-search fa-4x mb-3 opacity-25"></i><h5>No targets discovered</h5>
+            <p class="small">No vulnerable hosts found in the scan range</p></div>`;
+        return;
+    }
+
+    document.getElementById('statScanned').textContent = targets.length;
+    const pwned = targets.filter(t => t.exploited).length;
+    document.getElementById('statPwned').textContent = pwned;
+    const critical = targets.reduce((s,t)=> s + (t.version_findings||[]).length + (t.vulnerabilities||[]).length, 0);
+    document.getElementById('statCritical').textContent = critical;
+
+    container.innerHTML = targets.map(t => {
+        const versions = Object.entries(t.service_versions || {}).map(([p,info]) => {
+            const confidence = info.confidence || 'low';
+            const probeClass = confidence === 'high' ? 'probe-high' : confidence === 'medium' ? 'probe-medium' : 'probe-low';
+            return `<span class="version-badge">${p}/${info.product||info.service||'?'}${info.version?' '+info.version:''} <span class="probe-badge ${probeClass}" style="font-size:0.6rem;padding:1px 4px;"><span class="probe-dot"></span>${confidence}</span></span>`;
+        }).join('');
+
+        const findings = (t.version_findings || []).map(f => {
+            const hasStager = f.exploit_sources && f.exploit_sources.length > 0;
+            const orchestratedClass = hasStager ? 'orchestrated' : '';
+            return `
+            <div class="finding-card">
+                <div class="finding-header">
+                    <span class="cve-tag version-based ${orchestratedClass}">${f.cve}</span>
+                    <span class="severity-badge severity-${f.severity}">${f.severity}</span>
+                    ${hasStager ? '<span class="stager-vector" style="font-size:0.6rem;">STAGER READY</span>' : ''}
+                </div>
+                <div class="small mt-1" style="color:#d1d5db;">${f.name} &mdash; <code style="color:#60a5fa;">${f.product} ${f.version}</code></div>
+                <div class="small text-muted">${f.evidence||''}</div>
+            </div>`;
+        }).join('');
+
+        const sigVulns = (t.vulnerabilities || []).filter(v => !(t.version_findings||[]).some(f=>f.cve===v))
+            .map(v => {
+                const isOrchestrated = ['log4shell','regresshion','proxyshell','eternalblue','zerologon'].includes(v);
+                return `<span class="cve-tag ${isOrchestrated?'orchestrated':''}">${v}</span>`;
+            }).join('');
+
+        return `
+        <div class="target-card ${t.exploited?'pwned':''}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h5 class="mb-0 text-danger" style="font-family:'Fira Code',monospace;">${t.ip}</h5>
+                    <small class="text-muted">${t.hostname||'Unknown'}</small>
+                </div>
+                ${t.shells>0?'<span class="shell-indicator"><span class="pulse"></span> SHELL ACTIVE</span>':''}
+            </div>
+
+            <div class="mb-2">
+                <small class="text-muted d-block mb-1" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Open Ports</small>
+                ${Object.entries(t.ports).map(([p,s])=>`<span class="port-badge open">${p}/${s}</span>`).join('')}
+            </div>
+
+            ${versions?`<div class="mb-2"><small class="text-muted d-block mb-1" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Fingerprint (Behavioral)</small>${versions}</div>`:''}
+
+            ${findings?`<div class="mb-2"><small class="text-muted d-block mb-1" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Version-Based CVE Findings</small>${findings}</div>`:''}
+
+            ${sigVulns?`<div class="mb-2"><small class="text-muted d-block mb-1" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Signature Matches</small>${sigVulns}</div>`:''}
+
+            <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-sm btn-outline-danger" onclick="exploitTarget('${t.ip}', '${(t.version_findings&&t.version_findings[0])?t.version_findings[0].cve:(t.vulnerabilities[0]||'')}')">
+                    <i class="fas fa-bolt me-1"></i>Weaponize
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="showQuickScan('${t.ip}')">
+                    <i class="fas fa-search me-1"></i>Probe
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+/* ── Quick Scan ─────────────────────────────────────── */
+async function runQuickScan() {
+    const target = document.getElementById('quickScanTarget').value;
+    if (!target) { alert('Please enter a target IP'); return; }
+    const btn = document.getElementById('runQuickScanBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Probing...';
+    try {
+        const data = await (await fetch('/autopwn/api/quick-scan', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ target_ip: target })
+        })).json();
+        document.getElementById('quickScanResults').style.display = 'block';
+        let html = `<div class="mb-2"><strong class="small text-muted text-uppercase">Open Ports</strong><div class="mt-1">${Object.entries(data.open_ports).map(([p,s])=>`<span class="qs-port open">${p}/${s}</span>`).join('')}</div>`;
+        if (data.vulnerabilities.length) {
+            html += `<div class="alert alert-danger mt-3"><strong><i class="fas fa-exclamation-triangle me-2"></i>Vulnerabilities Found!</strong>
+                <ul class="mb-0 mt-2">${data.vulnerabilities.map(v=>`<li>${v.name} <span class="cve-tag">${v.cve}</span></li>`).join('')}</ul></div>`;
+        } else {
+            html += `<div class="alert alert-success mt-3"><i class="fas fa-check-circle me-2"></i>No known vulnerabilities detected</div>`;
+        }
+        document.getElementById('quickScanOutput').innerHTML = html;
+        appendConsole('QUICK_SCAN', `Target ${target}: ${data.vulnerabilities.length} vulnerabilities found.`);
+    } catch (e) { console.error(e); }
+    finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-search me-2"></i>Scan'; }
+}
+
+/* ── Exploit Modal ──────────────────────────────────── */
+async function exploitTarget(targetIp, cveId) {
+    if (!cveId) cveId = 'log4shell';
+    document.getElementById('exploitTarget').textContent = targetIp;
+    document.getElementById('exploitVuln').textContent = cveId;
+    document.getElementById('exploitCVE').textContent = cveId.startsWith('CVE') ? cveId : '-';
+    document.getElementById('exploitOutput').textContent = 'Initializing orchestrator...';
+    document.getElementById('exploitSources').innerHTML = '<span class="text-muted">Resolving exploit sources...</span>';
+    document.getElementById('shellInfo').style.display = 'none';
+    document.getElementById('stagerDetails').style.display = 'none';
+    document.getElementById('chainPipe').style.display = 'none';
+
+    new bootstrap.Modal(document.getElementById('exploitModal')).show();
+
+    try {
+        const data = await (await fetch('/autopwn/api/exploit', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ target_ip: targetIp, vuln_id: cveId })
+        })).json();
+
+        document.getElementById('exploitOutput').textContent = data.result.output || 'No output';
+
+        const stager = data.result.stager;
+        if (stager) {
+            document.getElementById('stagerDetails').style.display = 'block';
+            document.getElementById('stagerVector').textContent = stager.vector || 'UNKNOWN';
+            const shellEl = document.getElementById('stagerShell');
+            shellEl.textContent = (stager.shell_type || 'unknown').toUpperCase();
+            shellEl.className = 'stager-shell shell-' + (stager.shell_type || 'unknown');
+            document.getElementById('stagerTrigger').textContent = stager.trigger_payload || '-';
+            document.getElementById('stagerExpected').textContent = stager.expected_result || '-';
+
+            if (stager.metadata && stager.metadata.chain_steps) {
+                document.getElementById('chainPipe').style.display = 'block';
+                const steps = stager.metadata.chain_steps;
+                document.getElementById('chainSteps').innerHTML = steps.map((s, i) =>
+                    `<span class="chain-step">${i+1}. ${s}</span>${i<steps.length-1?'<span class="chain-arrow">→</span>':''}`
+                ).join('');
+            }
+        }
+
+        const src = data.result.exploit_sources || [];
+        if (src.length) {
+            document.getElementById('exploitSources').innerHTML = src.map(s => `
+                <div class="exploit-source">
+                    <span class="source-badge ${s.source==='searchsploit'?'source-searchsploit':'source-builtin'}">${s.source}</span>
+                    <a href="${s.url||'#'}" target="_blank" rel="noopener">${s.title} (EDB-${s.edb_id||'?'})</a>
+                </div>`).join('');
+        } else {
+            document.getElementById('exploitSources').innerHTML = '<span class="text-muted">No public exploit source mapped.</span>';
+        }
+
+        if (data.success) document.getElementById('shellInfo').style.display = 'block';
+        appendConsole('EXPLOIT', `Target ${targetIp} / ${cveId}: ${data.result.output || 'Executed'}`);
+    } catch (e) {
+        document.getElementById('exploitOutput').textContent = 'Error: ' + e.message;
+        document.getElementById('exploitSources').innerHTML = '';
+        appendConsole('ERROR', `Exploit failed: ${e.message}`);
+    }
+}
+
+/* ── CVE Lookup ─────────────────────────────────────── */
+async function lookupCve() {
+    const cve = document.getElementById('cveLookup').value.trim();
+    const out = document.getElementById('cveLookupResults');
+    if (!cve) return;
+    out.innerHTML = '<span class="text-muted">Searching exploit sources...</span>';
+    try {
+        const data = await (await fetch(`/autopwn/api/exploit-sources?cve=${encodeURIComponent(cve)}`)).json();
+        if (!data.sources.length) {
+            out.innerHTML = '<span class="text-muted">No exploit sources found for ' + cve + '</span>';
+            return;
+        }
+        out.innerHTML = data.sources.map(s => `
+            <div class="exploit-source">
+                <span class="source-badge ${s.source==='searchsploit'?'source-searchsploit':'source-builtin'}">${s.source}</span>
+                <a href="${s.url||'#'}" target="_blank" rel="noopener">${s.title} (EDB-${s.edb_id||'?'})</a>
+            </div>`).join('');
+    } catch (e) {
+        out.innerHTML = '<span class="text-danger">Lookup failed: ' + e.message + '</span>';
+    }
+}
+
+/* ── C2 Config ──────────────────────────────────────── */
+async function updateC2Config() {
+    const host = document.getElementById('c2Host').value.trim();
+    const port = parseInt(document.getElementById('c2Port').value) || 9001;
+    try {
+        const res = await fetch('/autopwn/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ callback_host: host, callback_port: port })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('orchStatus').textContent = 'armed (' + host + ':' + port + ')';
+            appendConsole('CONFIG', `C2 endpoint updated: ${host}:${port}`);
+            alert('C2 endpoint updated: ' + host + ':' + port);
+        }
+    } catch (e) {
+        alert('Failed to update C2 config: ' + e.message);
+    }
+}
+
+/* ── Operation Console ──────────────────────────────── */
+function appendConsole(type, message) {
+    const consoleEl = document.getElementById('operationConsole');
+    if (!consoleEl) return;
+
+    const time = new Date().toLocaleTimeString();
+    const typeClass = {
+        'ERROR': 'console-error',
+        'WARN': 'console-warn',
+        'SUCCESS': 'console-success',
+        'INFO': 'console-info'
+    }[type] || 'console-info';
+
+    const line = `<div class="console-line"><span class="console-time">[${time}]</span> <span class="${typeClass}">[${type}]</span> ${message}</div>`;
+    consoleEl.innerHTML += line;
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function clearConsole() {
+    const consoleEl = document.getElementById('operationConsole');
+    if (consoleEl) {
+        consoleEl.innerHTML = '<span class="text-muted">[SYSTEM] Console cleared.</span>';
+    }
+}
+
+/* ── Helpers ────────────────────────────────────────── */
+function showVulnDetails(vulnId) { console.log('Show details for:', vulnId); }
 function showQuickScan(ip) {
     document.getElementById('quickScanTarget').value = ip;
     new bootstrap.Modal(document.getElementById('quickScanModal')).show();
 }
-
 function setPreset(preset) {
     const presets = {
         'local': '192.168.1.0/24\n192.168.0.0/24\n10.0.0.0/24',
@@ -868,11 +1965,27 @@ function setPreset(preset) {
     };
     document.getElementById('targetInput').value = presets[preset] || '';
 }
-
-async function exportReport() {
+function exportReport() {
     if (!currentSessionId) return;
-    
     window.open(`/autopwn/api/sessions/${currentSessionId}/export?format=html`, '_blank');
+}
+function animateProgress(from, to, duration, onStep) {
+    const bar = document.getElementById('scanProgressBar');
+    const pct = document.getElementById('scanPercent');
+    const start = performance.now();
+    function tick(now) {
+        const elapsed = now - start;
+        const t = Math.min(elapsed / duration, 1);
+        const val = Math.round(from + (to - from) * t);
+        bar.style.width = val + '%';
+        pct.textContent = val + '%';
+        if (t < 1) {
+            requestAnimationFrame(tick);
+        } else if (onStep) {
+            onStep();
+        }
+    }
+    requestAnimationFrame(tick);
 }
 </script>
 {% endblock %}

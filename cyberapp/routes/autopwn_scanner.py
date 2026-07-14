@@ -10,6 +10,7 @@ Version: 1.0.0 PRO
 from flask import Blueprint, render_template, request, jsonify, current_app
 from functools import wraps
 import os
+import platform
 import sys
 
 # Add tools directory to path
@@ -167,7 +168,9 @@ def get_session(session_id):
             "hostname": target.hostname,
             "ports": target.ports,
             "os": target.os_fingerprint,
+            "service_versions": target.service_versions,
             "vulnerabilities": target.vulnerabilities,
+            "version_findings": target.version_findings,
             "exploited": target.exploited,
             "shells": len(target.shells)
         })
@@ -181,6 +184,7 @@ def get_session(session_id):
             "vuln_id": result.vuln_id,
             "status": result.status.value,
             "shell_type": result.shell_type,
+            "exploit_sources": result.exploit_sources,
             "output": result.output[:500] if result.output else "",
             "timestamp": result.timestamp
         })
@@ -409,6 +413,50 @@ def get_statistics():
     })
 
 
+@bp.route('/api/exploit-sources', methods=['GET'])
+@handle_errors
+def exploit_sources():
+    """List exploit sources for a CVE (ExploitDB / searchsploit)"""
+    scanner = get_autopwn_scanner()
+    cve = request.args.get('cve')
+    
+    if not cve:
+        return jsonify({"success": False, "error": "cve parameter required"}), 400
+    
+    sources = scanner.find_exploits_for_cve(cve)
+    
+    return jsonify({
+        "success": True,
+        "cve": cve,
+        "searchsploit_available": getattr(scanner, 'searchsploit_available', False),
+        "sources": sources
+    })
+
+
+@bp.route('/api/version-vulns', methods=['GET'])
+@handle_errors
+def version_vulns():
+    """Return the version-based CVE database (sürüm -> CVE haritası)"""
+    scanner = get_autopwn_scanner()
+    db = {}
+    for product, info in scanner.VERSION_VULN_DB.items():
+        db[product] = {
+            "name": info["name"],
+            "cves": [
+                {
+                    "cve": e["cve"],
+                    "name": e["name"],
+                    "severity": e["severity"],
+                    "introduced": e.get("introduced"),
+                    "fixed": e.get("fixed"),
+                    "type": e.get("type"),
+                }
+                for e in info["cves"]
+            ]
+        }
+    return jsonify({"success": True, "version_vuln_db": db})
+
+
 @bp.route('/api/shells', methods=['GET'])
 @handle_errors
 def list_shells():
@@ -468,3 +516,212 @@ def update_config():
         "success": True,
         "message": "Configuration updated"
     })
+
+
+@bp.route('/api/autonomous-pwn', methods=['POST'])
+@handle_errors
+def autonomous_pwn():
+    """
+    Tam otonom pwn pipeline: Scan → Inject → Arm Hunter → Trigger Stagers → Report
+
+    Body (JSON):
+        targets: list of IPs/CIDRs
+        initial_credentials: [{"username","password"/"nt_hash","domain"}] (opsiyonel)
+        domain: AD domain adı (opsiyonel)
+        hunter_mode: stealth / aggressive / stealth_full / worm (default: worm)
+        max_threads: scanner thread sayısı (default: 50)
+        max_depth: hunter pivot derinliği (default: 10)
+        auto_exploit: otomatik exploit (default: true)
+
+    Dönüş:
+        {
+            "success": true,
+            "bridge_report": {...},
+            "hunter_report": {...},
+            "pwned_targets": [...],
+            "beacons_confirmed": N,
+            "stagers_triggered": M
+        }
+    """
+    scanner = get_autopwn_scanner()
+    data = request.json or {}
+
+    targets = data.get('targets', [])
+    if isinstance(targets, str):
+        import re
+        targets = re.split(r'[,\n\s]+', targets)
+        targets = [t.strip() for t in targets if t.strip()]
+
+    if not targets:
+        return jsonify({"success": False, "error": "targets required"}), 400
+
+    initial_credentials = data.get('initial_credentials', [])
+    domain = data.get('domain', '')
+    hunter_mode = data.get('hunter_mode', 'worm')
+    max_threads = int(data.get('max_threads', 50))
+    max_depth = int(data.get('max_depth', 10))
+    auto_exploit = data.get('auto_exploit', True)
+
+    try:
+        result = scanner.run_autonomous_pwn_with_hunter(
+            targets=targets,
+            initial_credentials=initial_credentials,
+            domain=domain,
+            hunter_mode=hunter_mode,
+            max_threads=max_threads,
+            max_depth=max_depth,
+            auto_exploit=auto_exploit,
+        )
+        return jsonify({
+            "success": True,
+            **result
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route('/api/evasion/hw-unhooker', methods=['POST'])
+@handle_errors
+def hw_unhooker_control():
+    """
+    Hardware Breakpoints API Evasion kontrol endpoint'i.
+
+    Body (JSON):
+        action: "hook_syscall" | "set_breakpoint" | "clear" | "status"
+        syscall_name: NT syscall adı (örn. "NtAllocateVirtualMemory")
+        target_address: Breakpoint adresi (hex string, opsiyonel)
+        register_index: 0-3 (varsayılan 0)
+
+    Dönüş:
+        {"success": true, "action": "...", "result": ...}
+    """
+    try:
+        from evasion.hw_unhooker import HWUnhooker
+    except ImportError:
+        return jsonify({"success": False, "error": "hw_unhooker module not available"}), 500
+
+    data = request.json or {}
+    action = data.get("action", "status")
+
+    unhooker = HWUnhooker()
+
+    if action == "hook_syscall":
+        syscall_name = data.get("syscall_name", "NtAllocateVirtualMemory")
+        register_index = int(data.get("register_index", 0))
+        ok = unhooker.hook_syscall(syscall_name, register_index=register_index)
+        return jsonify({
+            "success": ok,
+            "action": "hook_syscall",
+            "syscall": syscall_name,
+            "register": f"DR{register_index}",
+        })
+
+    if action == "set_breakpoint":
+        target_address = int(data.get("target_address", "0"), 0)
+        register_index = int(data.get("register_index", 0))
+        condition = data.get("condition", "EXECUTE")
+        ok = unhooker.set_hw_breakpoint(
+            target_address=target_address,
+            register_index=register_index,
+            condition=condition,
+        )
+        return jsonify({
+            "success": ok,
+            "action": "set_breakpoint",
+            "address": hex(target_address),
+            "register": f"DR{register_index}",
+        })
+
+    if action == "clear":
+        register_index = int(data.get("register_index", 0))
+        ok = unhooker.clear_hw_breakpoint(register_index=register_index)
+        return jsonify({
+            "success": ok,
+            "action": "clear",
+            "register": f"DR{register_index}",
+        })
+
+    if action == "status":
+        return jsonify({
+            "success": True,
+            "action": "status",
+            "platform": platform.system(),
+            "active_breakpoints": list(unhooker._active_breakpoints.items()),
+        })
+
+    return jsonify({"success": False, "error": f"Unknown action: {action}"}), 400
+
+
+@bp.route('/api/hunter/pacing', methods=['GET'])
+@handle_errors
+def get_pace_log():
+    """
+    Hunter pacer log'unu döndürür.
+
+    Query params:
+        session_id: Opsiyonel — belirli bir oturum için.
+
+    Dönüş:
+        {"success": true, "pace_log": [...], "decoy_indicators": [...]}
+    """
+    scanner = get_autopwn_scanner()
+
+    pace_log: List[Dict[str, Any]] = []
+    decoy_indicators: List[str] = []
+
+    try:
+        from tools.hunter_autopwn_bridge import HunterAutopwnBridge
+        for session in scanner.sessions.values():
+            if hasattr(session, "_bridge") and session._bridge is not None:
+                bridge: HunterAutopwnBridge = session._bridge
+                if bridge._pacer:
+                    pace_log = bridge._pacer.get_pace_log()
+                    decoy_indicators = bridge._pacer.decoy_indicators
+                    break
+    except Exception:
+        pass
+
+    if not pace_log:
+        try:
+            from tools.hunter_pacing import HunterPacer
+            default_pacer = HunterPacer()
+            pace_log = default_pacer.get_pace_log()
+            decoy_indicators = default_pacer.decoy_indicators
+        except Exception:
+            pass
+
+    return jsonify({
+        "success": True,
+        "pace_log": pace_log,
+        "decoy_indicators": decoy_indicators,
+    })
+
+
+@bp.route('/api/hunter/pacing/indicators', methods=['GET', 'POST'])
+@handle_errors
+def pacing_indicators():
+    """
+    Decoy indicator listesini görüntüle veya güncelle.
+
+    GET  → Mevcut indicator listesi.
+    POST → Yeni indicator listesi ekler (JSON body: {"indicators": [...]}).
+    """
+    try:
+        from tools.hunter_pacing import HunterPacer
+        pacer = HunterPacer()
+    except ImportError:
+        return jsonify({"success": False, "error": "hunter_pacing module not available"}), 500
+
+    if request.method == 'POST':
+        data = request.json or {}
+        new_indicators = data.get("indicators", [])
+        if isinstance(new_indicators, list):
+            pacer.decoy_indicators = [str(i) for i in new_indicators]
+            pacer.decoy_profile.indicators = pacer.decoy_indicators
+            pacer.decoy_profile.suspicious_names = pacer.decoy_indicators
+
+    return jsonify({
+        "success": True,
+        "decoy_indicators": pacer.decoy_indicators,
+    })
+

