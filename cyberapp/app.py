@@ -2,9 +2,15 @@
 MONOLITH - Elite Red Team Framework
 Flask Application Factory with Blueprint Registration
 """
+from cyberapp.host_safety import enforce_host_safety
+
+enforce_host_safety()
+
 from flask import Flask
 import os
 import importlib
+
+_blueprint_errors = {}
 
 
 def _load_blueprint(module_path, attr=None):
@@ -30,8 +36,10 @@ def _load_blueprint(module_path, attr=None):
         for name in candidates:
             if hasattr(mod, name):
                 return getattr(mod, name)
+        _blueprint_errors[module_path] = "Blueprint not found"
         return None
     except Exception as e:
+        _blueprint_errors[module_path] = type(e).__name__
         print(f"[IMPORT ERROR] {module_path}: {e}")
         return None
 
@@ -52,8 +60,7 @@ graph_bp = _load_blueprint('cyberapp.routes.attack_graph', 'graph_bp')
 c2_bp = _load_blueprint('cyberapp.routes.c2_advanced', 'c2_bp')
 ai_payload_bp = _load_blueprint('cyberapp.routes.ai_payload', 'ai_payload_bp')
 distributed_bp = _load_blueprint('cyberapp.routes.distributed', 'distributed_bp')
-vulnerable_bp = _load_blueprint('cyberapp.routes.vulnerable', 'vulnerable_bp')
-api_vuln_bp = _load_blueprint('cyberapp.routes.api_vulnerable', 'api_vuln_bp')
+# Deliberately vulnerable training routes are not part of the management app.
 beacon_bp = _load_blueprint('cyberapp.routes.c2_beacon', 'beacon_bp')
 lateral_bp = _load_blueprint('cyberapp.routes.lateral', 'lateral_bp')
 relay_bp = _load_blueprint('cyberapp.routes.relay', 'relay_bp')
@@ -130,8 +137,9 @@ advanced_waf_bp = _load_blueprint('evasion.advanced_waf_bypass')
 # SOC Deception
 try:
     from evasion.soc_deception import soc_deception_bp
-except Exception:
+except Exception as exc:
     soc_deception_bp = None
+    _blueprint_errors['evasion.soc_deception'] = type(exc).__name__
 
 # ==========================================
 # Scanner & Analysis Tools
@@ -179,18 +187,28 @@ blockchain_evasion_bp = _load_blueprint('cyberapp.routes.layer14_15_evasion', at
 polymorphic_evasion_bp = _load_blueprint('cyberapp.routes.layer14_15_evasion', attr='polymorphic_evasion_bp')
 
 
-def create_app(run_migrations_on_start=True):
+def create_app(run_migrations_on_start=True, config=None):
     """Create and configure the Flask application"""
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     templates_dir = os.path.join(base_dir, "templates")
     app = Flask(__name__, template_folder=templates_dir)
-    app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default-dev-key-change-in-production')
+    from cyberapp.settings import SECRET_KEY
+
+    app.config.update(
+        SECRET_KEY=SECRET_KEY,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",
+    )
+    if config:
+        app.config.update(config)
+    registration_errors = dict(_blueprint_errors)
     
     # Register core blueprints
     blueprints = [
         auth_bp, dashboard_bp, scans_bp, phishing_bp, infra_bp, ops_bp,
         exploits_bp, kerberos_bp, golden_bp, graph_bp, c2_bp, ai_payload_bp,
-        distributed_bp, vulnerable_bp, api_vuln_bp, beacon_bp, lateral_bp,
+        distributed_bp, beacon_bp, lateral_bp,
         relay_bp, evasion_bp, quantum_bp, cloud_bp, zeroday_bp, vr_bp,
         webshell_bp, waf_bp, tools_bp, c2_standard_bp, monitoring_bp,
         siem_monitoring_bp,
@@ -262,31 +280,38 @@ def create_app(run_migrations_on_start=True):
     
     for bp in all_blueprints:
         if bp:
+            if app.blueprints.get(bp.name) is bp:
+                continue
             try:
                 app.register_blueprint(bp)
             except Exception as e:
+                registration_errors[bp.name] = type(e).__name__
                 print(f"[REGISTER ERROR] {bp.name if hasattr(bp, 'name') else bp}: {e}")
     
     # Register error handlers
     try:
         from cyberapp.services.errors import register_error_handlers
         register_error_handlers(app)
-    except Exception:
-        pass
+    except Exception as exc:
+        registration_errors['error_handlers'] = type(exc).__name__
     
     # Health check endpoint
+    @app.route('/health', methods=['GET'])
     @app.route('/api/elite/orchestration/health', methods=['GET'])
     def orchestration_health_check():
-        from datetime import datetime
+        from datetime import datetime, timezone
         return {
-            "status": "OPERATIONAL",
-            "timestamp": datetime.utcnow().isoformat(),
+            "status": "DEGRADED" if registration_errors else "OPERATIONAL",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "app_version": "v15_Ultimate",
             "blueprint_count": len(app.blueprints),
-            "active_blueprints": list(app.blueprints.keys())[:10]
-        }, 200
+            "active_blueprints": list(app.blueprints.keys())[:10],
+            "failed_blueprint_count": len(registration_errors),
+            "production_ready": False,
+        }, 503 if registration_errors else 200
     
-    app.config['PRODUCTION_READY'] = True
+    app.config['PRODUCTION_READY'] = False
+    app.extensions['blueprint_errors'] = registration_errors
     app.config['ORCHESTRATION_VERSION'] = 'v15_Ultimate_Edition'
     
     print(f"[INFO] Flask app initialized with {len(app.blueprints)} blueprints")

@@ -20,7 +20,7 @@ def upgrade():
     op.add_column('lateral_movement', sa.Column('error_message', sa.Text(), nullable=True))
     op.add_column('lateral_movement', sa.Column('command_output', sa.Text(), nullable=True))
     op.add_column('lateral_movement', sa.Column('execution_time', sa.Float(), nullable=True))
-    op.add_column('lateral_movement', sa.Column('source_host', sa.String(255), nullable=True))
+    # source_host is already created by 0003_add_lateral_movement.
     op.add_column('lateral_movement', sa.Column('credentials_type', sa.String(50), nullable=True))
     op.add_column('lateral_movement', sa.Column('access_level', sa.String(50), nullable=True))
 
@@ -28,7 +28,6 @@ def upgrade():
 def downgrade():
     op.drop_column('lateral_movement', 'access_level')
     op.drop_column('lateral_movement', 'credentials_type')
-    op.drop_column('lateral_movement', 'source_host')
     op.drop_column('lateral_movement', 'execution_time')
     op.drop_column('lateral_movement', 'command_output')
     op.drop_column('lateral_movement', 'error_message')

@@ -8,6 +8,10 @@ Modules:
 - vr_viz: VR/AR Red Team Visualization with Unity integration
 """
 
+from cyberapp.host_safety import enforce_host_safety
+
+enforce_host_safety()
+
 from typing import TYPE_CHECKING
 
 # Lazy imports to avoid circular dependencies

@@ -1,8 +1,9 @@
 """
-Quantum-Resistant Cryptography Module
+Experimental Cryptography Demonstrations
 =====================================
 
-Post-quantum encryption for 2026+ quantum threat landscape.
+Educational simulations only. These implementations are not audited,
+standard-compliant post-quantum cryptography and must not protect real data.
 
 Features:
 - Kyber/ML-KEM Key Encapsulation (NIST PQC Winner)
@@ -787,28 +788,9 @@ class DilithiumSignature:
         return signature
     
     def verify(self, message: bytes, signature: bytes, public_key: DilithiumPublicKey) -> bool:
-        """Verify a signature"""
-        try:
-            # Parse signature
-            c_tilde = signature[:32]
-            
-            # Recompute and verify (simplified)
-            mu = hashlib.sha3_256(
-                hashlib.sha3_256(public_key.rho + public_key.t1.tobytes()).digest() + 
-                message
-            ).digest()
-            
-            expected_c = hashlib.shake_256(mu).digest(32)
-            
-            # In real implementation, verify z and h
-            # This is simplified for demo
-            
-            logger.debug("Dilithium signature verified")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Signature verification failed: {e}")
-            return False
+        """Reject signatures: this demonstration does not implement verification."""
+        logger.warning("Dilithium verification unavailable: demo implementation; signature rejected")
+        return False
 
 
 # =============================================================================

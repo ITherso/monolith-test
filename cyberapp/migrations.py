@@ -3,7 +3,7 @@ from pathlib import Path
 try:
     from alembic import command
     from alembic.config import Config
-except Exception:
+except ImportError:
     command = None
     Config = None
 
@@ -26,14 +26,13 @@ def _alembic_config():
 
 def run_migrations():
     if command is None:
-        logger.warning("Alembic not installed; skipping migrations")
-        return
+        raise RuntimeError("Alembic is required to initialize or upgrade the database")
     try:
         command.upgrade(_alembic_config(), "head")
-        logger.info("Migrations completed successfully")
-    except Exception as e:
-        logger.warning(f"Migration failed (DB may already be initialized): {str(e)}")
-        # Continue anyway - database schema may already exist from init_db.py
+    except Exception:
+        logger.exception("Database migration failed")
+        raise
+    logger.info("Migrations completed successfully")
 
 
 def current_revision():

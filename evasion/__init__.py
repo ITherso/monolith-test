@@ -19,6 +19,10 @@ Modules:
 - multi_layer_obfuscation: Cobalt Strike UDRL-style obfuscation
 """
 
+from cyberapp.host_safety import enforce_host_safety
+
+enforce_host_safety()
+
 from .sleep_obfuscation import SleepObfuscator, SleepMask
 from .header_rotation import HeaderRotator, TLSFingerprint
 from .anti_sandbox import SandboxDetector

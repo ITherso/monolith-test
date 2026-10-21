@@ -45,16 +45,16 @@ RUN mkdir -p /app/reports /app/logs /app/data
 
 # Environment variables
 ENV MONOLITH_HOST=0.0.0.0
-ENV MONOLITH_PORT=5000
+ENV MONOLITH_PORT=8080
 ENV MONOLITH_VERSION=1.0.0
 ENV PYTHONUNBUFFERED=1
 
 # Expose ports
-EXPOSE 5000
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
 
 # Default command
 CMD ["python3", "cyber.py"]

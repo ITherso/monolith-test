@@ -166,10 +166,10 @@ def internal_debug():
     import sys
     debug_info = {
         "python_version": sys.version,
-        "environment": dict(os.environ),
-        "cwd": os.getcwd(),
-        "user": os.getenv("USER"),
-        "path": os.getenv("PATH"),
+        "environment": {"redacted": True},
+        "cwd": "[redacted]",
+        "user": "[redacted]",
+        "path": "[redacted]",
         "database": "monolith_supreme.db",
         "secret_key": "supersecretkey123",
     }

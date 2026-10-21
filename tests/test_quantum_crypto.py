@@ -310,15 +310,15 @@ class TestDilithiumSignature:
         assert len(signature) > 0
     
     @pytest.mark.skipif(not NUMPY_AVAILABLE, reason="NumPy not available")
-    def test_verify(self, dilithium):
-        """Test signature verification"""
+    def test_demo_verifier_rejects_generated_signature(self, dilithium):
+        """A demo signature must never be treated as verified cryptography."""
         public_key, private_key = dilithium.keygen()
         message = b"Test message for verification"
         
         signature = dilithium.sign(message, private_key)
         is_valid = dilithium.verify(message, signature, public_key)
         
-        assert is_valid is True
+        assert is_valid is False
     
     @pytest.mark.skipif(not NUMPY_AVAILABLE, reason="NumPy not available")
     def test_different_messages_different_signatures(self, dilithium):

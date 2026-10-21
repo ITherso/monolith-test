@@ -15,6 +15,10 @@ Features:
 - Timeline-based attack visualization
 """
 
+from cyberapp.host_safety import enforce_host_safety
+
+enforce_host_safety()
+
 import os
 import sys
 import json
@@ -1063,23 +1067,11 @@ class TestExecutor:
         return outputs.get(test.technique_id, f"[SIMULATED] {test.name} executed successfully\nCommand: {test.command[:50]}...")
     
     def _real_execution(self, test: AtomicTest) -> Tuple[str, str]:
-        """Actually execute the test (use with extreme caution)"""
-        if test.executor == "powershell":
-            cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", test.command]
-        elif test.executor == "cmd":
-            cmd = ["cmd.exe", "/c", test.command]
-        else:
-            cmd = test.command.split()
-        
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=self.timeout,
-            shell=False
+        """Fail closed: atomic commands must never run on the operator's host."""
+        raise RuntimeError(
+            "Local atomic-test execution is disabled for host safety. "
+            "Only offline simulation is available; no command was executed."
         )
-        
-        return proc.stdout, proc.stderr
     
     def _analyze_detection(self, test: AtomicTest, result: TestResult) -> DetectionResult:
         """Simulate detection analysis based on test characteristics"""

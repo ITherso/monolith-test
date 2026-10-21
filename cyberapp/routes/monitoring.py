@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, redirect, session
+from markupsafe import escape
 
 from cyberapp.models.db import db_conn
 
@@ -50,14 +51,15 @@ def audit_dashboard():
 
     rows = ""
     for row in logs:
+        cells = [escape(value) for value in row]
         rows += (
             "<tr>"
-            f"<td>{row[5]}</td>"
-            f"<td>{row[0]}</td>"
-            f"<td>{row[1]}</td>"
-            f"<td>{row[2]}</td>"
-            f"<td>{row[3]}</td>"
-            f"<td>{row[4]}</td>"
+            f"<td>{cells[5]}</td>"
+            f"<td>{cells[0]}</td>"
+            f"<td>{cells[1]}</td>"
+            f"<td>{cells[2]}</td>"
+            f"<td>{cells[3]}</td>"
+            f"<td>{cells[4]}</td>"
             "</tr>"
         )
 

@@ -1,69 +1,14 @@
 import os
-import secrets
+from cyberapp.security import load_security_settings
 
 DB_NAME = "monolith_supreme.db"
-SECRET_KEY = secrets.token_urlsafe(32)
+_security = load_security_settings()
+SECRET_KEY = _security["FLASK_SECRET_KEY"]
 ADMIN_USER = "admin"
 ANALYST_USER = "analyst"
 
-# ⚠️ VULNERABLE: Weak default credentials (hardcoded fallback)
-DEFAULT_ADMIN_PASS = "admin123"  # Intentionally weak
-DEFAULT_ANALYST_PASS = "analyst123"  # Intentionally weak
-
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-except Exception:
-    pass
-
-_env_admin = os.getenv("ADMIN_PASS")
-_env_file = os.path.join(os.path.dirname(__file__), "../.env")
-
-ADMIN_PASS = None
-if _env_admin:
-    ADMIN_PASS = _env_admin
-elif os.path.exists(_env_file):
-    try:
-        with open(_env_file, "r") as ef:
-            for line in ef:
-                if line.strip().startswith("ADMIN_PASS="):
-                    ADMIN_PASS = line.strip().split("=", 1)[1]
-                    break
-    except Exception:
-        ADMIN_PASS = None
-
-if not ADMIN_PASS:
-    # ⚠️ VULNERABLE: Falls back to weak default password
-    ADMIN_PASS = DEFAULT_ADMIN_PASS
-    try:
-        with open(_env_file, "a") as ef:
-            ef.write(f"ADMIN_PASS={ADMIN_PASS}\n")
-    except Exception:
-        pass
-
-_env_analyst = os.getenv("ANALYST_PASS")
-ANALYST_PASS = None
-if _env_analyst:
-    ANALYST_PASS = _env_analyst
-elif os.path.exists(_env_file):
-    try:
-        with open(_env_file, "r") as ef:
-            for line in ef:
-                if line.strip().startswith("ANALYST_PASS="):
-                    ANALYST_PASS = line.strip().split("=", 1)[1]
-                    break
-    except Exception:
-        ANALYST_PASS = None
-
-if not ANALYST_PASS:
-    # ⚠️ VULNERABLE: Falls back to weak default password
-    ANALYST_PASS = DEFAULT_ANALYST_PASS
-    try:
-        with open(_env_file, "a") as ef:
-            ef.write(f"ANALYST_PASS={ANALYST_PASS}\n")
-    except Exception:
-        pass
+ADMIN_PASS = _security["ADMIN_PASS"]
+ANALYST_PASS = _security["ANALYST_PASS"]
 
 TIMEOUT = 60
 try:

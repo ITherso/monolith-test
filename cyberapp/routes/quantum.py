@@ -1,6 +1,6 @@
 """
-Quantum-Resistant Cryptography Routes
-Post-Quantum Encryption with Kyber/Dilithium/Lattice Operations
+Experimental Cryptography Demo Routes
+Educational simulations without a post-quantum security guarantee.
 """
 from flask import Blueprint, request, jsonify, render_template
 from typing import Dict, Any, List
@@ -11,6 +11,29 @@ import base64
 import hashlib
 
 quantum_bp = Blueprint('quantum', __name__, url_prefix='/quantum')
+
+
+def _label_quantum_demo_payload(payload):
+    """Keep API clients from mistaking demo output for a security guarantee."""
+    if isinstance(payload, dict):
+        payload = dict(payload)
+        payload.update({
+            'implementation': 'educational_simulation',
+            'quantum_safe': False,
+            'verification_supported': False,
+            'warning': 'Experimental demo only; not audited or suitable for protecting real data.',
+        })
+    return payload
+
+
+@quantum_bp.after_request
+def label_quantum_demo_response(response):
+    if response.is_json:
+        payload = response.get_json(silent=True)
+        if isinstance(payload, dict):
+            response.set_data(json.dumps(_label_quantum_demo_payload(payload)))
+    return response
+
 
 # Import quantum modules
 try:
@@ -129,7 +152,7 @@ def quantum_keygen():
                 'private_key_size': len(sk_bytes),
                 'public_key_hash': hashlib.sha256(pk_bytes).hexdigest()[:16],
                 'generation_time': time.time() - start,
-                'quantum_safe': True
+                'quantum_safe': False
             }
             
         elif algorithm.startswith('dilithium'):
@@ -168,7 +191,7 @@ def quantum_keygen():
                 'private_key_size': len(sk_bytes),
                 'public_key_hash': hashlib.sha256(pk_bytes).hexdigest()[:16],
                 'generation_time': time.time() - start,
-                'quantum_safe': True
+                'quantum_safe': False
             }
             
         elif algorithm.startswith('hybrid'):
@@ -191,8 +214,8 @@ def quantum_keygen():
                 'pq_public_key_size': len(keys['pq_public']) if 'pq_public' in keys else 0,
                 'classical_key_present': 'classical_private' in keys,
                 'generation_time': time.time() - start,
-                'quantum_safe': True,
-                'forward_secrecy': True
+                'quantum_safe': False,
+                'forward_secrecy': False
             }
             
         else:
@@ -391,47 +414,13 @@ def quantum_sign():
 
 @quantum_bp.route('/verify', methods=['POST'])
 def quantum_verify():
-    """Verify quantum-resistant signature"""
-    if not QUANTUM_AVAILABLE:
-        return jsonify({'error': 'Quantum module not available'}), 500
-    
-    data = request.get_json() or {}
-    session_name = data.get('session_name')
-    message = data.get('message', '')
-    signature_b64 = data.get('signature')
-    
-    if not session_name or session_name not in _quantum_sessions:
-        return jsonify({'error': 'Invalid or missing session'}), 400
-    
-    session = _quantum_sessions[session_name]
-    if session['type'] != 'dilithium':
-        return jsonify({'error': 'Session type does not support verification'}), 400
-    
-    try:
-        start = time.time()
-        
-        if isinstance(message, str):
-            message_bytes = message.encode()
-        else:
-            message_bytes = bytes(message)
-        
-        signature = base64.b64decode(signature_b64)
-        sig_instance = session['signature']
-        
-        valid = sig_instance.verify(message_bytes, signature, session['public_key'])
-        
-        result = {
-            'session_name': session_name,
-            'valid': valid,
-            'verification_time': time.time() - start,
-            'message_hash': hashlib.sha256(message_bytes).hexdigest()[:16],
-            'algorithm': session['algorithm']
-        }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e), 'valid': False}), 500
+    """Fail closed: the demonstration has no supported signature verifier."""
+    return jsonify({
+        'error': 'Signature verification is not implemented by this educational demo.',
+        'valid': False,
+        'verification_supported': False,
+        'quantum_safe': False,
+    }), 501
 
 
 @quantum_bp.route('/risk-analysis', methods=['POST'])
@@ -513,7 +502,7 @@ def quantum_c2_init():
                 init_data.get('public_key', b'')
             ).hexdigest()[:16] if init_data.get('public_key') else None,
             'channel_ready': True,
-            'quantum_safe': True
+            'quantum_safe': False
         })
         
     except Exception as e:

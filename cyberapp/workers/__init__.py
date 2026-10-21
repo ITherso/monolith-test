@@ -29,6 +29,10 @@ This module contains:
 - Job registry for tracking operations
 """
 
+from cyberapp.host_safety import enforce_host_safety
+
+enforce_host_safety()
+
 from typing import Optional, Dict, Any
 
 # Job registry for tracking operations

@@ -14,7 +14,11 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-green?logo=flask)](https://flask.palletsprojects.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](https://github.com/ITherso/monolith)
+[![Status](https://img.shields.io/badge/Status-Experimental-orange)](docs/MANAGEMENT_HARDENING.md)
+
+> **Management safety update:** deliberately vulnerable training routes are excluded from the management app. Missing account passwords and the session key are generated once in `instance/security.json`; explicit environment/`.env` settings are preserved. CLI sample reports and experimental cryptography are simulations, not verified security results. See [compatibility changes and validation](docs/MANAGEMENT_HARDENING.md).
+
+> **Local host protection:** operational entry points now refuse to start on Windows, WSL, Cygwin, and MSYS before feature imports. Real local atomic-test command execution is disabled. Do not run standalone tools, agents, generated payloads, or demo scripts on your personal computer. This source guard is not a sandbox or malware-removal tool. See [host-safety findings and limits](docs/HOST_SAFETY.md).
 
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  

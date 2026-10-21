@@ -3,10 +3,10 @@ services:
   app:
     build: .
     ports:
-      - "5000:5000"
+      - "5000:8080"
     environment:
       MONOLITH_HOST: "0.0.0.0"
-      MONOLITH_PORT: "5000"
+      MONOLITH_PORT: "8080"
       MONOLITH_QUEUE: "local"
     volumes:
       - .:/app
