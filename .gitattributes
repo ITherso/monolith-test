@@ -1,0 +1,6 @@
+# Keep the reviewed formatter contract consistent on Windows and Linux.
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf

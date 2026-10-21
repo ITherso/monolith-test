@@ -7,8 +7,8 @@ except ImportError:
     command = None
     Config = None
 
-from cyberapp.settings import DB_NAME
 from cyberapp.services.logger import get_logger
+from cyberapp.settings import DB_NAME
 
 logger = get_logger("monolith.migrations")
 

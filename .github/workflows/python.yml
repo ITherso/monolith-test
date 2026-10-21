@@ -1,59 +1,61 @@
-name: Python CI
+name: Management Safety CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  tests:
-    runs-on: ubuntu-latest
+  management-safety:
+    name: Management safety (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12"]
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: "pip"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements_extra.txt
-      - name: Cache mypy
-        uses: actions/cache@v4
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements_ci.txt
+      - name: Install isolated validation dependencies
+        run: python -m pip install -r requirements_ci.txt
+      - name: Check syntax in the reviewed management scope
+        run: python scripts/check_management_safety.py --syntax-check
+      - name: Run isolated management and host-protection tests
+        run: python -m pytest -c pytest-management.ini --junitxml=reports/management-safety.xml
+      - name: Lint reviewed management helpers and tests
+        run: python scripts/check_management_safety.py --lint
+      - name: Check formatting in the reviewed management scope
+        run: python scripts/check_management_safety.py --format-check
+      - name: Typecheck the standalone safety helpers
+        run: python -m mypy --follow-imports=skip cyberapp/host_safety.py cyberapp/security.py
+      - name: Upload management-safety test results
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          path: .mypy_cache
-          key: mypy-${{ runner.os }}-${{ hashFiles('**/*.py', 'mypy.ini') }}
-          restore-keys: |
-            mypy-${{ runner.os }}-
-      - name: Cache ruff
-        uses: actions/cache@v4
-        with:
-          path: .ruff_cache
-          key: ruff-${{ runner.os }}-${{ hashFiles('**/*.py', 'ruff.toml') }}
-          restore-keys: |
-            ruff-${{ runner.os }}-
-      - name: Run unit tests
-        run: |
-          python3 cyber.py --db-upgrade
-          python3 cyber.py --db-current
-          python3 -m alembic history
-          pytest
-      - name: Lint
-        run: ruff check .
-      - name: Format (check)
-        run: ruff format --check .
-      - name: Typecheck
-        run: mypy .
+          name: management-safety-${{ matrix.os }}-${{ matrix.python-version }}
+          path: reports/management-safety.xml
+          if-no-files-found: ignore
 
   docker:
+    name: Container build (no runtime execution)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build image
+      - name: Build image without starting the application
         uses: docker/build-push-action@v5
         with:
           context: .

@@ -1,6 +1,7 @@
-name: Update Coverage Badge
+name: Update Coverage Target Badge
 
-on: []
+on:
+  workflow_dispatch:
 
 jobs:
   update-badge:

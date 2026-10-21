@@ -20,6 +20,8 @@
 
 > **Local host protection:** operational entry points now refuse to start on Windows, WSL, Cygwin, and MSYS before feature imports. Real local atomic-test command execution is disabled. Do not run standalone tools, agents, generated payloads, or demo scripts on your personal computer. This source guard is not a sandbox or malware-removal tool. See [host-safety findings and limits](docs/HOST_SAFETY.md).
 
+> **CI scope:** [Management Safety CI](https://github.com/ITherso/monolith-test/actions/workflows/python.yml) validates isolated management/host-protection tests and reviewed static helpers. It does not start the application or certify the legacy operational suite. See [checked scope and known exclusions](docs/CI_SCOPE.md).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0

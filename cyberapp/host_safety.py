@@ -5,7 +5,7 @@ import platform
 import sys
 
 
-def enforce_host_safety():
+def enforce_host_safety() -> None:
     """Refuse operational execution on Windows and Windows-connected WSL hosts.
 
     There is deliberately no environment flag or command-line bypass. This guard

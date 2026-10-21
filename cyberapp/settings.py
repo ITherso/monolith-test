@@ -1,4 +1,5 @@
 import os
+
 from cyberapp.security import load_security_settings
 
 DB_NAME = "monolith_supreme.db"

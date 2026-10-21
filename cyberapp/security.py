@@ -4,15 +4,19 @@ import json
 import os
 import secrets
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 
 
-def load_security_settings(root=None, environ=None):
+def load_security_settings(
+    root: str | os.PathLike[str] | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, str]:
     """Honor explicit configuration; generate missing secrets once, across workers."""
     root = Path(root) if root is not None else Path(__file__).resolve().parents[1]
     use_process_environment = environ is None
-    environ = os.environ if use_process_environment else environ
-    configured = {}
+    environment = os.environ if environ is None else environ
+    configured: dict[str, str | None] = {}
     env_file = root / ".env"
     if env_file.exists():
         from dotenv import dotenv_values, load_dotenv
@@ -21,7 +25,7 @@ def load_security_settings(root=None, environ=None):
             # Other existing services still read their configuration via getenv.
             load_dotenv(env_file, override=False)
         configured.update(dotenv_values(env_file, interpolate=False))
-    configured.update(environ)
+    configured.update(environment)
     names = ("FLASK_SECRET_KEY", "ADMIN_PASS", "ANALYST_PASS")
     if configured.get("FLASK_SECRET_KEY") == "default-dev-key-change-in-production":
         raise ValueError(
@@ -29,7 +33,7 @@ def load_security_settings(root=None, environ=None):
         )
     missing = [name for name in names if not configured.get(name)]
     if not missing:
-        return {name: configured[name] for name in names}
+        return {name: str(configured[name]) for name in names}
 
     instance = root / "instance"
     instance.mkdir(mode=0o700, parents=True, exist_ok=True)
