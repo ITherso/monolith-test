@@ -30,11 +30,13 @@ ISOLATED_TESTS = (
     "tests/test_release_updates.py",
     "tests/test_feature_status.py",
     "tests/test_passive_monitor.py",
+    "tests/test_admin_access.py",
 )
 
 SAFE_LINT_TARGETS = (
     "cyberapp/security.py",
     "cyberapp/host_safety.py",
+    "cyberapp/authorization.py",
     "cyberapp/migrations.py",
     "cyberapp/settings.py",
     "cyberapp/__init__.py",

@@ -203,6 +203,9 @@ def create_app(run_migrations_on_start=True, config=None):
     )
     if config:
         app.config.update(config)
+    from cyberapp.authorization import install_admin_access_control
+
+    install_admin_access_control(app)
     registration_errors = dict(_blueprint_errors)
     
     # Register core blueprints

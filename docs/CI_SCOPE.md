@@ -34,7 +34,9 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
   absent vulnerable management routes, schema upgrades/data preservation, honest
   simulation output, badge handling, and the CI boundary itself. It also covers
   real PDF-fixture encryption and failure propagation, mocked release metadata,
-  bounded passive JSONL ingestion/preview routes, and read-only feature status.
+  bounded passive JSONL ingestion/preview routes, read-only feature status, and
+  admin-only dispatch before inert HTTP/socket handlers. Authorization tests
+  verify denied handlers do not run; they never execute an operational action.
 - PDF renderers are mocked; no Pandoc/PDF engine is executed. Release HTTP is
   mocked. Passive monitoring reads only temporary supplied files, not OS events
   or captured packets. FIFO rejection is skipped on Windows because FIFOs are

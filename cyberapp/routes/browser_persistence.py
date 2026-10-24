@@ -16,6 +16,7 @@ import base64
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, send_file, Response
 from typing import Dict, Any, List, Optional
+from cyberapp.authorization import socket_admin_required
 
 # Import core module
 import sys
@@ -616,10 +617,12 @@ try:
         """Initialize WebSocket handlers for real-time data collection"""
         
         @socketio.on('connect', namespace='/ws/collect')
+        @socket_admin_required
         def ws_connect():
             print('[WS] Client connected')
         
         @socketio.on('data', namespace='/ws/collect')
+        @socket_admin_required
         def ws_data(message):
             session_id = message.get('session', 'unknown')
             data = message.get('data', '')
@@ -648,6 +651,7 @@ try:
             emit('ack', {'status': 'received'})
         
         @socketio.on('disconnect', namespace='/ws/collect')
+        @socket_admin_required
         def ws_disconnect():
             print('[WS] Client disconnected')
     

@@ -24,6 +24,8 @@
 
 > **Safe feature repairs:** PDF password protection now uses verified AES-256 output, release checks read this repository's metadata, and passive event review reads a bounded JSONL log. The authenticated `/feature-status` page distinguishes verified contracts, simulations, missing integrations, and safety stops. See [behavior and validation limits](docs/SAFE_FEATURE_REPAIRS.md).
 
+> **Admin access:** matched feature routes now require an authenticated admin session by default. Explicitly reviewed read-only management routes remain available to logged-in users. Existing socket callbacks are also guarded. This does not enable operational modules or override host protection. See [access policy and scope](docs/ADMIN_ACCESS.md).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0

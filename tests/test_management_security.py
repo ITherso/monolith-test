@@ -223,6 +223,9 @@ def build_management_app(failure=None, soc_failure=False):
         "cyberapp.settings": settings_stub(),
         "cyberapp.services.errors": errors,
         "cyberapp.host_safety": safety,
+        "cyberapp.authorization": load_file(
+            "isolated_factory_authorization", "cyberapp/authorization.py"
+        ),
     }
     # Even an accidental package import cannot reach an on-disk feature module.
     for package in ("evasion", "cybermodules", "tools", "cyberapp"):

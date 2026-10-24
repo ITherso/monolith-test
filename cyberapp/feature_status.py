@@ -35,6 +35,14 @@ class FeatureStatus:
 
 FEATURES = (
     FeatureStatus(
+        "admin_access_control",
+        "Operasyonel ekran ve API yetkilendirmesi",
+        "verified_management",
+        "Eşleşen rotalar varsayılan olarak admin ister; incelenen okuma endpointleri oturum açmış kullanıcılara açıktır.",
+        "cyberapp/authorization.py; tests/test_admin_access.py",
+        "İzole Flask ve inert socket callback testleri. Özellik etkinleştirmez, host korumasını kaldırmaz veya çalışan sistemi izole etmez.",
+    ),
+    FeatureStatus(
         "management_auth",
         "Yönetim girişi ve oturumlar",
         "verified_management",
