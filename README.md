@@ -22,6 +22,8 @@
 
 > **CI scope:** [Management Safety CI](https://github.com/ITherso/monolith-test/actions/workflows/python.yml) validates isolated management/host-protection tests and reviewed static helpers. It does not start the application or certify the legacy operational suite. See [checked scope and known exclusions](docs/CI_SCOPE.md).
 
+> **Safe feature repairs:** PDF password protection now uses verified AES-256 output, release checks read this repository's metadata, and passive event review reads a bounded JSONL log. The authenticated `/feature-status` page distinguishes verified contracts, simulations, missing integrations, and safety stops. See [behavior and validation limits](docs/SAFE_FEATURE_REPAIRS.md).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0

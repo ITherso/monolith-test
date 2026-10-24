@@ -32,7 +32,14 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
 - The suite checks host-entrypoint import stops, disabled local command execution,
   login/session behavior, credential persistence, escaped audit rendering,
   absent vulnerable management routes, schema upgrades/data preservation, honest
-  simulation output, badge handling, and the CI boundary itself.
+  simulation output, badge handling, and the CI boundary itself. It also covers
+  real PDF-fixture encryption and failure propagation, mocked release metadata,
+  bounded passive JSONL ingestion/preview routes, and read-only feature status.
+- PDF renderers are mocked; no Pandoc/PDF engine is executed. Release HTTP is
+  mocked. Passive monitoring reads only temporary supplied files, not OS events
+  or captured packets. FIFO rejection is skipped on Windows because FIFOs are
+  unavailable there; it is exercised on Ubuntu. See
+  [repaired behavior and remaining limits](SAFE_FEATURE_REPAIRS.md).
 - Reviewed helpers/tests receive AST syntax, Ruff lint, and formatting checks.
   The two standalone safety/credential helpers also receive Mypy checks without
   importing operational dependencies.

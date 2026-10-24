@@ -1,43 +1,17 @@
-import json
 import urllib
 
 from cyberapp.models.db import db_conn
+from cyberapp.release_updates import CURRENT_VERSION, LATEST_RELEASE_URL, check_release_updates
 
 
 class AutoUpdater:
     def __init__(self):
-        self.version = "v68.0"
-        self.update_url = "https://api.github.com/repos/your-repo/monolith/releases/latest"
+        self.version = CURRENT_VERSION
+        self.update_url = LATEST_RELEASE_URL
 
     def check_for_updates(self):
-        """Güncelleme kontrolü"""
-        try:
-            req = urllib.request.Request(
-                self.update_url,
-                headers={'User-Agent': 'Monolith-Scanner'},
-            )
-            response = urllib.request.urlopen(req, timeout=10)
-            data = json.loads(response.read())
-
-            latest_version = data['tag_name']
-
-            if latest_version != self.version:
-                print(f"\n⚠️  NEW VERSION AVAILABLE: {latest_version}")
-                print(f"   Current: {self.version}")
-                print(f"   Release Notes: {data['html_url']}")
-
-                return {
-                    'update_available': True,
-                    'latest_version': latest_version,
-                    'release_notes': data['body'][:200] if data['body'] else "No release notes",
-                    'download_url': data['assets'][0]['browser_download_url'] if data['assets'] else None,
-                }
-
-            return {'update_available': False}
-
-        except Exception as e:
-            print(f"Update check failed: {e}")
-            return {'update_available': False, 'error': str(e)}
+        """Read release metadata only; no software download or installation."""
+        return check_release_updates(self.version)
 
     def update_payloads(self):
         """Payload database güncelleme"""

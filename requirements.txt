@@ -23,5 +23,7 @@ pycryptodome
 
 # Reporting + Visualization Pro Dependencies
 pypandoc  # PDF generation (requires pandoc binary)
+pypdf[crypto]==6.10.0  # Actual password-protected report output
+cryptography==50.0.2  # AES report encryption backend
 pyyaml    # YAML processing for Sigma rules
 jinja2    # HTML templating

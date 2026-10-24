@@ -1,31 +1,60 @@
 import os
-import threading
 
-from flask import Blueprint, jsonify, redirect, request, session
+from flask import Blueprint, jsonify, redirect, session
 
 from cyberapp.models.db import db_conn
-from cybermodules.threat_hunter import ThreatHunter
+from cyberapp.passive_monitor import PassiveEventMonitor
 
 ops_bp = Blueprint("ops", __name__)
 
 
 @ops_bp.route("/threathunter/start")
+@ops_bp.route("/threathunter/events")
 def start_threathunter():
     if not session.get("logged_in"):
         return redirect("/login")
 
-    interface = request.args.get("interface", "eth0")
-    hunter = ThreatHunter(interface)
-    threading.Thread(target=hunter.start, daemon=True).start()
+    source = os.getenv("MONOLITH_EVENT_LOG")
+    if not source:
+        return jsonify(
+            {
+                "status": "source_required",
+                "message": "Configure MONOLITH_EVENT_LOG with a regular JSONL event file.",
+            }
+        ), 503
+    try:
+        monitor = PassiveEventMonitor(source)
+        findings = monitor.poll_once()
+    except ValueError:
+        return jsonify(
+            {
+                "status": "invalid_source",
+                "message": "The configured event source must be a regular JSONL file.",
+            }
+        ), 400
+    except OSError:
+        return jsonify(
+            {
+                "status": "source_unavailable",
+                "message": "The configured event file could not be read.",
+            }
+        ), 503
 
-    return jsonify(
+    response = jsonify(
         {
-            "status": "started",
-            "dashboard": "http://127.0.0.1:5001/threathunter",
-            "interface": interface,
-            "message": "Threat Hunter started in background",
+            "status": "analyzed",
+            "mode": "bounded_preview",
+            "packet_capture": False,
+            "background_monitor_started": False,
+            "events_processed": monitor.events_processed,
+            "invalid_records": monitor.invalid_records,
+            "partial": monitor.has_more,
+            "findings": findings,
+            "message": "Read-only preview of the configured log; each request starts at its beginning.",
         }
     )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @ops_bp.route("/blockchain/publish/<int:scan_id>", methods=["POST", "GET"])
@@ -34,7 +63,10 @@ def blockchain_publish(scan_id):
         import monolith.blockchain as mchain
     except Exception:
         return jsonify(
-            {"status": "error", "message": "blockchain module not available (install web3)"}
+            {
+                "status": "error",
+                "message": "blockchain module not available (install web3)",
+            }
         ), 500
 
     try:
@@ -47,14 +79,18 @@ def blockchain_publish(scan_id):
         return jsonify({"status": "error", "message": f"db error: {str(e)}"}), 500
 
     if not rows:
-        return jsonify({"status": "error", "message": "no evidence found for scan"}), 404
+        return jsonify(
+            {"status": "error", "message": "no evidence found for scan"}
+        ), 404
 
     leaves = [(str(r[0]) + ":" + (r[1] or "")).encode("utf-8") for r in rows]
 
     try:
         private_key = os.getenv("WEB3_PRIVATE_KEY")
         if not private_key:
-            return jsonify({"status": "error", "message": "WEB3_PRIVATE_KEY env var not set"}), 400
+            return jsonify(
+                {"status": "error", "message": "WEB3_PRIVATE_KEY env var not set"}
+            ), 400
 
         tx_hash = mchain.publish_merkle_root(leaves, private_key)
         return jsonify({"status": "ok", "tx_hash": tx_hash})

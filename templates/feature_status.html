@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block body %}
+<main class="container mx-auto px-6 py-10 max-w-7xl">
+    <header class="mb-8">
+        <p class="font-mono text-sm text-cyber-primary mb-3">MONOLITH / SALT OKUNUR ENVANTER</p>
+        <h1 class="text-3xl md:text-4xl font-bold mb-4">Özellik durumu</h1>
+        <p class="text-gray-300 max-w-4xl leading-relaxed">{{ snapshot.notice }}</p>
+        <p class="text-sm text-gray-400 mt-3">Bu sayfa tarama, model çağrısı, donanım erişimi veya komut başlatmaz. Güvenlik durdurmaları burada açılamaz.</p>
+    </header>
+
+    <section aria-label="Durumların dağılımı" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+        {% for key, label in snapshot.statuses.items() %}
+        <div class="glass rounded-xl p-4">
+            <p class="text-sm text-gray-300">{{ label }}</p>
+            <p class="text-2xl font-mono font-semibold mt-2">{{ snapshot.counts[key] }}</p>
+        </div>
+        {% endfor %}
+    </section>
+
+    <section class="glass rounded-2xl overflow-hidden" aria-labelledby="inventory-title">
+        <div class="p-5 border-b border-cyber-border">
+            <h2 id="inventory-title" class="text-xl font-semibold">İncelenen özellikler</h2>
+            <p class="text-sm text-gray-400 mt-2">“İzole testte doğrulandı” etiketi yalnızca belirtilen sözleşmeyi kapsar. Operasyonel hazır olma veya canlı entegrasyon garantisi değildir.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <caption class="sr-only">Kaynak ve izole test kapsamıyla birlikte özellik envanteri</caption>
+                <thead class="bg-slate-900/60 text-gray-300">
+                    <tr>
+                        <th scope="col" class="px-5 py-4">Özellik</th>
+                        <th scope="col" class="px-5 py-4">Durum</th>
+                        <th scope="col" class="px-5 py-4 min-w-[300px]">Ne biliyoruz?</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/50">
+                    {% for feature in snapshot.features %}
+                    <tr id="feature-{{ feature.id }}" data-status="{{ feature.status }}" class="align-top">
+                        <th scope="row" class="px-5 py-5 font-medium text-white">{{ feature.title }}</th>
+                        <td class="px-5 py-5"><span class="inline-block rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-gray-200">{{ feature.status_label }}</span></td>
+                        <td class="px-5 py-5 leading-relaxed">
+                            <p class="text-gray-200">{{ feature.summary }}</p>
+                            <p class="text-gray-400 mt-2">{{ feature.verification_scope }}</p>
+                            <p class="font-mono text-xs text-gray-500 mt-3 break-all">Kaynak: {{ feature.evidence }}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer class="mt-8 glass rounded-xl p-5">
+        <h2 class="font-semibold mb-3">Kapsam ve kaynaklar</h2>
+        <ul class="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+            <li><a class="text-cyber-secondary underline" href="{{ url_for('feature_status.feature_status_api') }}">Aynı envanterin JSON çıktısı</a></li>
+            {% for document in snapshot.documentation %}
+            <li><a class="text-cyber-secondary underline" href="{{ document.url }}" target="_blank" rel="noopener noreferrer">{{ document.title }}</a></li>
+            {% endfor %}
+        </ul>
+    </footer>
+</main>
+{% endblock %}

@@ -413,11 +413,11 @@ EDR_SIGNATURES = {
 
 
 # =============================================================================
-# AI SUMMARY GENERATOR
+# TEMPLATE SUMMARY GENERATOR
 # =============================================================================
 
 class AISummaryGenerator:
-    """Generate AI-powered executive summaries from chain logs"""
+    """Generate template-based summaries; the legacy class name is preserved."""
     
     def __init__(self):
         self.templates = {
@@ -504,7 +504,9 @@ class AISummaryGenerator:
         recommendations = self._generate_recommendations(stats, mitre_coverage)
         
         summary = f"""
-# 🔥 AI-Powered Attack Chain Analysis Report
+# Attack Chain Analysis Report
+
+Summary method: deterministic templates and supplied log statistics; no AI model was called.
 
 ## Executive Summary
 
@@ -1978,43 +1980,39 @@ class PDFGenerator:
             return False
         
         try:
-            # Write HTML to temp file
-            with tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix='.html',
-                delete=False
-            ) as f:
-                f.write(html_content)
-                temp_html = f.name
-            
-            # Convert to PDF
-            self.pypandoc.convert_file(
-                temp_html,
-                'pdf',
-                outputfile=output_path,
-                extra_args=['--pdf-engine=wkhtmltopdf'] if password else []
-            )
-            
-            # Encrypt if password provided
-            if password:
-                self._encrypt_pdf(output_path, password)
-            
-            # Cleanup
-            os.unlink(temp_html)
-            
+            output = Path(output_path)
+            # Render privately and publish only after requested protection succeeds.
+            # Existing reports remain unchanged if rendering or encryption fails.
+            with tempfile.TemporaryDirectory(prefix='.pdf-report-', dir=output.parent) as directory:
+                temp_html = Path(directory) / 'report.html'
+                temp_pdf = Path(directory) / 'report.pdf'
+                temp_html.write_text(html_content, encoding='utf-8')
+                self.pypandoc.convert_file(
+                    str(temp_html),
+                    'pdf',
+                    outputfile=str(temp_pdf),
+                    extra_args=['--pdf-engine=wkhtmltopdf'] if password else []
+                )
+                if not temp_pdf.is_file() or not temp_pdf.stat().st_size:
+                    raise ValueError('PDF conversion produced no output')
+                if password and not self._encrypt_pdf(str(temp_pdf), password):
+                    raise RuntimeError('PDF password protection failed')
+                temp_html.unlink()
+                os.replace(temp_pdf, output)
             return True
-            
         except Exception as e:
-            logger.error(f"PDF generation failed: {e}")
+            logger.error("PDF generation failed (%s)", type(e).__name__)
             return False
     
     def _encrypt_pdf(self, pdf_path: str, password: str) -> bool:
-        """Encrypt PDF with password"""
+        """Encrypt the staged PDF without publishing plaintext on failure."""
         try:
-            # Would use PyPDF2 or pikepdf for encryption
-            # Placeholder for now
+            from cyberapp.report_security import encrypt_pdf_atomic
+
+            encrypt_pdf_atomic(pdf_path, password)
             return True
-        except Exception:
+        except Exception as e:
+            logger.error("PDF password protection failed (%s)", type(e).__name__)
             return False
 
 
@@ -2070,7 +2068,7 @@ class ReportGenerator:
             if self.config.enable_mitre_map:
                 result.mitre_coverage = self.mitre_mapper.map_chain_log(chain_log)
             
-            # Generate AI summary
+            # Generate a template summary (legacy configuration field preserved).
             if self.config.enable_ai_summary:
                 result.ai_summary = self.ai_summary.generate_summary(
                     chain_log,
@@ -2125,6 +2123,9 @@ class ReportGenerator:
                     f.write(html_content)
             
             if self.config.format in [ReportFormat.PDF, ReportFormat.ALL]:
+                password = self.config.pdf_password if self.config.encrypt_pdf else ""
+                if self.config.encrypt_pdf and (not isinstance(password, str) or not password):
+                    raise ValueError("PDF encryption requires a nonempty password")
                 # Generate HTML first if not already
                 if not hasattr(self, '_html_content'):
                     html_content = self.html_generator.generate_html(
@@ -2136,12 +2137,14 @@ class ReportGenerator:
                         heatmap_data
                     )
                 
-                result.pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
-                self.pdf_generator.generate_pdf(
+                pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
+                if not self.pdf_generator.generate_pdf(
                     html_content,
-                    result.pdf_path,
-                    self.config.pdf_password if self.config.encrypt_pdf else ""
-                )
+                    pdf_path,
+                    password
+                ):
+                    raise RuntimeError("PDF report generation failed")
+                result.pdf_path = pdf_path
             
             if self.config.format in [ReportFormat.JSON, ReportFormat.ALL]:
                 result.json_path = os.path.join(output_dir, f"{base_name}.json")

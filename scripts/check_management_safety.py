@@ -26,6 +26,10 @@ ISOLATED_TESTS = (
     "tests/test_vulnerable.py",
     "tests/test_coverage_badge.py",
     "tests/test_ci_contract.py",
+    "tests/test_report_security.py",
+    "tests/test_release_updates.py",
+    "tests/test_feature_status.py",
+    "tests/test_passive_monitor.py",
 )
 
 SAFE_LINT_TARGETS = (
@@ -34,6 +38,13 @@ SAFE_LINT_TARGETS = (
     "cyberapp/migrations.py",
     "cyberapp/settings.py",
     "cyberapp/__init__.py",
+    "cyberapp/report_security.py",
+    "cyberapp/release_updates.py",
+    "cyberapp/feature_status.py",
+    "cyberapp/routes/feature_status.py",
+    "cyberapp/routes/ops.py",
+    "cyberapp/passive_monitor.py",
+    "cybermodules/threat_hunter.py",
     "scripts/update_coverage_badge.py",
     "scripts/check_management_safety.py",
     *ISOLATED_TESTS,
