@@ -37,8 +37,12 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
   bounded passive JSONL ingestion/preview routes, read-only feature status, and
   admin-only dispatch before inert HTTP/socket handlers. Authorization tests
   verify denied handlers do not run; they never execute an operational action.
-- PDF renderers are mocked; no Pandoc/PDF engine is executed. Release HTTP is
-  mocked. Passive monitoring reads only temporary supplied files, not OS events
+- PDF rendering now exercises a real offline ReportLab path, including Turkish
+  text, long content, tables, pagination, and encryption/publication together.
+  Renderer failures remain mocked for deterministic failure checks. No external
+  converter is executed. Dashboard malformed-data recovery and escaped scan
+  detail rendering are also tested using isolated data/templates.
+- Release HTTP is mocked. Passive monitoring reads only temporary supplied files, not OS events
   or captured packets. FIFO rejection is skipped on Windows because FIFOs are
   unavailable there; it is exercised on Ubuntu. See
   [repaired behavior and remaining limits](SAFE_FEATURE_REPAIRS.md).

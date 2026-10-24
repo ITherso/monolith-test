@@ -14,7 +14,6 @@ pyzmq
 beautifulsoup4
 # AI Sleep Obfuscation Dependencies
 scipy
-cryptography
 numpy
 
 # AMSI/ETW Bypass PRO Dependencies
@@ -22,7 +21,8 @@ pycryptodome
 # pywin32  # Windows only - install manually on Windows
 
 # Reporting + Visualization Pro Dependencies
-pypandoc  # PDF generation (requires pandoc binary)
+pypandoc  # Optional legacy conversion integrations
+reportlab==4.4.9  # Offline PDF rendering, no converter binary required
 pypdf[crypto]==6.10.0  # Actual password-protected report output
 cryptography==50.0.2  # AES report encryption backend
 pyyaml    # YAML processing for Sigma rules

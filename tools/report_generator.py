@@ -1959,13 +1959,13 @@ class PDFGenerator:
     """Generate encrypted PDF reports"""
     
     def __init__(self):
-        self.has_pypandoc = False
+        self.render_pdf = None
         try:
-            import pypandoc
-            self.has_pypandoc = True
-            self.pypandoc = pypandoc
+            from cyberapp.pdf_renderer import render_html_pdf
+
+            self.render_pdf = render_html_pdf
         except ImportError:
-            logger.warning("pypandoc not available, PDF generation disabled")
+            logger.warning("Offline PDF renderer not available")
     
     def generate_pdf(
         self,
@@ -1975,29 +1975,23 @@ class PDFGenerator:
     ) -> bool:
         """Generate PDF from HTML"""
         
-        if not self.has_pypandoc:
-            logger.error("pypandoc not installed")
+        if self.render_pdf is None:
+            logger.error("Offline PDF renderer not installed")
             return False
         
         try:
+            if not isinstance(password, str):
+                raise ValueError('PDF password must be text')
             output = Path(output_path)
             # Render privately and publish only after requested protection succeeds.
             # Existing reports remain unchanged if rendering or encryption fails.
             with tempfile.TemporaryDirectory(prefix='.pdf-report-', dir=output.parent) as directory:
-                temp_html = Path(directory) / 'report.html'
                 temp_pdf = Path(directory) / 'report.pdf'
-                temp_html.write_text(html_content, encoding='utf-8')
-                self.pypandoc.convert_file(
-                    str(temp_html),
-                    'pdf',
-                    outputfile=str(temp_pdf),
-                    extra_args=['--pdf-engine=wkhtmltopdf'] if password else []
-                )
+                self.render_pdf(html_content, str(temp_pdf))
                 if not temp_pdf.is_file() or not temp_pdf.stat().st_size:
                     raise ValueError('PDF conversion produced no output')
                 if password and not self._encrypt_pdf(str(temp_pdf), password):
                     raise RuntimeError('PDF password protection failed')
-                temp_html.unlink()
                 os.replace(temp_pdf, output)
             return True
         except Exception as e:

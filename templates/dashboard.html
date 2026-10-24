@@ -1656,29 +1656,30 @@
                     </div>
                     <div class="p-5 space-y-4">
                         <div class="flex items-center justify-between">
-                            <span class="text-gray-400">LLM Engine</span>
+                            <span class="text-gray-400">LLM SDK</span>
                             <span class="px-3 py-1 rounded-full text-xs font-medium {{ 'bg-cyber-primary/10 text-cyber-primary border border-cyber-primary/20' if has_openai else 'bg-cyber-warning/10 text-cyber-warning border border-cyber-warning/20' }}">
-                                {{ 'ONLINE' if has_openai else 'SIMULATION' }}
+                                {{ 'SDK INSTALLED' if has_openai else 'SDK MISSING' }}
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-gray-400">AD Module</span>
+                            <span class="text-gray-400">LDAP SDK</span>
                             <span class="px-3 py-1 rounded-full text-xs font-medium {{ 'bg-cyber-primary/10 text-cyber-primary border border-cyber-primary/20' if has_ldap else 'bg-cyber-warning/10 text-cyber-warning border border-cyber-warning/20' }}">
-                                {{ 'ACTIVE' if has_ldap else 'LIMITED' }}
+                                {{ 'SDK INSTALLED' if has_ldap else 'SDK MISSING' }}
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-gray-400">Tool Check</span>
                             <span class="px-3 py-1 rounded-full text-xs font-medium {{ 'bg-cyber-primary/10 text-cyber-primary border border-cyber-primary/20' if tools_ok else 'bg-cyber-danger/10 text-cyber-danger border border-cyber-danger/20' }}">
-                                {{ available_tools }}/{{ total_tools }} Ready
+                                {{ available_tools }}/{{ total_tools }} Located
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-gray-400">Blockchain</span>
+                            <span class="text-gray-400">Web3 SDK</span>
                             <span class="px-3 py-1 rounded-full text-xs font-medium {{ 'bg-cyber-primary/10 text-cyber-primary border border-cyber-primary/20' if blockchain_ready else 'bg-cyber-warning/10 text-cyber-warning border border-cyber-warning/20' }}">
-                                {{ 'READY' if blockchain_ready else 'SIM' }}
+                                {{ 'SDK INSTALLED' if blockchain_ready else 'SDK MISSING' }}
                             </span>
                         </div>
+                        <p class="text-xs text-gray-500">Package and executable presence only. Service connections and execution have not been verified.</p>
                         <a href="/decentralized" class="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-cyber-secondary/30 text-cyber-secondary hover:bg-cyber-secondary/10 transition-all">
                             <i class="fas fa-link"></i>
                             <span>Decentralized Network</span>
@@ -1696,36 +1697,30 @@
                     </div>
                     <div class="p-5 space-y-4">
                         <div class="text-center">
-                            <div class="relative inline-block">
-                                <div class="w-24 h-24 rounded-full bg-cyber-danger/10 flex items-center justify-center border-2 border-cyber-danger/30">
-                                    <span class="text-3xl font-bold text-cyber-danger">95%</span>
-                                </div>
-                                <svg class="absolute inset-0 w-24 h-24 -rotate-90">
-                                    <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="4" fill="none" class="text-white/10"/>
-                                    <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="4" fill="none" class="text-cyber-danger" stroke-dasharray="251.2" stroke-dashoffset="12.56"/>
-                                </svg>
-                            </div>
-                            <p class="text-gray-400 text-sm mt-2">Evasion Success Rate</p>
+                            <p class="text-xl font-semibold text-gray-300">Not measured</p>
+                            <p class="text-gray-400 text-sm mt-2">Evasion success rate</p>
                         </div>
+                        <p class="text-xs text-gray-400">{{ 'Supplied telemetry; records are not verified execution or bypass results.' if evasion_stats.telemetry_available else 'No recorded telemetry available.' }}</p>
                         
                         <div class="grid grid-cols-2 gap-3">
                             <div class="bg-white/5 rounded-lg p-3 text-center">
-                                <p class="text-2xl font-bold text-cyber-primary">142</p>
-                                <p class="text-xs text-gray-400">Timestomp</p>
+                                <p class="text-2xl font-bold text-cyber-primary">{{ evasion_stats.timestomp_count if evasion_stats.telemetry_available else '—' }}</p>
+                                <p class="text-xs text-gray-400">Recorded timestomps</p>
                             </div>
                             <div class="bg-white/5 rounded-lg p-3 text-center">
-                                <p class="text-2xl font-bold text-cyber-secondary">89</p>
-                                <p class="text-xs text-gray-400">Log Clear</p>
+                                <p class="text-2xl font-bold text-cyber-secondary">{{ evasion_stats.logs_cleared_count if evasion_stats.telemetry_available else '—' }}</p>
+                                <p class="text-xs text-gray-400">Recorded log clears</p>
                             </div>
                             <div class="bg-white/5 rounded-lg p-3 text-center">
-                                <p class="text-2xl font-bold text-cyber-purple">67</p>
-                                <p class="text-xs text-gray-400">Artifacts</p>
+                                <p class="text-2xl font-bold text-cyber-purple">{{ evasion_stats.artifacts_removed_count if evasion_stats.telemetry_available else '—' }}</p>
+                                <p class="text-xs text-gray-400">Recorded artifact removals</p>
                             </div>
                             <div class="bg-white/5 rounded-lg p-3 text-center">
-                                <p class="text-2xl font-bold text-cyber-warning">234</p>
-                                <p class="text-xs text-gray-400">AV Bypass</p>
+                                <p class="text-2xl font-bold text-cyber-warning">{{ evasion_stats.payloads_obfuscated_count if evasion_stats.telemetry_available else '—' }}</p>
+                                <p class="text-xs text-gray-400">Recorded obfuscations</p>
                             </div>
                         </div>
+                        {% if evasion_stats.telemetry_available %}<p class="text-xs text-gray-500">Counts without a valid record default to zero.</p>{% endif %}
                         
                         <a href="/evasion/opsec/" class="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-cyber-danger/10 border border-cyber-danger/30 text-cyber-danger hover:bg-cyber-danger/20 transition-all">
                             <i class="fas fa-shield-alt"></i>

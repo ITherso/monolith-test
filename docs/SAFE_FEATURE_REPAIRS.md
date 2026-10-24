@@ -19,14 +19,45 @@ propagates that failure rather than claiming a PDF path and overall success.
 When `encrypt_pdf=True`, an empty or non-string `pdf_password` fails before PDF
 rendering. Explicit unencrypted PDF exports retain their existing contract.
 
-The renderer still requires the existing Pandoc/PDF-engine dependencies. Tests use
-real PDF fixtures for encryption and mock the external converter. They do not
-confirm an installed renderer or end-to-end HTML-to-PDF conversion. Temporary
-cleanup is not secure disk erasure or a guarantee against abrupt power loss.
+`PDFGenerator` now uses `cyberapp/pdf_renderer.py` and ReportLab directly. It no
+longer requires Pandoc, TeX, wkhtmltopdf, or a subprocess. The renderer supports a
+bounded static text/table subset of HTML, using bundled Vera fonts for Turkish
+characters. Scripts and remote/local assets are never evaluated. CSS, images and
+interactive charts are omitted; unsupported glyphs become `?`. Very long table
+cells are rendered as labelled text to preserve content without overflowing pages.
+The separate interactive HTML export is unchanged.
+
+The renderer rejects empty visible content, oversized HTML/text, excessive blocks,
+and excessive or nested tables with a clear failure. Tests now produce real PDF
+pages from HTML, encrypt them, reopen them and verify the password and content.
+Wrapper failure tests still inject a renderer to exercise errors deterministically.
+A synthetic multipage sample was also rendered and visually inspected. These
+checks do not run the main application or validate every legacy report generator.
+Temporary cleanup is not secure disk erasure or a guarantee against abrupt power
+loss.
 
 Report summaries now disclose that they use deterministic templates and supplied
 statistics. The legacy `AISummaryGenerator` and configuration names remain for
 compatibility; this summary path does not call an AI model.
+
+## Dashboard and scan-detail rendering
+
+Leaderboard and telemetry inputs are bounded to 1 MiB regular JSON files. Invalid,
+truncated, oversized, deeply nested, or incorrectly shaped data falls back to an
+unavailable display rather than crashing the dashboard. Leaderboard rows and
+display counters are validated before use. PATH and quoted executable paths are
+resolved without invoking a tool.
+
+Dashboard badges distinguish SDK installation and located executables from actual
+service readiness. The former hardcoded evasion percentage/counters have been
+replaced with supplied display counters; missing data and unmeasured success
+rates are explicit. Telemetry is reported source data, not proof of execution.
+
+The read-only scan `details()` handler now escapes database text before building
+HTML fragments. Null and numeric intelligence/log previews remain readable, and
+failures do not expose raw exception text. Tests render the actual details
+template with an in-memory database and hostile fixture values; no scan or payload
+is executed. This repair covers that view rather than certifying all HTML output.
 
 ## Release metadata checking
 
@@ -105,7 +136,7 @@ production readiness or completeness.
 
 ## Validation
 
-The dedicated management suite tests real PDF encryption, mocked release HTTP,
+The dedicated management suite tests real offline PDF rendering/encryption, mocked release HTTP,
 temporary event-file ingestion, authenticated isolated Flask routes, existing
 host stops, and prior management contracts. It does not start the application,
 invoke external converters, run operational modules, or establish that a personal

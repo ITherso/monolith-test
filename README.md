@@ -22,7 +22,7 @@
 
 > **CI scope:** [Management Safety CI](https://github.com/ITherso/monolith-test/actions/workflows/python.yml) validates isolated management/host-protection tests and reviewed static helpers. It does not start the application or certify the legacy operational suite. See [checked scope and known exclusions](docs/CI_SCOPE.md).
 
-> **Safe feature repairs:** PDF password protection now uses verified AES-256 output, release checks read this repository's metadata, and passive event review reads a bounded JSONL log. The authenticated `/feature-status` page distinguishes verified contracts, simulations, missing integrations, and safety stops. See [behavior and validation limits](docs/SAFE_FEATURE_REPAIRS.md).
+> **Safe feature repairs:** static PDF rendering works offline without converter binaries and supports verified AES-256 output. Malformed dashboard data recovers safely and scan-detail HTML is escaped. Release checks read this repository's metadata; passive event review reads a bounded JSONL log. The authenticated `/feature-status` page distinguishes verified contracts, simulations, missing integrations, and safety stops. See [behavior and validation limits](docs/SAFE_FEATURE_REPAIRS.md).
 
 > **Admin access:** matched feature routes now require an authenticated admin session by default. Explicitly reviewed read-only management routes remain available to logged-in users. Existing socket callbacks are also guarded. This does not enable operational modules or override host protection. See [access policy and scope](docs/ADMIN_ACCESS.md).
 

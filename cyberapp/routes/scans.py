@@ -357,6 +357,13 @@ def details(scan_id):
     if not session.get("logged_in"):
         return redirect("/login")
 
+    from markupsafe import escape
+
+    def display(value, fallback="", limit=None):
+        # Database text is untrusted even though the surrounding layout is HTML.
+        text = fallback if value is None else str(value)
+        return escape(text if limit is None else text[:limit])
+
     try:
         with db_conn() as conn:
             scan = conn.execute("SELECT * FROM scans WHERE id=?", (scan_id,)).fetchone()
@@ -371,10 +378,11 @@ def details(scan_id):
         # HTML içeriklerini oluştur
         vuln_html = ""
         for v in vulns:
-            vuln_type = v[2] if len(v) > 2 else "Unknown"
-            vuln_url = v[3] if len(v) > 3 else "N/A"
-            vuln_fix = v[4] if len(v) > 4 else "Önerilecek önlem aranıyor..."
-            vuln_severity = v[5] if len(v) > 5 else "MEDIUM"
+            vuln_type = display(v[2] if len(v) > 2 else None, "Unknown")
+            vuln_url = display(v[3] if len(v) > 3 else None, "N/A")
+            vuln_fix = display(v[4] if len(v) > 4 else None, "Önerilecek önlem aranıyor...")
+            severity_key = str(v[5]) if len(v) > 5 and v[5] is not None else "MEDIUM"
+            vuln_severity = display(severity_key)
             
             severity_colors = {
                 'CRITICAL': '#ff4757',
@@ -383,7 +391,7 @@ def details(scan_id):
                 'LOW': '#2ed573',
                 'INFO': '#70a1ff'
             }
-            color = severity_colors.get(vuln_severity, '#eccc68')
+            color = severity_colors.get(severity_key, '#eccc68')
             
             vuln_html += f"""
             <div style="background: #1a1a2e; padding: 15px; margin: 10px 0; border-left: 4px solid {color}; border-radius: 0 10px 10px 0;">
@@ -398,8 +406,8 @@ def details(scan_id):
 
         tech_html = ""
         for t in techs:
-            tech_name = t[2] if len(t) > 2 else "Unknown"
-            tech_via = t[3] if len(t) > 3 else "Detection method"
+            tech_name = display(t[2] if len(t) > 2 else None, "Unknown")
+            tech_via = display(t[3] if len(t) > 3 else None, "Detection method")
             tech_html += f"""
             <div style="background: #1a1a2e; padding: 10px; margin: 5px 0; border-left: 4px solid #00d4ff; border-radius: 0 10px 10px 0;">
                 <strong style="color: #00d4ff;">{tech_name}</strong>
@@ -412,7 +420,7 @@ def details(scan_id):
             intel_html = "<div style=\"background: #1a1a2e; padding: 15px; border-radius: 10px;\">"
             for i in intel:
                 if i and len(i) >= 4:
-                    intel_html += f"<p style=\"margin: 8px 0; padding: 8px; background: rgba(0,255,136,0.1); border-radius: 5px; border-left: 3px solid #00ff88;\"><strong style=\"color: #00ff88;\">[{i[2]}]</strong> <span style=\"color: #ccc;\">{i[3][:200]}</span></p>"
+                    intel_html += f"<p style=\"margin: 8px 0; padding: 8px; background: rgba(0,255,136,0.1); border-radius: 5px; border-left: 3px solid #00ff88;\"><strong style=\"color: #00ff88;\">[{display(i[2])}]</strong> <span style=\"color: #ccc;\">{display(i[3], limit=200)}</span></p>"
             intel_html += "</div>"
 
         logs_html = ""
@@ -420,7 +428,7 @@ def details(scan_id):
             logs_html = "<div style=\"background: #0d0d0d; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85em; max-height: 400px; overflow-y: auto;\">"
             for log in logs:
                 if log and len(log) >= 4:
-                    logs_html += f"<div style=\"margin: 5px 0; padding: 5px; border-bottom: 1px solid #333;\"><span style=\"color: #ffa502;\">[{log[2]}]</span> <span style=\"color: #888;\">{str(log[3])[:150]}</span></div>"
+                    logs_html += f"<div style=\"margin: 5px 0; padding: 5px; border-bottom: 1px solid #333;\"><span style=\"color: #ffa502;\">[{display(log[2])}]</span> <span style=\"color: #888;\">{display(log[3], limit=150)}</span></div>"
             logs_html += "</div>"
 
         # İstatistikler
@@ -463,10 +471,8 @@ def details(scan_id):
             high_count=high_count,
             medium_count=medium_count
         )
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return f"<html><body>Error: {str(e)}</body></html>", 500
+    except Exception:
+        return "Scan details could not be loaded", 500
 
 
 @scans_bp.route("/payloads", methods=["GET", "POST"])

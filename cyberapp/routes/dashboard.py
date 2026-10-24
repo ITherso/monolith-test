@@ -1,39 +1,26 @@
-import os
 import json
-from datetime import datetime
 
 from flask import Blueprint, redirect, render_template, session
 
+from cyberapp.dashboard_data import (
+    executable_available,
+    load_evasion_stats,
+    load_leaderboard,
+)
 from cyberapp.models.scans import list_recent_scans
-from cybermodules.arsenal import TOOLS
 from cybermodules.ad_enum import has_ldap
+from cybermodules.arsenal import TOOLS
 
 # Evasion stats file path
 EVASION_STATS_FILE = "/tmp/evasion_stats.json"
+LEADERBOARD_FILE = "/tmp/monolith_leaderboard.json"
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
 def _get_evasion_stats():
     """Get evasion layer statistics from persistent storage."""
-    stats = {
-        "timestomp_count": 0,
-        "logs_cleared_count": 0,
-        "artifacts_removed_count": 0,
-        "payloads_obfuscated_count": 0,
-        "last_evasion_action": None,
-        "evasion_enabled": True,
-    }
-
-    if os.path.exists(EVASION_STATS_FILE):
-        try:
-            with open(EVASION_STATS_FILE, "r") as f:
-                saved_stats = json.load(f)
-                stats.update(saved_stats)
-        except Exception:
-            pass
-
-    return stats
+    return load_evasion_stats(EVASION_STATS_FILE)
 
 
 def _save_evasion_stats(stats):
@@ -53,15 +40,9 @@ def index():
 
     scans = list_recent_scans(limit=20)
 
-    leaderboard = []
-    leaderboard_file = "/tmp/monolith_leaderboard.json"
-    if os.path.exists(leaderboard_file):
-        with open(leaderboard_file, "r") as f:
-            leaderboard = json.load(f)[:10]
+    leaderboard = load_leaderboard(LEADERBOARD_FILE)
 
-    available_tools = sum(
-        1 for tool in TOOLS.values() if tool and os.path.exists(tool.split()[0] if " " in tool else tool)
-    )
+    available_tools = sum(1 for tool in TOOLS.values() if executable_available(tool))
     total_tools = len(TOOLS)
     tools_ok = available_tools >= 10
 
@@ -101,7 +82,7 @@ def attack_playground():
 
 def _has_openai():
     try:
-        import openai  # type: ignore
+        import openai  # noqa: F401
 
         return True
     except Exception:

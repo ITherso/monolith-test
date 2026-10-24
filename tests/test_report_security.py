@@ -131,26 +131,11 @@ def test_atomic_replace_failure_preserves_original(security, plain_pdf, monkeypa
     assert not list(plain_pdf.parent.glob(".*.encrypted-*.pdf"))
 
 
-@pytest.fixture
-def isolated_generator(security, plain_pdf):
-    """Extract only PDFGenerator; fake the existing renderer without running it."""
-    fixture_bytes = plain_pdf.read_bytes()
-    staged_paths = []
-    renderer = SimpleNamespace(fail=False, no_output=False)
-
-    def convert_file(source, output_format, outputfile, **kwargs):
-        assert output_format == "pdf"
-        assert Path(source).read_text(encoding="utf-8") == "<p>Private fixture</p>"
-        staged_paths.extend([Path(source), Path(outputfile)])
-        if not renderer.no_output:
-            Path(outputfile).write_bytes(fixture_bytes)
-        if renderer.fail:
-            raise RuntimeError("fixture conversion failed")
-
-    renderer.convert_file = convert_file
+def isolated_pdf_generator(renderer, security):
+    """Load the real PDF wrapper without importing its operational parent package."""
 
     def restricted_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name == "pypandoc":
+        if name == "cyberapp.pdf_renderer":
             return renderer
         if name == "cyberapp.report_security":
             return security
@@ -175,7 +160,26 @@ def isolated_generator(security, plain_pdf):
         compile(ast.Module(body=[node], type_ignores=[]), str(source), "exec"),
         namespace,
     )
-    return namespace["PDFGenerator"](), renderer, staged_paths
+    return namespace["PDFGenerator"]()
+
+
+@pytest.fixture
+def isolated_generator(security, plain_pdf):
+    """Inject a renderer fixture for wrapper failure and publication contracts."""
+    fixture_bytes = plain_pdf.read_bytes()
+    staged_paths = []
+    renderer = SimpleNamespace(fail=False, no_output=False)
+
+    def render_html_pdf(html_content, outputfile):
+        assert html_content == "<p>Private fixture</p>"
+        staged_paths.append(Path(outputfile))
+        if not renderer.no_output:
+            Path(outputfile).write_bytes(fixture_bytes)
+        if renderer.fail:
+            raise RuntimeError("fixture conversion failed")
+
+    renderer.render_html_pdf = render_html_pdf
+    return isolated_pdf_generator(renderer, security), renderer, staged_paths
 
 
 def test_generator_publishes_only_encrypted_pdf(isolated_generator, tmp_path):
@@ -394,3 +398,46 @@ def test_caller_preserves_explicit_unencrypted_configuration(report_caller):
     assert result.success is True
     with report_caller.output.open("rb") as stream:
         assert not PdfReader(stream).is_encrypted
+
+
+def test_actual_offline_render_encrypt_and_publish_without_converter(
+    security, tmp_path
+):
+    spec = importlib.util.spec_from_file_location(
+        "isolated_real_pdf_renderer", ROOT / "cyberapp/pdf_renderer.py"
+    )
+    renderer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(renderer)
+    generator = isolated_pdf_generator(renderer, security)
+    output = tmp_path / "real-report.pdf"
+    assert generator.generate_pdf(
+        "<h1>Güvenlik Raporu</h1><p>Doğrulama: şifre, ölçüm ve çözüm.</p>"
+        "<table><tr><th>Bulgu</th><th>Durum</th></tr>"
+        "<tr><td>Örnek kayıt</td><td>İncelendi</td></tr></table>"
+        "<script>SHOULD-NOT-APPEAR</script>",
+        str(output),
+        PASSWORD,
+    )
+    with output.open("rb") as stream:
+        reader = PdfReader(stream)
+        assert reader.is_encrypted
+        assert reader.decrypt("wrong-password") == 0
+        assert reader.decrypt(PASSWORD)
+        text = "\n".join(page.extract_text() for page in reader.pages)
+        assert "Güvenlik Raporu" in text
+        assert "şifre, ölçüm ve çözüm" in text
+        assert "Örnek kayıt" in text
+        assert "SHOULD-NOT-APPEAR" not in text
+    assert not list(tmp_path.glob(".pdf-report-*"))
+
+
+@pytest.mark.parametrize("password", [None, 123])
+def test_generator_invalid_password_does_not_render_or_replace(
+    isolated_generator, tmp_path, password
+):
+    generator, _, staged_paths = isolated_generator
+    output = tmp_path / "original.pdf"
+    output.write_bytes(b"original")
+    assert not generator.generate_pdf("<p>Private fixture</p>", str(output), password)
+    assert output.read_bytes() == b"original"
+    assert staged_paths == []
