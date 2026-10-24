@@ -65,6 +65,10 @@ class ManagementCIContractTests(unittest.TestCase):
             "tests/test_dashboard_stability.py",
             "tests/test_scan_view_safety.py",
             "tests/test_pdf_renderer.py",
+            "tests/test_ai_vulnerability_prediction.py",
+            "tests/test_ai_vulnerability_store.py",
+            "tests/test_ai_vulnerability_service.py",
+            "tests/test_ai_vulnerability_integration.py",
         }
         self.assertEqual(set(self.tool.ISOLATED_TESTS), expected)
         self.assertNotIn("tests/test_c2.py", self.tool.ISOLATED_TESTS)

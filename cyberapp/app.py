@@ -76,6 +76,7 @@ c2_standard_bp = _load_blueprint('cyberapp.routes.c2', 'c2_standard_bp')
 monitoring_bp = _load_blueprint('cyberapp.routes.monitoring', 'monitoring_bp')
 siem_monitoring_bp = _load_blueprint('cyberapp.routes.siem_monitoring', 'siem_monitoring_bp')
 feature_status_bp = _load_blueprint('cyberapp.routes.feature_status', 'feature_status_bp')
+ai_vulnerability_bp = _load_blueprint('cyberapp.routes.ai_vulnerability', 'ai_vulnerability_bp')
 
 # ==========================================
 # Pro Advanced Feature Blueprints
@@ -215,7 +216,7 @@ def create_app(run_migrations_on_start=True, config=None):
         distributed_bp, beacon_bp, lateral_bp,
         relay_bp, evasion_bp, quantum_bp, cloud_bp, zeroday_bp, vr_bp,
         webshell_bp, waf_bp, tools_bp, c2_standard_bp, monitoring_bp,
-        siem_monitoring_bp, feature_status_bp,
+        siem_monitoring_bp, feature_status_bp, ai_vulnerability_bp,
     ]
     
     # Register pro features

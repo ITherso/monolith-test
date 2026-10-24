@@ -46,6 +46,13 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
   or captured packets. FIFO rejection is skipped on Windows because FIFOs are
   unavailable there; it is exercised on Ubuntu. See
   [repaired behavior and remaining limits](SAFE_FEATURE_REPAIRS.md).
+- Offline vulnerability review now tests category completeness, observed-product
+  recognition, contextual header hints, uncalibrated risk ordering, immutable
+  deduplication, unknown/empty data, admin API dispatch, and real SQLite snapshot
+  roundtrips. Migration checks include `0007_ai_vulnerability_reports`. AI-only
+  worker tests extract the reviewed functions with inert dependencies; the actual
+  worker and its operational imports are not loaded. See
+  [analysis semantics and limits](AI_VULNERABILITY_ANALYSIS.md).
 - Reviewed helpers/tests receive AST syntax, Ruff lint, and formatting checks.
   The two standalone safety/credential helpers also receive Mypy checks without
   importing operational dependencies.

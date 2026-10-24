@@ -26,6 +26,7 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <a href="/feature-status" class="glass rounded-xl px-4 py-2 text-sm text-cyber-secondary hover:text-white">Özellik durumu</a>
+                    {% if session.get('role') == 'admin' %}<a href="/ai-vulnerability" class="glass rounded-xl px-4 py-2 text-sm text-cyber-secondary hover:text-white">Açık tahmini</a>{% endif %}
                     <div class="glass rounded-xl px-4 py-2 flex items-center gap-3">
                         <div class="flex items-center gap-2">
                             <div class="w-2 h-2 rounded-full bg-cyber-primary status-pulse"></div>
@@ -1017,7 +1018,7 @@
                                         </label>
                                         <label class="flex items-center gap-3 cursor-pointer group">
                                             <input type="checkbox" name="tools" value="ai_prediction" class="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50">
-                                            <span class="text-gray-300 group-hover:text-white transition-colors">📊 AI Vuln Prediction</span>
+                                            <span class="text-gray-300 group-hover:text-white transition-colors" title="Yalnızca kayıtlı gözlemler değerlendirilir; bu seçim tek başına hedefe bağlanmaz.">📊 Kayıtlı veri risk tahmini</span>
                                         </label>
                                         <label class="flex items-center gap-3 cursor-pointer group">
                                             <input type="checkbox" name="tools" value="behavioral_mimicry" class="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50">

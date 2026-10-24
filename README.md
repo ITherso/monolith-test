@@ -26,6 +26,8 @@
 
 > **Admin access:** matched feature routes now require an authenticated admin session by default. Explicitly reviewed read-only management routes remain available to logged-in users. Existing socket callbacks are also guarded. This does not enable operational modules or override host protection. See [access policy and scope](docs/ADMIN_ACCESS.md).
 
+> **Vulnerability review:** `/ai-vulnerability` provides admin-only analysis of supplied responses or already-recorded scan observations. The legacy AI option now produces a stored-data review; selecting it alone returns before scanner/engine calls. This is a rule-based, uncalibrated prioritization helper, not a trained model or verified vulnerability detector. See [inputs, storage and limits](docs/AI_VULNERABILITY_ANALYSIS.md).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0

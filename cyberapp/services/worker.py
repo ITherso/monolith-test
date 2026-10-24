@@ -8,6 +8,7 @@ import tempfile
 import shutil
 import re
 import ssl
+import json
 from html import unescape
 from urllib import error as urllib_error
 from urllib import request as urllib_request
@@ -366,8 +367,39 @@ def _parse_gobuster_output(output, scan_id):
             pass
 
 
+def _run_saved_vulnerability_review(scan_id, finish_scan=False):
+    """Analyze existing records only; never pass inferred risks to exploit queues."""
+    from cyberapp.vulnerability_service import review_saved_scan
+
+    try:
+        report = review_saved_scan(scan_id)
+    except Exception:
+        if finish_scan:
+            with db_conn() as conn:
+                conn.execute("UPDATE scans SET status = ? WHERE id = ?", ("AI REVIEW FAILED", scan_id))
+                conn.commit()
+        raise
+    _log_tool_output(scan_id, "AI_PREDICTION", json.dumps({
+        "method": "heuristic_rules",
+        "analysis_status": report["analysis_status"],
+        "total_predictions": report["executive_summary"]["total_predictions"],
+        "total_confirmed": 0,
+        "network_probe_performed": False,
+    }))
+    if finish_scan:
+        status = "AI REVIEW COMPLETE" if report["analysis_status"] != "insufficient_observations" else "AI REVIEW: INSUFFICIENT STORED DATA"
+        with db_conn() as conn:
+            conn.execute("UPDATE scans SET status = ? WHERE id = ?", (status, scan_id))
+            conn.commit()
+        update_scan_progress(scan_id, 100, 0)
+    return report
+
+
 def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous"):
     """Main worker function that runs all scans"""
+    if selected_tools and set(selected_tools) == {"ai_prediction"}:
+        # This return precedes every scanner, network and operational engine path.
+        return _run_saved_vulnerability_review(scan_id, finish_scan=True)
     try:
         start_time = time.time()
         update_scan_progress(scan_id, 5, _eta(start_time, 5))
@@ -534,6 +566,12 @@ def run_worker(target, scan_id, run_python, selected_tools, user_id="anonymous")
 
         if vuln_count == 0:
             _perform_passive_web_scan(target, scan_id)
+
+        if selected_tools and "ai_prediction" in selected_tools:
+            try:
+                _run_saved_vulnerability_review(scan_id)
+            except Exception:
+                _log_tool_output(scan_id, "AI_PREDICTION", "Stored-data review failed; no prediction snapshot was reported as saved.")
 
         update_scan_progress(scan_id, 80, _eta(start_time, 80))
 

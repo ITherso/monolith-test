@@ -236,11 +236,11 @@ FEATURES = (
     ),
     FeatureStatus(
         "ai_predictor",
-        "Eski AI açık tahmin modülü",
-        "incomplete_offline",
-        "Tahmin sınıfı, enum tanımında bulunmayan kategorilere başvurur; modül yüklenmesini engelleyen kusur vardır.",
-        "cybermodules/ai_vuln.py:29,457,868",
-        "Kaynak incelemesi; diğer AI ekranlarının bütünü için bir başarısızlık hükmü değildir.",
+        "Sağlanan veriden kural tabanlı açık tahmini",
+        "verified_management",
+        "Eksik kategoriler, teknoloji tanıma, risk sıralaması ve rapor kaydı düzeltildi. Admin ekranı sağlanan veya kayıtlı veriyi değerlendirir.",
+        "cyberapp/vulnerability_analysis.py; tests/test_ai_vulnerability_prediction.py; tests/test_ai_vulnerability_integration.py",
+        "Eğitilmiş model veya kalibre edilmiş olasılık değildir; tahminler doğrulanmış açık sayılmaz. Hedef bağlantısı/istismar yapılmaz; normal uygulama ve worker importları izolasyon değildir.",
     ),
     FeatureStatus(
         "legacy_source_defects",

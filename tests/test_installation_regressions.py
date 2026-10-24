@@ -13,7 +13,7 @@ import yaml
 from alembic.script import ScriptDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
-HEAD = "0006_merge_schema_heads"
+HEAD = "0007_ai_vulnerability_reports"
 
 
 @pytest.fixture
@@ -66,6 +66,7 @@ def test_schema_upgrades_from_fresh_and_both_branches(migrations, previous_revis
             "ai_post_exploit_analysis",
             "priv_esc_vectors",
             "lateral_movement",
+            "ai_vulnerability_reports",
         } <= tables
         columns = {
             row[1] for row in conn.execute("PRAGMA table_info(lateral_movement)")
