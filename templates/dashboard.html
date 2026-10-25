@@ -29,8 +29,7 @@
                     {% if session.get('role') == 'admin' %}<a href="/ai-vulnerability" class="glass rounded-xl px-4 py-2 text-sm text-cyber-secondary hover:text-white">Açık tahmini</a>{% endif %}
                     <div class="glass rounded-xl px-4 py-2 flex items-center gap-3">
                         <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full bg-cyber-primary status-pulse"></div>
-                            <span class="text-cyber-primary text-sm font-medium">System Online</span>
+                            <span id="panel-connection" class="text-gray-300 text-sm font-medium" data-state="checking" role="status">Durum bağlantısı kontrol ediliyor…</span>
                         </div>
                         <span class="text-gray-600">|</span>
                         <span class="text-gray-400 text-sm">{{ session.get('user', 'Analyst') }}</span>
@@ -1518,6 +1517,10 @@
                             RECENT OPERATIONS
                         </h3>
                     </div>
+                    <div class="px-6 py-3 text-sm text-gray-300">
+                        <p id="scan-connection-message" data-source-available="{{ 'false' if scans_available is defined and not scans_available else 'true' }}" role="status" aria-live="polite">{{ 'Tarama kayıtları şu anda okunamıyor. Sayfayı yenile.' if scans_available is defined and not scans_available else 'Tarama durumları kontrol ediliyor…' }}</p>
+                        <a id="scan-connection-login" href="{{ url_for('auth.login') }}" class="text-cyber-secondary underline" hidden>Yeniden giriş yap</a>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-white/5">
@@ -1530,7 +1533,7 @@
                             </thead>
                             <tbody class="divide-y divide-white/5">
                                 {% for scan in scans %}
-                                <tr class="hover:bg-white/5 transition-colors" data-scan-id="{{ scan[0] }}">
+                                <tr class="hover:bg-white/5 transition-colors" data-scan-id="{{ scan[0] }}" data-status-url="{{ url_for('monitoring.scan_status', scan_id=scan[0]) }}">
                                     <td class="px-6 py-4">
                                         <span class="font-mono text-yellow-500 font-bold">#{{ scan[0] }}</span>
                                     </td>
@@ -1539,20 +1542,14 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-3">
-                                            {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
-                                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-cyber-primary/10 text-cyber-primary border border-cyber-primary/20">✓ COMPLETED</span>
-                                            {% elif 'FAILED' in scan[3] or 'HATA' in scan[3] %}
-                                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-cyber-danger/10 text-cyber-danger border border-cyber-danger/20">✗ FAILED</span>
-                                            {% else %}
-                                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-cyber-warning/10 text-cyber-warning border border-cyber-warning/20">⏳ {{ scan[3][:15] }}</span>
-                                            {% endif %}
+                                            <span class="scan-status px-3 py-1 rounded-full text-xs font-medium bg-white/5 text-gray-300 border border-gray-500/20">{{ scan[3][:256] }}</span>
                                             <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                <div class="h-full bg-gradient-to-r from-cyber-warning to-cyber-primary scan-progress rounded-full transition-all duration-500" style="width: {{ scan[5] or 0 }}%"></div>
+                                                <div class="h-full bg-gradient-to-r from-cyber-warning to-cyber-primary scan-progress rounded-full transition-all duration-500" role="progressbar" aria-label="Kayıtlı tarama ilerlemesi" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
                                             </div>
                                         </div>
-                                        {% if scan[6] is not none %}
-                                        <p class="text-xs text-gray-500 mt-2">ETA: {{ scan[6] }}s</p>
-                                        {% endif %}
+                                        <p class="scan-progress-value text-xs text-gray-400 mt-2">İlerleme kontrol ediliyor…</p>
+                                        <p class="scan-eta text-xs text-gray-500 mt-2">ETA: bilinmiyor</p>
+                                        <p class="scan-status-error text-xs text-cyber-warning mt-2" hidden></p>
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <div class="flex items-center justify-end gap-2">
@@ -1847,23 +1844,9 @@
         return div.innerHTML;
     }
 
-    async function refreshScanProgress() {
-        const rows = document.querySelectorAll('tr[data-scan-id]');
-        for (const row of rows) {
-            const scanId = row.getAttribute('data-scan-id');
-            if (!scanId) continue;
-            try {
-                const res = await fetch(`/scan_status/${scanId}`);
-                if (!res.ok) continue;
-                const data = await res.json();
-                const bar = row.querySelector('.scan-progress');
-                const eta = row.querySelector('p.text-xs.text-gray-500.mt-2');
-                if (bar) bar.style.width = `${data.progress || 0}%`;
-                if (eta && data.eta_seconds) eta.textContent = `ETA: ${data.eta_seconds}s`;
-            } catch (e) {}
-        }
-    }
-    refreshScanProgress();
-    setInterval(refreshScanProgress, 5000);
 </script>
+{% endblock %}
+
+{% block extra_js %}
+<script>{% include 'partials/scan_progress.js' %}</script>
 {% endblock %}

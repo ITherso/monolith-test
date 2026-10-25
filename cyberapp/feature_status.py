@@ -35,6 +35,14 @@ class FeatureStatus:
 
 FEATURES = (
     FeatureStatus(
+        "panel_status_connection",
+        "Ana panel ve kayıtlı tarama durumu bağlantısı",
+        "verified_management",
+        "Salt okunur durum adresleri aynı sözleşmeyi kullanır; oturum, veri kaynağı ve bağlantı hataları görünürdür.",
+        "cyberapp/routes/monitoring.py; tests/test_panel_connection.py; tests/js/scan_progress.test.cjs",
+        "Geçici SQLite, izole Flask ve sahte tarayıcı testleri. Gerçek uygulama, tarama veya hedef bağlantısı başlatılmaz.",
+    ),
+    FeatureStatus(
         "listener_runtime",
         "C2 dinleyici çalışma durumu",
         "incomplete_offline",

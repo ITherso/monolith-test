@@ -30,6 +30,8 @@
 
 > **Listener status:** the reviewed listener start placeholders now fail explicitly instead of claiming to run. Eight Web C2 routes with missing backend methods return HTTP 501 without dispatching operations. The panel reports the unavailable runtime and checks error responses before claiming success. No network listener was implemented or started. See [scope and remaining gaps](docs/LISTENER_STATUS.md).
 
+> **Dashboard connection:** recorded scan status uses a consistent read-only API and preserves installation prefixes. Expired sessions, service failures, and timeouts are visible; requests cannot overlap, and status/progress/ETA update together. A database read failure leaves a readable unavailable page with HTTP 503. Tests use temporary records and inert browser fixtures; no scanner or listener is started. See [panel behavior](docs/SAFE_FEATURE_REPAIRS.md#dashboard-status-connections).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0

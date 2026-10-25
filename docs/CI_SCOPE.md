@@ -64,6 +64,15 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
   missing Web C2 operations return explicit HTTP 501 without backend dispatch,
   and the advanced start route does not construct a server. C2 modules and the
   application are never imported or started; this is not listener validation.
+- Dashboard status checks directly load the reviewed monitoring route with a
+  temporary SQLite database and inert package dependencies. Canonical/legacy
+  contracts, prefix-aware URLs, JSON session failures, bounded progress/ETA,
+  generic database failures, and read-only behavior are covered. Only the legacy
+  status handler is extracted from `scans.py`; the operational module is not loaded.
+- Node 24 tests evaluate only `templates/partials/scan_progress.js` against a fake
+  DOM, clock, and fetch implementation. They cover safe read requests, errors,
+  recovery, cancellation, stale display and zero/unknown values without starting
+  a browser, server, scanner, or listener. Other dashboard scripts are not run.
 - The matrix covers Windows and Ubuntu with Python 3.11 and 3.12.
 - CI installs `requirements_ci.txt`, not the operational dependency set. Pytest
   plugin auto-loading is disabled.
@@ -81,6 +90,7 @@ Example local validation, without launching the application:
 python -m pip install -r requirements_ci.txt
 python scripts/check_management_safety.py --syntax-check
 python -m pytest -c pytest-management.ini
+node --test tests/js/scan_progress.test.cjs
 python scripts/check_management_safety.py --lint
 python scripts/check_management_safety.py --format-check
 python -m mypy --follow-imports=skip cyberapp/host_safety.py cyberapp/security.py

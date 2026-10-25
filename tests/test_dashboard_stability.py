@@ -9,7 +9,7 @@ from types import ModuleType
 from unittest.mock import patch
 
 import pytest
-from flask import Flask
+from flask import Flask, render_template
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -218,6 +218,33 @@ def test_corrupt_display_files_no_longer_break_logged_in_dashboard(dashboard):
     assert response.get_data(as_text=True) == "dashboard rendered"
 
 
+def test_scan_database_failure_keeps_panel_readable_without_claiming_empty_success(
+    dashboard,
+):
+    route, client, stubs = dashboard
+    with client.session_transaction() as session:
+        session.update(logged_in=True, user="analyst", role="analyst")
+
+    def rendered(template, **values):
+        assert template == "dashboard.html"
+        assert values["scans"] == []
+        assert values["scans_available"] is False
+        return "scan records temporarily unavailable"
+
+    with (
+        patch.dict(sys.modules, stubs),
+        patch.object(
+            route, "list_recent_scans", side_effect=RuntimeError("PRIVATE-DB-PATH")
+        ),
+        patch.object(route, "render_template", side_effect=rendered),
+        patch.object(route, "executable_available", return_value=False),
+    ):
+        response = client.get("/")
+    assert response.status_code == 503
+    assert b"PRIVATE-DB-PATH" not in response.data
+    assert response.get_data(as_text=True) == "scan records temporarily unavailable"
+
+
 def test_data_helper_never_imports_or_executes_operational_code():
     tree = ast.parse((ROOT / "cyberapp/dashboard_data.py").read_text(encoding="utf-8"))
     imports = {
@@ -301,3 +328,39 @@ def test_supplied_typed_counts_replace_placeholder_numbers(tmp_path, data):
     assert "Recorded obfuscations" in rendered
     assert "Not measured" in rendered
     assert "95%" not in rendered
+
+
+def test_real_dashboard_renders_prefixed_status_links_and_safe_initial_values(
+    data, tmp_path
+):
+    app = Flask("dashboard-prefix-fixture", template_folder=str(ROOT / "templates"))
+    app.secret_key = "dashboard-render-fixture-only"
+    app.add_url_rule("/login", "auth.login", lambda: "inert login")
+    app.add_url_rule(
+        "/api/management/scans/<int:scan_id>/status",
+        "monitoring.scan_status",
+        lambda scan_id: {"scan_id": scan_id},
+    )
+    hostile = '<img src=x onerror="fixture()">'
+    with app.test_request_context("/", environ_overrides={"SCRIPT_NAME": "/panel"}):
+        rendered = render_template(
+            "dashboard.html",
+            scans=[(7, "supplied.invalid", "date", hostile, "analyst", hostile, None)],
+            leaderboard=[],
+            available_tools=0,
+            total_tools=0,
+            tools_ok=False,
+            has_openai=False,
+            has_ldap=False,
+            blockchain_ready=False,
+            evasion_stats=data.load_evasion_stats(tmp_path / "missing.json"),
+        )
+    assert 'data-status-url="/panel/api/management/scans/7/status"' in rendered
+    assert 'href="/panel/login"' in rendered
+    assert hostile not in rendered
+    assert '&lt;img src=x onerror=' in rendered
+    assert rendered.count("Read-only dashboard updates.") == 1
+    assert "refreshScanProgress" not in rendered
+    assert "style=\"width: &lt;img" not in rendered
+    assert 'class="scan-eta ' in rendered
+    assert 'id="scan-connection-message"' in rendered

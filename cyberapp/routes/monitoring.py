@@ -1,3 +1,5 @@
+import math
+
 from flask import Blueprint, jsonify, redirect, session
 from markupsafe import escape
 
@@ -6,33 +8,67 @@ from cyberapp.models.db import db_conn
 monitoring_bp = Blueprint("monitoring", __name__)
 
 
+def _status_response(payload, status=200):
+    response = jsonify(payload)
+    response.status_code = status
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def _finite_number(value):
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
 @monitoring_bp.route("/scan_status/<int:scan_id>")
+@monitoring_bp.route("/api/management/scans/<int:scan_id>/status")
 def scan_status(scan_id):
-    if not session.get("logged_in"):
-        return jsonify({"error": "login_required"}), 401
+    """Read one recorded scan; never start a scan or contact its target."""
+    if session.get("logged_in") is not True:
+        return _status_response({"error": "login_required"}, 401)
+    if (
+        isinstance(scan_id, bool)
+        or not isinstance(scan_id, int)
+        or not 0 < scan_id <= 2**63 - 1
+    ):
+        return _status_response({"error": "invalid_scan_id"}, 400)
 
-    with db_conn() as conn:
-        scan = conn.execute(
-            "SELECT status FROM scans WHERE id = ?",
-            (scan_id,),
-        ).fetchone()
-        progress = conn.execute(
-            "SELECT progress, eta_seconds FROM scan_progress WHERE scan_id = ?",
-            (scan_id,),
-        ).fetchone()
+    try:
+        with db_conn() as conn:
+            scan = conn.execute(
+                "SELECT status, target FROM scans WHERE id = ?", (scan_id,)
+            ).fetchone()
+            if not scan:
+                return _status_response({"error": "not_found"}, 404)
+            progress = conn.execute(
+                "SELECT progress, eta_seconds FROM scan_progress WHERE scan_id = ?",
+                (scan_id,),
+            ).fetchone()
+            vuln_count = conn.execute(
+                "SELECT COUNT(*) FROM vulns WHERE scan_id = ?", (scan_id,)
+            ).fetchone()[0]
+    except Exception:
+        return _status_response({"error": "scan_status_unavailable"}, 503)
 
-    if not scan:
-        return jsonify({"error": "not_found"}), 404
-
-    progress_value = progress[0] if progress else 0
-    eta_value = progress[1] if progress else None
-
-    return jsonify(
+    percent = progress[0] if progress else None
+    eta = progress[1] if progress else None
+    progress_available = _finite_number(percent)
+    eta_available = _finite_number(eta) and eta >= 0
+    status = scan[0] if isinstance(scan[0], str) and scan[0].strip() else "UNKNOWN"
+    target = scan[1] if isinstance(scan[1], str) else ""
+    return _status_response(
         {
             "scan_id": scan_id,
-            "status": scan[0],
-            "progress": progress_value,
-            "eta_seconds": eta_value,
+            "status": status[:256],
+            "target": target[:2048],
+            "progress": min(100, max(0, percent)) if progress_available else 0,
+            "progress_available": progress_available,
+            "eta_seconds": eta if eta_available else None,
+            "eta_available": eta_available,
+            "vuln_count": vuln_count,
         }
     )
 

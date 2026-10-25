@@ -38,7 +38,12 @@ def index():
     if not session.get("logged_in"):
         return redirect("/login")
 
-    scans = list_recent_scans(limit=20)
+    scans_available = True
+    try:
+        scans = list_recent_scans(limit=20)
+    except Exception:
+        scans = []
+        scans_available = False
 
     leaderboard = load_leaderboard(LEADERBOARD_FILE)
 
@@ -57,9 +62,10 @@ def index():
     # Get evasion layer statistics
     evasion_stats = _get_evasion_stats()
 
-    return render_template(
+    page = render_template(
         "dashboard.html",
         scans=scans,
+        scans_available=scans_available,
         leaderboard=leaderboard,
         user=session.get("user", "guest"),
         available_tools=available_tools,
@@ -70,6 +76,7 @@ def index():
         blockchain_ready=blockchain_ready,
         evasion_stats=evasion_stats,
     )
+    return page if scans_available else (page, 503)
 
 
 @dashboard_bp.route("/attack-playground")

@@ -59,6 +59,36 @@ failures do not expose raw exception text. Tests render the actual details
 template with an in-memory database and hostile fixture values; no scan or payload
 is executed. This repair covers that view rather than certifying all HTML output.
 
+## Dashboard status connections
+
+The main dashboard now reads `/api/management/scans/<id>/status`. Both legacy
+`/scan_status/<id>` registrations delegate to this same read-only contract, so
+blueprint registration order no longer changes response fields or missing-record
+behavior. Flask-generated URLs preserve the installation's mount prefix.
+
+The request explicitly accepts JSON: an expired session produces HTTP 401 rather
+than an HTML login page silently consumed as JSON. The panel shows login, access,
+service, invalid-response and timeout failures, and preserves the last displayed
+record as stale. Removed records are recognized only by the API's JSON `not_found`
+response. A missing route or proxy HTML error remains a retryable connection error.
+
+Polling has an eight-second cycle timeout and at most twenty read requests per
+cycle. A new cycle starts after the previous one finishes, with backoff on failure.
+Hidden pages pause polling; page exit cancels pending work. Login/access failures
+stop retries. Status text, validated progress and ETA refresh together; zero ETA
+is retained and unknown ETA clears stale values. Database text is inserted as text,
+and untrusted progress is never interpolated directly into the initial CSS.
+
+The initial dashboard also handles a failed scan-record read: it renders an explicit
+unavailable message with HTTP 503 rather than claiming there are no scans. This
+does not repair an unavailable database or start missing worker services.
+
+These routes issue SELECT queries only. Temporary SQLite/isolated Flask tests
+check the API, aliases, data preservation, permissions and mount prefix. Node tests
+evaluate only the polling partial against a fake DOM, clock and fetch responses;
+they do not run the rest of the dashboard's scripts or open network connections.
+The full application and deployment/proxy configuration remain unverified.
+
 ## Release metadata checking
 
 `cyberapp/release_updates.py` reads only

@@ -297,38 +297,10 @@ def scan():
 
 @scans_bp.route("/scan_status/<int:scan_id>")
 def scan_status(scan_id):
-    """Tarama durumunu JSON olarak getir"""
-    if not session.get("logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    try:
-        with db_conn() as conn:
-            progress = conn.execute(
-                "SELECT progress, eta_seconds FROM scan_progress WHERE scan_id = ?",
-                (scan_id,)
-            ).fetchone()
-            
-            status = conn.execute(
-                "SELECT status, target FROM scans WHERE id = ?",
-                (scan_id,)
-            ).fetchone()
-            
-            # Zafiyet sayısını al
-            vuln_count = conn.execute(
-                "SELECT COUNT(*) FROM vulns WHERE scan_id = ?",
-                (scan_id,)
-            ).fetchone()[0]
-            
-            return jsonify({
-                "scan_id": scan_id,
-                "progress": progress[0] if progress else 0,
-                "eta_seconds": progress[1] if progress else None,
-                "status": status[0] if status else "Unknown",
-                "target": status[1] if status else "Unknown",
-                "vuln_count": vuln_count
-            })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    """Compatibility alias for the canonical read-only status response."""
+    from cyberapp.routes.monitoring import scan_status as monitoring_scan_status
+
+    return monitoring_scan_status(scan_id)
 
 
 @scans_bp.route("/delete/<int:scan_id>")

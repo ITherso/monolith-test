@@ -30,10 +30,15 @@ jobs:
           cache-dependency-path: requirements_ci.txt
       - name: Install isolated validation dependencies
         run: python -m pip install -r requirements_ci.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
       - name: Check syntax in the reviewed management scope
         run: python scripts/check_management_safety.py --syntax-check
       - name: Run isolated management and host-protection tests
         run: python -m pytest -c pytest-management.ini --junitxml=reports/management-safety.xml
+      - name: Check dashboard connection behavior with inert browser fixtures
+        run: node --test tests/js/scan_progress.test.cjs
       - name: Lint reviewed management helpers and tests
         run: python scripts/check_management_safety.py --lint
       - name: Check formatting in the reviewed management scope
