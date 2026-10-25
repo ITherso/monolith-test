@@ -8,7 +8,6 @@ these tuples and the dedicated pytest configuration together.
 from __future__ import annotations
 
 import argparse
-import ast
 import json
 import subprocess
 import sys
@@ -124,12 +123,13 @@ def manifest() -> dict[str, object]:
 
 
 def syntax_check() -> int:
-    """Parse the reviewed source files as data, without executing or importing them."""
+    """Compile reviewed sources in memory without executing imports or writing pyc."""
     errors = []
     targets = validated_targets(SAFE_LINT_TARGETS)
     for relative in targets:
         try:
-            ast.parse((ROOT / relative).read_bytes(), filename=relative)
+            # AST parsing alone misses invalid return, loop and scope contexts.
+            compile((ROOT / relative).read_bytes(), relative, "exec", dont_inherit=True)
         except (OSError, SyntaxError) as exc:
             errors.append(f"{relative}: {exc}")
     print(SCOPE_NOTICE)

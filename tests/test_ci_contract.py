@@ -147,13 +147,14 @@ class ManagementCIContractTests(unittest.TestCase):
             self.tool.main(["--lint", "cyber.py"])
         self.assertEqual(error.exception.code, 2)
 
-    def test_syntax_check_parses_without_executing_and_reports_errors(self):
+    def test_syntax_check_compiles_without_executing_and_reports_errors(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for relative in self.tool.SAFE_LINT_TARGETS:
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(
+                    "import must_not_import_syntax_fixture\n"
                     "raise AssertionError('source must not execute')\n",
                     encoding="utf-8",
                 )
@@ -162,6 +163,7 @@ class ManagementCIContractTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()),
             ):
                 self.assertEqual(self.tool.syntax_check(), 0)
+                self.assertEqual(list(root.rglob("*.pyc")), [])
                 (root / self.tool.SAFE_LINT_TARGETS[0]).write_text(
                     "def invalid(:\n", encoding="utf-8"
                 )
@@ -169,6 +171,33 @@ class ManagementCIContractTests(unittest.TestCase):
                 with contextlib.redirect_stderr(errors):
                     self.assertEqual(self.tool.syntax_check(), 1)
                 self.assertIn(self.tool.SAFE_LINT_TARGETS[0], errors.getvalue())
+
+    def test_syntax_check_rejects_context_errors_that_ast_parsing_accepts(self):
+        cases = (
+            "return 1\n",
+            "break\n",
+            "continue\n",
+            "nonlocal missing\n",
+            "value = 1\nfrom __future__ import annotations\n",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            relative = "context_error.py"
+            with (
+                patch.object(self.tool, "ROOT", root),
+                patch.object(self.tool, "SAFE_LINT_TARGETS", (relative,)),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                for source in cases:
+                    with self.subTest(source=source):
+                        # These are valid ASTs but illegal Python programs.
+                        ast.parse(source)
+                        (root / relative).write_text(source, encoding="utf-8")
+                        errors = io.StringIO()
+                        with contextlib.redirect_stderr(errors):
+                            self.assertEqual(self.tool.syntax_check(), 1)
+                        self.assertIn(relative, errors.getvalue())
+                self.assertEqual(list(root.rglob("*.pyc")), [])
 
     def test_dedicated_pytest_configuration_matches_reviewed_manifest(self):
         config = configparser.ConfigParser()

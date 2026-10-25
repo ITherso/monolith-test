@@ -53,7 +53,10 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
   worker tests extract the reviewed functions with inert dependencies; the actual
   worker and its operational imports are not loaded. See
   [analysis semantics and limits](AI_VULNERABILITY_ANALYSIS.md).
-- Reviewed helpers/tests receive AST syntax, Ruff lint, and formatting checks.
+- Reviewed helpers/tests receive in-memory syntax compilation, Ruff lint, and
+  formatting checks. Compilation catches invalid return, loop and scope contexts
+  that AST parsing alone accepts. It never executes source, resolves imports, or
+  writes bytecode files; contextual-error and no-execution regressions cover this.
   The two standalone safety/credential helpers also receive Mypy checks without
   importing operational dependencies.
 - Listener failure regressions extract only the reviewed definitions into inert
@@ -65,6 +68,12 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
 - CI installs `requirements_ci.txt`, not the operational dependency set. Pytest
   plugin auto-loading is disabled.
 - The separate container job builds the image but never starts the application.
+
+A separate source-only inventory on 2026-10-25 used Python 3.12.14: 433 tracked
+Python files compiled in memory; the two legacy errors listed above remained.
+Four locally missing sources were excluded without restoration.
+This inventory did not execute source or validate Python 3.11 compatibility; the
+curated CI matrix remains the evidence for its reviewed files on those versions.
 
 Example local validation, without launching the application:
 
