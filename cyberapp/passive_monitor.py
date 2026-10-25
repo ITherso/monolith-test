@@ -1,5 +1,6 @@
 """Read-only JSONL event analysis; no process, network, or system modifications."""
 
+import io
 import json
 import os
 import stat
@@ -8,6 +9,7 @@ from pathlib import Path
 MAX_RECORD_BYTES = 1_048_576
 MAX_POLL_BYTES = 4 * MAX_RECORD_BYTES
 MAX_POLL_RECORDS = 1000
+MAX_REVIEW_BYTES = 1_048_576
 
 
 class PassiveEventMonitor:
@@ -65,7 +67,7 @@ class PassiveEventMonitor:
                 }
             )
         for finding in findings:
-            finding["timestamp"] = str(event.get("timestamp", ""))
+            finding["timestamp"] = str(event.get("timestamp", ""))[:128]
             finding["evidence_type"] = "supplied_log_event"
             finding["compromise_confirmed"] = False
         return findings
@@ -138,3 +140,47 @@ class PassiveEventMonitor:
                 self.offset = stream.tell()
             self.has_more = self.offset < os.fstat(stream.fileno()).st_size
         return findings
+
+
+def review_jsonl_bytes(payload: bytes) -> dict[str, object]:
+    """Review a bounded uploaded JSONL snapshot without touching files or hosts."""
+    if not isinstance(payload, bytes):
+        raise ValueError("JSONL payload must be bytes")
+    if len(payload) > MAX_REVIEW_BYTES:
+        raise ValueError("JSONL payload exceeds the size limit")
+
+    stream = io.BytesIO(payload)
+    findings = []
+    events_processed = 0
+    invalid_records = 0
+    records_reviewed = 0
+    while records_reviewed < MAX_POLL_RECORDS:
+        raw = stream.readline(MAX_RECORD_BYTES + 1)
+        if not raw:
+            break
+        records_reviewed += 1
+        if len(raw) > MAX_RECORD_BYTES:
+            invalid_records += 1
+            continue
+        raw = raw.rstrip(b"\r\n")
+        try:
+            event = json.loads(raw.decode("utf-8"))
+            if not isinstance(event, dict):
+                raise ValueError("An event must be a JSON object")
+        except (ValueError, UnicodeDecodeError, RecursionError):
+            invalid_records += 1
+            continue
+        events_processed += 1
+        findings.extend(PassiveEventMonitor.analyze(event))
+
+    return {
+        "mode": "supplied_jsonl_review",
+        "read_only": True,
+        "source_collected": False,
+        "network_capture_performed": False,
+        "events_processed": events_processed,
+        "invalid_records": invalid_records,
+        "records_reviewed": records_reviewed,
+        "partial": stream.tell() < len(payload),
+        "findings": findings,
+    }

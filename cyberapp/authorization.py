@@ -9,6 +9,7 @@ from flask import (
     redirect,
     request,
     session,
+    url_for,
 )
 
 PUBLIC_ENDPOINTS = frozenset(
@@ -70,7 +71,10 @@ def _deny_access(authenticated: bool):
     elif authenticated:
         response = make_response("Admin yetkisi gerekli", 403)
     else:
-        response = redirect("/login")
+        login_url = url_for("auth.login")
+        if not login_url.startswith("/") or login_url.startswith("//"):
+            login_url = "/login"
+        response = redirect(login_url)
     response.headers["Cache-Control"] = "no-store"
     return response
 

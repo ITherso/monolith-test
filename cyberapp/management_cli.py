@@ -31,12 +31,17 @@ def build_parser():
     return parser
 
 
+def management_url(host, port):
+    display_host = f"[{host}]" if ":" in host else host
+    return f"http://{display_host}:{port}"
+
+
 def main(argv=None):
     args = build_parser().parse_args(argv)
     from cyberapp.management_app import create_management_app
 
     app = create_management_app(config={"DATABASE": args.database})
-    print(f"MONOLITH management mode: http://{args.host}:{args.port}")
+    print(f"MONOLITH management mode: {management_url(args.host, args.port)}")
     print("Operational modules are not loaded in this mode.")
     app.run(host=args.host, port=args.port, debug=False, use_reloader=False)
 

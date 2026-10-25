@@ -43,6 +43,7 @@
             <a href="{{ url_for('feature_status.feature_status_page') }}">Özellik durumu</a>
             {% if role == 'admin' %}
             <a href="{{ url_for('ai_vulnerability.analysis_page') }}">Çevrimdışı analiz</a>
+            <a href="{{ url_for('management.passive_review_page') }}">Pasif JSONL</a>
             <a href="{{ url_for('monitoring.audit_dashboard') }}">Audit kayıtları</a>
             {% endif %}
             <a href="{{ url_for('auth.logout') }}">Çıkış</a>

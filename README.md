@@ -116,8 +116,10 @@ python -m cyberapp.management_cli
 ```
 
 It binds to `127.0.0.1:8080`, initializes the selected SQLite schema and keeps
-operations admin-only. Analysts retain read access to the reviewed record and
-status pages. This mode does not start a scanner, listener, payload or host tool.
+operations admin-only. Analysts retain read access to reviewed records and status
+pages. Admins can download bounded offline PDF reports, page through audit history,
+open saved offline analyses and review supplied JSONL events in memory. This mode
+does not start a scanner, listener, payload or host tool.
 
 ### 🖥️ Terminal Demo
 

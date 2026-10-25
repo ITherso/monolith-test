@@ -15,6 +15,8 @@
         form { margin: 18px 0; } label { display: block; margin: 12px 0 6px; font-weight: 650; }
         input, textarea, button { width: 100%; padding: 11px; border: 1px solid #36536d; border-radius: 8px; background: #07131f; color: #e6edf3; }
         button { width: auto; margin-top: 12px; background: #2dd4bf; color: #05201d; font-weight: 700; cursor: pointer; }
+        .management-nav { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 18px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
+        .management-nav a { padding: 8px 11px; border: 1px solid #36536d; border-radius: 8px; text-decoration: none; }
         table { width: 100%; border-collapse: collapse; } th, td { padding: 11px; border-bottom: 1px solid #29435a; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
         pre { white-space: pre-wrap; overflow-wrap: anywhere; } .text-center { text-align: center; } .hidden, [hidden] { display: none !important; }
         .container { width: min(1100px, calc(100% - 32px)); margin: 0 auto; } .rounded-xl, .rounded-2xl { border-radius: 14px; }
@@ -26,6 +28,18 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    {% if session.get('logged_in') is sameas true %}
+    <nav class="management-nav" aria-label="Yönetim gezinmesi">
+        <a href="{{ url_for('management.dashboard') }}">Panel</a>
+        <a href="{{ url_for('feature_status.feature_status_page') }}">Özellik durumu</a>
+        {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('ai_vulnerability.analysis_page') }}">Çevrimdışı analiz</a>
+        <a href="{{ url_for('management.passive_review_page') }}">Pasif JSONL inceleme</a>
+        <a href="{{ url_for('monitoring.audit_dashboard') }}">Audit</a>
+        {% endif %}
+        <a href="{{ url_for('auth.logout') }}">Çıkış</a>
+    </nav>
+    {% endif %}
     {% block body %}{% endblock %}
     {% block content %}{% endblock %}
     {% block scripts %}{% endblock %}

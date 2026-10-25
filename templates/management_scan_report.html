@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="tr">
+<head><meta charset="utf-8"><title>MONOLITH tarama kaydı #{{ record.scan.id }}</title></head>
+<body>
+<h1>MONOLITH tarama kaydı #{{ record.scan.id }}</h1>
+<p>Bu rapor yalnızca veritabanında bulunan, boyutu sınırlandırılmış kayıtlardan çevrimdışı üretilmiştir. Hedefe istek gönderilmemiştir.</p>
+<h2>Özet</h2>
+<table>
+    <tr><th>Hedef etiketi</th><td>{{ record.scan.target }}</td></tr>
+    <tr><th>Durum</th><td>{{ record.scan.status }}</td></tr>
+    <tr><th>Tarih</th><td>{{ record.scan.date }}</td></tr>
+    <tr><th>Kullanıcı</th><td>{{ record.scan.user }}</td></tr>
+    <tr><th>İlerleme</th><td>{{ (record.scan.progress|string) + '%' if record.scan.progress is not none else 'Bilinmiyor' }}</td></tr>
+    <tr><th>ETA</th><td>{{ (record.scan.eta_seconds|string) + ' saniye' if record.scan.eta_seconds is not none else 'Bilinmiyor' }}</td></tr>
+</table>
+<h2>Bulgular — gösterilen {{ record.collection_meta.vulnerabilities.returned }} / toplam {{ record.collection_meta.vulnerabilities.total }}</h2>
+<table><thead><tr><th>Önem</th><th>Tür</th><th>Adres</th><th>Öneri</th></tr></thead><tbody>{% for item in record.vulnerabilities %}<tr><td>{{ item.severity }}</td><td>{{ item.type }}</td><td>{{ item.url }}</td><td>{{ item.fix }}</td></tr>{% else %}<tr><td colspan="4">Kayıt yok.</td></tr>{% endfor %}</tbody></table>
+<h2>Teknolojiler — gösterilen {{ record.collection_meta.technologies.returned }} / toplam {{ record.collection_meta.technologies.total }}</h2>
+<table><thead><tr><th>Ad</th><th>Tespit kaydı</th><th>Güven</th></tr></thead><tbody>{% for item in record.technologies %}<tr><td>{{ item.name }}</td><td>{{ item.detected_via }}</td><td>{{ item.confidence if item.confidence is not none else 'Bilinmiyor' }}</td></tr>{% else %}<tr><td colspan="3">Kayıt yok.</td></tr>{% endfor %}</tbody></table>
+<h2>İstihbarat — gösterilen {{ record.collection_meta.intel.returned }} / toplam {{ record.collection_meta.intel.total }}</h2>
+<table><thead><tr><th>Tür</th><th>Veri</th><th>Zaman</th></tr></thead><tbody>{% for item in record.intel %}<tr><td>{{ item.type }}</td><td>{{ item.data }}</td><td>{{ item.timestamp }}</td></tr>{% else %}<tr><td colspan="3">Kayıt yok.</td></tr>{% endfor %}</tbody></table>
+<h2>Araç günlükleri — gösterilen {{ record.collection_meta.logs.returned }} / toplam {{ record.collection_meta.logs.total }}</h2>
+<table><thead><tr><th>Araç</th><th>Çıktı</th><th>Zaman</th></tr></thead><tbody>{% for item in record.logs %}<tr><td>{{ item.tool }}</td><td>{{ item.output }}</td><td>{{ item.timestamp }}</td></tr>{% else %}<tr><td colspan="3">Kayıt yok.</td></tr>{% endfor %}</tbody></table>
+</body>
+</html>

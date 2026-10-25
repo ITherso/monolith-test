@@ -16,19 +16,23 @@
 <main>
     <a href="{{ url_for('management.dashboard') }}">← Yönetim paneline dön</a>
     <h1>Audit kayıtları</h1>
-    <p>En yeni 200 kayıt gösterilir. Alanlar metin olarak görüntülenir.</p>
+    <p>En yeni kayıtlardan başlayarak sayfa başına {{ limit }} kayıt gösterilir. Alanlar metin olarak görüntülenir.</p>
     <section>
         <table>
-            <thead><tr><th>Zaman</th><th>Kullanıcı</th><th>Rol</th><th>İşlem</th><th>Ayrıntı</th><th>IP</th></tr></thead>
+            <caption>Sayfalı audit kayıtları</caption>
+            <thead><tr><th scope="col">ID</th><th scope="col">Zaman</th><th scope="col">Kullanıcı</th><th scope="col">Rol</th><th scope="col">İşlem</th><th scope="col">Ayrıntı</th><th scope="col">IP</th></tr></thead>
             <tbody>
             {% for row in records %}
-                <tr><td>{{ row.timestamp }}</td><td>{{ row.user }}</td><td>{{ row.role }}</td><td>{{ row.action }}</td><td>{{ row.detail }}</td><td>{{ row.ip }}</td></tr>
+                <tr><td>{{ row.id }}</td><td>{{ row.timestamp }}</td><td>{{ row.user }}</td><td>{{ row.role }}</td><td>{{ row.action }}</td><td>{{ row.detail }}</td><td>{{ row.ip }}</td></tr>
             {% else %}
-                <tr><td colspan="6">Audit kaydı yok.</td></tr>
+                <tr><td colspan="7">Audit kaydı yok.</td></tr>
             {% endfor %}
             </tbody>
         </table>
     </section>
+    {% if has_more and next_before_id %}
+    <p><a href="{{ url_for('monitoring.audit_dashboard', before_id=next_before_id) }}">Daha eski kayıtları göster →</a></p>
+    {% endif %}
 </main>
 </body>
 </html>

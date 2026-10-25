@@ -3,12 +3,14 @@
 import ast
 import sqlite3
 import sys
+from io import BytesIO
 from pathlib import Path
 
 import pytest
+from pypdf import PdfReader
 
 from cyberapp.management_app import create_management_app
-from cyberapp.management_cli import build_parser
+from cyberapp.management_cli import build_parser, management_url
 from cyberapp.models.db import db_conn
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -110,10 +112,12 @@ def test_management_pages_require_login_and_keep_admin_boundary(management_app):
     assert client.get("/").status_code == 200
     assert client.get("/feature-status").status_code == 200
     assert client.get("/ai-vulnerability").status_code == 403
+    assert client.get("/passive-review").status_code == 403
     assert client.get("/audit").status_code == 403
 
     login(client, "admin")
     assert client.get("/ai-vulnerability").status_code == 200
+    assert client.get("/passive-review").status_code == 200
     assert client.get("/audit").status_code == 200
 
 
@@ -127,6 +131,9 @@ def test_real_login_route_uses_configured_accounts_and_audits(management_app):
     assert oversized.status_code == 200
     failed = client.post("/login", data={"user": routes.ADMIN_USER, "pass": "wrong"})
     assert failed.status_code == 200
+    failed_body = failed.get_data(as_text=True)
+    assert "Kullanıcı adı veya parola geçersiz." in failed_body
+    assert routes.ADMIN_PASS not in failed_body
     with client.session_transaction() as session:
         assert not session.get("logged_in")
 
@@ -170,12 +177,20 @@ def test_login_page_exposes_no_default_password_or_false_online_claim(management
         assert external not in body
     assert "default-src 'self'" in response.headers["Content-Security-Policy"]
 
+    login(client)
+    analyst_page = client.get("/feature-status")
+    assert 'href="/dashboard"' in analyst_page.get_data(as_text=True)
+    assert 'href="/passive-review"' not in analyst_page.get_data(as_text=True)
+
     login(client, "admin")
-    for path in ("/feature-status", "/ai-vulnerability"):
+    for path in ("/feature-status", "/ai-vulnerability", "/passive-review"):
         page = client.get(path)
         assert page.status_code == 200
         assert "https://cdn." not in page.get_data(as_text=True)
         assert "fonts.googleapis.com" not in page.get_data(as_text=True)
+    assert 'href="/passive-review"' in client.get("/feature-status").get_data(
+        as_text=True
+    )
 
 
 def test_dashboard_and_detail_show_real_stored_records_as_escaped_text(
@@ -206,6 +221,14 @@ def test_dashboard_and_detail_show_real_stored_records_as_escaped_text(
     assert "stored observation" in detail_body
     assert "stored output" in detail_body
     assert "<script>fixture()</script>" not in detail_body
+    assert "25%" in detail_body
+    assert "0 saniye" in detail_body
+    assert "Çevrimdışı PDF indir" not in detail_body
+
+    login(client, "admin")
+    admin_detail = client.get(f"/management/scans/{scan_id}").get_data(as_text=True)
+    assert f"/management/scans/{scan_id}/report.pdf" in admin_detail
+    assert f"/ai-vulnerability?scan_id={scan_id}" in admin_detail
 
 
 def test_management_json_is_bounded_read_only_and_uses_selected_database(
@@ -231,6 +254,12 @@ def test_management_json_is_bounded_read_only_and_uses_selected_database(
     assert record.json["scan"]["progress"] == 25
     assert record.json["scan"]["eta_seconds"] == 0
     assert record.json["target_contacted"] is False
+    assert record.json["collection_meta"] == {
+        "vulnerabilities": {"returned": 1, "total": 1, "truncated": False},
+        "technologies": {"returned": 1, "total": 1, "truncated": False},
+        "intel": {"returned": 1, "total": 1, "truncated": False},
+        "logs": {"returned": 1, "total": 1, "truncated": False},
+    }
     assert database.read_bytes() == before
     assert summary.headers["Cache-Control"] == "no-store"
     assert record.headers["Cache-Control"] == "no-store"
@@ -279,6 +308,243 @@ def test_large_database_text_is_truncated_before_it_reaches_responses(management
     assert "x" * 2048 in audit
 
 
+def test_wrong_typed_database_text_is_not_rendered_as_misleading_text(management_app):
+    app, database = management_app
+    scan_id = seed_record(database)
+    blob = sqlite3.Binary(b"hidden-object")
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE scans SET target=?, date=?, status=?, user_id=? WHERE id=?",
+            (blob, blob, blob, blob, scan_id),
+        )
+        connection.execute(
+            "UPDATE vulns SET type=?, url=?, fix=?, severity=? WHERE scan_id=?",
+            (blob, blob, blob, blob, scan_id),
+        )
+        connection.execute(
+            "UPDATE techno SET name=?, detected_via=? WHERE scan_id=?",
+            (blob, blob, scan_id),
+        )
+        connection.execute(
+            "UPDATE intel SET type=?, data=?, timestamp=? WHERE scan_id=?",
+            (blob, blob, blob, scan_id),
+        )
+        connection.execute(
+            "UPDATE tool_logs SET tool_name=?, output=?, timestamp=? WHERE scan_id=?",
+            (blob, blob, blob, scan_id),
+        )
+        connection.execute(
+            "INSERT INTO audit_logs(user_id, role, action, detail, ip, timestamp) VALUES(?,?,?,?,?,?)",
+            (42, blob, 7, blob, 9, blob),
+        )
+        connection.commit()
+    client = app.test_client()
+    login(client, "admin")
+    summary = client.get("/api/management/summary").json
+    record = client.get(f"/api/management/scans/{scan_id}/record").json
+    assert summary["scans"][0]["target"] == ""
+    assert summary["scans"][0]["status"] == "UNKNOWN"
+    assert record["scan"]["target"] == ""
+    assert record["vulnerabilities"][0] == {
+        "type": "UNKNOWN",
+        "url": "",
+        "fix": "",
+        "severity": "MEDIUM",
+    }
+    assert record["technologies"][0]["name"] == "UNKNOWN"
+    assert record["intel"][0]["data"] == ""
+    assert record["logs"][0]["output"] == ""
+    assert "hidden-object" not in client.get("/audit").get_data(as_text=True)
+
+
+def test_scan_record_limits_are_reported_instead_of_looking_complete(management_app):
+    app, database = management_app
+    scan_id = seed_record(database)
+    with sqlite3.connect(database) as connection:
+        connection.executemany(
+            "INSERT INTO vulns (scan_id, type) VALUES (?, ?)",
+            [(scan_id, f"finding-{index}") for index in range(105)],
+        )
+        connection.commit()
+    client = app.test_client()
+    login(client)
+    record = client.get(f"/api/management/scans/{scan_id}/record").json
+    assert len(record["vulnerabilities"]) == 100
+    assert record["collection_meta"]["vulnerabilities"] == {
+        "returned": 100,
+        "total": 106,
+        "truncated": True,
+    }
+    page = client.get(f"/management/scans/{scan_id}").get_data(as_text=True)
+    assert "gösterilen 100 / toplam 106" in page
+
+
+def test_admin_can_download_bounded_offline_pdf_without_database_writes(
+    management_app,
+):
+    app, database = management_app
+    scan_id = seed_record(database)
+    client = app.test_client()
+    login(client)
+    assert client.get(f"/management/scans/{scan_id}/report.pdf").status_code == 403
+    assert (
+        client.post(
+            f"/management/scans/{scan_id}/protected-report.pdf",
+            data={"pdf_password": "fixture-password"},
+        ).status_code
+        == 403
+    )
+
+    login(client, "admin")
+    before = database.read_bytes()
+    response = client.get(f"/management/scans/{scan_id}/report.pdf")
+    assert response.status_code == 200
+    assert response.mimetype == "application/pdf"
+    assert response.headers["Content-Disposition"] == (
+        f'attachment; filename="monolith-scan-{scan_id}.pdf"'
+    )
+    text = "\n".join(
+        page.extract_text() or "" for page in PdfReader(BytesIO(response.data)).pages
+    )
+    assert "MONOLITH tarama kaydı" in text
+    assert "stored" in text
+    assert "fixture()" in text
+    protected = client.post(
+        f"/management/scans/{scan_id}/protected-report.pdf",
+        data={"pdf_password": "fixture-password"},
+    )
+    assert protected.status_code == 200
+    protected_reader = PdfReader(BytesIO(protected.data))
+    assert protected_reader.is_encrypted is True
+    assert protected_reader.decrypt("fixture-password")
+    assert len(protected_reader.pages) >= 1
+    assert (
+        client.post(
+            f"/management/scans/{scan_id}/protected-report.pdf",
+            data={"pdf_password": "short"},
+        ).status_code
+        == 400
+    )
+    assert database.read_bytes() == before
+    assert client.get("/management/scans/987654/report.pdf").status_code == 404
+
+
+def test_pdf_uses_a_smaller_honest_row_budget_for_dense_records(management_app):
+    app, database = management_app
+    scan_id = seed_record(database)
+    large = "&" * 4096
+    with sqlite3.connect(database) as connection:
+        connection.executemany(
+            "INSERT INTO vulns(scan_id, type, fix) VALUES (?, ?, ?)",
+            [(scan_id, f"finding-{index}", large) for index in range(25)],
+        )
+        connection.executemany(
+            "INSERT INTO intel(scan_id, type, data) VALUES (?, ?, ?)",
+            [(scan_id, "NOTE", large) for _ in range(25)],
+        )
+        connection.executemany(
+            "INSERT INTO tool_logs(scan_id, tool_name, output) VALUES (?, ?, ?)",
+            [(scan_id, "fixture", large) for _ in range(25)],
+        )
+        connection.commit()
+    client = app.test_client()
+    login(client, "admin")
+    response = client.get(f"/management/scans/{scan_id}/report.pdf")
+    assert response.status_code == 200
+    text = "\n".join(
+        page.extract_text() or "" for page in PdfReader(BytesIO(response.data)).pages
+    )
+    assert "20 / toplam 26" in text
+
+
+def test_pdf_failures_are_generic_and_temporary_files_are_removed(
+    management_app, monkeypatch
+):
+    from cyberapp import pdf_renderer, report_security
+
+    app, database = management_app
+    scan_id = seed_record(database)
+    client = app.test_client()
+    login(client, "admin")
+    rendered_paths = []
+
+    def fail_render(_html, output):
+        rendered_paths.append(Path(output))
+        Path(output).write_bytes(b"partial")
+        raise RuntimeError("sensitive renderer detail")
+
+    monkeypatch.setattr(pdf_renderer, "render_html_pdf", fail_render)
+    response = client.get(f"/management/scans/{scan_id}/report.pdf")
+    assert response.status_code == 503
+    assert response.json == {"error": "pdf_render_unavailable"}
+    assert b"sensitive renderer detail" not in response.data
+    assert rendered_paths and not rendered_paths[-1].parent.exists()
+
+    def render_fixture(_html, output):
+        rendered_paths.append(Path(output))
+        Path(output).write_bytes(b"partial-pdf")
+
+    def fail_encrypt(_path, _password):
+        raise RuntimeError("sensitive encryption detail")
+
+    monkeypatch.setattr(pdf_renderer, "render_html_pdf", render_fixture)
+    monkeypatch.setattr(report_security, "encrypt_pdf_atomic", fail_encrypt)
+    response = client.post(
+        f"/management/scans/{scan_id}/protected-report.pdf",
+        data={"pdf_password": "fixture-password"},
+    )
+    assert response.status_code == 503
+    assert response.json == {"error": "pdf_render_unavailable"}
+    assert b"sensitive encryption detail" not in response.data
+    assert not rendered_paths[-1].parent.exists()
+
+
+def test_admin_can_review_uploaded_jsonl_without_collecting_host_data(management_app):
+    app, _ = management_app
+    client = app.test_client()
+    endpoint = "/api/management/passive-events/review"
+    login(client)
+    assert (
+        client.post(endpoint, data=b"{}\n", content_type="text/plain").status_code
+        == 403
+    )
+
+    login(client, "admin")
+    payload = b"\n".join(
+        (
+            b'{"timestamp":"t1","process_name":"calc.exe","network_destination":"recorded.invalid"}',
+            b'{"timestamp":"t2","action":"persistence_created"}',
+            b'{"timestamp":"t3","action":"security_configuration_changed","setting":"real_time_protection","enabled":false}',
+            b"not-json",
+            b"[]",
+        )
+    )
+    response = client.post(endpoint, data=payload, content_type="application/x-ndjson")
+    assert response.status_code == 200
+    assert response.json["events_processed"] == 3
+    assert response.json["invalid_records"] == 2
+    assert response.json["network_capture_performed"] is False
+    assert response.json["source_collected"] is False
+    assert {finding["kind"] for finding in response.json["findings"]} == {
+        "calculator_network_activity",
+        "persistence_entry_recorded",
+        "protection_disabled_recorded",
+    }
+    assert b"recorded.invalid" not in response.data
+    assert (
+        client.post(endpoint, data=b"{}", content_type="application/json").status_code
+        == 415
+    )
+    empty = client.post(endpoint, data=b"", content_type="text/plain")
+    assert empty.status_code == 400
+    assert empty.json == {"error": "empty_jsonl"}
+    too_large = b"x" * (1_048_576 + 1)
+    assert (
+        client.post(endpoint, data=too_large, content_type="text/plain").status_code
+        == 413
+    )
+
+
 def test_admin_offline_analysis_and_saved_record_review_work(management_app):
     app, database = management_app
     scan_id = seed_record(database)
@@ -304,6 +570,11 @@ def test_admin_offline_analysis_and_saved_record_review_work(management_app):
     report = client.get(f"/api/ai-vulnerability/reports/{scan_id}")
     assert report.status_code == 200
     assert report.json["scan_id"] == scan_id
+    page = client.get(f"/ai-vulnerability?scan_id={scan_id}")
+    assert page.status_code == 200
+    body = page.get_data(as_text=True)
+    assert 'id="stored-report"' in body
+    assert f'value="{scan_id}"' in body
 
 
 def test_audit_page_escapes_stored_fields(management_app):
@@ -327,6 +598,36 @@ def test_audit_page_escapes_stored_fields(management_app):
     body = response.get_data(as_text=True)
     assert "&lt;img src=x onerror=" in body
     assert '<img src=x onerror="auditFixture()">' not in body
+
+
+def test_admin_can_page_through_bounded_audit_history(management_app):
+    app, database = management_app
+    with sqlite3.connect(database) as connection:
+        connection.executemany(
+            "INSERT INTO audit_logs (action, detail) VALUES (?, ?)",
+            [("fixture", f"record-{index}") for index in range(205)],
+        )
+        connection.commit()
+    client = app.test_client()
+    login(client)
+    assert client.get("/api/management/audit").status_code == 403
+
+    login(client, "admin")
+    first = client.get("/api/management/audit")
+    assert first.status_code == 200
+    assert len(first.json["records"]) == 100
+    assert first.json["records"][0]["detail"] == "record-204"
+    assert first.json["has_more"] is True
+    cursor = first.json["next_before_id"]
+    second = client.get(f"/api/management/audit?before_id={cursor}")
+    assert second.status_code == 200
+    assert len(second.json["records"]) == 100
+    assert {row["id"] for row in first.json["records"]}.isdisjoint(
+        row["id"] for row in second.json["records"]
+    )
+    page = client.get("/audit").get_data(as_text=True)
+    assert f"before_id={cursor}" in page
+    assert client.get("/api/management/audit?before_id=-1").status_code == 400
 
 
 def test_missing_and_unavailable_records_return_generic_errors(
@@ -489,3 +790,5 @@ def test_management_cli_accepts_only_loopback_and_valid_ports():
         parser.parse_args(["--host", "localhost"])
     with pytest.raises(SystemExit):
         parser.parse_args(["--port", "0"])
+    assert management_url("127.0.0.1", 8080) == "http://127.0.0.1:8080"
+    assert management_url("::1", 8080) == "http://[::1]:8080"

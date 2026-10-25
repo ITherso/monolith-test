@@ -229,7 +229,7 @@ class ManagementCIContractTests(unittest.TestCase):
             "python scripts/check_management_safety.py --lint",
             "python scripts/check_management_safety.py --format-check",
             "python -m mypy --follow-imports=skip cyberapp/host_safety.py cyberapp/security.py",
-            "node --test tests/js/scan_progress.test.cjs tests/js/privileged_status.test.cjs",
+            "node --test tests/js/scan_progress.test.cjs tests/js/privileged_status.test.cjs tests/js/passive_review.test.cjs tests/js/ai_vulnerability.test.cjs",
         }
         allowed_commands = required_checks | {
             "python -m pip install -r requirements_ci.txt"

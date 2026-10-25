@@ -89,6 +89,37 @@ def test_security_event_and_ordinary_event(monitor_module):
     )
 
 
+def test_uploaded_jsonl_snapshot_is_bounded_and_never_echoes_source_fields(
+    monitor_module,
+):
+    payload = b"\n".join(
+        (
+            b'{"timestamp":"t","process_name":"calc.exe","network_destination":"private.invalid"}',
+            b'{"action":"persistence_created"}',
+            b"not-json",
+            b"[]",
+        )
+    )
+    result = monitor_module.review_jsonl_bytes(payload)
+    assert result["events_processed"] == 2
+    assert result["invalid_records"] == 2
+    assert result["records_reviewed"] == 4
+    assert result["partial"] is False
+    assert result["source_collected"] is False
+    assert result["network_capture_performed"] is False
+    assert b"private.invalid" not in json.dumps(result).encode()
+    with pytest.raises(ValueError, match="size limit"):
+        monitor_module.review_jsonl_bytes(b"x" * (monitor_module.MAX_REVIEW_BYTES + 1))
+
+
+def test_uploaded_jsonl_snapshot_reports_record_limit(monitor_module):
+    payload = b"{}\n" * (monitor_module.MAX_POLL_RECORDS + 1)
+    result = monitor_module.review_jsonl_bytes(payload)
+    assert result["events_processed"] == monitor_module.MAX_POLL_RECORDS
+    assert result["records_reviewed"] == monitor_module.MAX_POLL_RECORDS
+    assert result["partial"] is True
+
+
 def test_valid_json_waits_for_newline_and_nested_json_is_skipped(
     tmp_path, monitor_module
 ):
@@ -194,7 +225,7 @@ def test_monitor_has_no_process_network_or_unsafe_parser_imports():
         if isinstance(node, ast.Import)
         for alias in node.names
     }
-    assert names == {"json", "os", "stat"}
+    assert names == {"io", "json", "os", "stat"}
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             assert node.func.attr not in {"system", "popen", "spawn", "write", "unlink"}

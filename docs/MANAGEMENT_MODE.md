@@ -24,10 +24,20 @@ database connections, so it does not silently read a different working-directory
 database.
 
 Analysts can read the dashboard, feature inventory and stored scan records.
-Audit history and offline analysis remain admin-only. The status and record APIs
-are GET-only and return `Cache-Control: no-store`. Stored text is escaped before
-HTML rendering, query output is bounded, and database errors are reported without
-returning paths or exception details.
+Audit history, offline analysis, PDF downloads and passive JSONL review remain
+admin-only. The scan detail reports both returned and total row counts so its
+100-row per-category bound cannot look complete. Audit history uses bounded,
+ID-based pagination.
+
+The passive review page accepts at most 1 MiB of supplied JSONL and reviews the
+first 1000 records in memory. It does not collect operating-system events or
+capture traffic. PDF downloads are generated in a temporary directory from the
+first 20 stored rows per category and report both returned and total row counts;
+admins may request an AES-256 password-protected copy and the password is not
+stored. The operational report generator is not imported.
+Status and record APIs return `Cache-Control: no-store`. Stored text is escaped,
+wrong-typed database fields fail closed, and database errors omit paths and
+exception details.
 
 This mode is a management surface, not an isolation boundary. It does not enable
 or validate scanners, listeners, payload delivery, persistence, evasion, driver

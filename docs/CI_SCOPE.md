@@ -75,10 +75,12 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
   analysis routes without importing the operational application or feature
   packages. Its CLI accepts loopback addresses only; tests use Flask's in-process
   client and never start a listening server.
-- Node 24 dashboard tests evaluate only `templates/partials/scan_progress.js` against a fake
-  DOM, clock, and fetch implementation. They cover safe read requests, errors,
-  recovery, cancellation, stale display and zero/unknown values without starting
-  a browser, server, scanner, or listener. Other dashboard scripts are not run.
+- Node 24 dashboard tests evaluate `templates/partials/scan_progress.js`, the
+  passive-review upload client and the offline-analysis client against fake DOM,
+  clock and fetch implementations. They cover safe reads, bounded same-origin
+  submissions, redirect/response rejection, errors, recovery, cancellation,
+  stale display and zero/unknown values without starting a browser, server,
+  scanner or listener. Other dashboard scripts are not run.
 - BYOVD status tests load the management-only route with inert package boundaries.
   eBPF and Docker tests extract only reviewed definitions into inert namespaces;
   their operational tool modules are not imported. Tests check unavailable API
@@ -104,7 +106,7 @@ Example local validation, without launching the application:
 python -m pip install -r requirements_ci.txt
 python scripts/check_management_safety.py --syntax-check
 python -m pytest -c pytest-management.ini
-node --test tests/js/scan_progress.test.cjs tests/js/privileged_status.test.cjs
+node --test tests/js/scan_progress.test.cjs tests/js/privileged_status.test.cjs tests/js/passive_review.test.cjs
 python scripts/check_management_safety.py --lint
 python scripts/check_management_safety.py --format-check
 python -m mypy --follow-imports=skip cyberapp/host_safety.py cyberapp/security.py

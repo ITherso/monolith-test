@@ -160,6 +160,17 @@ def test_unauthenticated_requests_stop_before_handler(
     assert entered == []
 
 
+def test_login_redirect_preserves_mount_prefix(protected_app):
+    _, client, entered = protected_app
+    response = client.get("/c2", environ_overrides={"SCRIPT_NAME": "/panel"})
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/panel/login"
+    assert entered == []
+    hostile = client.get("/c2", environ_overrides={"SCRIPT_NAME": "//evil.invalid"})
+    assert hostile.status_code == 302
+    assert hostile.headers["Location"] == "/login"
+
+
 @pytest.mark.parametrize(
     "claims",
     [

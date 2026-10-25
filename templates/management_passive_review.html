@@ -1,0 +1,26 @@
+{% extends base_template %}
+{% block body %}
+<main id="passive-review-client"
+      data-review-url="{{ url_for('management.passive_review_api') }}"
+      data-max-bytes="{{ max_review_bytes }}">
+    <section class="glass">
+        <h1>Pasif JSONL olay incelemesi</h1>
+        <p>Sağladığın JSONL kayıtlarını yalnızca bellekte inceler. İşletim sistemi olayı veya ağ paketi toplamaz, komut çalıştırmaz ve hiçbir hedefe bağlanmaz.</p>
+        <form id="passive-review-form">
+            <label for="event-file">JSONL dosyası</label>
+            <input id="event-file" type="file" accept=".jsonl,.ndjson,application/x-ndjson,text/plain">
+            <label for="event-text">veya JSONL metni</label>
+            <textarea id="event-text" rows="10" spellcheck="false" class="font-mono" placeholder="Her satıra bir JSON olayı yapıştır."></textarea>
+            <p>En fazla {{ max_review_bytes }} bayt ve ilk 1000 kayıt değerlendirilir. Bulgular doğrulanmış ihlal değil, insan incelemesi için işarettir.</p>
+            <button type="submit">Kayıtları incele</button>
+        </form>
+    </section>
+    <section class="glass" aria-labelledby="passive-result-title">
+        <h2 id="passive-result-title">Sonuç</h2>
+        <pre id="passive-review-output" role="status" aria-live="polite">Henüz kayıt incelenmedi.</pre>
+    </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>{% include "partials/passive_review.js" %}</script>
+{% endblock %}
