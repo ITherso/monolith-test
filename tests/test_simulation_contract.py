@@ -3,6 +3,7 @@
 import ast
 import contextlib
 import csv
+import importlib.util
 import io
 import json
 import logging
@@ -10,6 +11,9 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
+
+from flask import Flask, jsonify
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -169,6 +173,191 @@ class SimulationContractTests(unittest.TestCase):
         self.assertIn("not audited", labelled["warning"])
         self.assertEqual(labelled["value"], "example")
         self.assertTrue(original["quantum_safe"])
+
+
+class ListenerFailureContractTests(unittest.TestCase):
+    """Exercise isolated failure paths, never an operational server or listener."""
+
+    WEB_ROUTES = (
+        ("web_c2_sessions", ()),
+        ("web_c2_command", ()),
+        ("web_c2_register", ()),
+        ("web_c2_beacon", ()),
+        ("web_c2_terminate", ("inert-session",)),
+        ("web_c2_beacon_templates", ()),
+        ("web_c2_generate_beacon", ()),
+        ("web_c2_config", ()),
+    )
+
+    def web_unavailable(self):
+        return isolated_function(
+            "cyberapp/routes/c2.py", "_web_c2_unavailable", {"jsonify": jsonify}
+        )
+
+    def assert_unavailable(self, response, error="web_c2_backend_incomplete"):
+        self.assertEqual(response.status_code, 501)
+        self.assertEqual(response.headers["Cache-Control"], "no-store")
+        payload = response.get_json()
+        self.assertIs(payload["success"], False)
+        self.assertIs(payload["available"], False)
+        self.assertIs(payload["running"], False)
+        self.assertEqual(payload["error"], error)
+        self.assertTrue(payload["message"])
+
+    def test_framework_start_clears_stale_running_flag_without_starting_runtime(self):
+        start = isolated_function(
+            "cybermodules/c2_framework.py", "start_listener", class_name="C2Server"
+        )
+        listener = SimpleNamespace(status="running")
+        database = SimpleNamespace(
+            get_listener=Mock(return_value=listener),
+            update_listener_status=Mock(
+                side_effect=lambda _identifier, status: setattr(
+                    listener, "status", status
+                )
+            ),
+        )
+        server = SimpleNamespace(db=database)
+        self.assertIs(start(server, "inert-listener"), False)
+        self.assertEqual(listener.status, "stopped")
+        database.get_listener.assert_called_once_with("inert-listener")
+        database.update_listener_status.assert_called_once_with(
+            "inert-listener", "stopped"
+        )
+
+    def test_framework_start_missing_listener_does_not_create_or_update_record(self):
+        start = isolated_function(
+            "cybermodules/c2_framework.py", "start_listener", class_name="C2Server"
+        )
+        database = SimpleNamespace(
+            get_listener=Mock(return_value=None), update_listener_status=Mock()
+        )
+        self.assertIs(start(SimpleNamespace(db=database), "missing"), False)
+        database.get_listener.assert_called_once_with("missing")
+        database.update_listener_status.assert_not_called()
+
+    def test_web_start_returns_failure_and_replaces_stale_running_flag(self):
+        start = isolated_function(
+            "c2/web_c2_listener.py",
+            "start",
+            {"logger": logging.getLogger("listener-failure-contract")},
+            class_name="WebC2Listener",
+        )
+        for initial in (False, True):
+            listener = SimpleNamespace(running=initial)
+            with (
+                self.subTest(initial_running=initial),
+                self.assertLogs("listener-failure-contract", level="WARNING"),
+            ):
+                self.assertIs(start(listener), False)
+            self.assertIs(listener.running, False)
+
+    def test_unavailable_response_is_an_explicit_uncacheable_failure(self):
+        app = Flask("listener-unavailable-response-contract")
+        with app.app_context():
+            self.assert_unavailable(self.web_unavailable()())
+
+    def test_all_missing_method_routes_fail_without_reading_requests_or_backend(self):
+        app = Flask("listener-unavailable-route-contract")
+        getter = Mock(side_effect=AssertionError("backend must not be constructed"))
+        request_trap = Mock()
+        request_trap.get_json.side_effect = AssertionError("body must not be parsed")
+        helper = self.web_unavailable()
+        namespace = {
+            "_web_c2_unavailable": helper,
+            "_get_web_c2_listener": getter,
+            "request": request_trap,
+        }
+        for name, arguments in self.WEB_ROUTES:
+            handler = isolated_function("cyberapp/routes/c2.py", name, namespace)
+            with self.subTest(route=name), app.app_context():
+                self.assert_unavailable(handler(*arguments))
+        getter.assert_not_called()
+        self.assertEqual(request_trap.mock_calls, [])
+
+    def test_advanced_start_requires_login_then_reports_unavailable_without_server(
+        self,
+    ):
+        app = Flask("advanced-listener-failure-contract")
+        getter = Mock(side_effect=AssertionError("server must not be constructed"))
+        for authenticated in (False, True):
+            start = isolated_function(
+                "cyberapp/routes/c2_advanced.py",
+                "start_listener",
+                {
+                    "jsonify": jsonify,
+                    "session": {"logged_in": authenticated},
+                    "get_c2_server": getter,
+                },
+            )
+            with self.subTest(authenticated=authenticated), app.app_context():
+                response = app.make_response(start("inert-listener"))
+                if authenticated:
+                    self.assert_unavailable(response, "listener_runtime_unavailable")
+                else:
+                    self.assertEqual(response.status_code, 401)
+                    self.assertEqual(response.get_json(), {"error": "login_required"})
+        getter.assert_not_called()
+
+    def protected_web_app(self):
+        spec = importlib.util.spec_from_file_location(
+            "isolated_listener_authorization", ROOT / "cyberapp/authorization.py"
+        )
+        authorization = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(authorization)
+        app = Flask("listener-admin-failure-contract")
+        app.config.update(TESTING=True, SECRET_KEY="isolated-listener-contract-only")
+        authorization.install_admin_access_control(app)
+        entered = []
+        helper = self.web_unavailable()
+        getter = Mock(side_effect=AssertionError("backend must not be constructed"))
+
+        def tracked_handler(name, handler, arguments):
+            def tracked():
+                entered.append(name)
+                return handler(*arguments)
+
+            return tracked
+
+        for name, arguments in self.WEB_ROUTES:
+            handler = isolated_function(
+                "cyberapp/routes/c2.py",
+                name,
+                {"_web_c2_unavailable": helper, "_get_web_c2_listener": getter},
+            )
+            app.add_url_rule(
+                f"/api/listener-contract/{name}",
+                f"c2_implant.{name}",
+                tracked_handler(name, handler, arguments),
+                methods=["GET", "POST"],
+            )
+        return app.test_client(), entered, getter
+
+    def test_admin_guard_denies_all_incomplete_routes_before_handler_entry(self):
+        client, entered, getter = self.protected_web_app()
+        for role, expected_status in ((None, 401), ("analyst", 403)):
+            with client.session_transaction() as current:
+                current.clear()
+                if role:
+                    current.update(logged_in=True, user="inert-user", role=role)
+            for name, _arguments in self.WEB_ROUTES:
+                with self.subTest(role=role, route=name):
+                    response = client.post(f"/api/listener-contract/{name}")
+                    self.assertEqual(response.status_code, expected_status)
+                    self.assertEqual(response.headers["Cache-Control"], "no-store")
+                    self.assertEqual(entered, [])
+        getter.assert_not_called()
+
+    def test_admin_requests_get_failure_without_constructing_a_listener(self):
+        client, entered, getter = self.protected_web_app()
+        with client.session_transaction() as current:
+            current.update(logged_in=True, user="inert-admin", role="admin")
+        for name, _arguments in self.WEB_ROUTES:
+            with self.subTest(route=name):
+                response = client.post(f"/api/listener-contract/{name}")
+                self.assert_unavailable(response)
+        self.assertEqual(entered, [name for name, _arguments in self.WEB_ROUTES])
+        getter.assert_not_called()
 
 
 if __name__ == "__main__":

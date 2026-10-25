@@ -393,14 +393,16 @@
         </div>
         <div class="listener-status">
             <span class="status-indicator" id="listenerStatus"></span>
-            <span id="listenerStatusText">Checking...</span>
-            <button class="btn-primary" onclick="toggleListener()">
+            <span id="listenerStatusText">Unavailable</span>
+            <button class="btn-primary" id="listenerToggle" onclick="toggleListener()" disabled>
                 <i class="fas fa-power-off"></i>
-                <span id="toggleBtnText">Start</span>
+                <span id="toggleBtnText">Unavailable</span>
             </button>
         </div>
     </div>
     
+    <p role="status">Network listener runtime is not implemented. Session registration and command dispatch are unavailable.</p>
+
     <!-- Stats -->
     <div class="stats-row" id="statsRow">
         <div class="stat-card">
@@ -536,23 +538,34 @@
         try {
             const response = await fetch('/api/web-c2/stats');
             const stats = await response.json();
+            if (!response.ok) throw new Error('Listener statistics unavailable');
             
-            listenerRunning = stats.running;
-            updateListenerStatus(stats.running);
+            listenerRunning = stats.runtime_available === true && stats.running === true;
+            updateListenerStatus(listenerRunning, stats.runtime_available === true);
             
             document.getElementById('statActiveSessions').textContent = stats.sessions_active;
             document.getElementById('statTotalSessions').textContent = stats.sessions_total;
             document.getElementById('statCommandsExecuted').textContent = stats.commands_executed;
             document.getElementById('statDataTransferred').textContent = formatBytes(stats.data_transferred);
         } catch (err) {
+            listenerRunning = false;
+            updateListenerStatus(false, false);
             console.error('Failed to load stats:', err);
         }
     }
     
-    function updateListenerStatus(running) {
+    function updateListenerStatus(running, available = false) {
         const indicator = document.getElementById('listenerStatus');
         const statusText = document.getElementById('listenerStatusText');
         const btnText = document.getElementById('toggleBtnText');
+        const button = document.getElementById('listenerToggle');
+        button.disabled = !available;
+        if (!available) {
+            indicator.classList.remove('active');
+            statusText.textContent = 'Unavailable';
+            btnText.textContent = 'Unavailable';
+            return;
+        }
         
         if (running) {
             indicator.classList.add('active');
@@ -573,9 +586,11 @@
                 method: 'POST'
             });
             const result = await response.json();
-            
-            listenerRunning = !listenerRunning;
-            updateListenerStatus(listenerRunning);
+            if (!response.ok || result.success !== true || typeof result.running !== 'boolean') {
+                throw new Error('Listener runtime unavailable');
+            }
+            listenerRunning = result.running;
+            updateListenerStatus(listenerRunning, true);
             
             showToast(`Listener ${action}ed successfully`, 'success');
         } catch (err) {
@@ -587,6 +602,9 @@
         try {
             const response = await fetch('/api/web-c2/sessions');
             const sessions = await response.json();
+            if (!response.ok || !Array.isArray(sessions)) {
+                throw new Error('Session listing unavailable');
+            }
             
             const list = document.getElementById('sessionList');
             
@@ -627,6 +645,7 @@
             `).join('');
             
         } catch (err) {
+            document.getElementById('sessionList').textContent = 'Session listing unavailable';
             console.error('Failed to load sessions:', err);
         }
     }
@@ -653,6 +672,9 @@
             });
             
             const result = await response.json();
+            if (!response.ok || result.success !== true) {
+                throw new Error('Session registration unavailable');
+            }
             
             // Show beacon payload
             document.getElementById('beaconPayload').style.display = 'block';
@@ -717,6 +739,9 @@
             });
             
             const result = await response.json();
+            if (!response.ok || result.success !== true) {
+                throw new Error('Command dispatch unavailable');
+            }
             
             appendToTerminal(`[*] Command queued: ${result.cmd_id}`, 'output');
             
@@ -785,9 +810,13 @@
         if (!confirm('Remove this session?')) return;
         
         try {
-            await fetch(`/api/web-c2/session/${sessionId}`, {
+            const response = await fetch(`/api/web-c2/session/${sessionId}`, {
                 method: 'DELETE'
             });
+            const result = await response.json();
+            if (!response.ok || result.success !== true) {
+                throw new Error('Session removal unavailable');
+            }
             
             if (currentSession === sessionId) {
                 currentSession = null;

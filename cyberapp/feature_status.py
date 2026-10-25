@@ -35,6 +35,14 @@ class FeatureStatus:
 
 FEATURES = (
     FeatureStatus(
+        "listener_runtime",
+        "C2 dinleyici çalışma durumu",
+        "incomplete_offline",
+        "İncelenen başlatma taslakları başarı bildirmez; eksik sekiz Web C2 işlemi açık 501 yanıtı döndürür.",
+        "cyberapp/routes/c2.py; cyberapp/routes/c2_advanced.py; tests/test_simulation_contract.py",
+        "Yalnızca hata davranışı izole testle sınanır. Gerçek dinleyici, bağlantı veya komut kanalı başlatılmaz.",
+    ),
+    FeatureStatus(
         "admin_access_control",
         "Operasyonel ekran ve API yetkilendirmesi",
         "verified_management",

@@ -84,13 +84,20 @@ def delete_listener(listener_id):
 
 @c2_bp.route("/c2/listeners/<listener_id>/start", methods=["POST"])
 def start_listener(listener_id):
-    """Start a listener."""
+    """Report the unavailable runtime without constructing an operational server."""
     if not session.get("logged_in"):
         return jsonify({"error": "login_required"}), 401
     
-    c2 = get_c2_server()
-    success = c2.start_listener(listener_id)
-    return jsonify({"success": success})
+    response = jsonify({
+        "success": False,
+        "available": False,
+        "running": False,
+        "error": "listener_runtime_unavailable",
+        "message": "No network listener runtime is implemented.",
+    })
+    response.status_code = 501
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @c2_bp.route("/c2/listeners/<listener_id>/stop", methods=["POST"])

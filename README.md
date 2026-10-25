@@ -28,6 +28,8 @@
 
 > **Vulnerability review:** `/ai-vulnerability` provides admin-only analysis of supplied responses or already-recorded scan observations. The legacy AI option now produces a stored-data review; selecting it alone returns before scanner/engine calls. This is a rule-based, uncalibrated prioritization helper, not a trained model or verified vulnerability detector. See [inputs, storage and limits](docs/AI_VULNERABILITY_ANALYSIS.md).
 
+> **Listener status:** the reviewed listener start placeholders now fail explicitly instead of claiming to run. Eight Web C2 routes with missing backend methods return HTTP 501 without dispatching operations. The panel reports the unavailable runtime and checks error responses before claiming success. No network listener was implemented or started. See [scope and remaining gaps](docs/LISTENER_STATUS.md).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0

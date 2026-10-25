@@ -809,10 +809,10 @@ class WebC2Listener:
         }
     
     def start(self) -> bool:
-        """Start the C2 listener"""
-        self.running = True
-        logger.info(f"C2 Listener started on {self.config.listen_host}:{self.config.listen_port}")
-        return True
+        """Fail closed: no network listener runtime is implemented here."""
+        self.running = False
+        logger.warning("C2 listener unavailable: network runtime is not implemented")
+        return False
     
     def stop(self) -> bool:
         """Stop the C2 listener"""
@@ -1027,6 +1027,7 @@ class WebC2Listener:
         
         return {
             'listener_id': self.config.listener_id,
+            'runtime_available': False,
             'running': self.running,
             'sessions_total': self.stats['sessions_total'],
             'sessions_active': len([s for s in sessions if s.state == SessionState.ACTIVE]),

@@ -491,15 +491,14 @@ class C2Server:
         return listener
     
     def start_listener(self, listener_id: str) -> bool:
-        """Start a listener (placeholder for actual implementation)."""
+        """Fail closed: this implementation has no listener runtime."""
         listener = self.db.get_listener(listener_id)
         if not listener:
             return False
         
-        # In production, this would actually start the listener
-        # For now, we just update the status
-        self.db.update_listener_status(listener_id, "running")
-        return True
+        # A database flag is not evidence that a socket was opened.
+        self.db.update_listener_status(listener_id, "stopped")
+        return False
     
     def stop_listener(self, listener_id: str) -> bool:
         """Stop a listener."""

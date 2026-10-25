@@ -56,6 +56,11 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
 - Reviewed helpers/tests receive AST syntax, Ruff lint, and formatting checks.
   The two standalone safety/credential helpers also receive Mypy checks without
   importing operational dependencies.
+- Listener failure regressions extract only the reviewed definitions into inert
+  test namespaces. They check that placeholder starts cannot report success,
+  missing Web C2 operations return explicit HTTP 501 without backend dispatch,
+  and the advanced start route does not construct a server. C2 modules and the
+  application are never imported or started; this is not listener validation.
 - The matrix covers Windows and Ubuntu with Python 3.11 and 3.12.
 - CI installs `requirements_ci.txt`, not the operational dependency set. Pytest
   plugin auto-loading is disabled.
