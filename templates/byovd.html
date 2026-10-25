@@ -36,6 +36,7 @@
     .edr-badge.carbonblack { background: rgba(0, 0, 0, 0.4); border: 1px solid #666; }
     .edr-badge.sophos { background: rgba(0, 100, 200, 0.2); border: 1px solid #0064c8; }
     .edr-badge.selected { box-shadow: 0 0 15px currentColor; }
+    .edr-badge[aria-disabled="true"] { cursor: not-allowed; opacity: 0.55; }
     
     .capability-tag {
         display: inline-block;
@@ -91,8 +92,8 @@
         <div class="d-flex align-items-center">
             <i class="fas fa-radiation fa-2x text-danger me-3"></i>
             <div>
-                <h5 class="text-danger mb-1">⚠️ KERNEL-LEVEL OPERATIONS</h5>
-                <p class="text-muted mb-0">BYOVD attacks operate at Ring 0. Improper use can cause system instability or BSOD.</p>
+                <h5 class="text-danger mb-1">BYOVD runtime unavailable</h5>
+                <p class="text-muted mb-0">This page reports availability only. No driver, host inspection, payload or EDR action is performed.</p>
             </div>
         </div>
     </div>
@@ -106,11 +107,11 @@
                         <i class="fas fa-skull me-3"></i>BYOVD Module
                     </h1>
                     <p class="text-muted mb-0">
-                        <span class="kernel-mode">Bring Your Own Vulnerable Driver</span> • Kernel-level EDR termination
+                        <span class="kernel-mode">Bring Your Own Vulnerable Driver</span> • Kernel-level EDR termination (unavailable)
                     </p>
                 </div>
                 <span class="badge bg-danger px-3 py-2">
-                    <i class="fas fa-microchip me-2"></i>RING 0
+                    <i class="fas fa-microchip me-2"></i>UNAVAILABLE
                 </span>
             </div>
         </div>
@@ -127,21 +128,21 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Target IP/Hostname</label>
-                        <input type="text" class="form-control bg-dark text-white" id="targetHost" 
+                        <input disabled type="text" class="form-control bg-dark text-white" id="targetHost"
                                placeholder="192.168.1.100 or WORKSTATION-01">
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <label class="form-label">Username</label>
-                            <input type="text" class="form-control bg-dark text-white" id="targetUser" 
+                            <input disabled type="text" class="form-control bg-dark text-white" id="targetUser"
                                    placeholder="Administrator">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Password</label>
-                            <input type="password" class="form-control bg-dark text-white" id="targetPass">
+                            <input disabled type="password" class="form-control bg-dark text-white" id="targetPass">
                         </div>
                     </div>
-                    <button class="btn btn-outline-danger w-100 mt-3" onclick="detectEDR()">
+                    <button class="btn btn-outline-danger w-100 mt-3" disabled aria-disabled="true" data-operation="detectEDR">
                         <i class="fas fa-search me-2"></i>Detect EDR Products
                     </button>
                 </div>
@@ -153,21 +154,21 @@
                     <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Target EDR Products</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small mb-3">Select EDR products to terminate</p>
+                    <p class="text-muted small mb-3">Product labels only; no detection or termination is available</p>
                     <div id="edrContainer">
-                        <span class="edr-badge defender" onclick="toggleEDR(this, 'windows_defender')">
+                        <span class="edr-badge defender" aria-disabled="true">
                             <i class="fab fa-windows me-2"></i>Windows Defender
                         </span>
-                        <span class="edr-badge crowdstrike" onclick="toggleEDR(this, 'crowdstrike')">
+                        <span class="edr-badge crowdstrike" aria-disabled="true">
                             <i class="fas fa-crow me-2"></i>CrowdStrike
                         </span>
-                        <span class="edr-badge sentinelone" onclick="toggleEDR(this, 'sentinelone')">
+                        <span class="edr-badge sentinelone" aria-disabled="true">
                             <i class="fas fa-satellite me-2"></i>SentinelOne
                         </span>
-                        <span class="edr-badge carbonblack" onclick="toggleEDR(this, 'carbon_black')">
+                        <span class="edr-badge carbonblack" aria-disabled="true">
                             <i class="fas fa-cube me-2"></i>Carbon Black
                         </span>
-                        <span class="edr-badge sophos" onclick="toggleEDR(this, 'sophos')">
+                        <span class="edr-badge sophos" aria-disabled="true">
                             <i class="fas fa-shield-virus me-2"></i>Sophos
                         </span>
                     </div>
@@ -180,7 +181,7 @@
                     <h5 class="mb-0"><i class="fas fa-hdd me-2"></i>Vulnerable Driver</h5>
                 </div>
                 <div class="card-body" id="driverContainer">
-                    <!-- Drivers loaded dynamically -->
+                    Driver catalog unavailable. No driver database or local host was inspected.
                 </div>
             </div>
         </div>
@@ -195,17 +196,17 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <button class="btn btn-outline-warning w-100 mb-2" onclick="generatePayload()">
+                            <button class="btn btn-outline-warning w-100 mb-2" disabled aria-disabled="true" data-operation="generatePayload">
                                 <i class="fas fa-code me-2"></i>Generate Payload
                             </button>
                         </div>
                         <div class="col-md-4">
-                            <button class="btn btn-outline-info w-100 mb-2" onclick="deployDriver()">
+                            <button class="btn btn-outline-info w-100 mb-2" disabled aria-disabled="true" data-operation="deployDriver">
                                 <i class="fas fa-upload me-2"></i>Deploy Driver
                             </button>
                         </div>
                         <div class="col-md-4">
-                            <button class="btn btn-danger w-100 mb-2" onclick="killEDR()">
+                            <button class="btn btn-danger w-100 mb-2" disabled aria-disabled="true" data-operation="killEDR">
                                 <i class="fas fa-skull-crossbones me-2"></i>Kill EDR
                             </button>
                         </div>
@@ -216,7 +217,7 @@
             <!-- Capabilities Info -->
             <div class="card bg-dark border-secondary mb-4">
                 <div class="card-header bg-secondary bg-opacity-25">
-                    <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>Driver Capabilities</h5>
+                    <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>Driver Capabilities (unavailable)</h5>
                 </div>
                 <div class="card-body" id="capabilitiesInfo">
                     <div class="row text-center">
@@ -245,27 +246,15 @@
             <!-- Terminal Output -->
             <div class="card bg-dark border-secondary">
                 <div class="card-header bg-secondary bg-opacity-25 d-flex justify-content-between">
-                    <h5 class="mb-0"><i class="fas fa-terminal me-2"></i>Kernel Terminal</h5>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="clearOutput()">
+                    <h5 class="mb-0"><i class="fas fa-terminal me-2"></i>BYOVD Status</h5>
+                    <button class="btn btn-sm btn-outline-secondary" id="clearByovdOutput" type="button">
                         <i class="fas fa-trash me-1"></i>Clear
                     </button>
                 </div>
                 <div class="card-body p-0">
-                    <div class="terminal-output" id="terminalOutput">
-<span style="color: #ff6600;">╔══════════════════════════════════════════════════════════╗
-║             BYOVD Module - EDR Killer v1.0               ║
-║           Kernel-Level Security Bypass Engine            ║
-╚══════════════════════════════════════════════════════════╝</span>
-
-<span style="color: #888;">[*] Module initialized</span>
-<span style="color: #888;">[*] Vulnerable driver database loaded</span>
-<span style="color: #888;">[*] EDR signatures loaded</span>
-
-<span style="color: #ff0;">[!] WARNING: Operations at Ring 0 level</span>
-<span style="color: #ff0;">[!] Improper use may cause BSOD</span>
-
-<span style="color: #0f0;">[+] Ready for kernel operations</span>
-                    </div>
+                    <pre class="terminal-output" id="terminalOutput" role="status" aria-live="polite">BYOVD runtime unavailable.
+This page performs no driver, kernel or EDR actions.
+Checking the status descriptor...</pre>
                 </div>
             </div>
         </div>
@@ -273,203 +262,45 @@
 </div>
 
 <script>
-let selectedDriver = null;
-let selectedEDRs = [];
-
-document.addEventListener('DOMContentLoaded', function() {
-    loadDrivers();
-});
-
-function loadDrivers() {
-    fetch('/byovd/api/drivers')
-        .then(r => r.json())
-        .then(data => {
-            const container = document.getElementById('driverContainer');
-            container.innerHTML = data.drivers.map(d => `
-                <div class="driver-card" onclick="selectDriver('${d.id}', this)" data-driver="${d.id}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="mb-1">${d.name}</h6>
-                            <p class="text-muted small mb-2">${d.vendor}</p>
-                            <span class="badge bg-danger">${d.cve}</span>
-                        </div>
-                        <div class="text-end">
-                            <small class="text-muted">Reliability</small>
-                            <div class="reliability-bar" style="width: 80px;">
-                                <div class="reliability-fill" style="width: ${d.reliability * 100}%; background: ${d.reliability > 0.8 ? '#00ff00' : d.reliability > 0.5 ? '#ffff00' : '#ff0000'};"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-2">
-                        ${d.capabilities.map(c => `<span class="capability-tag">${c}</span>`).join('')}
-                    </div>
-                </div>
-            `).join('');
-        });
-}
-
-function selectDriver(driverId, element) {
-    document.querySelectorAll('.driver-card').forEach(el => el.classList.remove('selected'));
-    element.classList.add('selected');
-    selectedDriver = driverId;
-    appendOutput(`[*] Selected driver: ${driverId}`);
-}
-
-function toggleEDR(element, edrId) {
-    element.classList.toggle('selected');
-    if (selectedEDRs.includes(edrId)) {
-        selectedEDRs = selectedEDRs.filter(e => e !== edrId);
-    } else {
-        selectedEDRs.push(edrId);
-    }
-    appendOutput(`[*] Target EDRs: ${selectedEDRs.join(', ') || 'none'}`);
-}
-
-function detectEDR() {
-    const target = document.getElementById('targetHost').value;
-    if (!target) {
-        alert('Please enter target host');
-        return;
-    }
-    
-    appendOutput(`\n[*] Scanning ${target} for EDR products...`);
-    
-    fetch('/byovd/api/detect-edr', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            target: target,
-            credentials: {
-                username: document.getElementById('targetUser').value,
-                password: document.getElementById('targetPass').value
-            }
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.detected_edr && data.detected_edr.length > 0) {
-            appendOutput(`[+] Detected EDR products:`);
-            data.detected_edr.forEach(edr => {
-                appendOutput(`    - ${edr}`);
-            });
-        } else {
-            appendOutput(`[-] No EDR products detected`);
-        }
-    });
-}
-
-function generatePayload() {
-    if (!selectedDriver) {
-        alert('Please select a vulnerable driver');
-        return;
-    }
-    
-    appendOutput(`\n[*] Generating BYOVD payload with ${selectedDriver}...`);
-    
-    fetch('/byovd/api/generate-payload', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            driver: selectedDriver,
-            edr_products: selectedEDRs
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.payload) {
-            appendOutput(`[+] Payload generated successfully`);
-            appendOutput(`[+] Size: ${data.payload.length} bytes`);
-            appendOutput(`[+] Target processes: ${selectedEDRs.length}`);
-        }
-    });
-}
-
-function deployDriver() {
-    const target = document.getElementById('targetHost').value;
-    if (!target || !selectedDriver) {
-        alert('Please enter target and select driver');
-        return;
-    }
-    
-    appendOutput(`\n[*] Deploying vulnerable driver to ${target}...`);
-    appendOutput(`[*] Loading ${selectedDriver}.sys into kernel...`);
-    
-    fetch('/byovd/api/deploy', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            target: target,
-            driver: selectedDriver,
-            credentials: {
-                username: document.getElementById('targetUser').value,
-                password: document.getElementById('targetPass').value
-            }
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            appendOutput(`[+] Driver loaded successfully!`);
-            appendOutput(`[+] Device handle: ${data.handle || '\\\\.\\'+ selectedDriver}`);
-        } else {
-            appendOutput(`[-] Deployment failed: ${data.error}`);
-        }
-    });
-}
-
-function killEDR() {
-    if (!confirm('⚠️ This will terminate EDR processes at kernel level. Continue?')) {
-        return;
-    }
-    
-    const target = document.getElementById('targetHost').value;
-    if (!target || !selectedDriver || selectedEDRs.length === 0) {
-        alert('Please configure target, driver, and select EDR products');
-        return;
-    }
-    
-    appendOutput(`\n<span style="color: #ff0000;">[!] INITIATING EDR TERMINATION</span>`);
-    appendOutput(`[*] Target: ${target}`);
-    appendOutput(`[*] Driver: ${selectedDriver}`);
-    appendOutput(`[*] EDR targets: ${selectedEDRs.join(', ')}`);
-    
-    selectedEDRs.forEach((edr, i) => {
-        setTimeout(() => {
-            appendOutput(`[*] Killing ${edr} processes...`);
-            
-            fetch('/byovd/api/kill-edr', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    target: target,
-                    edr_product: edr,
-                    driver: selectedDriver,
-                    credentials: {
-                        username: document.getElementById('targetUser').value,
-                        password: document.getElementById('targetPass').value
-                    }
-                })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    appendOutput(`<span style="color: #00ff00;">[+] ${edr} TERMINATED ☠️</span>`);
-                } else {
-                    appendOutput(`<span style="color: #ff0000;">[-] Failed to kill ${edr}</span>`);
-                }
-            });
-        }, i * 1000);
-    });
-}
-
-function appendOutput(text) {
+(() => {
     const output = document.getElementById('terminalOutput');
-    output.innerHTML += '\n' + text;
-    output.scrollTop = output.scrollHeight;
-}
-
-function clearOutput() {
-    document.getElementById('terminalOutput').innerHTML = '[*] Terminal cleared\n[+] Ready';
-}
+    const initial = 'BYOVD runtime unavailable.\nThis page performs no driver, kernel or EDR actions.';
+    document.getElementById('clearByovdOutput').addEventListener('click', () => {
+        output.textContent = initial;
+    });
+    async function readStatus() {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        try {
+            const response = await fetch({{ url_for('byovd.module_status') | tojson }}, {
+                method: 'GET', credentials: 'same-origin', cache: 'no-store', redirect: 'error',
+                headers: {'Accept': 'application/json'}, signal: controller.signal
+            });
+            if (response.status === 401) {
+                output.textContent = initial + '\nSession expired. Sign in again to read the status.';
+                return;
+            }
+            if (response.status === 403) {
+                output.textContent = initial + '\nAdmin access is required to read the status.';
+                return;
+            }
+            if (!response.ok || !(response.headers.get('content-type') || '').includes('application/json')) {
+                throw new Error('status_unavailable');
+            }
+            const data = await response.json();
+            if (data.module !== 'byovd' || data.status !== 'unavailable' || data.success !== false ||
+                data.available !== false || data.executed !== false || data.host_probe_performed !== false ||
+                data.driver_loaded !== false || data.kernel_access !== false || data.edr_terminated !== false) {
+                throw new Error('invalid_status');
+            }
+            output.textContent = initial + '\nStatus descriptor confirmed. Operational controls remain unavailable.';
+        } catch (_) {
+            output.textContent = initial + '\nStatus could not be read. No action was performed.';
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+    readStatus();
+})();
 </script>
 {% endblock %}

@@ -116,63 +116,27 @@ class eBPFRootkit:
         self.initialized = False
         self.kernel_version = self._get_kernel_version()
         
-    def _get_kernel_version(self) -> Tuple[int, int, int]:
-        """Get kernel version"""
-        try:
-            uname = os.uname()
-            version_str = uname.release.split('-')[0]
-            parts = version_str.split('.')
-            return (int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
-        except:
-            return (5, 15, 0)  # Default modern kernel
+    def _get_kernel_version(self) -> Optional[Tuple[int, int, int]]:
+        """No host probe is performed by this unavailable implementation."""
+        return None
     
     def check_ebpf_support(self) -> Dict[str, Any]:
-        """Check eBPF support on the system"""
-        support = {
-            "kernel_version": f"{self.kernel_version[0]}.{self.kernel_version[1]}.{self.kernel_version[2]}",
-            "ebpf_available": False,
-            "bpf_syscall": False,
-            "kprobe_support": False,
-            "xdp_support": False,
-            "btf_support": False,
-            "ringbuf_support": False,
-            "lsm_support": False,
+        """Return unknown support; version and path checks cannot verify runtime."""
+        return {
+            "kernel_version": None,
+            "ebpf_available": None,
+            "bpf_syscall": None,
+            "kprobe_support": None,
+            "xdp_support": None,
+            "btf_support": None,
+            "ringbuf_support": None,
+            "lsm_support": None,
+            "support_verified": False,
+            "host_probe_performed": False,
+            "available": False,
             "required_caps": [],
-            "recommendations": []
+            "recommendations": [],
         }
-        
-        # Check kernel version (eBPF requires 3.15+, good support in 4.x+)
-        if self.kernel_version >= (4, 0, 0):
-            support["ebpf_available"] = True
-        
-        if self.kernel_version >= (4, 1, 0):
-            support["kprobe_support"] = True
-            
-        if self.kernel_version >= (4, 8, 0):
-            support["xdp_support"] = True
-            
-        if self.kernel_version >= (5, 2, 0):
-            support["btf_support"] = True
-            
-        if self.kernel_version >= (5, 8, 0):
-            support["ringbuf_support"] = True
-            
-        if self.kernel_version >= (5, 7, 0):
-            support["lsm_support"] = True
-        
-        # Check for bpf syscall
-        support["bpf_syscall"] = os.path.exists("/sys/kernel/debug/tracing")
-        
-        # Required capabilities
-        support["required_caps"] = ["CAP_SYS_ADMIN", "CAP_BPF", "CAP_PERFMON", "CAP_NET_ADMIN"]
-        
-        # Recommendations
-        if not support["btf_support"]:
-            support["recommendations"].append("Upgrade to kernel 5.2+ for BTF support (easier eBPF development)")
-        if not support["lsm_support"]:
-            support["recommendations"].append("Upgrade to kernel 5.7+ for LSM BPF hooks")
-            
-        return support
     
     def generate_process_hide_ebpf(self, pids: List[int]) -> eBPFProgram:
         """
@@ -830,13 +794,8 @@ int hide_access(struct pt_regs *ctx) {
         return anti_forensics
     
     def _compile_bpf_code(self, code: str) -> bytes:
-        """
-        Compile BPF C code to bytecode
-        In production, this would use clang/LLVM
-        """
-        # Simulated compilation - return hash as placeholder
-        code_hash = hashlib.sha256(code.encode()).digest()
-        return code_hash
+        """Fail closed instead of presenting a source digest as eBPF bytecode."""
+        raise NotImplementedError("eBPF compilation and loading are unavailable")
     
     def get_loader_script(self) -> str:
         """
@@ -913,26 +872,16 @@ if __name__ == "__main__":
         return loader
     
     def get_status(self) -> Dict[str, Any]:
-        """Get rootkit status"""
-        return {
-            "initialized": self.initialized,
-            "kernel_version": f"{self.kernel_version[0]}.{self.kernel_version[1]}.{self.kernel_version[2]}",
-            "loaded_programs": len([p for p in self.programs.values() if p.loaded]),
-            "total_programs": len(self.programs),
-            "hidden_processes": len(self.hidden_processes),
-            "hidden_files": len(self.hidden_files),
-            "hidden_connections": len(self.hidden_connections),
-            "captured_packets": len(self.captured_packets),
+        """Separate requested records from unverified host effects."""
+        status = _ebpf_status_descriptor()
+        status["requested_records"] = {
+            "programs": len(self.programs),
+            "processes": len(self.hidden_processes),
+            "files": len(self.hidden_files),
+            "connections": len(self.hidden_connections),
             "packet_rules": len(self.packet_rules),
-            "programs": {
-                name: {
-                    "type": prog.prog_type.value,
-                    "attach_point": prog.attach_point,
-                    "loaded": prog.loaded,
-                    "description": prog.description
-                } for name, prog in self.programs.items()
-            }
         }
+        return status
     
     def export_config(self) -> str:
         """Export rootkit configuration"""
@@ -946,13 +895,69 @@ if __name__ == "__main__":
         return json.dumps(config, indent=2)
 
 
-# Flask Blueprint
-from flask import Blueprint, render_template, request, jsonify
+# Flask Blueprint: metadata only; never instantiate an operational backend.
+from flask import Blueprint, render_template, jsonify
 
 ebpf_rootkit_bp = Blueprint('ebpf_rootkit', __name__, url_prefix='/ebpf-rootkit')
 
-# Global instance
-_rootkit = eBPFRootkit()
+# Retained compatibility name; management routes never construct a backend.
+_rootkit = None
+
+
+def _ebpf_status_descriptor():
+    """Describe unavailable implementation without inspecting the host."""
+    return {
+        "implementation": "not_implemented",
+        "available": False,
+        "runtime_available": False,
+        "executed": False,
+        "compiled": False,
+        "loaded": False,
+        "attached": False,
+        "initialized": False,
+        "kernel_version": None,
+        "support_verified": False,
+        "host_probe_performed": False,
+        "host_state": "not_inspected",
+        "verified_effects_only": True,
+        "loaded_programs": 0,
+        "total_programs": 0,
+        "hidden_processes": 0,
+        "hidden_files": 0,
+        "hidden_connections": 0,
+        "captured_packets": 0,
+        "packet_rules": 0,
+        "programs": {},
+        "requested_records": {},
+    }
+
+
+def _ebpf_response(payload, status=200):
+    response = jsonify(payload)
+    response.status_code = status
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def _ebpf_unavailable():
+    return _ebpf_response({
+        "success": False,
+        "available": False,
+        "executed": False,
+        "compiled": False,
+        "loaded": False,
+        "attached": False,
+        "support_verified": False,
+        "host_probe_performed": False,
+        "error": "ebpf_runtime_unavailable",
+        "message": "Compilation, loading, hiding and host probing are unavailable in this management view.",
+    }, 501)
+
+
+@ebpf_rootkit_bp.after_request
+def no_ebpf_caching(response):
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 @ebpf_rootkit_bp.route('/')
 def index():
@@ -960,125 +965,53 @@ def index():
 
 @ebpf_rootkit_bp.route('/api/status')
 def api_status():
-    return jsonify({
-        "success": True,
-        "status": _rootkit.get_status()
+    """Retrieve an unavailable-implementation descriptor, not an operational result."""
+    return _ebpf_response({
+        "success": False, "descriptor_retrieved": True, "available": False,
+        "executed": False, "status": _ebpf_status_descriptor(),
     })
 
 @ebpf_rootkit_bp.route('/api/check-support')
 def api_check_support():
-    return jsonify({
-        "success": True,
-        "support": _rootkit.check_ebpf_support()
-    })
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/programs')
 def api_list_programs():
-    return jsonify({
-        "success": True,
-        "available_programs": [
-            {"id": "process_hide", "name": "Process Hiding", "description": "Hide processes from ps, top, htop"},
-            {"id": "file_hide", "name": "File Hiding", "description": "Hide files from ls, find, stat"},
-            {"id": "network_hide", "name": "Network Hiding", "description": "Hide connections from netstat, ss"},
-            {"id": "xdp_filter", "name": "XDP Packet Filter", "description": "Capture/drop/modify packets"},
-            {"id": "keylogger", "name": "Keylogger", "description": "Kernel-level keystroke capture"},
-            {"id": "privesc", "name": "Privilege Escalation", "description": "Credential manipulation"}
-        ]
-    })
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/generate/process-hide', methods=['POST'])
 def api_gen_process_hide():
-    data = request.get_json() or {}
-    pids = data.get('pids', [])
-    
-    if not pids:
-        return jsonify({"success": False, "error": "No PIDs specified"})
-    
-    try:
-        program = _rootkit.generate_process_hide_ebpf(pids)
-        return jsonify({
-            "success": True,
-            "program": {
-                "name": program.name,
-                "type": program.prog_type.value,
-                "attach_point": program.attach_point,
-                "bytecode_hash": hashlib.sha256(program.bytecode).hexdigest()[:16],
-                "description": program.description
-            }
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/generate/file-hide', methods=['POST'])
 def api_gen_file_hide():
-    data = request.get_json() or {}
-    paths = data.get('paths', [])
-    
-    if not paths:
-        return jsonify({"success": False, "error": "No paths specified"})
-    
-    try:
-        program = _rootkit.generate_file_hide_ebpf(paths)
-        return jsonify({
-            "success": True,
-            "program": {
-                "name": program.name,
-                "type": program.prog_type.value,
-                "bytecode_hash": hashlib.sha256(program.bytecode).hexdigest()[:16],
-                "hidden_count": len(paths)
-            }
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/generate/xdp-filter', methods=['POST'])
 def api_gen_xdp():
-    data = request.get_json() or {}
-    rules = data.get('rules', [])
-    interface = data.get('interface', 'eth0')
-    
-    try:
-        program = _rootkit.generate_xdp_packet_filter(rules)
-        return jsonify({
-            "success": True,
-            "program": {
-                "name": program.name,
-                "type": program.prog_type.value,
-                "interface": interface,
-                "rules_count": len(rules)
-            }
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/persistence')
 def api_persistence():
-    methods = _rootkit.generate_persistence_ebpf()
-    return jsonify({
-        "success": True,
-        "methods": list(methods.keys()),
-        "details": methods
-    })
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/anti-forensics')
 def api_anti_forensics():
-    methods = _rootkit.generate_anti_forensics()
-    return jsonify({
-        "success": True,
-        "techniques": list(methods.keys())
-    })
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/loader-script')
 def api_loader():
-    script = _rootkit.get_loader_script()
-    return jsonify({
-        "success": True,
-        "script": script
-    })
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()
 
 @ebpf_rootkit_bp.route('/api/export')
 def api_export():
-    return jsonify({
-        "success": True,
-        "config": _rootkit.export_config()
-    })
+    """Fail closed before input parsing, probing or generation."""
+    return _ebpf_unavailable()

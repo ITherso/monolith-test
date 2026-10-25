@@ -1,193 +1,100 @@
-"""
-BYOVD Module - Flask Routes  
-Bring Your Own Vulnerable Driver for EDR Bypass
-"""
+"""BYOVD status only; never import or dispatch an operational driver backend."""
 
-from flask import Blueprint, render_template, request, jsonify
-from functools import wraps
-import sys
-import os
+from flask import Blueprint, jsonify, render_template
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tools'))
-
-# Simple pass-through decorator (auth handled elsewhere)
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        return f(*args, **kwargs)
-    return decorated
-
-try:
-    from byovd_module import get_byovd_module, BYOVDModule
-except ImportError:
-    get_byovd_module = None
-
-byovd_bp = Blueprint('byovd', __name__, url_prefix='/byovd')
+byovd_bp = Blueprint("byovd", __name__, url_prefix="/byovd")
 
 
-@byovd_bp.route('/')
-@login_required
+def _status_payload():
+    return {
+        "module": "byovd",
+        "status": "unavailable",
+        "success": False,
+        "available": False,
+        "executed": False,
+        "host_probe_performed": False,
+        "driver_loaded": False,
+        "kernel_access": False,
+        "edr_terminated": False,
+        "reason": "byovd_backend_unavailable",
+    }
+
+
+def _unavailable():
+    payload = _status_payload()
+    payload["error"] = "byovd_backend_unavailable"
+    payload["message"] = (
+        "The operational driver backend is unavailable; no action was performed."
+    )
+    return jsonify(payload), 501
+
+
+@byovd_bp.after_request
+def no_caching(response):
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@byovd_bp.route("/")
 def index():
-    """BYOVD Module main page"""
-    return render_template('byovd.html')
+    return render_template("byovd.html")
 
 
-@byovd_bp.route('/api/drivers')
-@login_required
+@byovd_bp.route("/api/status")
+def module_status():
+    """Static descriptor; no process, driver, credential or host inspection."""
+    return jsonify(_status_payload())
+
+
+@byovd_bp.route("/api/drivers")
 def get_drivers():
-    """Get list of vulnerable drivers"""
-    if not get_byovd_module:
-        return jsonify({"error": "BYOVD module not available"}), 500
-    
-    module = get_byovd_module()
-    drivers = []
-    
-    for driver_id, driver in module.VULNERABLE_DRIVERS.items():
-        drivers.append({
-            "id": driver_id,
-            "name": driver.name,
-            "vendor": driver.vendor,
-            "cve": driver.cve,
-            "capabilities": driver.capabilities,
-            "file_hash": driver.file_hash,
-            "reliability": driver.reliability
-        })
-    
-    return jsonify({"drivers": drivers})
+    return _unavailable()
 
 
-@byovd_bp.route('/api/edr-products')
-@login_required
+@byovd_bp.route("/api/edr-products")
 def get_edr_products():
-    """Get list of supported EDR products"""
-    if not get_byovd_module:
-        return jsonify({"error": "BYOVD module not available"}), 500
-    
-    module = get_byovd_module()
-    products = []
-    
-    for product_id, product in module.EDR_PRODUCTS.items():
-        products.append({
-            "id": product_id,
-            "name": product.name,
-            "processes": product.processes,
-            "services": product.services,
-            "drivers": product.drivers,
-            "difficulty": product.kill_difficulty
-        })
-    
-    return jsonify({"products": products})
+    return _unavailable()
 
 
-@byovd_bp.route('/api/detect-edr', methods=['POST'])
-@login_required
+@byovd_bp.route("/api/detect-edr", methods=["POST"])
 def detect_edr():
-    """Detect EDR on target"""
-    if not get_byovd_module:
-        return jsonify({"error": "BYOVD module not available"}), 500
-    
-    data = request.get_json()
-    target = data.get('target')
-    credentials = data.get('credentials', {})
-    
-    if not target:
-        return jsonify({"error": "Target required"}), 400
-    
-    module = get_byovd_module()
-    detected = module.detect_edr(target, credentials)
-    
-    return jsonify({"target": target, "detected_edr": detected})
+    return _unavailable()
 
 
-@byovd_bp.route('/api/generate-payload', methods=['POST'])
-@login_required
+@byovd_bp.route("/api/generate-payload", methods=["POST"])
 def generate_payload():
-    """Generate BYOVD payload"""
-    if not get_byovd_module:
-        return jsonify({"error": "BYOVD module not available"}), 500
-    
-    data = request.get_json()
-    driver_id = data.get('driver')
-    edr_products = data.get('edr_products', [])
-    
-    if not driver_id:
-        return jsonify({"error": "Driver required"}), 400
-    
-    module = get_byovd_module()
-    payload = module.generate_payload(driver_id, edr_products)
-    
-    return jsonify(payload)
+    return _unavailable()
 
 
-@byovd_bp.route('/api/deploy', methods=['POST'])
-@login_required
+@byovd_bp.route("/api/deploy", methods=["POST"])
 def deploy_byovd():
-    """Deploy BYOVD attack"""
-    if not get_byovd_module:
-        return jsonify({"error": "BYOVD module not available"}), 500
-    
-    data = request.get_json()
-    target = data.get('target')
-    driver_id = data.get('driver')
-    credentials = data.get('credentials', {})
-    
-    if not target or not driver_id:
-        return jsonify({"error": "Target and driver required"}), 400
-    
-    module = get_byovd_module()
-    result = module.deploy_attack(target, driver_id, credentials)
-    
-    return jsonify(result)
+    return _unavailable()
 
 
-@byovd_bp.route('/api/kill-edr', methods=['POST'])
-@login_required
+@byovd_bp.route("/api/kill-edr", methods=["POST"])
 def kill_edr():
-    """Kill EDR processes"""
-    if not get_byovd_module:
-        return jsonify({"error": "BYOVD module not available"}), 500
-    
-    data = request.get_json()
-    target = data.get('target')
-    edr_product = data.get('edr_product')
-    driver_id = data.get('driver')
-    credentials = data.get('credentials', {})
-    
-    if not all([target, edr_product, driver_id]):
-        return jsonify({"error": "Target, EDR product, and driver required"}), 400
-    
-    module = get_byovd_module()
-    result = module.kill_edr(target, edr_product, driver_id, credentials)
-    
-    return jsonify(result)
+    return _unavailable()
 
 
-@byovd_bp.route('/api/job/<job_id>')
-@login_required
+@byovd_bp.route("/api/job/<job_id>")
 def get_job_status(job_id):
-    """Get BYOVD job status"""
-    if not get_byovd_module:
-        return jsonify({"error": "BYOVD module not available"}), 500
-    
-    module = get_byovd_module()
-    status = module.get_job_status(job_id)
-    
-    if not status:
-        return jsonify({"error": "Job not found"}), 404
-    
-    return jsonify(status)
+    return _unavailable()
 
 
-@byovd_bp.route('/api/capabilities')
-@login_required
+@byovd_bp.route("/api/capabilities")
 def get_capabilities():
-    """Get driver capabilities"""
-    capabilities = [
-        {"id": "read_memory", "name": "Kernel Memory Read", "icon": "👁️"},
-        {"id": "write_memory", "name": "Kernel Memory Write", "icon": "✏️"},
-        {"id": "kill_process", "name": "Kill Protected Process", "icon": "💀"},
-        {"id": "unload_driver", "name": "Unload Kernel Driver", "icon": "📤"},
-        {"id": "registry_access", "name": "Registry Access", "icon": "📝"},
-        {"id": "file_access", "name": "Protected File Access", "icon": "📂"},
+    """Legacy labels only; they are not available runtime capabilities."""
+    payload = _status_payload()
+    payload["catalog_only"] = True
+    payload["capabilities"] = [
+        {"id": identifier, "name": name, "available": False}
+        for identifier, name in (
+            ("read_memory", "Kernel Memory Read"),
+            ("write_memory", "Kernel Memory Write"),
+            ("kill_process", "Kill Protected Process"),
+            ("unload_driver", "Unload Kernel Driver"),
+            ("registry_access", "Registry Access"),
+            ("file_access", "Protected File Access"),
+        )
     ]
-    return jsonify({"capabilities": capabilities})
+    return jsonify(payload)

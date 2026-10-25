@@ -37,8 +37,8 @@ jobs:
         run: python scripts/check_management_safety.py --syntax-check
       - name: Run isolated management and host-protection tests
         run: python -m pytest -c pytest-management.ini --junitxml=reports/management-safety.xml
-      - name: Check dashboard connection behavior with inert browser fixtures
-        run: node --test tests/js/scan_progress.test.cjs
+      - name: Check management clients with inert browser fixtures
+        run: node --test tests/js/scan_progress.test.cjs tests/js/privileged_status.test.cjs
       - name: Lint reviewed management helpers and tests
         run: python scripts/check_management_safety.py --lint
       - name: Check formatting in the reviewed management scope

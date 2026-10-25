@@ -936,53 +936,46 @@ modprobe nonexistent 2>/dev/null || true
 '''
 
     def attempt_escape(self, method: EscapeMethod) -> EscapeResult:
-        """
-        Attempt escape using specified method
-        """
-        vector = next((v for v in self.escape_vectors if v.method == method), None)
-        
-        if not vector or not vector.available:
-            return EscapeResult(
-                method=method,
-                success=False,
-                host_access=False,
-                root_on_host=False,
-                payload_executed=False,
-                output="Escape method not available"
-            )
-        
-        # Execute payload (in real scenario)
-        # Here we just return the payload for manual execution
-        
+        """Record an unavailable operation without probing or executing a payload."""
         result = EscapeResult(
             method=method,
-            success=True,  # Simulated
-            host_access=True,
-            root_on_host=method in [EscapeMethod.PRIVILEGED_MODE, EscapeMethod.DOCKER_SOCK, EscapeMethod.DIRTY_PIPE],
+            success=False,
+            host_access=False,
+            root_on_host=False,
             payload_executed=False,
-            output=f"Payload generated for {method.value}. Execute manually."
+            output="Not executed: container escape runtime is unavailable.",
         )
-        
         self.escape_results.append(result)
         return result
     
     def get_status(self) -> Dict[str, Any]:
-        """Get module status"""
+        """Describe already-held records; never probe a host or execute an action."""
+        info = self.container_info
         return {
-            "container_detected": self.container_info is not None,
+            "implementation": "unavailable",
+            "execution_available": False,
+            "host_probe_performed": False,
+            "inspection_performed": info is not None,
+            "container_detected": bool(info is not None and info.is_container is True),
             "container_info": {
-                "is_container": self.container_info.is_container if self.container_info else False,
-                "runtime": self.container_info.runtime.value if self.container_info else "unknown",
-                "container_id": self.container_info.container_id if self.container_info else "",
-                "privileged": self.container_info.privileged if self.container_info else False,
-                "capabilities": self.container_info.capabilities if self.container_info else [],
-                "docker_sock": self.container_info.docker_sock_mounted if self.container_info else False,
-                "kernel": self.container_info.kernel_version if self.container_info else ""
-            } if self.container_info else None,
+                "is_container": info.is_container,
+                "runtime": info.runtime.value,
+                "container_id": info.container_id,
+                "privileged": info.privileged,
+                "capabilities": list(info.capabilities),
+                "docker_sock": info.docker_sock_mounted,
+                "kernel": info.kernel_version,
+            } if info is not None else None,
             "escape_vectors": len(self.escape_vectors),
-            "available_escapes": len([v for v in self.escape_vectors if v.available]),
+            "available_escapes": 0,
             "escape_attempts": len(self.escape_results),
-            "successful_escapes": len([r for r in self.escape_results if r.success])
+            "successful_escapes": sum(
+                1 for result in self.escape_results
+                if result.success is True
+                and result.host_access is True
+                and result.payload_executed is True
+            ),
+            "success_count_evidence": "recorded_flags_only",
         }
 
 
@@ -991,7 +984,39 @@ from flask import Blueprint, render_template, request, jsonify
 
 docker_escape_bp = Blueprint('docker_escape', __name__, url_prefix='/docker-escape')
 
-_escape = DockerEscape()
+# Status views must not initialize a tool or inspect the local host.
+_escape = None
+
+
+def _docker_response(payload, status=200):
+    response = jsonify(payload)
+    response.status_code = status
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def _docker_unavailable():
+    """Report unavailability before reading input or touching a tool instance."""
+    return _docker_response({
+        "success": False,
+        "available": False,
+        "initialized": False,
+        "execution_available": False,
+        "executed": False,
+        "host_probe_performed": False,
+        "host_access": False,
+        "root_on_host": False,
+        "payload_executed": False,
+        "error": "docker_escape_unavailable",
+        "message": "Container inspection and escape execution are unavailable.",
+        "result": {
+            "success": False,
+            "host_access": False,
+            "root_on_host": False,
+            "payload_executed": False,
+            "output": "Not executed: container escape runtime is unavailable.",
+        },
+    }, 501)
 
 @docker_escape_bp.route('/')
 def index():
@@ -999,109 +1024,56 @@ def index():
 
 @docker_escape_bp.route('/api/status')
 def api_status():
-    return jsonify({
-        "success": True,
-        "status": _escape.get_status()
+    """Return static metadata without inspecting a host or constructing a tool."""
+    return _docker_response({
+        "success": False,
+        "available": False,
+        "initialized": False,
+        "execution_available": False,
+        "host_probe_performed": False,
+        "executed": False,
+        "status": {
+            "implementation": "unavailable",
+            "initialized": False,
+            "inspection_performed": False,
+            "host_probe_performed": False,
+            "container_detected": None,
+            "container_info": None,
+            "escape_vectors": None,
+            "available_escapes": None,
+            "escape_attempts": None,
+            "successful_escapes": None,
+        },
     })
 
 @docker_escape_bp.route('/api/detect', methods=['POST'])
 def api_detect():
-    info = _escape.detect_container()
-    return jsonify({
-        "success": True,
-        "container_info": {
-            "is_container": info.is_container,
-            "runtime": info.runtime.value,
-            "container_id": info.container_id,
-            "hostname": info.hostname,
-            "capabilities": info.capabilities,
-            "privileged": info.privileged,
-            "host_pid": info.host_pid,
-            "host_net": info.host_net,
-            "docker_sock_mounted": info.docker_sock_mounted,
-            "sensitive_mounts": info.sensitive_mounts,
-            "kernel_version": info.kernel_version,
-            "cgroup_version": info.cgroup_version,
-            "seccomp_enabled": info.seccomp_enabled,
-            "apparmor_profile": info.apparmor_profile
-        }
-    })
+    """Return an explicit unavailable result without host probes or payload work."""
+    return _docker_unavailable()
 
 @docker_escape_bp.route('/api/enumerate', methods=['POST'])
 def api_enumerate():
-    if not _escape.container_info:
-        _escape.detect_container()
-    
-    vectors = _escape.enumerate_escape_vectors()
-    
-    return jsonify({
-        "success": True,
-        "vectors": [
-            {
-                "method": v.method.value,
-                "available": v.available,
-                "risk_level": v.risk_level,
-                "success_rate": v.success_rate,
-                "description": v.description,
-                "prerequisites": v.prerequisites
-            } for v in vectors
-        ],
-        "available_count": len([v for v in vectors if v.available])
-    })
+    """Return an explicit unavailable result without host probes or payload work."""
+    return _docker_unavailable()
 
 @docker_escape_bp.route('/api/get-payload', methods=['POST'])
 def api_get_payload():
-    data = request.get_json() or {}
-    method_name = data.get('method', '')
-    
-    try:
-        method = EscapeMethod(method_name)
-    except ValueError:
-        return jsonify({"success": False, "error": "Invalid escape method"})
-    
-    vector = next((v for v in _escape.escape_vectors if v.method == method), None)
-    
-    if not vector:
-        _escape.enumerate_escape_vectors()
-        vector = next((v for v in _escape.escape_vectors if v.method == method), None)
-    
-    if vector:
-        return jsonify({
-            "success": True,
-            "method": method.value,
-            "payload": vector.payload,
-            "available": vector.available
-        })
-    else:
-        return jsonify({"success": False, "error": "Method not found"})
+    """Return an explicit unavailable result without host probes or payload work."""
+    return _docker_unavailable()
 
 @docker_escape_bp.route('/api/attempt', methods=['POST'])
 def api_attempt():
-    data = request.get_json() or {}
-    method_name = data.get('method', '')
-    
-    try:
-        method = EscapeMethod(method_name)
-    except ValueError:
-        return jsonify({"success": False, "error": "Invalid escape method"})
-    
-    result = _escape.attempt_escape(method)
-    
-    return jsonify({
-        "success": True,
-        "result": {
-            "method": result.method.value,
-            "success": result.success,
-            "host_access": result.host_access,
-            "root_on_host": result.root_on_host,
-            "output": result.output
-        }
-    })
+    """Return an explicit unavailable result without host probes or payload work."""
+    return _docker_unavailable()
 
 @docker_escape_bp.route('/api/escape-methods')
 def api_methods():
-    return jsonify({
+    return _docker_response({
         "success": True,
+        "available": False,
+        "catalog_only": True,
+        "execution_available": False,
+        "host_probe_performed": False,
         "methods": [
             {"id": m.value, "name": m.name.replace("_", " ").title()} 
             for m in EscapeMethod

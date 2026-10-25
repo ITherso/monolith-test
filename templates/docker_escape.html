@@ -15,11 +15,11 @@
                         </div>
                         <div>
                             <h2 class="mb-1 text-white">Docker Container Escape</h2>
-                            <p class="text-muted mb-0">Container breakout & host system compromise</p>
+                            <p class="text-muted mb-0">Runtime unavailable; operations are not performed</p>
                         </div>
                         <div class="ms-auto">
                             <span class="badge bg-primary px-3 py-2">
-                                <i class="fas fa-door-open me-2"></i>BREAKOUT
+                                <i class="fas fa-door-open me-2"></i>NOT IMPLEMENTED
                             </span>
                         </div>
                     </div>
@@ -27,6 +27,8 @@
             </div>
         </div>
     </div>
+
+    <p id="docker-module-status" class="text-warning" role="status" aria-live="polite">Not implemented. Local container inspection and escape actions are unavailable.</p>
 
     <!-- Container Detection -->
     <div class="row mb-4">
@@ -36,7 +38,7 @@
                     <h5 class="mb-0 text-primary">
                         <i class="fas fa-search me-2"></i>Container Environment Detection
                     </h5>
-                    <button class="btn btn-primary" onclick="detectContainer()">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-primary">
                         <i class="fas fa-sync me-2"></i>Detect
                     </button>
                 </div>
@@ -118,7 +120,7 @@
                     <h5 class="mb-0 text-danger">
                         <i class="fas fa-door-open me-2"></i>Escape Vectors
                     </h5>
-                    <button class="btn btn-danger" onclick="enumerateVectors()">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-danger">
                         <i class="fas fa-search me-2"></i>Enumerate Escapes
                     </button>
                 </div>
@@ -137,7 +139,7 @@
                             </thead>
                             <tbody id="vectors-table">
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">Click "Enumerate Escapes" to find available methods</td>
+                                    <td colspan="6" class="text-center text-muted">Unavailable: no vectors were enumerated or verified; success rates are not measured.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -161,9 +163,9 @@
                     <ul class="small text-muted mb-3">
                         <li>Access /dev/sda directly</li>
                         <li>Mount host root filesystem</li>
-                        <li>Execute commands as host root</li>
+                        <li>Host command execution is unavailable</li>
                     </ul>
-                    <button class="btn btn-outline-danger btn-sm w-100" onclick="getPayload('privileged')">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-danger btn-sm w-100">
                         <i class="fas fa-code me-2"></i>Get Payload
                     </button>
                 </div>
@@ -183,7 +185,7 @@
                         <li>Mount host filesystem</li>
                         <li>Execute via Docker API</li>
                     </ul>
-                    <button class="btn btn-outline-warning btn-sm w-100" onclick="getPayload('docker_sock')">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-warning btn-sm w-100">
                         <i class="fas fa-code me-2"></i>Get Payload
                     </button>
                 </div>
@@ -201,9 +203,9 @@
                     <ul class="small text-muted mb-3">
                         <li>Requires CAP_SYS_ADMIN</li>
                         <li>Works on cgroup v1</li>
-                        <li>Execute arbitrary commands</li>
+                        <li>Command execution is unavailable</li>
                     </ul>
-                    <button class="btn btn-outline-info btn-sm w-100" onclick="getPayload('cgroup_release')">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-info btn-sm w-100">
                         <i class="fas fa-code me-2"></i>Get Payload
                     </button>
                 </div>
@@ -221,9 +223,9 @@
                     <ul class="small text-muted mb-3">
                         <li>Kernel 5.8 - 5.16.11</li>
                         <li>Overwrite /etc/passwd</li>
-                        <li>Instant root access</li>
+                        <li>Host root access is not verified</li>
                     </ul>
-                    <button class="btn btn-outline-success btn-sm w-100" onclick="getPayload('dirty_pipe')">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-success btn-sm w-100">
                         <i class="fas fa-code me-2"></i>Get Payload
                     </button>
                 </div>
@@ -243,7 +245,7 @@
                         <li>Access host filesystem</li>
                         <li>Modify system files</li>
                     </ul>
-                    <button class="btn btn-outline-primary btn-sm w-100" onclick="getPayload('cap_sys_admin')">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-primary btn-sm w-100">
                         <i class="fas fa-code me-2"></i>Get Payload
                     </button>
                 </div>
@@ -263,7 +265,7 @@
                         <li>Access /proc/PID/root</li>
                         <li>Inject into host processes</li>
                     </ul>
-                    <button class="btn btn-outline-secondary btn-sm w-100" onclick="getPayload('host_pid')">
+                    <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-secondary btn-sm w-100">
                         <i class="fas fa-code me-2"></i>Get Payload
                     </button>
                 </div>
@@ -280,16 +282,16 @@
                         <i class="fas fa-terminal me-2"></i>Escape Payload
                     </h5>
                     <div class="btn-group">
-                        <button class="btn btn-outline-info btn-sm" onclick="copyPayload()">
+                        <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-info btn-sm">
                             <i class="fas fa-copy me-2"></i>Copy
                         </button>
-                        <button class="btn btn-outline-success btn-sm" onclick="downloadPayload()">
+                        <button disabled aria-disabled="true" title="Not implemented" class="btn btn-outline-success btn-sm">
                             <i class="fas fa-download me-2"></i>Download
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <pre id="payload-output" class="bg-black text-success p-3 rounded border border-secondary" style="max-height: 500px; overflow-y: auto; font-family: 'Fira Code', monospace;">// Select an escape method to generate payload...</pre>
+                    <pre id="payload-output" class="bg-black text-success p-3 rounded border border-secondary" style="max-height: 500px; overflow-y: auto; font-family: 'Fira Code', monospace;">Not implemented. No payload was generated or executed.</pre>
                 </div>
             </div>
         </div>
@@ -297,146 +299,41 @@
 </div>
 
 <script>
-let currentPayload = '';
-let escapeVectors = [];
-
-async function detectContainer() {
-    try {
-        const response = await fetch('/docker-escape/api/detect', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'}
-        });
-        const data = await response.json();
-        
-        if (data.success && data.container_info) {
-            const info = data.container_info;
-            
-            document.getElementById('container-status').innerHTML = info.is_container ?
-                '<span class="text-success">✓ Inside Container</span>' :
-                '<span class="text-warning">⚠ Not in Container</span>';
-            
-            document.getElementById('container-runtime').textContent = info.runtime || 'Unknown';
-            
-            document.getElementById('container-privileged').innerHTML = info.privileged ?
-                '<span class="text-danger">✓ PRIVILEGED</span>' :
-                '<span class="text-success">✗ Not Privileged</span>';
-            
-            document.getElementById('kernel-version').textContent = info.kernel_version || '-';
-            
-            // Capabilities
-            if (info.capabilities && info.capabilities.length > 0) {
-                document.getElementById('capabilities-list').innerHTML = info.capabilities.map(c => 
-                    `<span class="badge bg-danger me-1 mb-1">${c}</span>`
-                ).join('');
+(() => {
+    'use strict';
+    const output = document.getElementById('docker-module-status');
+    async function readStatus() {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        try {
+            const response = await fetch({{ url_for('docker_escape.api_status') | tojson }}, {
+                method: 'GET', credentials: 'same-origin', cache: 'no-store', redirect: 'error',
+                headers: {'Accept': 'application/json'}, signal: controller.signal,
+            });
+            if (response.status === 401) {
+                output.textContent = 'Your session expired. Sign in again; no operation was started.';
+                return;
             }
-            
-            // Mounts
-            if (info.sensitive_mounts && info.sensitive_mounts.length > 0) {
-                document.getElementById('mounts-list').innerHTML = info.sensitive_mounts.map(m =>
-                    `<div class="text-warning"><i class="fas fa-folder me-1"></i>${m}</div>`
-                ).join('');
+            if (response.status === 403) {
+                output.textContent = 'Admin access is required; no operation was started.';
+                return;
             }
-            
-            // Namespaces
-            const ns = [];
-            if (info.host_pid) ns.push('<span class="text-danger">Host PID ✓</span>');
-            if (info.host_net) ns.push('<span class="text-danger">Host NET ✓</span>');
-            if (info.docker_sock_mounted) ns.push('<span class="text-danger">Docker Socket ✓</span>');
-            document.getElementById('namespaces-list').innerHTML = ns.length > 0 ? ns.join('<br>') : 'Standard namespaces';
+            if (!response.ok || !(response.headers.get('content-type') || '').toLowerCase().includes('application/json')) {
+                throw new Error('Unavailable status response');
+            }
+            const result = await response.json();
+            if (!result || result.available !== false || result.initialized !== false ||
+                result.executed !== false || result.host_probe_performed !== false) {
+                throw new Error('Unavailable status response');
+            }
+            output.textContent = 'Not implemented. No container inspection, payload generation or host access was performed.';
+        } catch (_) {
+            output.textContent = 'Module status unavailable. Check your admin session or connection; no operation was started.';
+        } finally {
+            clearTimeout(timeout);
         }
-    } catch (error) {
-        console.error('Error:', error);
     }
-}
-
-async function enumerateVectors() {
-    try {
-        const response = await fetch('/docker-escape/api/enumerate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'}
-        });
-        const data = await response.json();
-        
-        if (data.success && data.vectors) {
-            escapeVectors = data.vectors;
-            updateVectorsTable();
-        }
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-function updateVectorsTable() {
-    const tbody = document.getElementById('vectors-table');
-    
-    if (escapeVectors.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No escape vectors found</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = escapeVectors.map(v => `
-        <tr>
-            <td><span class="badge bg-danger">${v.method}</span></td>
-            <td>${v.available ? 
-                '<span class="text-success"><i class="fas fa-check"></i> Available</span>' : 
-                '<span class="text-muted"><i class="fas fa-times"></i> N/A</span>'}</td>
-            <td><span class="badge bg-${getRiskColor(v.risk_level)}">${v.risk_level}</span></td>
-            <td>${v.success_rate}</td>
-            <td class="small">${v.description}</td>
-            <td>
-                ${v.available ? `<button class="btn btn-sm btn-outline-danger" onclick="getPayload('${v.method}')">
-                    <i class="fas fa-code"></i>
-                </button>` : '-'}
-            </td>
-        </tr>
-    `).join('');
-}
-
-function getRiskColor(level) {
-    switch(level) {
-        case 'critical': return 'danger';
-        case 'high': return 'warning';
-        case 'medium': return 'info';
-        default: return 'secondary';
-    }
-}
-
-async function getPayload(method) {
-    try {
-        const response = await fetch('/docker-escape/api/get-payload', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({method: method})
-        });
-        const data = await response.json();
-        
-        if (data.success && data.payload) {
-            currentPayload = data.payload;
-            document.getElementById('payload-output').textContent = data.payload;
-        }
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-function copyPayload() {
-    navigator.clipboard.writeText(currentPayload).then(() => {
-        alert('Payload copied to clipboard!');
-    });
-}
-
-function downloadPayload() {
-    const blob = new Blob([currentPayload], {type: 'text/plain'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'docker_escape.sh';
-    a.click();
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    detectContainer();
-});
+    readStatus();
+})();
 </script>
 {% endblock %}

@@ -35,6 +35,30 @@ class FeatureStatus:
 
 FEATURES = (
     FeatureStatus(
+        "byovd_runtime",
+        "BYOVD paneli ve sürücü işlemleri",
+        "incomplete_offline",
+        "Yönetim paneli operasyonel sürücü modülünü yüklemez; kullanılamayan işlemler açık hata döndürür.",
+        "cyberapp/routes/byovd.py; tests/test_byovd_status.py",
+        "Yalnızca durum ve hata davranışı sınanır. Sürücü yükleme, kernel erişimi veya EDR sonlandırma uygulanmaz.",
+    ),
+    FeatureStatus(
+        "ebpf_runtime",
+        "eBPF derleme ve yükleme durumu",
+        "incomplete_offline",
+        "Özet baytları derlenmiş program sayılmaz; yönetim paneli yerel çekirdeği sorgulamadan kullanılamayan durumu gösterir.",
+        "tools/ebpf_rootkit.py; tests/test_ebpf_status.py",
+        "İzole hata sözleşmesi. Gerçek derleme, yükleme, kanca bağlama veya gizleme yapılmaz.",
+    ),
+    FeatureStatus(
+        "docker_escape_runtime",
+        "Docker host erişimi sonuçları",
+        "incomplete_offline",
+        "Çalıştırılmayan girişim başarı veya host erişimi sayılmaz; panel açılışı yerel inceleme başlatmaz.",
+        "tools/docker_escape.py; tests/test_docker_status.py",
+        "Sağlanan kayıtlar ve izole hata davranışı. Docker daemon, konteyner veya ana sistem üzerinde işlem yapılmaz.",
+    ),
+    FeatureStatus(
         "panel_status_connection",
         "Ana panel ve kayıtlı tarama durumu bağlantısı",
         "verified_management",

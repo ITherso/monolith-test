@@ -69,10 +69,18 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
   contracts, prefix-aware URLs, JSON session failures, bounded progress/ETA,
   generic database failures, and read-only behavior are covered. Only the legacy
   status handler is extracted from `scans.py`; the operational module is not loaded.
-- Node 24 tests evaluate only `templates/partials/scan_progress.js` against a fake
+- Node 24 dashboard tests evaluate only `templates/partials/scan_progress.js` against a fake
   DOM, clock, and fetch implementation. They cover safe read requests, errors,
   recovery, cancellation, stale display and zero/unknown values without starting
   a browser, server, scanner, or listener. Other dashboard scripts are not run.
+- BYOVD status tests load the management-only route with inert package boundaries.
+  eBPF and Docker tests extract only reviewed definitions into inert namespaces;
+  their operational tool modules are not imported. Tests check unavailable API
+  responses, admin access, false execution/access claims and safe panel rendering.
+  They do not load drivers, compile or attach eBPF, contact a daemon, execute a
+  payload, or validate host escape. See [the repaired status contracts](PRIVILEGED_MODULE_STATUS.md).
+  Additional Node fixtures evaluate only the three pages' metadata clients and
+  their response/timeout handling, with fake DOM and fetch implementations.
 - The matrix covers Windows and Ubuntu with Python 3.11 and 3.12.
 - CI installs `requirements_ci.txt`, not the operational dependency set. Pytest
   plugin auto-loading is disabled.
@@ -90,7 +98,7 @@ Example local validation, without launching the application:
 python -m pip install -r requirements_ci.txt
 python scripts/check_management_safety.py --syntax-check
 python -m pytest -c pytest-management.ini
-node --test tests/js/scan_progress.test.cjs
+node --test tests/js/scan_progress.test.cjs tests/js/privileged_status.test.cjs
 python scripts/check_management_safety.py --lint
 python scripts/check_management_safety.py --format-check
 python -m mypy --follow-imports=skip cyberapp/host_safety.py cyberapp/security.py

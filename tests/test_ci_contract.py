@@ -64,6 +64,9 @@ class ManagementCIContractTests(unittest.TestCase):
             "tests/test_admin_access.py",
             "tests/test_dashboard_stability.py",
             "tests/test_panel_connection.py",
+            "tests/test_byovd_status.py",
+            "tests/test_ebpf_status.py",
+            "tests/test_docker_status.py",
             "tests/test_scan_view_safety.py",
             "tests/test_pdf_renderer.py",
             "tests/test_ai_vulnerability_prediction.py",
@@ -224,7 +227,7 @@ class ManagementCIContractTests(unittest.TestCase):
             "python scripts/check_management_safety.py --lint",
             "python scripts/check_management_safety.py --format-check",
             "python -m mypy --follow-imports=skip cyberapp/host_safety.py cyberapp/security.py",
-            "node --test tests/js/scan_progress.test.cjs",
+            "node --test tests/js/scan_progress.test.cjs tests/js/privileged_status.test.cjs",
         }
         allowed_commands = required_checks | {
             "python -m pip install -r requirements_ci.txt"

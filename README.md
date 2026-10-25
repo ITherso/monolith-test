@@ -32,6 +32,8 @@
 
 > **Dashboard connection:** recorded scan status uses a consistent read-only API and preserves installation prefixes. Expired sessions, service failures, and timeouts are visible; requests cannot overlap, and status/progress/ETA update together. A database read failure leaves a readable unavailable page with HTTP 503. Tests use temporary records and inert browser fixtures; no scanner or listener is started. See [panel behavior](docs/SAFE_FEATURE_REPAIRS.md#dashboard-status-connections).
 
+> **Privileged module status:** BYOVD, eBPF and Docker panels report unavailable operations explicitly. The BYOVD route no longer imports driver code, digest bytes are not passed off as eBPF bytecode, and unexecuted escape results do not claim host access. These are status and failure repairs; driver/EDR bypass, rootkits and container escape are not enabled. See [scope and remaining limits](docs/PRIVILEGED_MODULE_STATUS.md).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0
