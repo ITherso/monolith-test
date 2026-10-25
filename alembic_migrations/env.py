@@ -3,10 +3,10 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from cyberapp.settings import DB_NAME
-
 config = context.config
-config.set_main_option("sqlalchemy.url", f"sqlite:///{DB_NAME}")
+
+# Programmatic callers can select an explicit database. The normal Alembic CLI
+# keeps using the URL from alembic.ini.
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

@@ -43,15 +43,24 @@
         const bar = row.querySelector('.scan-progress');
         const value = row.querySelector('.scan-progress-value');
         const eta = row.querySelector('.scan-eta');
+        const vulnerabilityCount = row.querySelector('.scan-vulnerability-count');
         const error = row.querySelector('.scan-status-error');
         if (status) status.textContent = data.status;
         if (bar) {
             bar.style.width = knownProgress ? `${data.progress}%` : '0%';
-            if (knownProgress) bar.setAttribute('aria-valuenow', String(data.progress));
-            else bar.removeAttribute('aria-valuenow');
+            if (knownProgress) {
+                bar.setAttribute('aria-valuenow', String(data.progress));
+                bar.setAttribute('aria-valuetext', `${data.progress}%`);
+            } else {
+                bar.removeAttribute('aria-valuenow');
+                bar.setAttribute('aria-valuetext', 'İlerleme bilinmiyor');
+            }
         }
         if (value) value.textContent = knownProgress ? `${data.progress}%` : 'İlerleme bilinmiyor';
         if (eta) eta.textContent = knownEta ? `ETA: ${data.eta_seconds} s` : 'ETA: bilinmiyor';
+        if (vulnerabilityCount && Number.isSafeInteger(data.vuln_count) && data.vuln_count >= 0) {
+            vulnerabilityCount.textContent = String(data.vuln_count);
+        }
         if (error) {
             error.textContent = '';
             error.hidden = true;

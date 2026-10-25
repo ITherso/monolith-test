@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends base_template if base_template is defined else "base.html" %}
 
 {% block body %}
 <main class="container mx-auto px-6 py-10 max-w-7xl">

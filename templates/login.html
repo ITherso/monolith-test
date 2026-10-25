@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends base_template if base_template is defined else "base.html" %}
 
 {% block body %}
 <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
@@ -17,7 +17,7 @@
                     <i class="fas fa-shield-alt text-cyber-primary text-4xl"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-white mb-2">MONOLITH</h1>
-                <p class="text-gray-400 text-sm">Penetration Testing Platform</p>
+                <p class="text-gray-400 text-sm">Yetkili erişim</p>
             </div>
             
             <!-- Login Form -->
@@ -55,17 +55,17 @@
                     <span>Version v68.0</span>
                     <span class="flex items-center gap-1">
                         <span class="w-2 h-2 rounded-full bg-cyber-primary status-pulse"></span>
-                        System Online
+                        Oturum gerekli
                     </span>
                 </div>
             </div>
         </div>
         
-        <!-- Quick Credentials Info -->
+        <!-- Credentials come from the local configuration. -->
         <div class="mt-4 glass-light rounded-xl p-4">
             <p class="text-xs text-gray-400 text-center">
                 <i class="fas fa-info-circle mr-1 text-cyber-secondary"></i>
-                Demo: admin / AYmG1NEl2MqHiKAkNBsyvw
+                Yapılandırılmış admin veya analyst hesabınla giriş yap.
             </p>
         </div>
     </div>

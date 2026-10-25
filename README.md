@@ -34,6 +34,8 @@
 
 > **Privileged module status:** BYOVD, eBPF and Docker panels report unavailable operations explicitly. The BYOVD route no longer imports driver code, digest bytes are not passed off as eBPF bytecode, and unexecuted escape results do not claim host access. These are status and failure repairs; driver/EDR bypass, rootkits and container escape are not enabled. See [scope and remaining limits](docs/PRIVILEGED_MODULE_STATUS.md).
 
+> **Management-only mode:** `python -m cyberapp.management_cli` starts an authenticated loopback panel for stored scan records, status, audit history, feature inventory and offline analysis. It migrates the selected SQLite database without importing the operational application or attack modules. See [usage and boundaries](docs/MANAGEMENT_MODE.md).
+
 > **👤 Author:** ITherso  
 > **📅 Last Updated:** July 12, 2026  
 > **🔧 Version:** 2.6.0
@@ -104,6 +106,18 @@ MONOLITH is an all-in-one offensive automation platform for authorized red team 
 ---
 
 ## 🚀 Quick Start
+
+### Local management panel
+
+Use this entry point to review existing records without loading operational modules:
+
+```bash
+python -m cyberapp.management_cli
+```
+
+It binds to `127.0.0.1:8080`, initializes the selected SQLite schema and keeps
+operations admin-only. Analysts retain read access to the reviewed record and
+status pages. This mode does not start a scanner, listener, payload or host tool.
 
 ### 🖥️ Terminal Demo
 

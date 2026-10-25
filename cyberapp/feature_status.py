@@ -35,6 +35,14 @@ class FeatureStatus:
 
 FEATURES = (
     FeatureStatus(
+        "management_mode",
+        "Yerel yönetim ve kayıt inceleme modu",
+        "verified_management",
+        "Ayrı uygulama fabrikası yalnızca giriş, kayıt görüntüleme, durum, audit ve çevrimdışı analiz yollarını yükler.",
+        "cyberapp/management_app.py; tests/test_management_mode.py",
+        "Geçici SQLite ve Flask test istemcisi. Sunucu veya operasyonel modül başlatılmaz; yalnızca loopback CLI bağına izin verilir.",
+    ),
+    FeatureStatus(
         "byovd_runtime",
         "BYOVD paneli ve sürücü işlemleri",
         "incomplete_offline",

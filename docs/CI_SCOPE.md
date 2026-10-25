@@ -67,8 +67,14 @@ is converted to success with `continue-on-error`, `|| true`, or xfail.
 - Dashboard status checks directly load the reviewed monitoring route with a
   temporary SQLite database and inert package dependencies. Canonical/legacy
   contracts, prefix-aware URLs, JSON session failures, bounded progress/ETA,
-  generic database failures, and read-only behavior are covered. Only the legacy
-  status handler is extracted from `scans.py`; the operational module is not loaded.
+  generic database failures, and read-only behavior are covered. The legacy
+  status handler is extracted into an inert namespace; scan-list tests load
+  `scans.py` behind stubbed dependencies without starting operational features.
+- The separate management-only factory is exercised against a migrated temporary
+  SQLite database. It loads login, stored-record review, status, audit and offline
+  analysis routes without importing the operational application or feature
+  packages. Its CLI accepts loopback addresses only; tests use Flask's in-process
+  client and never start a listening server.
 - Node 24 dashboard tests evaluate only `templates/partials/scan_progress.js` against a fake
   DOM, clock, and fetch implementation. They cover safe read requests, errors,
   recovery, cancellation, stale display and zero/unknown values without starting

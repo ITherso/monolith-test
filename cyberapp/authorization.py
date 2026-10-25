@@ -12,11 +12,21 @@ from flask import (
 )
 
 PUBLIC_ENDPOINTS = frozenset(
-    {"auth.login", "auth.logout", "static", "orchestration_health_check"}
+    {
+        "auth.login",
+        "auth.logout",
+        "static",
+        "orchestration_health_check",
+        "management_health",
+    }
 )
 READER_ENDPOINTS = frozenset(
     {
         "dashboard.index",
+        "management.dashboard",
+        "management.scan_record",
+        "management.summary_api",
+        "management.scan_record_api",
         "feature_status.feature_status_page",
         "feature_status.feature_status_api",
         "ops.start_threathunter",

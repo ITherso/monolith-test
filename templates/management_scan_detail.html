@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #08111b; color: #e6edf3; }
+        body { margin: 0; } main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 56px; }
+        a { color: #7dd3fc; } header, section { background: #0d1b2a; border: 1px solid #29435a; border-radius: 14px; margin-bottom: 16px; padding: 20px; }
+        h1, h2 { margin-top: 0; } p { color: #a9b8c6; overflow-wrap: anywhere; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .chip { padding: 12px; border-radius: 10px; background: #13283b; } .label { display: block; color: #8ba0b3; font-size: .8rem; }
+        table { width: 100%; border-collapse: collapse; } th, td { padding: 11px; text-align: left; border-bottom: 1px solid #29435a; vertical-align: top; overflow-wrap: anywhere; }
+        th { color: #bdd0df; } pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; color: #c5d3df; }
+        @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } section { overflow-x: auto; } }
+    </style>
+</head>
+<body>
+<main>
+    <p><a href="{{ url_for('management.dashboard') }}">← Yönetim paneline dön</a></p>
+    <header>
+        <h1>Tarama kaydı #{{ record.scan.id }}</h1>
+        <p>Bu görünüm veritabanında bulunan kayıtları gösterir; hedefe istek göndermez.</p>
+        <div class="grid">
+            <div class="chip"><span class="label">Hedef etiketi</span>{{ record.scan.target }}</div>
+            <div class="chip"><span class="label">Durum</span>{{ record.scan.status }}</div>
+            <div class="chip"><span class="label">Tarih / kullanıcı</span>{{ record.scan.date }} · {{ record.scan.user }}</div>
+        </div>
+    </header>
+
+    <section><h2>Bulgular ({{ record.vulnerabilities|length }})</h2><table><thead><tr><th>Önem</th><th>Tür</th><th>Adres</th><th>Öneri</th></tr></thead><tbody>{% for item in record.vulnerabilities %}<tr><td>{{ item.severity }}</td><td>{{ item.type }}</td><td>{{ item.url }}</td><td>{{ item.fix }}</td></tr>{% else %}<tr><td colspan="4">Kayıt yok.</td></tr>{% endfor %}</tbody></table></section>
+    <section><h2>Teknolojiler ({{ record.technologies|length }})</h2><table><thead><tr><th>Ad</th><th>Tespit kaydı</th><th>Güven</th></tr></thead><tbody>{% for item in record.technologies %}<tr><td>{{ item.name }}</td><td>{{ item.detected_via }}</td><td>{{ item.confidence if item.confidence is not none else 'Bilinmiyor' }}</td></tr>{% else %}<tr><td colspan="3">Kayıt yok.</td></tr>{% endfor %}</tbody></table></section>
+    <section><h2>İstihbarat kayıtları ({{ record.intel|length }})</h2><table><thead><tr><th>Tür</th><th>Veri</th><th>Zaman</th></tr></thead><tbody>{% for item in record.intel %}<tr><td>{{ item.type }}</td><td><pre>{{ item.data }}</pre></td><td>{{ item.timestamp }}</td></tr>{% else %}<tr><td colspan="3">Kayıt yok.</td></tr>{% endfor %}</tbody></table></section>
+    <section><h2>Araç günlükleri ({{ record.logs|length }})</h2><table><thead><tr><th>Araç</th><th>Çıktı</th><th>Zaman</th></tr></thead><tbody>{% for item in record.logs %}<tr><td>{{ item.tool }}</td><td><pre>{{ item.output }}</pre></td><td>{{ item.timestamp }}</td></tr>{% else %}<tr><td colspan="3">Kayıt yok.</td></tr>{% endfor %}</tbody></table></section>
+</main>
+</body>
+</html>

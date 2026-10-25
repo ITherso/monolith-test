@@ -1,6 +1,6 @@
 """Monolith application package."""
 
-__all__ = ["create_app", "socketio", "run_migrations"]
+__all__ = ["create_app", "create_management_app", "socketio", "run_migrations"]
 
 
 def __getattr__(name):
@@ -9,6 +9,10 @@ def __getattr__(name):
         from cyberapp.app import create_app
 
         return create_app
+    if name == "create_management_app":
+        from cyberapp.management_app import create_management_app
+
+        return create_management_app
     if name == "socketio":
         from cyberapp.extensions import socketio
 

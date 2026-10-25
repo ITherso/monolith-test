@@ -1,52 +1,134 @@
 # cyberapp/routes/scans.py
 
 import datetime
-import io
-import csv
+import math
 import os
 import re
 import threading
 
-from flask import Blueprint, jsonify, make_response, redirect, render_template, request, session
+from flask import (
+    Blueprint,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+)
 
 from cyberapp.models.db import db_conn
-from cybermodules.helpers import PDFReport, tr_fix
-from cybermodules.autoexploit import AutoExploit
-from cyberapp.services.worker import run_worker
 from cyberapp.services.audit import log_audit as audit_log
 from cyberapp.services.queue import enqueue_job
+from cyberapp.services.worker import run_worker
+from cybermodules.autoexploit import AutoExploit
 
 scans_bp = Blueprint("scans", __name__)
 
 
+def _display_text(value, fallback="", limit=2048):
+    if not isinstance(value, str):
+        return fallback
+    value = value.strip()
+    return value[:limit] if value else fallback
+
+
+def _finite_number(value):
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(value)
+    except (OverflowError, TypeError, ValueError):
+        return False
+
+
+def _progress_snapshot(row):
+    """Return display-safe progress metadata without inventing missing values."""
+    progress = row[0] if row else None
+    eta = row[1] if row else None
+
+    progress_available = _finite_number(progress)
+    if progress_available:
+        progress = min(100, max(0, progress))
+    else:
+        progress = 0
+
+    eta_available = _finite_number(eta) and eta >= 0
+    if eta_available:
+        eta = int(eta)
+    else:
+        eta = None
+
+    return {
+        "percent": progress,
+        "available": progress_available,
+        "eta_seconds": eta,
+        "eta_available": eta_available,
+    }
+
+
 def _load_scans(limit=50):
     with db_conn() as conn:
-        scans = conn.execute(
+        rows = conn.execute(
             """
             SELECT id,
-                   COALESCE(target, ''),
-                   COALESCE(date, ''),
-                   COALESCE(status, 'UNKNOWN'),
-                   COALESCE(user_id, '')
+                   CASE WHEN typeof(target) = 'text'
+                        THEN substr(target, 1, 2048) ELSE '' END,
+                   CASE WHEN typeof(date) = 'text'
+                        THEN substr(date, 1, 128) ELSE '' END,
+                   CASE WHEN typeof(status) = 'text' AND TRIM(status) <> ''
+                        THEN substr(status, 1, 128) ELSE 'UNKNOWN' END,
+                   CASE WHEN typeof(user_id) = 'text'
+                        THEN substr(user_id, 1, 128) ELSE '' END
             FROM scans
             ORDER BY id DESC
             LIMIT ?
             """,
             (limit,),
         ).fetchall()
+        scans = [
+            (
+                row[0],
+                _display_text(row[1]),
+                _display_text(row[2], limit=128),
+                _display_text(row[3], fallback="UNKNOWN", limit=128),
+                _display_text(row[4], limit=128),
+            )
+            for row in rows
+        ]
 
         progress_data = {}
         for scan in scans:
             prog = conn.execute(
-                "SELECT progress, eta_seconds FROM scan_progress WHERE scan_id = ?",
+                """
+                SELECT CASE WHEN typeof(progress) IN ('integer', 'real')
+                            THEN progress END,
+                       CASE WHEN typeof(eta_seconds) IN ('integer', 'real')
+                            THEN eta_seconds END
+                FROM scan_progress WHERE scan_id = ?
+                """,
                 (scan[0],),
             ).fetchone()
-            progress_data[scan[0]] = prog if prog else (0, None)
+            progress_data[scan[0]] = _progress_snapshot(prog)
 
-    completed_count = sum(1 for s in scans if "COMPLETED" in s[3] or "TAMAMLANDI" in s[3])
-    running_count = sum(1 for s in scans if "RUNNING" in s[3] or "DEVAM" in s[3] or "HAZIRLANIYOR" in s[3])
-    failed_count = sum(1 for s in scans if "FAILED" in s[3] or "HATA" in s[3])
+    statuses = [str(scan[3]).strip().upper() for scan in scans]
+    completed_count = sum(
+        1 for status in statuses if status.startswith(("COMPLETED", "TAMAMLANDI"))
+    )
+    running_count = sum(
+        1
+        for status in statuses
+        if status.startswith(("RUNNING", "DEVAM", "HAZIRLANIYOR"))
+    )
+    failed_count = sum(
+        1 for status in statuses if status.startswith(("FAILED", "HATA"))
+    )
     return scans, progress_data, completed_count, running_count, failed_count
+
+
+def _scan_records_unavailable():
+    response = make_response("Scan records are temporarily unavailable", 503)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def _render_scans_page(active_scan_id=None):
@@ -56,15 +138,20 @@ def _render_scans_page(active_scan_id=None):
     if active_scan_id is None and scans:
         active_scan_id = scans[0][0]
 
-    return render_template(
-        "scans.html",
-        scans=scans,
-        progress_data=progress_data,
-        completed_count=completed_count,
-        running_count=running_count,
-        failed_count=failed_count,
-        active_scan_id=active_scan_id,
+    response = make_response(
+        render_template(
+            "scans.html",
+            scans=scans,
+            progress_data=progress_data,
+            completed_count=completed_count,
+            running_count=running_count,
+            failed_count=failed_count,
+            active_scan_id=active_scan_id,
+            role=session.get("role"),
+        )
     )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def _fetch_scan_summary(scan_id, limit=40):
@@ -139,10 +226,18 @@ def _fetch_scan_summary(scan_id, limit=40):
         ).fetchall()
 
         counts = {
-            "vulnerabilities": conn.execute("SELECT COUNT(*) FROM vulns WHERE scan_id = ?", (scan_id,)).fetchone()[0],
-            "technologies": conn.execute("SELECT COUNT(*) FROM techno WHERE scan_id = ?", (scan_id,)).fetchone()[0],
-            "intel": conn.execute("SELECT COUNT(*) FROM intel WHERE scan_id = ?", (scan_id,)).fetchone()[0],
-            "logs": conn.execute("SELECT COUNT(*) FROM tool_logs WHERE scan_id = ?", (scan_id,)).fetchone()[0],
+            "vulnerabilities": conn.execute(
+                "SELECT COUNT(*) FROM vulns WHERE scan_id = ?", (scan_id,)
+            ).fetchone()[0],
+            "technologies": conn.execute(
+                "SELECT COUNT(*) FROM techno WHERE scan_id = ?", (scan_id,)
+            ).fetchone()[0],
+            "intel": conn.execute(
+                "SELECT COUNT(*) FROM intel WHERE scan_id = ?", (scan_id,)
+            ).fetchone()[0],
+            "logs": conn.execute(
+                "SELECT COUNT(*) FROM tool_logs WHERE scan_id = ?", (scan_id,)
+            ).fetchone()[0],
             "critical": conn.execute(
                 "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND UPPER(COALESCE(severity, '')) = 'CRITICAL'",
                 (scan_id,),
@@ -162,13 +257,33 @@ def _fetch_scan_summary(scan_id, limit=40):
         }
 
     return {
-        "scan": {"id": scan[0], "target": scan[1], "date": scan[2], "status": scan[3], "user_id": scan[4]},
-        "progress": {"percent": progress[0] if progress else 0, "eta_seconds": progress[1] if progress else None},
+        "scan": {
+            "id": scan[0],
+            "target": scan[1],
+            "date": scan[2],
+            "status": scan[3],
+            "user_id": scan[4],
+        },
+        "progress": {
+            "percent": progress[0] if progress else 0,
+            "eta_seconds": progress[1] if progress else None,
+        },
         "counts": counts,
-        "vulnerabilities": [{"type": v[0], "url": v[1], "fix": v[2], "severity": v[3]} for v in vulns],
-        "technologies": [{"name": t[0], "detected_via": t[1], "confidence": t[2]} for t in techs],
+        "vulnerabilities": [
+            {"type": v[0], "url": v[1], "fix": v[2], "severity": v[3]} for v in vulns
+        ],
+        "technologies": [
+            {"name": t[0], "detected_via": t[1], "confidence": t[2]} for t in techs
+        ],
         "intel": [{"type": i[0], "data": i[1], "timestamp": i[2]} for i in intel],
-        "logs": [{"tool_name": l[0], "output": str(l[1])[:4000], "timestamp": l[2]} for l in logs],
+        "logs": [
+            {
+                "tool_name": log[0],
+                "output": str(log[1])[:4000],
+                "timestamp": log[2],
+            }
+            for log in logs
+        ],
     }
 
 
@@ -177,51 +292,11 @@ def scans_list():
     """Tüm taramaları listele"""
     if not session.get("logged_in"):
         return redirect("/login")
-    
+
     try:
-        with db_conn() as conn:
-            scans = conn.execute(
-                """
-                SELECT id,
-                       COALESCE(target, ''),
-                       COALESCE(date, ''),
-                       COALESCE(status, 'UNKNOWN'),
-                       COALESCE(user_id, '')
-                FROM scans
-                ORDER BY id DESC
-                LIMIT 50
-                """
-            ).fetchall()
-            print(f"DEBUG: Found {len(scans)} scans")
-            
-            # İlerleme verilerini al
-            progress_data = {}
-            for scan in scans:
-                prog = conn.execute(
-                    "SELECT progress, eta_seconds FROM scan_progress WHERE scan_id = ?",
-                    (scan[0],)
-                ).fetchone()
-                progress_data[scan[0]] = prog if prog else (0, None)
-            
-            # İstatistikleri hesapla
-            completed_count = sum(1 for s in scans if 'COMPLETED' in s[3] or 'TAMAMLANDI' in s[3])
-            running_count = sum(1 for s in scans if 'RUNNING' in s[3] or 'DEVAM' in s[3])
-            failed_count = sum(1 for s in scans if 'FAILED' in s[3] or 'HATA' in s[3])
-            
-            print(f"DEBUG: completed={completed_count}, running={running_count}, failed={failed_count}")
-        
-        return render_template(
-            "scans.html",
-            scans=scans,
-            progress_data=progress_data,
-            completed_count=completed_count,
-            running_count=running_count,
-            failed_count=failed_count
-        )
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return f"Error: {str(e)}", 500
+        return _render_scans_page()
+    except Exception:
+        return _scan_records_unavailable()
 
 
 @scans_bp.route("/scan", methods=["GET", "POST"])
@@ -229,33 +304,13 @@ def scan():
     """Yeni tarama başlat veya tarama sayfasını göster"""
     if not session.get("logged_in"):
         return redirect("/login")
-    
+
     # GET request - show scans list with form
     if request.method == "GET":
         try:
-            with db_conn() as conn:
-                scans = conn.execute(
-                    """
-                    SELECT id,
-                           COALESCE(target, ''),
-                           COALESCE(date, ''),
-                           COALESCE(status, 'UNKNOWN'),
-                           COALESCE(user_id, '')
-                    FROM scans
-                    ORDER BY id DESC
-                    LIMIT 50
-                    """
-                ).fetchall()
-            return render_template(
-                "scans.html",
-                scans=scans,
-                progress_data={},
-                completed_count=0,
-                running_count=0,
-                failed_count=0
-            )
-        except Exception as e:
-            return f"Error loading scans: {str(e)}", 500
+            return _render_scans_page()
+        except Exception:
+            return _scan_records_unavailable()
 
     # POST request - create new scan
     target = request.form.get("target", "").strip()
@@ -287,7 +342,13 @@ def scan():
         )
         conn.commit()
 
-    audit_log(user_id, session.get("role"), "scan_started", f"scan_id={scan_id} target={target}", request.remote_addr)
+    audit_log(
+        user_id,
+        session.get("role"),
+        "scan_started",
+        f"scan_id={scan_id} target={target}",
+        request.remote_addr,
+    )
 
     # Arka planda taramayı başlat
     enqueue_job(run_worker, target, scan_id, run_python, tools, user_id)
@@ -319,7 +380,13 @@ def delete_scan(scan_id):
         conn.execute("DELETE FROM scan_progress WHERE scan_id = ?", (scan_id,))
         conn.commit()
 
-    audit_log(session.get("user"), session.get("role"), "scan_deleted", f"scan_id={scan_id}", request.remote_addr)
+    audit_log(
+        session.get("user"),
+        session.get("role"),
+        "scan_deleted",
+        f"scan_id={scan_id}",
+        request.remote_addr,
+    )
     return redirect("/")
 
 
@@ -342,29 +409,39 @@ def details(scan_id):
             if not scan:
                 return "Scan not found", 404
 
-            vulns = conn.execute("SELECT * FROM vulns WHERE scan_id=?", (scan_id,)).fetchall()
-            techs = conn.execute("SELECT * FROM techno WHERE scan_id=?", (scan_id,)).fetchall()
-            intel = conn.execute("SELECT * FROM intel WHERE scan_id=?", (scan_id,)).fetchall()
-            logs = conn.execute("SELECT * FROM tool_logs WHERE scan_id=?", (scan_id,)).fetchall()
+            vulns = conn.execute(
+                "SELECT * FROM vulns WHERE scan_id=?", (scan_id,)
+            ).fetchall()
+            techs = conn.execute(
+                "SELECT * FROM techno WHERE scan_id=?", (scan_id,)
+            ).fetchall()
+            intel = conn.execute(
+                "SELECT * FROM intel WHERE scan_id=?", (scan_id,)
+            ).fetchall()
+            logs = conn.execute(
+                "SELECT * FROM tool_logs WHERE scan_id=?", (scan_id,)
+            ).fetchall()
 
         # HTML içeriklerini oluştur
         vuln_html = ""
         for v in vulns:
             vuln_type = display(v[2] if len(v) > 2 else None, "Unknown")
             vuln_url = display(v[3] if len(v) > 3 else None, "N/A")
-            vuln_fix = display(v[4] if len(v) > 4 else None, "Önerilecek önlem aranıyor...")
+            vuln_fix = display(
+                v[4] if len(v) > 4 else None, "Önerilecek önlem aranıyor..."
+            )
             severity_key = str(v[5]) if len(v) > 5 and v[5] is not None else "MEDIUM"
             vuln_severity = display(severity_key)
-            
+
             severity_colors = {
                 'CRITICAL': '#ff4757',
                 'HIGH': '#ffa502',
                 'MEDIUM': '#eccc68',
                 'LOW': '#2ed573',
-                'INFO': '#70a1ff'
+                'INFO': '#70a1ff',
             }
             color = severity_colors.get(severity_key, '#eccc68')
-            
+
             vuln_html += f"""
             <div style="background: #1a1a2e; padding: 15px; margin: 10px 0; border-left: 4px solid {color}; border-radius: 0 10px 10px 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -407,7 +484,7 @@ def details(scan_id):
         critical_count = sum(1 for v in vulns if len(v) > 5 and v[5] == 'CRITICAL')
         high_count = sum(1 for v in vulns if len(v) > 5 and v[5] == 'HIGH')
         medium_count = sum(1 for v in vulns if len(v) > 5 and v[5] == 'MEDIUM')
-        
+
         stats_html = f"""
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0;">
             <div style="background: rgba(255,71,87,0.2); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,71,87,0.3);">
@@ -441,7 +518,7 @@ def details(scan_id):
             stats_html=stats_html,
             critical_count=critical_count,
             high_count=high_count,
-            medium_count=medium_count
+            medium_count=medium_count,
         )
     except Exception:
         return "Scan details could not be loaded", 500
@@ -459,19 +536,23 @@ def payloads_generator():
             lport = request.form.get("lport", "4444")
             payload_type = request.form.get("payload_type", "bash")
             is_elite = request.form.get("elite", "false").lower() == "true"
-            
+
             # DEBUG
             import sys
-            print(f"[PAYLOADS] Generating {payload_type} for {lhost}:{lport} (elite={is_elite})", file=sys.stderr)
-            
+
+            print(
+                f"[PAYLOADS] Generating {payload_type} for {lhost}:{lport} (elite={is_elite})",
+                file=sys.stderr,
+            )
+
             # Modern payloads via PayloadGenerator
             from cybermodules.payload_generator import PayloadGenerator
-            
+
             # C2 URL construction
             c2_url = f"http://{lhost}:{lport}/c2/beacon"
-            
+
             generator = PayloadGenerator(c2_url)
-            
+
             # Generate with full God Mode anti-forensics by default
             options = {
                 'sleep': 30,
@@ -481,15 +562,19 @@ def payloads_generator():
                     'enabled': True,
                     'timestomp': True,
                     'clean_logs': True,
-                    'sysmon_evade': True
-                }
+                    'sysmon_evade': True,
+                },
             }
-            
+
             payload = generator.generate(payload_type, options)
-            print(f"[PAYLOADS] Generated {len(payload)} bytes, elite={is_elite}", file=sys.stderr)
-            
+            print(
+                f"[PAYLOADS] Generated {len(payload)} bytes, elite={is_elite}",
+                file=sys.stderr,
+            )
+
         except Exception as e:
             import traceback
+
             print(f"[PAYLOADS] Generation failed: {e}", file=sys.stderr)
             traceback.print_exc()
             # Fallback to legacy reverse shells if needed
@@ -521,18 +606,22 @@ def payloads_generator():
             "<code style='background: #1a1a2e; padding: 10px; display: block; word-wrap: break-word; border-radius: 5px; color: #00ff88; font-size: 11px; max-height: 400px; overflow-y: auto;'>"
             f"{payload}</code>"
         )
-        
+
         # Return payload info
         payload_info = {
             'type': payload_type,
             'size': len(payload),
-            'features': 'Elite Beacon with God Mode' if 'Invoke-AMSIBypass' in payload or 'auto_timestomp' in payload else 'Legacy Reverse Shell'
+            'features': 'Elite Beacon with God Mode'
+            if 'Invoke-AMSIBypass' in payload or 'auto_timestomp' in payload
+            else 'Legacy Reverse Shell',
         }
     else:
         payload_html = ""
         payload_info = None
 
-    return render_template("payloads.html", payload_html=payload_html, payload_info=payload_info)
+    return render_template(
+        "payloads.html", payload_html=payload_html, payload_info=payload_info
+    )
 
 
 @scans_bp.route("/autoexploit")
@@ -561,7 +650,9 @@ def start_autoexploit(scan_id):
         return redirect("/login")
 
     with db_conn() as conn:
-        target = conn.execute("SELECT target FROM scans WHERE id = ?", (scan_id,)).fetchone()
+        target = conn.execute(
+            "SELECT target FROM scans WHERE id = ?", (scan_id,)
+        ).fetchone()
 
     if target:
         autoexploit = AutoExploit(scan_id, target[0])
@@ -582,33 +673,38 @@ def generate_report(scan_id):
     """Kapsamlı güvenlik raporu oluştur"""
     if not session.get("logged_in"):
         return redirect("/login")
-    
+
     try:
         from cybermodules.report_generator import generate_detailed_report
-        
+
         result = generate_detailed_report(scan_id)
-        
+
         # Rapor oluşturmayı logla
         try:
             with db_conn() as conn:
                 conn.execute(
                     "INSERT INTO intel (scan_id, type, data) VALUES (?, ?, ?)",
-                    (scan_id, "REPORT_GENERATED", f"HTML: {result['html_path']}, Risk: {result['risk_score']}")
+                    (
+                        scan_id,
+                        "REPORT_GENERATED",
+                        f"HTML: {result['html_path']}, Risk: {result['risk_score']}",
+                    ),
                 )
                 conn.commit()
         except Exception:
             pass
-        
+
         # İndirme bağlantılarını döndür
         return render_template(
             "report_template.html",
             scan_id=scan_id,
             report=result,
-            target=result.get('target', 'Unknown')
+            target=result.get('target', 'Unknown'),
         )
-        
+
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return f"Report generation error: {str(e)}", 500
 
@@ -618,15 +714,13 @@ def api_generate_report(scan_id):
     """API endpoint for report generation"""
     if not session.get("logged_in"):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-    
+
     try:
         from cybermodules.report_generator import generate_detailed_report
+
         result = generate_detailed_report(scan_id)
-        
-        return jsonify({
-            "success": True,
-            "report": result
-        })
+
+        return jsonify({"success": True, "report": result})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -636,17 +730,20 @@ def download_report(scan_id):
     """Rapor dosyasını indir"""
     if not session.get("logged_in"):
         return redirect("/login")
-    
+
     from flask import send_file
+
     from cybermodules.report_generator import generate_detailed_report
-    
+
     format_type = request.args.get("format", "html")
-    
+
     try:
         with db_conn() as conn:
-            scan = conn.execute("SELECT target FROM scans WHERE id = ?", (scan_id,)).fetchone()
+            scan = conn.execute(
+                "SELECT target FROM scans WHERE id = ?", (scan_id,)
+            ).fetchone()
             target = scan[0] if scan else "Unknown"
-    
+
         target_clean = re.sub(r'[^\w\-.]', '_', str(target).replace('/', '_'))
 
         report_data = None
@@ -659,7 +756,7 @@ def download_report(scan_id):
                 return send_file(
                     filename,
                     as_attachment=True,
-                    download_name=f"security_report_{target_clean}_{scan_id}.pdf"
+                    download_name=f"security_report_{target_clean}_{scan_id}.pdf",
                 )
         elif format_type == "json":
             filename = f"/tmp/report_{scan_id}_{target_clean}_summary.json"
@@ -670,7 +767,7 @@ def download_report(scan_id):
                 return send_file(
                     filename,
                     as_attachment=True,
-                    download_name=f"security_report_{target_clean}_{scan_id}.json"
+                    download_name=f"security_report_{target_clean}_{scan_id}.json",
                 )
         else:
             filename = f"/tmp/report_{scan_id}_{target_clean}.html"
@@ -682,11 +779,11 @@ def download_report(scan_id):
                     filename,
                     as_attachment=True,
                     download_name=f"security_report_{target_clean}_{scan_id}.html",
-                    mimetype='text/html'
+                    mimetype='text/html',
                 )
 
         return "Report file not found", 404
-        
+
     except Exception as e:
         return f"Download error: {str(e)}", 500
 
@@ -696,28 +793,27 @@ def api_get_vulnerabilities(scan_id):
     """API: Zafiyet listesini JSON olarak getir"""
     if not session.get("logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     try:
         with db_conn() as conn:
             vulns = conn.execute(
-                "SELECT type, url, fix, severity FROM vulns WHERE scan_id = ?", 
-                (scan_id,)
+                "SELECT type, url, fix, severity FROM vulns WHERE scan_id = ?",
+                (scan_id,),
             ).fetchall()
-            
+
             vuln_list = []
             for v in vulns:
-                vuln_list.append({
-                    "type": v[0],
-                    "url": v[1],
-                    "fix": v[2],
-                    "severity": v[3]
-                })
-            
-            return jsonify({
-                "scan_id": scan_id,
-                "count": len(vuln_list),
-                "vulnerabilities": vuln_list
-            })
+                vuln_list.append(
+                    {"type": v[0], "url": v[1], "fix": v[2], "severity": v[3]}
+                )
+
+            return jsonify(
+                {
+                    "scan_id": scan_id,
+                    "count": len(vuln_list),
+                    "vulnerabilities": vuln_list,
+                }
+            )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -727,46 +823,47 @@ def api_get_scan_stats(scan_id):
     """API: Tarama istatistiklerini getir"""
     if not session.get("logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     try:
         with db_conn() as conn:
             # Zafiyet sayıları
             critical = conn.execute(
-                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'CRITICAL'", 
-                (scan_id,)
+                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'CRITICAL'",
+                (scan_id,),
             ).fetchone()[0]
-            
+
             high = conn.execute(
-                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'HIGH'", 
-                (scan_id,)
+                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'HIGH'",
+                (scan_id,),
             ).fetchone()[0]
-            
+
             medium = conn.execute(
-                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'MEDIUM'", 
-                (scan_id,)
+                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'MEDIUM'",
+                (scan_id,),
             ).fetchone()[0]
-            
+
             low = conn.execute(
-                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'LOW'", 
-                (scan_id,)
+                "SELECT COUNT(*) FROM vulns WHERE scan_id = ? AND severity = 'LOW'",
+                (scan_id,),
             ).fetchone()[0]
-            
+
             # Teknoloji sayısı
             tech_count = conn.execute(
-                "SELECT COUNT(*) FROM techno WHERE scan_id = ?", 
-                (scan_id,)
+                "SELECT COUNT(*) FROM techno WHERE scan_id = ?", (scan_id,)
             ).fetchone()[0]
-            
-            return jsonify({
-                "scan_id": scan_id,
-                "vulnerabilities": {
-                    "critical": critical,
-                    "high": high,
-                    "medium": medium,
-                    "low": low,
-                    "total": critical + high + medium + low
-                },
-                "technologies": tech_count
-            })
+
+            return jsonify(
+                {
+                    "scan_id": scan_id,
+                    "vulnerabilities": {
+                        "critical": critical,
+                        "high": high,
+                        "medium": medium,
+                        "low": low,
+                        "total": critical + high + medium + low,
+                    },
+                    "technologies": tech_count,
+                }
+            )
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from flask import g, jsonify, request
+from werkzeug.exceptions import HTTPException
 
 from cyberapp.services.logger import get_logger
 
@@ -16,7 +17,9 @@ def register_error_handlers(app):
 
     @app.after_request
     def _log_response(response):
-        logger.info("response %s %s %s", request.method, request.path, response.status_code)
+        logger.info(
+            "response %s %s %s", request.method, request.path, response.status_code
+        )
         response.headers["X-Request-ID"] = getattr(g, "request_id", "-")
         return response
 
@@ -35,6 +38,11 @@ def register_error_handlers(app):
 
     @app.errorhandler(Exception)
     def unhandled_error(error):
+        if isinstance(error, HTTPException):
+            if _wants_json():
+                name = error.name.lower().replace(" ", "_")
+                return jsonify({"error": name}), error.code
+            return error
         logger.exception("unhandled_error")
         if _wants_json():
             return jsonify({"error": "unexpected_error"}), 500
@@ -42,7 +50,11 @@ def register_error_handlers(app):
 
 
 def _wants_json():
-    if request.path.startswith("/scan_status") or request.path.startswith("/phishing/stats"):
+    if (
+        request.path.startswith("/api/")
+        or request.path.startswith("/scan_status")
+        or request.path.startswith("/phishing/stats")
+    ):
         return True
     accept = request.headers.get("Accept", "")
     return "application/json" in accept

@@ -39,12 +39,25 @@ def scan_status(scan_id):
     try:
         with db_conn() as conn:
             scan = conn.execute(
-                "SELECT status, target FROM scans WHERE id = ?", (scan_id,)
+                """
+                SELECT CASE WHEN typeof(status) = 'text' AND TRIM(status) <> ''
+                            THEN substr(status, 1, 256) ELSE 'UNKNOWN' END,
+                       CASE WHEN typeof(target) = 'text'
+                            THEN substr(target, 1, 2048) ELSE '' END
+                FROM scans WHERE id = ?
+                """,
+                (scan_id,),
             ).fetchone()
             if not scan:
                 return _status_response({"error": "not_found"}, 404)
             progress = conn.execute(
-                "SELECT progress, eta_seconds FROM scan_progress WHERE scan_id = ?",
+                """
+                SELECT CASE WHEN typeof(progress) IN ('integer', 'real')
+                            THEN progress END,
+                       CASE WHEN typeof(eta_seconds) IN ('integer', 'real')
+                            THEN eta_seconds END
+                FROM scan_progress WHERE scan_id = ?
+                """,
                 (scan_id,),
             ).fetchone()
             vuln_count = conn.execute(
@@ -143,17 +156,27 @@ def audit_dashboard():
 
 @monitoring_bp.route("/metrics")
 def metrics():
-    if not session.get("logged_in"):
-        return jsonify({"error": "login_required"}), 401
+    """Return recorded aggregate counts without starting or probing a scan."""
+    if session.get("logged_in") is not True:
+        return _status_response({"error": "login_required"}, 401)
 
-    with db_conn() as conn:
-        scan_total = conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0]
-        vuln_total = conn.execute("SELECT COUNT(*) FROM vulns").fetchone()[0]
-        running = conn.execute(
-            "SELECT COUNT(*) FROM scans WHERE status LIKE '%RUNNING%' OR status LIKE '%HAZIRLANIYOR%'"
-        ).fetchone()[0]
+    try:
+        with db_conn() as conn:
+            scan_total = conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0]
+            vuln_total = conn.execute("SELECT COUNT(*) FROM vulns").fetchone()[0]
+            running = conn.execute(
+                """
+                SELECT COUNT(*)
+                FROM scans
+                WHERE UPPER(TRIM(COALESCE(status, ''))) LIKE 'RUNNING%'
+                   OR UPPER(TRIM(COALESCE(status, ''))) LIKE 'HAZIRLANIYOR%'
+                   OR UPPER(TRIM(COALESCE(status, ''))) LIKE 'DEVAM%'
+                """
+            ).fetchone()[0]
+    except Exception:
+        return _status_response({"error": "metrics_unavailable"}, 503)
 
-    return jsonify(
+    return _status_response(
         {
             "scans_total": scan_total,
             "vulns_total": vuln_total,

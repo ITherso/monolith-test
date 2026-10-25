@@ -30,6 +30,7 @@ function row(id = 7, url = `/mounted/api/management/scans/${id}/status`) {
     ['.scan-progress', node()],
     ['.scan-progress-value', node('40%')],
     ['.scan-eta', node('OLD ETA 99')],
+    ['.scan-vulnerability-count', node('2')],
     ['.scan-status-error', node()],
   ]);
   return {
@@ -41,7 +42,7 @@ function row(id = 7, url = `/mounted/api/management/scans/${id}/status`) {
 function payload(id = 7, values = {}) {
   return {
     scan_id: id, status: 'RUNNING', progress: 50, progress_available: true,
-    eta_seconds: 12, eta_available: true, ...values,
+    eta_seconds: 12, eta_available: true, vuln_count: 3, ...values,
   };
 }
 
@@ -135,11 +136,21 @@ test('updates read-only state with same-origin JSON options and mounted URL', as
   assert.equal(h.rows[0].querySelector('.scan-status').textContent, 'RUNNING');
   assert.equal(h.rows[0].querySelector('.scan-progress').style.width, '50%');
   assert.equal(h.rows[0].querySelector('.scan-progress').getAttribute('aria-valuenow'), '50');
+  assert.equal(h.rows[0].querySelector('.scan-progress').getAttribute('aria-valuetext'), '50%');
+  assert.equal(h.rows[0].querySelector('.scan-vulnerability-count').textContent, '3');
   assert.equal(h.rows[0].dataset.connection, 'current');
   assert.equal(h.element('panel-connection').dataset.state, 'current');
   assert.equal(h.element('scan-connection-login').hidden, true);
   assert.deepEqual(h.delays(), [5000]);
 });
+
+for (const vulnCount of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1, '4', true, null]) {
+  test(`invalid vulnerability count ${String(vulnCount)} preserves the stored value`, async () => {
+    const h = harness({fetch: async () => response(200, payload(7, {vuln_count: vulnCount}))});
+    await settle();
+    assert.equal(h.rows[0].querySelector('.scan-vulnerability-count').textContent, '2');
+  });
+}
 
 test('zero progress and ETA are retained, then missing ETA clears old value', async () => {
   let data = payload(7, {progress: 0, eta_seconds: 0});
@@ -162,6 +173,7 @@ for (const progress of [-1, 101, Infinity, NaN, '55', true, null]) {
     await settle();
     assert.equal(h.rows[0].querySelector('.scan-progress').style.width, '0%');
     assert.equal(h.rows[0].querySelector('.scan-progress').getAttribute('aria-valuenow'), null);
+    assert.equal(h.rows[0].querySelector('.scan-progress').getAttribute('aria-valuetext'), 'İlerleme bilinmiyor');
     assert.notEqual(h.rows[0].querySelector('.scan-progress-value').textContent, `${progress}%`);
   });
 }

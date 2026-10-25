@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #08111b; color: #e6edf3; }
+        body { margin: 0; background: radial-gradient(circle at top, #12304a, #08111b 55%); min-height: 100vh; }
+        main { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 56px; }
+        header, section { background: rgba(13, 27, 42, .92); border: 1px solid #29435a; border-radius: 16px; }
+        header { padding: 24px; display: flex; gap: 24px; justify-content: space-between; align-items: flex-start; }
+        h1, h2 { margin: 0; } h1 { font-size: clamp(1.55rem, 4vw, 2.25rem); } h2 { font-size: 1.1rem; }
+        p { color: #a9b8c6; line-height: 1.55; }
+        nav { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+        a { color: #7dd3fc; } nav a, .record-link { padding: 9px 12px; border: 1px solid #36536d; border-radius: 9px; text-decoration: none; white-space: nowrap; }
+        .mode { display: inline-block; padding: 6px 9px; color: #86efac; background: #113824; border: 1px solid #23633d; border-radius: 999px; font-size: .85rem; }
+        .warning { color: #fbbf24; } .error { color: #fca5a5; }
+        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 18px 0; }
+        .card { padding: 18px; } .value { display: block; margin-top: 8px; font-size: 1.8rem; font-weight: 700; }
+        section { overflow: hidden; } .section-head { padding: 18px 20px; border-bottom: 1px solid #29435a; }
+        table { width: 100%; border-collapse: collapse; } th, td { padding: 14px 16px; border-bottom: 1px solid #22394d; text-align: left; vertical-align: top; }
+        th { color: #bdd0df; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+        td { overflow-wrap: anywhere; } tbody tr:last-child td { border-bottom: 0; }
+        .progress-track { width: 150px; height: 8px; overflow: hidden; background: #203346; border-radius: 999px; margin: 8px 0; }
+        .scan-progress { height: 100%; background: #2dd4bf; }
+        .muted { color: #8ba0b3; font-size: .88rem; } .status { font-weight: 650; }
+        #panel-connection { display: inline-block; margin-top: 8px; color: #93c5fd; }
+        [hidden] { display: none !important; }
+        @media (max-width: 780px) { header { display: block; } nav { justify-content: flex-start; margin-top: 18px; } .cards { grid-template-columns: 1fr; } table { display: block; overflow-x: auto; } }
+    </style>
+</head>
+<body>
+<main>
+    <header>
+        <div>
+            <span class="mode">Yönetim modu etkin</span>
+            <h1>MONOLITH kayıt ve durum paneli</h1>
+            <p>Bu mod yalnızca kayıtlı verileri, raporları ve çevrimdışı analizleri açar. Operasyonel modüller bu süreçte yüklenmez.</p>
+            <p class="muted">Oturum: {{ user }} · Rol: {{ role }}</p>
+        </div>
+        <nav aria-label="Yönetim bağlantıları">
+            <a href="{{ url_for('feature_status.feature_status_page') }}">Özellik durumu</a>
+            {% if role == 'admin' %}
+            <a href="{{ url_for('ai_vulnerability.analysis_page') }}">Çevrimdışı analiz</a>
+            <a href="{{ url_for('monitoring.audit_dashboard') }}">Audit kayıtları</a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}">Çıkış</a>
+        </nav>
+    </header>
+
+    {% if not records_available %}
+    <p class="error">Veritabanı kayıtları şu anda okunamıyor. Ayrıntılar yanıta veya sayfaya sızdırılmadı.</p>
+    {% endif %}
+
+    <div class="cards" aria-label="Kayıt özeti">
+        <section class="card"><span class="muted">Toplam tarama kaydı</span><span class="value">{{ summary.totals.scans }}</span></section>
+        <section class="card"><span class="muted">Kayıtlı bulgu</span><span class="value">{{ summary.totals.vulnerabilities }}</span></section>
+        <section class="card"><span class="muted">Çalışıyor olarak kayıtlı</span><span class="value">{{ summary.totals.running }}</span></section>
+    </div>
+
+    <section aria-labelledby="recent-title">
+        <div class="section-head">
+            <h2 id="recent-title">Son tarama kayıtları</h2>
+            <span id="panel-connection" data-state="loading" role="status" aria-live="polite" aria-atomic="true">Kayıt durumları okunuyor…</span>
+            <p id="scan-connection-message" class="muted" data-source-available="{{ 'true' if records_available else 'false' }}">Salt okunur durum bağlantısı.</p>
+            <a id="scan-connection-login" href="{{ url_for('auth.login') }}" hidden>Yeniden giriş yap</a>
+        </div>
+        <table aria-labelledby="recent-title">
+            <thead><tr><th scope="col">ID</th><th scope="col">Hedef etiketi</th><th scope="col">Durum</th><th scope="col">İlerleme</th><th scope="col">Bulgular</th><th scope="col">Kayıt</th></tr></thead>
+            <tbody>
+            {% for scan in summary.scans %}
+                <tr data-scan-id="{{ scan.id }}" data-status-url="{{ url_for('monitoring.scan_status', scan_id=scan.id) }}" data-connection="stale">
+                    <td>#{{ scan.id }}<div class="muted">{{ scan.date }}</div></td>
+                    <td>{{ scan.target }}</td>
+                    <td><span class="scan-status status">{{ scan.status }}</span><div class="scan-status-error error" role="status" aria-live="polite" hidden></div></td>
+                    <td>
+                        <div class="progress-track"><div class="scan-progress" role="progressbar" aria-label="Tarama ilerlemesi" aria-valuemin="0" aria-valuemax="100" aria-valuetext="{{ (scan.progress|string) + '%' if scan.progress is not none else 'İlerleme bilinmiyor' }}" {% if scan.progress is not none %}aria-valuenow="{{ scan.progress }}"{% endif %} style="width: {{ scan.progress if scan.progress is not none else 0 }}%"></div></div>
+                        <span class="scan-progress-value muted">{{ (scan.progress|string) + '%' if scan.progress is not none else 'İlerleme bilinmiyor' }}</span>
+                        <div class="scan-eta muted">{{ 'ETA: ' + (scan.eta_seconds|string) + ' s' if scan.eta_seconds is not none else 'ETA: bilinmiyor' }}</div>
+                    </td>
+                    <td><span class="scan-vulnerability-count">{{ scan.vulnerability_count }}</span></td>
+                    <td><a class="record-link" href="{{ url_for('management.scan_record', scan_id=scan.id) }}">Görüntüle</a></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="muted">Gösterilecek kayıt yok.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</main>
+<script>{% include "partials/scan_progress.js" %}</script>
+</body>
+</html>

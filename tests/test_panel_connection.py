@@ -235,6 +235,24 @@ def test_invalid_record_text_is_not_interpreted_or_echoed_as_objects(
     assert response.json["target"] == ""
 
 
+def test_large_or_wrong_typed_database_values_are_bounded_in_sql(panel):
+    large = "x" * 100_000
+    panel.database.execute(
+        "UPDATE scans SET status=?, target=? WHERE id=1", (large, large)
+    )
+    panel.database.execute(
+        "UPDATE scan_progress SET progress=?, eta_seconds=? WHERE scan_id=1",
+        (large, large),
+    )
+    response = panel.client.get(CANONICAL)
+    assert_response(response, 200)
+    assert response.json["status"] == "x" * 256
+    assert response.json["target"] == "x" * 2048
+    assert response.json["progress_available"] is False
+    assert response.json["eta_available"] is False
+    assert large not in response.get_data(as_text=True)
+
+
 def test_database_failure_is_generic_503_without_credentials_or_paths(panel):
     with patch.object(
         panel.module,
@@ -246,6 +264,48 @@ def test_database_failure_is_generic_503_without_credentials_or_paths(panel):
     assert response.json == {"error": "scan_status_unavailable"}
     assert b"secret" not in response.data
     assert b"private" not in response.data
+
+
+def test_metrics_reports_recorded_counts_and_exact_running_prefixes(panel):
+    panel.database.executemany(
+        "INSERT INTO scans VALUES(?,?,?)",
+        (
+            (2, "NOT_RUNNING", "finished.invalid"),
+            (3, "HAZIRLANIYOR...", "preparing.invalid"),
+            (4, " devam ediyor", "active.invalid"),
+            (5, "REHAZIRLANIYOR", "finished-too.invalid"),
+            (6, None, "unknown.invalid"),
+        ),
+    )
+
+    response = panel.client.get("/metrics")
+
+    assert_response(response, 200)
+    assert response.json == {
+        "scans_total": 6,
+        "vulns_total": 2,
+        "running_scans": 3,
+    }
+
+
+def test_metrics_database_failure_is_generic_and_never_cached(panel):
+    with patch.object(
+        panel.module,
+        "db_conn",
+        side_effect=RuntimeError("secret-db-password C:/private/db.sqlite"),
+    ):
+        response = panel.client.get("/metrics")
+
+    assert_response(response, 503)
+    assert response.json == {"error": "metrics_unavailable"}
+    assert b"secret" not in response.data
+    assert b"private" not in response.data
+
+
+def test_metrics_is_read_only(panel):
+    snapshot = tuple(panel.database.iterdump())
+    panel.client.get("/metrics")
+    assert tuple(panel.database.iterdump()) == snapshot
 
 
 def test_read_only_endpoint_preserves_all_recorded_data(panel):

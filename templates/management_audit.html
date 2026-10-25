@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MONOLITH audit kayıtları</title>
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #08111b; color: #e6edf3; }
+        body { margin: 0; } main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0; }
+        a { color: #7dd3fc; } section { margin-top: 20px; background: #0d1b2a; border: 1px solid #29435a; border-radius: 14px; overflow: auto; }
+        table { width: 100%; border-collapse: collapse; } th, td { padding: 12px; border-bottom: 1px solid #29435a; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+        th { color: #bdd0df; } p { color: #a9b8c6; }
+    </style>
+</head>
+<body>
+<main>
+    <a href="{{ url_for('management.dashboard') }}">← Yönetim paneline dön</a>
+    <h1>Audit kayıtları</h1>
+    <p>En yeni 200 kayıt gösterilir. Alanlar metin olarak görüntülenir.</p>
+    <section>
+        <table>
+            <thead><tr><th>Zaman</th><th>Kullanıcı</th><th>Rol</th><th>İşlem</th><th>Ayrıntı</th><th>IP</th></tr></thead>
+            <tbody>
+            {% for row in records %}
+                <tr><td>{{ row.timestamp }}</td><td>{{ row.user }}</td><td>{{ row.role }}</td><td>{{ row.action }}</td><td>{{ row.detail }}</td><td>{{ row.ip }}</td></tr>
+            {% else %}
+                <tr><td colspan="6">Audit kaydı yok.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

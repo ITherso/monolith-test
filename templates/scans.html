@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <a href="/" class="glass-light px-4 py-2 rounded-xl text-sm text-gray-200 hover:text-white hover:bg-white/10 transition">
+                <a href="{{ request.script_root or '/' }}" class="glass-light px-4 py-2 rounded-xl text-sm text-gray-200 hover:text-white hover:bg-white/10 transition">
                     <i class="fas fa-arrow-left mr-2"></i>Dashboard
                 </a>
                 <div class="glass px-4 py-2 rounded-xl text-sm text-gray-300">
@@ -27,6 +27,21 @@
                 </div>
             </div>
         </header>
+
+        <section aria-label="Scan summary" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <div class="glass rounded-xl p-4 border border-green-500/20">
+                <p class="text-xs uppercase tracking-wider text-gray-400">Completed</p>
+                <p id="completed-scan-count" class="text-2xl font-mono text-green-300 mt-2">{{ completed_count }}</p>
+            </div>
+            <div class="glass rounded-xl p-4 border border-cyber-secondary/20">
+                <p class="text-xs uppercase tracking-wider text-gray-400">Running</p>
+                <p id="running-scan-count" class="text-2xl font-mono text-cyber-secondary mt-2">{{ running_count }}</p>
+            </div>
+            <div class="glass rounded-xl p-4 border border-red-500/20">
+                <p class="text-xs uppercase tracking-wider text-gray-400">Failed</p>
+                <p id="failed-scan-count" class="text-2xl font-mono text-red-300 mt-2">{{ failed_count }}</p>
+            </div>
+        </section>
 
         <section class="glass rounded-2xl p-6 neon-border">
             <div class="flex items-center justify-between mb-6">
@@ -45,6 +60,7 @@
                             <th class="py-3 text-left">Target</th>
                             <th class="py-3 text-left">Date</th>
                             <th class="py-3 text-left">Status</th>
+                            <th class="py-3 text-left">Progress</th>
                             <th class="py-3 text-left">Owner</th>
                             <th class="py-3 text-right">Actions</th>
                         </tr>
@@ -78,33 +94,46 @@
                                     </span>
                                 {% endif %}
                             </td>
+                            {% set progress = progress_data.get(scan[0]) %}
+                            <td class="py-3 font-mono text-gray-300" data-scan-progress="{{ scan[0] }}">
+                                {% if progress and progress.available %}
+                                    {{ progress.percent }}%
+                                    {% if progress.eta_available %}
+                                    <span class="block text-xs text-gray-500">ETA {{ progress.eta_seconds }}s</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-gray-500">Unknown</span>
+                                {% endif %}
+                            </td>
                             <td class="py-3 text-gray-400">{{ scan[4] }}</td>
                             <td class="py-3 text-right space-x-2">
-                                <a href="/details/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-secondary/20 text-cyber-secondary hover:bg-cyber-secondary/30 transition">
+                                <a href="{{ url_for('scans.details', scan_id=scan[0]) }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-secondary/20 text-cyber-secondary hover:bg-cyber-secondary/30 transition">
                                     <i class="fas fa-file-alt text-xs"></i>
                                     <span class="text-xs">Details</span>
                                 </a>
+                                {% if role == 'admin' %}
                                 {% if 'COMPLETED' in scan[3] or 'TAMAMLANDI' in scan[3] %}
-                                <a href="/report/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-primary/20 text-cyber-primary hover:bg-cyber-primary/30 transition">
+                                <a href="{{ url_for('scans.generate_report', scan_id=scan[0]) }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-primary/20 text-cyber-primary hover:bg-cyber-primary/30 transition">
                                     <i class="fas fa-file-shield text-xs"></i>
                                     <span class="text-xs">Report</span>
                                 </a>
-                                {% endif %}
-                                <a href="/delete/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-danger/20 text-cyber-danger hover:bg-cyber-danger/30 transition" onclick="return confirm('Delete this scan?')">
+                                <a href="{{ url_for('scans.delete_scan', scan_id=scan[0]) }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-danger/20 text-cyber-danger hover:bg-cyber-danger/30 transition" onclick="return confirm('Delete this scan?')">
                                     <i class="fas fa-trash text-xs"></i>
                                     <span class="text-xs">Delete</span>
                                 </a>
                                 {% if 'AÇIK VAR' in scan[3] %}
-                                <a href="/autoexploit/{{ scan[0] }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-warning/20 text-cyber-warning hover:bg-cyber-warning/30 transition">
+                                <a href="{{ url_for('scans.start_autoexploit', scan_id=scan[0]) }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyber-warning/20 text-cyber-warning hover:bg-cyber-warning/30 transition">
                                     <i class="fas fa-bolt text-xs"></i>
                                     <span class="text-xs">AutoExploit</span>
                                 </a>
+                                {% endif %}
+                                {% endif %}
                                 {% endif %}
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="py-10 text-center text-gray-500">
+                            <td colspan="7" class="py-10 text-center text-gray-500">
                                 <i class="fas fa-inbox text-2xl mb-3"></i>
                                 <p>No scans found yet.</p>
                             </td>

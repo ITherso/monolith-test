@@ -3,6 +3,7 @@
 import ast
 import importlib.util
 import logging
+import shutil
 import sqlite3
 import sys
 from pathlib import Path
@@ -109,6 +110,28 @@ def test_missing_alembic_is_not_silently_skipped(migrations, monkeypatch):
     monkeypatch.setattr(migrations, "command", None)
     with pytest.raises(RuntimeError, match="Alembic is required"):
         migrations.run_migrations()
+
+
+def test_revision_template_can_generate_a_compilable_revision(migrations, tmp_path):
+    migration_copy = tmp_path / "alembic_migrations"
+    shutil.copytree(ROOT / "alembic_migrations", migration_copy)
+    config = migrations._alembic_config()
+    config.set_main_option("script_location", str(migration_copy))
+    revision = migrations.command.revision(config, message="template smoke test")
+    generated = Path(revision.path)
+    assert generated.is_file()
+    compile(generated.read_bytes(), str(generated), "exec", dont_inherit=True)
+
+
+def test_explicit_database_path_supports_percent_characters(migrations, tmp_path):
+    database = tmp_path / "schema%fixture.sqlite3"
+    config = migrations._alembic_config(database)
+    assert "%" in config.get_main_option("sqlalchemy.url")
+    migrations.run_migrations(database)
+    with sqlite3.connect(database) as connection:
+        assert connection.execute(
+            "SELECT version_num FROM alembic_version"
+        ).fetchone() == (HEAD,)
 
 
 def test_container_ports_and_healthcheck_match_cli():
